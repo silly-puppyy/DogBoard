@@ -71,6 +71,7 @@ import org.k3lp.runtime.K3TextRange
 import java.lang.ref.WeakReference
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import io.github.sillypuppyy.dogboard.feel.WordDelete
 
 /**
  * Provides the [ImeController] instance this composition tree is associated with.
@@ -327,6 +328,8 @@ class ImeController(
             when (descriptor) {
                 // TODO once k3lp supports this remove
                 ImeActions.Delete -> emitForwardDelete()
+                // DogBoard: delete back to the previous word boundary (used by held delete)
+                ImeActions.BackspaceWord -> emitBackspaceWord()
                 // TODO evaluate use of modern cursor anchor API instead of sending raw key events
                 ImeActions.ArrowDown -> state.editor.sendDownUpKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN)
                 ImeActions.ArrowLeft -> state.editor.sendDownUpKeyEvent(KeyEvent.KEYCODE_DPAD_LEFT)
@@ -424,6 +427,23 @@ class ImeController(
         override fun emitBackspace() {
             super.emitBackspace()
             expectedContentQueue.push(state.content)
+        }
+
+        // DogBoard
+        fun emitBackspaceWord() {
+            if (state.content.selection.isNotCollapsed()) {
+                emitBackspace()
+                return
+            }
+            val textBefore = state.content.surroundingText.textBefore
+            val target = textBefore.length - WordDelete.charsToDelete(textBefore)
+            var remaining = textBefore.length
+            while (remaining > target) {
+                emitBackspace()
+                val now = state.content.surroundingText.textBefore.length
+                if (now >= remaining) break // no progress (e.g. no more context), stop
+                remaining = now
+            }
         }
 
         override fun emitEnter() {

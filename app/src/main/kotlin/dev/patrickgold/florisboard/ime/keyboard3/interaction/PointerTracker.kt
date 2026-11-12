@@ -37,12 +37,14 @@ import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastFold
 import androidx.compose.ui.util.fastForEach
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import dev.patrickgold.florisboard.ime.keyboard3.ImeActions
 import dev.patrickgold.florisboard.ime.keyboard3.ImeController
 import dev.patrickgold.florisboard.ime.keyboard3.LocalImeController
 import dev.patrickgold.florisboard.ime.keyboard3.touch.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKey
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKeyboard
 import dev.patrickgold.jetpref.datastore.model.collectAsState
+import io.github.sillypuppyy.dogboard.feel.DeleteRepeat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -220,12 +222,20 @@ class PointerTracker(
                 repeatJob = if (downKey.isRepeatable) {
                     scope.launch {
                         delay(keyRepeatTimeout)
+                        // DogBoard: a held delete accelerates from characters to whole words
+                        val isBackspace = downKey.attrs.output == ImeActions.Backspace
+                        var repeatIndex = 0
                         while (isActive) {
+                            val step = if (isBackspace) DeleteRepeat.step(repeatIndex++) else null
+                            val output = when (step?.unit) {
+                                DeleteRepeat.Unit.WORD -> ImeActions.BackspaceWord
+                                else -> downKey.attrs.output
+                            }
                             imeController.updateState {
-                                downKey.attrs.output?.let { emit(it) }
+                                output?.let { emit(it) }
                             }
                             interactionController.performFeedback(InteractionKind.KeyRepeat)
-                            delay(keyRepeatDelay)
+                            delay(step?.delayAfter ?: keyRepeatDelay)
                         }
                     }
                 } else null,

@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import io.github.sillypuppyy.dogboard.feel.Timings
 import org.florisboard.lib.android.AndroidVersion
 import org.florisboard.lib.android.systemServiceOrNull
 import org.k3lp.lib.text.K3StringOrDescriptor
@@ -245,17 +246,19 @@ fun rememberAndroidInteractionController(
     }
 }
 
+// DogBoard: key repeat, long-press and double-tap timings come from DogBoard's feel profile
+// instead of Android's ViewConfiguration defaults.
 private fun androidTimingOptions(): InteractionTimingOptions {
     return InteractionTimingOptions(
-        keyRepeatTimeout = ViewConfiguration.getKeyRepeatTimeout().milliseconds,
-        keyRepeatDelay = ViewConfiguration.getKeyRepeatDelay().milliseconds,
-        longPressTimeout = ViewConfiguration.getLongPressTimeout().milliseconds,
+        keyRepeatTimeout = Timings.DeleteFirstRepeat,
+        keyRepeatDelay = Timings.DeleteCharInterval,
+        longPressTimeout = Timings.LongPress,
         // no system constant available for multi tap timeout on Android
         multiTapTimeout = InteractionTimingOptions.Default.multiTapTimeout,
         multiPressTimeout = when {
             AndroidVersion.ATLEAST_API31_S -> ViewConfiguration.getMultiPressTimeout()
             else -> 300
         }.milliseconds,
-        doubleTapTimeout = ViewConfiguration.getDoubleTapTimeout().milliseconds,
+        doubleTapTimeout = Timings.CapsLockDoubleTap,
     )
 }
