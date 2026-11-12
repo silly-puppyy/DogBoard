@@ -179,7 +179,7 @@ fun ImeKeyboardBox(
                 .trackPointerInput(pointerTracker, model)
                 // DogBoard: debug builds log the key area's screen bounds for automated typing tests
                 .onGloballyPositioned { coordinates ->
-                    if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
+                    if (dev.patrickgold.florisboard.BuildConfig.DEBUG || dev.patrickgold.florisboard.BuildConfig.BUILD_TYPE == "benchmark") {
                         val pos = coordinates.positionOnScreen()
                         val bounds = "${pos.x.toInt()} ${pos.y.toInt()} ${coordinates.size.width} ${coordinates.size.height}"
                         if (bounds != lastLoggedKeyAreaBounds) {

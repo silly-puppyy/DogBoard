@@ -18,7 +18,7 @@ import sys
 import time
 
 ADB = "/opt/android-sdk/platform-tools/adb"
-PKG = "io.github.sillypuppyy.dogboard.debug"
+PKG = "io.github.sillypuppyy.dogboard.debug"  # provides the test screen
 IME = f"{PKG}/dev.patrickgold.florisboard.FlorisImeService"
 ACTIVITY = f"{PKG}/io.github.sillypuppyy.dogboard.imetest.ImeTestActivity"
 
@@ -81,11 +81,14 @@ def main():
     ap.add_argument("--noise-mm", type=float, default=0.0, help="std-dev of random tap error")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--delay", type=float, default=0.25, help="seconds between taps")
+    ap.add_argument("--ime", default=IME, help="keyboard under test (DogBoard debug or bench build)")
     args = ap.parse_args()
+    ime = args.ime
+    ime_package = ime.split("/")[0]
     rng = random.Random(args.seed)
 
-    adb(args.serial, "shell", "ime", "enable", IME)
-    adb(args.serial, "shell", "ime", "set", IME)
+    adb(args.serial, "shell", "ime", "enable", ime)
+    adb(args.serial, "shell", "ime", "set", ime)
     density = int(adb(args.serial, "shell", "wm", "density").split(":")[-1].strip()) / 160.0
 
     failures = 0
@@ -98,8 +101,8 @@ def main():
         geom = settled_geometry(args.serial)
         if not geom:
             # the key area may not have moved since the last run, so nothing new was logged
-            adb(args.serial, "shell", "am", "force-stop", PKG)
-            adb(args.serial, "shell", "ime", "set", IME)
+            adb(args.serial, "shell", "am", "force-stop", ime_package)
+            adb(args.serial, "shell", "ime", "set", ime)
             adb(args.serial, "logcat", "-c")
             adb(args.serial, "shell", "am", "start", "-n", ACTIVITY)
             geom = settled_geometry(args.serial)
