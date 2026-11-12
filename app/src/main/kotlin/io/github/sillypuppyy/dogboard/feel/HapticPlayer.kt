@@ -48,9 +48,15 @@ class HapticPlayer(context: Context) {
         val sinceLast = lastPressUptime?.let { now - it }
         lastPressUptime = now
         val tap = Haptics.tapFor(feedbackClass, sinceLast) ?: return false
-        val effect = effectFor(tap) ?: return false
-        vibrator?.vibrate(effect) ?: return false
-        return true
+        // haptics must never take the keyboard down: on any failure, fall back to the system haptic
+        return try {
+            val effect = effectFor(tap) ?: return false
+            vibrator?.vibrate(effect) ?: return false
+            true
+        } catch (e: RuntimeException) {
+            android.util.Log.w("DogBoardPerf", "haptic effect failed, falling back: $e")
+            false
+        }
     }
 
     private fun effectFor(tap: HapticTap): VibrationEffect? {

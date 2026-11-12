@@ -19,6 +19,8 @@ package dev.patrickgold.florisboard.ime.keyboard3.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -175,6 +177,17 @@ fun ImeKeyboardBox(
                     layout(placeable.width, placeable.height) { placeable.place(0, 0) }
                 }
                 .trackPointerInput(pointerTracker, model)
+                // DogBoard: debug builds log the key area's screen bounds for automated typing tests
+                .onGloballyPositioned { coordinates ->
+                    if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
+                        val pos = coordinates.positionOnScreen()
+                        val bounds = "${pos.x.toInt()} ${pos.y.toInt()} ${coordinates.size.width} ${coordinates.size.height}"
+                        if (bounds != lastLoggedKeyAreaBounds) {
+                            lastLoggedKeyAreaBounds = bounds
+                            android.util.Log.i("DogBoardGeom", "key area $bounds rows ${activeTouchKeyboard.rowCount}")
+                        }
+                    }
+                }
                 .drawWithContent {
                     drawContent()
                     trackedPeekPointer?.let { trackedPeekPointer ->
@@ -326,3 +339,6 @@ private fun ImeKeyboardKeyBox(
         attributes = attributes,
     )
 }
+
+// DogBoard: last key-area bounds written to the debug log
+private var lastLoggedKeyAreaBounds: String? = null
