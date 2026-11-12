@@ -102,6 +102,11 @@ fun ImeKeyboardBox(
             // DogBoard: startup timing
             io.github.sillypuppyy.dogboard.perf.Perf.measure("touch model") { imeController.touchModelCache.getOrComputeFor(model, touchModelOptions) }
         }
+        // DogBoard: startup timing, first frame with real keys
+        if (activeTouchModel !is TouchModel.Empty) {
+            androidx.compose.runtime.withFrameNanos { }
+            io.github.sillypuppyy.dogboard.perf.Perf.mark("keys drawn")
+        }
     }
 
     val spaceBarMode by prefs.keyboard.spaceBarMode.collectAsState()

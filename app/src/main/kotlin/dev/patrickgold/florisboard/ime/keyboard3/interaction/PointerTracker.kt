@@ -238,7 +238,7 @@ class PointerTracker(
                             imeController.updateState {
                                 output?.let { emit(it) }
                             }
-                            interactionController.performFeedback(InteractionKind.KeyRepeat)
+                            interactionController.performFeedback(InteractionKind.KeyRepeat, output)
                             delay(step?.delayAfter ?: keyRepeatDelay)
                         }
                     }
@@ -280,7 +280,7 @@ class PointerTracker(
                     )
                 }
             }
-            interactionController.performFeedback(InteractionKind.KeyPress)
+            interactionController.performFeedback(InteractionKind.KeyPress, downKey.attrs.output)
         }
     }
 

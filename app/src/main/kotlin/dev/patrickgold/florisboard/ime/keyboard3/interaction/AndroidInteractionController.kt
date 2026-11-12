@@ -40,9 +40,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import io.github.sillypuppyy.dogboard.feel.HapticPlayer
+import io.github.sillypuppyy.dogboard.feel.KeyFeedbackClass
 import io.github.sillypuppyy.dogboard.feel.Timings
 import org.florisboard.lib.android.AndroidVersion
 import org.florisboard.lib.android.systemServiceOrNull
+import org.k3lp.lib.text.K3String
 import org.k3lp.lib.text.K3StringOrDescriptor
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.milliseconds
@@ -161,9 +164,34 @@ private class AndroidInteractionController(
         }
     }
 
+    // DogBoard: key presses use DogBoard's haptic profile
+    private val hapticPlayer by lazy { context.get()?.let { HapticPlayer(it) } }
+
+    private fun feedbackClassFor(kind: InteractionKind, output: K3StringOrDescriptor?): KeyFeedbackClass? {
+        return when (kind) {
+            InteractionKind.KeyPress -> when (output) {
+                null -> KeyFeedbackClass.OTHER
+                ImeActions.Backspace, ImeActions.BackspaceWord -> KeyFeedbackClass.DELETE
+                ImeActions.Enter, InteractionTimingOptions.ASCII_SPACE -> KeyFeedbackClass.SEPARATOR
+                is K3String -> KeyFeedbackClass.TEXT
+                else -> KeyFeedbackClass.OTHER
+            }
+            InteractionKind.KeyRepeat -> when (output) {
+                ImeActions.Backspace -> KeyFeedbackClass.DELETE_REPEAT
+                ImeActions.BackspaceWord -> KeyFeedbackClass.DELETE_RAPID
+                else -> KeyFeedbackClass.OTHER
+            }
+            else -> null
+        }
+    }
+
     override fun performHapticFeedback(kind: InteractionKind, output: K3StringOrDescriptor?) {
         val composeView = composeView.get() ?: return
         if (!composeView.isHapticFeedbackEnabled) return
+        // DogBoard: no haptic on key release; presses and repeats use the DogBoard profile
+        if (kind == InteractionKind.KeyRelease) return
+        val feedbackClass = feedbackClassFor(kind, output)
+        if (feedbackClass != null && hapticPlayer?.play(feedbackClass) == true) return
         val hfc = when (kind) {
             InteractionKind.KeyPress -> HFC_KEYBOARD_PRESS
             InteractionKind.KeyRelease -> HFC_KEYBOARD_RELEASE
