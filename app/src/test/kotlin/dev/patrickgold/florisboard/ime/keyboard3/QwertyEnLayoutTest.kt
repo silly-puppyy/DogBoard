@@ -1,5 +1,7 @@
 package dev.patrickgold.florisboard.ime.keyboard3
 
+import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchModelOptions
+import dev.patrickgold.florisboard.ime.keyboard3.touch.computeTouchModel
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.doubles.plusOrMinus
@@ -13,6 +15,7 @@ import org.k3lp.model.K3ImpliedImports
 import org.k3lp.model.K3ImportResolver
 import org.k3lp.model.compileToModel
 import org.k3lp.model.layer.K3LayerId
+import kotlinx.coroutines.coroutineScope
 import java.io.File
 import java.net.URI
 
@@ -61,5 +64,29 @@ class QwertyEnLayoutTest : FunSpec({
                 keys.sumOf { it.width.toDouble() } shouldBe (expected plusOrMinus 0.01)
             }
         }
+    }
+
+    test("touch model can be computed (same code path the keyboard runs on open)") {
+        val result = compileLayout("keyboard/qwerty-en.xml")
+        result.shouldBeInstanceOf<K3CompileResult.Success>()
+        coroutineScope {
+            computeTouchModel(result.model, TouchModelOptions.Default)
+        }
+    }
+
+    test("every key referenced by a row or a long-press list exists") {
+        val result = compileLayout("keyboard/qwerty-en.xml")
+        result.shouldBeInstanceOf<K3CompileResult.Success>()
+        val model = result.model
+        val referenced = buildSet {
+            for ((_, layer) in model.layersByForm.touch.single().layers) {
+                layer.rows.forEach { row -> addAll(row) }
+            }
+            for (key in model.keys.byKeyId.values) {
+                key.longPressKeyIds?.let { addAll(it) }
+                key.longPressDefaultKeyId?.let { add(it) }
+            }
+        }
+        referenced.filter { model.keys.byKeyId[it] == null }.map { it.toString() }.sorted().shouldBeEmpty()
     }
 })
