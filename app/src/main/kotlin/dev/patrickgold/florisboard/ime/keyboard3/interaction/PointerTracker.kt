@@ -129,6 +129,8 @@ class PointerTracker(
         field = MutableStateFlow(null)
 
     private var lastUpKeyState: LastUpKey? = null
+    // DogBoard: caps lock timing is measured from the first shift press, not its release
+    private var lastShiftDownUptime: Long = Long.MIN_VALUE
 
     suspend fun mutateLocked(action: suspend PointerTracker.() -> Unit) {
         mutationGuard.withLock { action() }
@@ -167,7 +169,9 @@ class PointerTracker(
                 downInputShiftState = state.flags.inputShiftState
                 if (downKey.isShiftKey) {
                     val isDoubleTap = lastUpKey != null && lastUpKey.touchKey.isShiftKey &&
-                        (down.uptimeMillis - lastUpKey.uptimeMillis) < doubleTapTimeout.inWholeMilliseconds
+                        lastShiftDownUptime != Long.MIN_VALUE &&
+                        (down.uptimeMillis - lastShiftDownUptime) < doubleTapTimeout.inWholeMilliseconds
+                    lastShiftDownUptime = if (isDoubleTap) Long.MIN_VALUE else down.uptimeMillis
                     cycleInputShiftState(isDoubleTap)
                 } else {
                     switchTouchLayer(peekLayerId)
