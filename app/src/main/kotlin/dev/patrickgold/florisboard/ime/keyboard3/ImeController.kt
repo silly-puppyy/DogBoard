@@ -51,6 +51,8 @@ import dev.patrickgold.florisboard.lib.FlorisLocale
 import dev.patrickgold.florisboard.lib.devtools.flogDebug
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -72,7 +74,16 @@ import org.k3lp.runtime.K3TextRange
 import java.lang.ref.WeakReference
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import io.github.sillypuppyy.dogboard.engine.Candidate
+import io.github.sillypuppyy.dogboard.engine.CurrentWord
+import io.github.sillypuppyy.dogboard.engine.Suggestion
+import io.github.sillypuppyy.dogboard.engine.SuggestionStrip
+import io.github.sillypuppyy.dogboard.engine.Tap
+import io.github.sillypuppyy.dogboard.engine.TypingEngine
 import io.github.sillypuppyy.dogboard.feel.DoubleSpace
+import io.github.sillypuppyy.dogboard.ime.DogBoardCandidate
+import io.github.sillypuppyy.dogboard.touch.GaussianTouch
+import io.github.sillypuppyy.dogboard.touch.KeyTarget
 import io.github.sillypuppyy.dogboard.feel.WordDelete
 
 /**
@@ -98,6 +109,23 @@ class ImeController(
     private var emitInterceptor = AtomicReference<EmitInterceptor?>(null)
     // DogBoard: uptime of the last typed space, or null after any other edit (double-space period)
     private var lastSpaceUptime: Long? = null
+    // DogBoard: word tracking, autocorrect and suggestions
+    private class PendingTap(val tap: Tap?, val keys: Map<Char, KeyTarget>, val params: GaussianTouch.Params?)
+    private class LastCorrection(val word: CurrentWord, val corrected: String, val separator: String)
+    private var currentWord = CurrentWord()
+    private var pendingTap: PendingTap? = null
+    private var lastCorrection: LastCorrection? = null
+    private var rejectedWord: String? = null
+    private var suggestionJob: Job? = null
+    @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
+
+    /** Receives the suggestion strip whenever the current word changes. */
+    var suggestionSink: ((List<Suggestion>) -> Unit)? = null
+
+    /** DogBoard: where the next letter key was tapped (set on touch down, used when it emits). */
+    fun notePendingTap(tap: Tap?, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
+        pendingTap = PendingTap(tap, keys, params)
+    }
 
     val activeTouchModelOptions = combine<Any, TouchModelOptions>(
         prefs.keyboard.numberRow.asFlow(),
@@ -298,6 +326,7 @@ class ImeController(
                         }
                     )
             )
+            resetWordTracking()
             resetContent(initialSelection, initialSurrounding)
             expectedContentQueue.clear()
         }
@@ -309,6 +338,7 @@ class ImeController(
                 return
             }
             lastSpaceUptime = null
+            resetWordTracking()
             resetContent(newSelection, state.editor.getSurroundingText(50, 10))
             expectedContentQueue.push(state.content)
         }
@@ -323,13 +353,30 @@ class ImeController(
         }
 
         override fun emitText(value: K3String) {
+            // DogBoard: track the word being typed; finishing it may autocorrect it first
+            val text = value.toText()
+            val wordChar = text.singleOrNull()?.takeIf { it.isLetter() || it == '\'' || it == '’' }
+            when {
+                wordChar != null -> {
+                    val tap = pendingTap
+                    currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params)
+                    lastCorrection = null
+                }
+                text in WORD_SEPARATORS -> finishWord(text)
+                else -> {
+                    currentWord.clear()
+                    lastCorrection = null
+                }
+            }
+            pendingTap = null
+
             if (value == SPACE) {
                 val now = SystemClock.uptimeMillis()
                 val since = lastSpaceUptime?.let { now - it }
                 if (doubleSpacePeriodAllowed() &&
                     DoubleSpace.shouldInsertPeriod(state.content.surroundingText.textBefore, since)
                 ) {
-                    emitBackspace()
+                    rawBackspace()
                     super.emitText(PERIOD_SPACE)
                     lastSpaceUptime = null
                 } else {
@@ -342,6 +389,101 @@ class ImeController(
             }
             expectedContentQueue.push(state.content)
             reevaluateInputShiftState()
+            publishSuggestions()
+        }
+
+        // DogBoard: edits made by the keyboard itself, not by a key press
+        private fun rawBackspace() {
+            super.emitBackspace()
+            expectedContentQueue.push(state.content)
+        }
+
+        private fun rawText(text: String) {
+            super.emitText(text.asK3String())
+            expectedContentQueue.push(state.content)
+        }
+
+        /** Replaces [old] right before the cursor with [new], if the text there is [old]. */
+        private fun replaceBeforeCursor(old: String, new: String): Boolean {
+            if (state.content.selection.isNotCollapsed()) return false
+            if (!state.content.surroundingText.textBefore.endsWith(old)) return false
+            repeat(old.length) { rawBackspace() }
+            rawText(new)
+            return true
+        }
+
+        /** Called before a word separator is typed: autocorrects the finished word. */
+        private fun finishWord(separator: String) {
+            lastCorrection = null
+            val word = currentWord
+            if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord) {
+                val typed = word.text
+                val candidates = latestDecode?.takeIf { it.first == typed }?.second ?: TypingEngine.candidates(word)
+                val corrected = TypingEngine.correction(word, candidates)
+                if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
+                    lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
+                }
+            }
+            currentWord.clear()
+            rejectedWord = null
+        }
+
+        /** Backspace right after an autocorrection restores what was typed. */
+        private fun revertLastCorrection(): Boolean {
+            val correction = lastCorrection ?: return false
+            lastCorrection = null
+            if (!replaceBeforeCursor(correction.corrected + correction.separator, correction.word.text)) return false
+            currentWord = correction.word
+            rejectedWord = correction.word.text
+            return true
+        }
+
+        /** Commits a suggestion-strip pick in place of the current word, followed by a space. */
+        private fun acceptSuggestion(suggestion: Suggestion): Boolean {
+            val typed = currentWord.text
+            if (typed.isEmpty() || !replaceBeforeCursor(typed, suggestion.word + " ")) return false
+            currentWord.clear()
+            lastCorrection = null
+            rejectedWord = null
+            lastSpaceUptime = SystemClock.uptimeMillis()
+            reevaluateInputShiftState()
+            publishSuggestions()
+            return true
+        }
+
+        private fun resetWordTracking() {
+            currentWord.clear()
+            pendingTap = null
+            lastCorrection = null
+            rejectedWord = null
+            publishSuggestions()
+        }
+
+        private fun correctionAllowed(): Boolean = prefs.correction.autocorrect.get() && wordEngineAllowed()
+
+        private fun wordEngineAllowed(): Boolean {
+            val attrs = state.editor.info.inputAttributes
+            return attrs.type == InputAttributes.Type.TEXT &&
+                attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS &&
+                !attrs.flagTextNoSuggestions
+        }
+
+        private fun publishSuggestions() {
+            val sink = suggestionSink ?: return
+            suggestionJob?.cancel()
+            if (currentWord.isEmpty || !wordEngineAllowed()) {
+                sink(emptyList())
+                return
+            }
+            val word = currentWord.snapshot()
+            val rejected = rejectedWord
+            val withCorrection = prefs.correction.autocorrect.get()
+            suggestionJob = scope.launch {
+                val candidates = TypingEngine.candidates(word)
+                latestDecode = word.text to candidates
+                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates) else null
+                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction))
+            }
         }
 
         // DogBoard
@@ -455,12 +597,23 @@ class ImeController(
 
         override fun emitBackspace() {
             lastSpaceUptime = null
+            pendingTap = null
+            if (revertLastCorrection()) {
+                reevaluateInputShiftState()
+                publishSuggestions()
+                return
+            }
             super.emitBackspace()
             expectedContentQueue.push(state.content)
+            // DogBoard: keep the current word in step with the text
+            currentWord.removeLast()
+            if (!state.content.surroundingText.textBefore.endsWith(currentWord.text)) currentWord.clear()
+            publishSuggestions()
         }
 
         // DogBoard
         fun emitBackspaceWord() {
+            lastCorrection = null
             if (state.content.selection.isNotCollapsed()) {
                 emitBackspace()
                 return
@@ -565,6 +718,7 @@ class ImeController(
         }
 
         fun emitCompletion(candidate: SuggestionCandidate): Boolean {
+            if (candidate is DogBoardCandidate) return acceptSuggestion(candidate.suggestion)
             val text = candidate.text.toString()
             if (text.isEmpty() || state.editor.info.isRawInputEditor) return false
 //            val content = activeContent
@@ -658,6 +812,7 @@ class ImeController(
         }
 
         fun handleFinishInputView() {
+            resetWordTracking()
             resetContent()
             state = state.copy(editor = ImeEditor.Disconnected)
             expectedContentQueue.clear()
@@ -710,6 +865,7 @@ enum class OperationScope {
 }
 
 private val SPACE = " ".asK3String()
+private val WORD_SEPARATORS = setOf(" ", ".", ",", "!", "?", ";", ":")
 private val PERIOD_SPACE = ". ".asK3String()
 private val NO_DOUBLE_SPACE_VARIATIONS = setOf(
     InputAttributes.Variation.EMAIL_ADDRESS,

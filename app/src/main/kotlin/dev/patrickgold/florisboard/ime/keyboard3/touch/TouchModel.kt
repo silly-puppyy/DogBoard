@@ -108,23 +108,10 @@ class TouchKeyboard(
         if (rectKey != null && !rectKey.attrs.gap && !rectKey.isTextKey()) {
             return rectKey
         }
-        val layer = if (layerId == ImeLayerIds.Caps) {
-            layers[layerId] ?: layers[ImeLayerIds.Shift] ?: layers[ImeLayerIds.Base]
-        } else {
-            layers[layerId] ?: layers[ImeLayerIds.Base]
-        } ?: return rectKey
-        val textKeys = layer.keys.filter { it.isTextKey() }
+        val textKeys = textKeysOf(layerId)
         if (textKeys.isEmpty()) return rectKey
-        val targets = textKeys.map { key ->
-            KeyTarget(
-                centerX = key.bounds.center.x * keyboardWidthDp,
-                centerY = key.bounds.center.y * keyboardHeightDp,
-                halfWidth = key.bounds.width * keyboardWidthDp / 2f,
-                halfHeight = key.bounds.height * keyboardHeightDp / 2f,
-            )
-        }
-        val medianHalfWidth = targets.map { it.halfWidth }.sorted()[targets.size / 2].toDouble()
-        val params = GaussianTouch.params(medianHalfWidth, typingInterval)
+        val targets = textKeys.map { it.target(keyboardWidthDp, keyboardHeightDp) }
+        val params = GaussianTouch.params(medianHalfWidth(targets), typingInterval)
         val index = GaussianTouch.pick(
             targets,
             position.x * keyboardWidthDp,
@@ -132,6 +119,37 @@ class TouchKeyboard(
             params,
         )
         return index?.let { textKeys[it] } ?: rectKey?.takeIf { !it.attrs.gap }
+    }
+
+    private fun textKeysOf(layerId: K3LayerId): List<TouchKey> {
+        val layer = if (layerId == ImeLayerIds.Caps) {
+            layers[layerId] ?: layers[ImeLayerIds.Shift] ?: layers[ImeLayerIds.Base]
+        } else {
+            layers[layerId] ?: layers[ImeLayerIds.Base]
+        } ?: return emptyList()
+        return layer.keys.filter { it.isTextKey() }
+    }
+
+    /**
+     * DogBoard: the layer's letter keys (lowercase letter -> touch target in dp) and the touch
+     * parameters for them, for the word decoder. Empty if the layer has no letters.
+     */
+    fun letterTargets(
+        layerId: K3LayerId,
+        keyboardWidthDp: Float,
+        keyboardHeightDp: Float,
+        typingInterval: Double,
+    ): Pair<Map<Char, KeyTarget>, GaussianTouch.Params?> {
+        val keys = buildMap {
+            for (key in textKeysOf(layerId)) {
+                val text = (key.attrs.output as K3String).toText()
+                if (text.length == 1 && text[0].isLetter()) {
+                    put(text[0].lowercaseChar(), key.target(keyboardWidthDp, keyboardHeightDp))
+                }
+            }
+        }
+        if (keys.isEmpty()) return keys to null
+        return keys to GaussianTouch.params(medianHalfWidth(keys.values.toList()), typingInterval)
     }
 
     companion object {
@@ -156,6 +174,16 @@ class TouchLayer(
 }
 
 // DogBoard: keys that type text (letters, digits, punctuation), as opposed to function keys
+private fun TouchKey.target(keyboardWidthDp: Float, keyboardHeightDp: Float) = KeyTarget(
+    centerX = bounds.center.x * keyboardWidthDp,
+    centerY = bounds.center.y * keyboardHeightDp,
+    halfWidth = bounds.width * keyboardWidthDp / 2f,
+    halfHeight = bounds.height * keyboardHeightDp / 2f,
+)
+
+private fun medianHalfWidth(targets: List<KeyTarget>): Double =
+    targets.map { it.halfWidth }.sorted()[targets.size / 2].toDouble()
+
 fun TouchKey.isTextKey(): Boolean {
     val output = attrs.output
     return !attrs.gap && attrs.layerId == null && output is K3String && output != " ".asK3String() &&

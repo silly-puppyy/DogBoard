@@ -26,6 +26,7 @@ ACTIVITY = f"{PKG}/io.github.sillypuppyy.dogboard.imetest.ImeTestActivity"
 ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
 ROW_X0 = [0.0, 0.5, 48 / 37.5 + 8 / 37.5]  # row 3 starts after shift + gap
 SPACE_CENTER_X = (46.5 + 47 + 188 / 2) / 37.5
+BACKSPACE_CENTER_X = 10 - 1.28 / 2
 DP_PER_MM = 6.3
 
 CASES = [
@@ -33,11 +34,18 @@ CASES = [
     ("the quick brown fox", "The quick brown fox"),
     ("jumps over the lazy dog", "Jumps over the lazy dog"),
     ("see you  soon", "See you. Soon"),  # double-space period, then auto-shift
+    ("teh dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
+    ("i dont know", "I don't know"),
+    ("teh <dog", "Tehdog"),  # "<" is backspace: right after an autocorrection it restores the typed word
 ]
 
 
 def adb(serial, *args):
-    return subprocess.run([ADB, "-s", serial, *args], capture_output=True, text=True).stdout
+    try:
+        return subprocess.run([ADB, "-s", serial, *args], capture_output=True, text=True, timeout=30).stdout
+    except subprocess.TimeoutExpired:
+        print(f"FAIL: adb {' '.join(args)} timed out (device gone?)")
+        sys.exit(3)
 
 
 def last_match(serial, tag, pattern):
@@ -69,6 +77,8 @@ def settled_geometry(serial, tries=80):
 def key_center_units(ch):
     if ch == " ":
         return SPACE_CENTER_X, 3
+    if ch == "<":
+        return BACKSPACE_CENTER_X, 2
     for row, letters in enumerate(ROWS):
         i = letters.find(ch)
         if i >= 0:

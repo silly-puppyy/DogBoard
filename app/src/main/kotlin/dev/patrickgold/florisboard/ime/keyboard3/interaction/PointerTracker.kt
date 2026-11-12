@@ -45,6 +45,8 @@ import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKey
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKeyboard
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import io.github.sillypuppyy.dogboard.feel.DeleteRepeat
+import io.github.sillypuppyy.dogboard.engine.Tap
+import dev.patrickgold.florisboard.ime.keyboard3.touch.isTextKey
 import io.github.sillypuppyy.dogboard.touch.TypingSpeed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -165,6 +167,16 @@ class PointerTracker(
             keyboardHeightDp = size.height / density,
             typingInterval = typingSpeed.interval,
         ) ?: return
+        // DogBoard: remember where letter keys were tapped, for the word decoder
+        if (downKey.isTextKey()) {
+            val widthDp = size.width / density
+            val heightDp = size.height / density
+            val (letterKeys, params) = touchKeyboard.letterTargets(downLayerId, widthDp, heightDp, typingSpeed.interval)
+            val normalized = down.position.normalized(size)
+            imeController.notePendingTap(Tap(normalized.x * widthDp, normalized.y * heightDp), letterKeys, params)
+        } else {
+            imeController.notePendingTap(null, emptyMap(), null)
+        }
 
         val timingOptions = interactionController.activeTimingOptions.value
         val keyRepeatTimeout = timingOptions.getKeyRepeatTimeout(downKey.attrs.output)

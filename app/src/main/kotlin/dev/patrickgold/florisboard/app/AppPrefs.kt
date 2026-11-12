@@ -161,6 +161,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__double_space_period",
             default = true,
         )
+        // DogBoard: replace a mistyped word when it is finished; backspace right after restores it
+        val autocorrect = boolean(
+            key = "correction__autocorrect",
+            default = true,
+        )
     }
 
     val devtools = Devtools()
@@ -625,13 +630,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "suggestion__api30_inline_suggestions_enabled",
             default = true,
         )
+        // DogBoard: suggestions on, three fixed slots like iOS
         val enabled = boolean(
             key = "suggestion__enabled",
-            default = false,
+            default = true,
         )
         val displayMode = enum(
             key = "suggestion__display_mode",
-            default = CandidatesDisplayMode.DYNAMIC_SCROLLABLE,
+            default = CandidatesDisplayMode.CLASSIC,
         )
         val blockPossiblyOffensive = boolean(
             key = "suggestion__block_possibly_offensive",

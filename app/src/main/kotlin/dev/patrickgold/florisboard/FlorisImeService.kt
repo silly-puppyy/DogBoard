@@ -64,6 +64,7 @@ import dev.patrickgold.florisboard.lib.devtools.flogWarning
 import dev.patrickgold.florisboard.lib.util.InputMethodUtils
 import dev.patrickgold.florisboard.lib.util.debugSummarize
 import dev.patrickgold.florisboard.lib.util.launchActivity
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import org.florisboard.lib.android.AndroidInternalR
@@ -279,6 +280,18 @@ class FlorisImeService : LifecycleInputMethodService() {
         io.github.sillypuppyy.dogboard.perf.Perf.mark("service onCreate") // DogBoard: startup timing
         FlorisImeServiceReference = WeakReference(this)
         systemLocalesFlow.value = resources.configuration.locales
+
+        // DogBoard: word engine feeding the suggestion strip; the dictionary loads in the background
+        imeController.suggestionSink = { strip ->
+            nlpManager.suggestDirectly(strip.map { io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(it) })
+        }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
+                io.github.sillypuppyy.dogboard.engine.TypingEngine.load {
+                    assets.open("dogboard/en.lexicon.tsv").bufferedReader()
+                }
+            }
+        }
 
         WindowCompat.setDecorFitsSystemWindows(window.window!!, false)
         windowController.onConfigurationChanged(resources.configuration)
