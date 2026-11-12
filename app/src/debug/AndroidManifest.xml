@@ -3,7 +3,7 @@
     <application>
         <!-- DogBoard: debug-only screen for automated keyboard startup tests -->
         <activity
-            android:name="io.github.sillypuppyy.dogboard.debug.ImeTestActivity"
+            android:name="io.github.sillypuppyy.dogboard.imetest.ImeTestActivity"
             android:exported="true"
             android:process=":imetest"
             android:taskAffinity="io.github.sillypuppyy.dogboard.imetest"
