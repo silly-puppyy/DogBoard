@@ -62,6 +62,8 @@ result
 
 # Rust
 debug/
+# DogBoard: keep the app debug source set (test screen, debug manifest)
+!/app/src/debug/
 target/
 **/*.rs.bk
 *.pdb

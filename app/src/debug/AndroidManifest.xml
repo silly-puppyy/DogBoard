@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- DogBoard: debug-only screen for automated keyboard startup tests -->
+        <activity
+            android:name="io.github.sillypuppyy.dogboard.debug.ImeTestActivity"
+            android:exported="true"
+            android:process=":imetest"
+            android:taskAffinity="io.github.sillypuppyy.dogboard.imetest"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar"
+            android:windowSoftInputMode="stateAlwaysVisible" />
+    </application>
+</manifest>
