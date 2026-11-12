@@ -45,6 +45,7 @@ import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKey
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKeyboard
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import io.github.sillypuppyy.dogboard.feel.DeleteRepeat
+import io.github.sillypuppyy.dogboard.touch.TypingSpeed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -116,7 +117,12 @@ class PointerTracker(
     val interactionController: InteractionController,
     val showSimplePopups: Boolean,
     val peekDistanceSqMin: Float,
+    // DogBoard: pixels per dp, for the touch model
+    val density: Float = 1f,
 ) {
+    // DogBoard: smoothed press interval, widens the touch spread when typing fast
+    private val typingSpeed = TypingSpeed()
+
     private val mutationGuard = Mutex()
 
     val trackedPeekPointer: StateFlow<TrackedPointer.Peek?>
@@ -150,7 +156,15 @@ class PointerTracker(
         }
 
         val downLayerId = imeController.snapshotState().touchLayerId
-        val downKey = touchKeyboard.findKey(downLayerId, down.position.normalized(size)) ?: return
+        // DogBoard: text keys are resolved with the Gaussian touch model
+        typingSpeed.onPress(down.uptimeMillis)
+        val downKey = touchKeyboard.findKeyForTap(
+            layerId = downLayerId,
+            position = down.position.normalized(size),
+            keyboardWidthDp = size.width / density,
+            keyboardHeightDp = size.height / density,
+            typingInterval = typingSpeed.interval,
+        ) ?: return
 
         val timingOptions = interactionController.activeTimingOptions.value
         val keyRepeatTimeout = timingOptions.getKeyRepeatTimeout(downKey.attrs.output)
@@ -464,7 +478,10 @@ fun rememberPointerTracker(
     val peekDistanceSqMin = with(density) { 30.dp.toPx().pow(2) }
 
     val pointerTracker = remember(touchKeyboard, showSimplePopups) {
-        PointerTracker(touchKeyboard, imeController, interactionController, showSimplePopups, peekDistanceSqMin)
+        PointerTracker(
+            touchKeyboard, imeController, interactionController, showSimplePopups, peekDistanceSqMin,
+            density = density.density,
+        )
     }
 
     return pointerTracker

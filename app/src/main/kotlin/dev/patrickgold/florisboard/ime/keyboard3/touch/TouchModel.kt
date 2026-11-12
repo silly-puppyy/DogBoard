@@ -25,6 +25,8 @@ import dev.patrickgold.florisboard.ime.keyboard3.hint.LongPressKeyHintPlacement
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import io.github.sillypuppyy.dogboard.touch.GaussianTouch
+import io.github.sillypuppyy.dogboard.touch.KeyTarget
 import org.k3lp.lib.meta.source.SourceFileRef
 import org.k3lp.lib.text.K3Descriptor
 import org.k3lp.lib.text.K3String
@@ -85,6 +87,53 @@ class TouchKeyboard(
         return null
     }
 
+    // DogBoard: probabilistic key resolution for text keys
+    /**
+     * Resolves a tap like [findKey], but text keys compete through a Gaussian touch model instead
+     * of strict rectangles. Function keys (shift, delete, space, layer switches, ...) keep their
+     * rectangles: a tap inside one always goes to it.
+     *
+     * @param keyboardWidthDp keyboard width in dp
+     * @param keyboardHeightDp keyboard height (key rows only) in dp
+     * @param typingInterval smoothed time between presses in seconds
+     */
+    fun findKeyForTap(
+        layerId: K3LayerId,
+        position: Offset,
+        keyboardWidthDp: Float,
+        keyboardHeightDp: Float,
+        typingInterval: Double,
+    ): TouchKey? {
+        val rectKey = findKey(layerId, position)
+        if (rectKey != null && !rectKey.attrs.gap && !rectKey.isTextKey()) {
+            return rectKey
+        }
+        val layer = if (layerId == ImeLayerIds.Caps) {
+            layers[layerId] ?: layers[ImeLayerIds.Shift] ?: layers[ImeLayerIds.Base]
+        } else {
+            layers[layerId] ?: layers[ImeLayerIds.Base]
+        } ?: return rectKey
+        val textKeys = layer.keys.filter { it.isTextKey() }
+        if (textKeys.isEmpty()) return rectKey
+        val targets = textKeys.map { key ->
+            KeyTarget(
+                centerX = key.bounds.center.x * keyboardWidthDp,
+                centerY = key.bounds.center.y * keyboardHeightDp,
+                halfWidth = key.bounds.width * keyboardWidthDp / 2f,
+                halfHeight = key.bounds.height * keyboardHeightDp / 2f,
+            )
+        }
+        val medianHalfWidth = targets.map { it.halfWidth }.sorted()[targets.size / 2].toDouble()
+        val params = GaussianTouch.params(medianHalfWidth, typingInterval)
+        val index = GaussianTouch.pick(
+            targets,
+            position.x * keyboardWidthDp,
+            position.y * keyboardHeightDp,
+            params,
+        )
+        return index?.let { textKeys[it] } ?: rectKey?.takeIf { !it.attrs.gap }
+    }
+
     companion object {
         val NormalizedBounds = Rect(Offset.Zero, Size(1f, 1f))
 
@@ -104,6 +153,13 @@ class TouchLayer(
     companion object {
         val Empty = TouchLayer(emptyList())
     }
+}
+
+// DogBoard: keys that type text (letters, digits, punctuation), as opposed to function keys
+fun TouchKey.isTextKey(): Boolean {
+    val output = attrs.output
+    return !attrs.gap && attrs.layerId == null && output is K3String && output != " ".asK3String() &&
+        attrs.id != TouchKey.FnKeyId
 }
 
 class TouchKey(
