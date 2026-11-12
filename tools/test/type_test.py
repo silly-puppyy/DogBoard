@@ -32,6 +32,7 @@ CASES = [
     ("hello world", "Hello world"),
     ("the quick brown fox", "The quick brown fox"),
     ("jumps over the lazy dog", "Jumps over the lazy dog"),
+    ("see you  soon", "See you. Soon"),  # double-space period, then auto-shift
 ]
 
 

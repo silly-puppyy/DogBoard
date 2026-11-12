@@ -18,6 +18,7 @@ import dev.patrickgold.florisboard.ime.text.key.KeyCode
 package dev.patrickgold.florisboard.ime.keyboard3
 
 import android.icu.text.BreakIterator
+import android.os.SystemClock
 import android.text.TextUtils
 import android.view.KeyEvent
 import android.view.inputmethod.InputConnection
@@ -71,6 +72,7 @@ import org.k3lp.runtime.K3TextRange
 import java.lang.ref.WeakReference
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import io.github.sillypuppyy.dogboard.feel.DoubleSpace
 import io.github.sillypuppyy.dogboard.feel.WordDelete
 
 /**
@@ -94,6 +96,8 @@ class ImeController(
     private val breakIterators = BreakIterators()
     private val expectedContentQueue = ExpectedContentQueue()
     private var emitInterceptor = AtomicReference<EmitInterceptor?>(null)
+    // DogBoard: uptime of the last typed space, or null after any other edit (double-space period)
+    private var lastSpaceUptime: Long? = null
 
     val activeTouchModelOptions = combine<Any, TouchModelOptions>(
         prefs.keyboard.numberRow.asFlow(),
@@ -304,6 +308,7 @@ class ImeController(
                 flogDebug { "DEDUPLICATED!!1" }
                 return
             }
+            lastSpaceUptime = null
             resetContent(newSelection, state.editor.getSurroundingText(50, 10))
             expectedContentQueue.push(state.content)
         }
@@ -318,9 +323,33 @@ class ImeController(
         }
 
         override fun emitText(value: K3String) {
-            super.emitText(value)
+            if (value == SPACE) {
+                val now = SystemClock.uptimeMillis()
+                val since = lastSpaceUptime?.let { now - it }
+                if (doubleSpacePeriodAllowed() &&
+                    DoubleSpace.shouldInsertPeriod(state.content.surroundingText.textBefore, since)
+                ) {
+                    emitBackspace()
+                    super.emitText(PERIOD_SPACE)
+                    lastSpaceUptime = null
+                } else {
+                    super.emitText(value)
+                    lastSpaceUptime = now
+                }
+            } else {
+                super.emitText(value)
+                lastSpaceUptime = null
+            }
             expectedContentQueue.push(state.content)
             reevaluateInputShiftState()
+        }
+
+        // DogBoard
+        private fun doubleSpacePeriodAllowed(): Boolean {
+            val attrs = state.editor.info.inputAttributes
+            return prefs.correction.doubleSpacePeriod.get() &&
+                attrs.type == InputAttributes.Type.TEXT &&
+                attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS
         }
 
         override fun emitDescriptor(descriptor: K3Descriptor) {
@@ -425,6 +454,7 @@ class ImeController(
         }
 
         override fun emitBackspace() {
+            lastSpaceUptime = null
             super.emitBackspace()
             expectedContentQueue.push(state.content)
         }
@@ -678,6 +708,17 @@ enum class OperationScope {
     BEFORE_CURSOR,
     AFTER_CURSOR;
 }
+
+private val SPACE = " ".asK3String()
+private val PERIOD_SPACE = ". ".asK3String()
+private val NO_DOUBLE_SPACE_VARIATIONS = setOf(
+    InputAttributes.Variation.EMAIL_ADDRESS,
+    InputAttributes.Variation.WEB_EMAIL_ADDRESS,
+    InputAttributes.Variation.URI,
+    InputAttributes.Variation.PASSWORD,
+    InputAttributes.Variation.VISIBLE_PASSWORD,
+    InputAttributes.Variation.WEB_PASSWORD,
+)
 
 fun interface EmitInterceptor {
     fun onEmit(value: K3StringOrDescriptor)

@@ -62,4 +62,23 @@ class FeelTest : FunSpec({
             Haptics.frequencyHz(0.31f) shouldBe (111.0 plusOrMinus 1.0)
         }
     }
+
+    context("DoubleSpace") {
+        test("second space within 1.2 s after a word inserts a period") {
+            DoubleSpace.shouldInsertPeriod("hello ", 300) shouldBe true
+            DoubleSpace.shouldInsertPeriod("see 42 ", 1200) shouldBe true
+            DoubleSpace.shouldInsertPeriod("(really) ", 300) shouldBe true
+        }
+        test("too slow, or something else typed in between, does nothing") {
+            DoubleSpace.shouldInsertPeriod("hello ", 1201) shouldBe false
+            DoubleSpace.shouldInsertPeriod("hello ", null) shouldBe false
+        }
+        test("no period after punctuation, a second space, or an empty field") {
+            DoubleSpace.shouldInsertPeriod("hello. ", 300) shouldBe false
+            DoubleSpace.shouldInsertPeriod("hello, ", 300) shouldBe false
+            DoubleSpace.shouldInsertPeriod("hello  ", 300) shouldBe false
+            DoubleSpace.shouldInsertPeriod(" ", 300) shouldBe false
+            DoubleSpace.shouldInsertPeriod("hello", 300) shouldBe false
+        }
+    }
 })
