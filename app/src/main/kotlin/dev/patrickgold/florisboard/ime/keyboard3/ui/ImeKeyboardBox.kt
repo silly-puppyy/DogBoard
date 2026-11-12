@@ -99,7 +99,8 @@ fun ImeKeyboardBox(
     }
     LaunchedEffect(model, touchModelOptions) {
         activeTouchModel = withContext(Dispatchers.Default) {
-            imeController.touchModelCache.getOrComputeFor(model, touchModelOptions)
+            // DogBoard: startup timing
+            io.github.sillypuppyy.dogboard.perf.Perf.measure("touch model") { imeController.touchModelCache.getOrComputeFor(model, touchModelOptions) }
         }
     }
 

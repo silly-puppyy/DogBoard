@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.width
+import io.github.sillypuppyy.dogboard.feel.Geometry
 
 /**
  * The window constraints describe all relevant sizing minimums, maximums, defaults, and scaling factors
@@ -138,7 +139,12 @@ sealed class ImeWindowConstraints(rootInsets: ImeInsets.Root) {
                 ImeFormFactor.Type.PHONE_LANDSCAPE -> 0.47f
                 ImeFormFactor.Type.PHONE_PORTRAIT -> 0.26f
             }
-            (baselineScreen.height * factor).coerceIn(minKeyboardHeight, maxKeyboardHeight)
+            // DogBoard: fixed key-area heights on phones
+            when (formFactor.typeGuess) {
+                ImeFormFactor.Type.PHONE_PORTRAIT -> Geometry.keyAreaHeightPortrait(rootBounds.width)
+                ImeFormFactor.Type.PHONE_LANDSCAPE -> Geometry.KeyAreaHeightLandscape
+                else -> baselineScreen.height * factor
+            }.coerceIn(minKeyboardHeight, maxKeyboardHeight)
         }
 
         override val defKeyMarginH by calculation {
@@ -147,8 +153,9 @@ sealed class ImeWindowConstraints(rootInsets: ImeInsets.Root) {
                 ImeFormFactor.Type.LARGE_TABLET -> 6.dp
                 ImeFormFactor.Type.TABLET_LANDSCAPE -> 2.dp
                 ImeFormFactor.Type.TABLET_PORTRAIT -> 5.dp
-                ImeFormFactor.Type.PHONE_LANDSCAPE -> 2.dp
-                ImeFormFactor.Type.PHONE_PORTRAIT -> 2.dp
+                // DogBoard: phone key-cap spacing
+                ImeFormFactor.Type.PHONE_LANDSCAPE -> Geometry.KeyMarginHorizontal
+                ImeFormFactor.Type.PHONE_PORTRAIT -> Geometry.KeyMarginHorizontal
             }
         }
         override val defKeyMarginV by calculation {
@@ -157,8 +164,9 @@ sealed class ImeWindowConstraints(rootInsets: ImeInsets.Root) {
                 ImeFormFactor.Type.LARGE_TABLET -> 6.dp
                 ImeFormFactor.Type.TABLET_LANDSCAPE -> 5.dp
                 ImeFormFactor.Type.TABLET_PORTRAIT -> 5.dp
-                ImeFormFactor.Type.PHONE_LANDSCAPE -> 5.dp
-                ImeFormFactor.Type.PHONE_PORTRAIT -> 5.dp
+                // DogBoard: phone key-cap spacing
+                ImeFormFactor.Type.PHONE_LANDSCAPE -> Geometry.KeyMarginVerticalLandscape
+                ImeFormFactor.Type.PHONE_PORTRAIT -> Geometry.KeyMarginVerticalPortrait
             }
         }
 

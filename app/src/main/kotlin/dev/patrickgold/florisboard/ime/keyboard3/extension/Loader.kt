@@ -60,7 +60,8 @@ suspend fun loadFoundationKeyboard(imeController: ImeController, storage: Storag
     )
     // DogBoard: load our English QWERTY instead of the German QWERTZ placeholder
     val file = loadAssetFile("keyboard/qwerty-en.xml")
-    val result = file.compileToModel(importResolver, impliedImports)
+    // DogBoard: startup timing
+    val result = io.github.sillypuppyy.dogboard.perf.Perf.measure("layout compile") { file.compileToModel(importResolver, impliedImports) }
     for (report in result.reports) {
         flogError { report.cause?.stackTraceToString() ?: "" }
     }

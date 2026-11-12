@@ -276,6 +276,7 @@ class FlorisImeService : LifecycleInputMethodService() {
 
     override fun onCreate() {
         super.onCreate()
+        io.github.sillypuppyy.dogboard.perf.Perf.mark("service onCreate") // DogBoard: startup timing
         FlorisImeServiceReference = WeakReference(this)
         systemLocalesFlow.value = resources.configuration.locales
 
@@ -312,6 +313,7 @@ class FlorisImeService : LifecycleInputMethodService() {
     }
 
     override fun onCreateInputView(): View? {
+        io.github.sillypuppyy.dogboard.perf.Perf.mark("onCreateInputView") // DogBoard: startup timing
         super.installViewTreeOwners()
         val content = window.window!!.findViewById<ViewGroup>(android.R.id.content)
         content.addView(ImeRootView(this))
@@ -361,6 +363,7 @@ class FlorisImeService : LifecycleInputMethodService() {
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+        io.github.sillypuppyy.dogboard.perf.Perf.mark("onStartInputView") // DogBoard: startup timing
         flogInfo { "info=${info?.debugSummarize()} restarting=$restarting" }
         super.onStartInputView(info, restarting)
         if (info == null) return
@@ -410,6 +413,7 @@ class FlorisImeService : LifecycleInputMethodService() {
 
     override fun onWindowShown() {
         super.onWindowShown()
+        io.github.sillypuppyy.dogboard.perf.Perf.mark("onWindowShown") // DogBoard: startup timing
         if (windowController.onWindowShown()) {
             flogInfo(LogTopic.IMS_EVENTS)
         } else {
