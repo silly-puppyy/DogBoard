@@ -79,4 +79,24 @@ class EngineEvalTest : FunSpec({
             r.broken shouldBeLessThan 0.03
         }
     }
+
+    test("per-keystroke decode time (printed; the phone is roughly 2-3x slower)") {
+        val rng = Random(11)
+        val times = ArrayList<Double>()
+        repeat(400) {
+            val word = sample(rng)
+            val taps = word.lowercase().map { c -> keys.getValue(c).let { Tap(it.centerX, it.centerY) } }
+            for (n in 1..taps.size) {
+                val t0 = System.nanoTime()
+                decoder.decode(taps.subList(0, n), keys, params)
+                times.add((System.nanoTime() - t0) / 1e6)
+            }
+        }
+        val measured = times.drop(times.size / 4).sorted() // skip JIT warm-up
+        println(
+            "EVAL per-keystroke decode: mean %.2f ms, p95 %.2f ms, max %.2f ms over %d prefixes".format(
+                measured.average(), measured[(measured.size * 0.95).toInt()], measured.last(), measured.size,
+            )
+        )
+    }
 })

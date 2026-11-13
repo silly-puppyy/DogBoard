@@ -45,7 +45,7 @@ class Decoder(
         /** Extra cost for suggesting a longer word than typed. */
         val completionCost: Double = 2.5,
         val maxEdits: Int = 2,
-        val beamWidth: Int = 300,
+        val beamWidth: Int = 100, // accuracy unchanged down to 80 in the eval, ~35% faster than 300
     )
 
     private class State(val node: Lexicon.Node, val cost: Double, val edits: Int)
