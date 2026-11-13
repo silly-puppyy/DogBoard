@@ -37,7 +37,7 @@ class EngineEvalTest : FunSpec({
 
     data class Result(val literal: Double, val corrected: Double, val broken: Double, val msPerWord: Double)
 
-    fun run(sigmaXmm: Double, sigmaYmm: Double, n: Int = 2000, seed: Long = 7): Result {
+    fun run(sigmaXmm: Double, sigmaYmm: Double, n: Int = 2000, seed: Long = 7, ac: Autocorrect = autocorrect): Result {
         val rng = Random(seed)
         var literalOk = 0
         var correctedOk = 0
@@ -55,7 +55,7 @@ class EngineEvalTest : FunSpec({
             val literal = String(taps.map { nearestKey(it.x, it.y) }.toCharArray())
             val t0 = System.nanoTime()
             val candidates = decoder.decode(taps, keys, params, typed = literal)
-            val final = autocorrect.correction(literal, candidates) ?: literal
+            val final = ac.correction(literal, candidates) ?: literal
             nanos += System.nanoTime() - t0
             val isLiteralOk = literal.equals(word, ignoreCase = true)
             val isFinalOk = final.equals(word, ignoreCase = true)
@@ -98,5 +98,23 @@ class EngineEvalTest : FunSpec({
                 measured.average(), measured[(measured.size * 0.95).toInt()], measured.last(), measured.size,
             )
         )
+    }
+
+    test("autocorrect level sweep (settings-model.md §4)").config(enabled = System.getenv("DOGBOARD_SWEEP") == "1") {
+        run(1.5, 2.0, n = 200, seed = 1)
+        val levels = buildList {
+            for (lead in listOf(1.0, 1.5, 2.0, 3.0, 5.0, 10.0, 20.0)) add("lead %.1f".format(lead) to Autocorrect.Level.STANDARD.copy(leadOverTyped = lead))
+            for (stems in listOf(Triple(7, 5, 4), Triple(6, 5, 3), Triple(5, 4, 3), Triple(4, 3, 3))) {
+                for (dom in listOf(2.7, 1.8, 1.3)) {
+                    add("stems ${stems.toList()} dom $dom" to Autocorrect.Level(dom, stems.first, stems.second, stems.third))
+                }
+            }
+        }
+        for ((sx, sy) in listOf(1.5 to 2.0, 2.2 to 3.2)) {
+            for ((name, level) in levels) {
+                val r = run(sx, sy, n = 3000, ac = Autocorrect(lexicon, level))
+                println("LEVEL sigma %.1fx%.1f %-32s right %.2f%% broken %.2f%%".format(sx, sy, name, r.corrected * 100, r.broken * 100))
+            }
+        }
     }
 })

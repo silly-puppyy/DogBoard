@@ -166,6 +166,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__autocorrect",
             default = true,
         )
+        // DogBoard: how readily words are changed (design: Gentle / Standard / Strong; Standard is iOS)
+        val autocorrectLevel = enum(
+            key = "correction__autocorrect_level",
+            default = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.STANDARD,
+        )
     }
 
     val devtools = Devtools()

@@ -69,3 +69,4 @@ target/
 *.pdb
 __pycache__/
 tools/test/taptype/taptype
+.kotlin/

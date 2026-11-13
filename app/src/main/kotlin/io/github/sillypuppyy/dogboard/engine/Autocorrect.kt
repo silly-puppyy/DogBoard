@@ -10,15 +10,29 @@ import kotlin.math.ln
  * wins unless it is the typed word itself; completions of what was typed need a long enough stem
  * and a clear lead over the runner-up.
  */
-class Autocorrect(private val lexicon: Lexicon) {
-    companion object {
+class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level = Level.STANDARD) {
+    /**
+     * How readily words are changed (design: Gentle / Standard / Strong; Off is not calling this).
+     * Standard is iOS; the others were measured on the eval words (settings-model.md §4).
+     */
+    data class Level(
         /** A completion must be this many times more likely than the next candidate. */
-        const val MIN_DOMINANCE_RATIO = 2.7
-
+        val dominanceRatio: Double,
         /** Minimum typed length for completing 1, 2, or 3+ more letters. */
-        private const val MIN_STEM_ONE_LETTER = 8
-        private const val MIN_STEM_TWO_LETTERS = 6
-        private const val MIN_STEM_MORE_LETTERS = 4
+        val minStemOneLetter: Int,
+        val minStemTwoLetters: Int,
+        val minStemMoreLetters: Int,
+        /** A correction must be this many times more likely than the typed letters as they are. */
+        val leadOverTyped: Double = 1.0,
+    ) {
+        companion object {
+            val STANDARD = Level(MIN_DOMINANCE_RATIO, 8, 6, 4)
+        }
+    }
+
+    companion object {
+        /** iOS MinSuggestionDominanceRatio. */
+        const val MIN_DOMINANCE_RATIO = 2.7
 
         /**
          * Rule 3: words run together are only split when the words are at least this likely in
@@ -53,6 +67,7 @@ class Autocorrect(private val lexicon: Lexicon) {
         candidates: List<Candidate>,
         previousCorrection: String? = null,
         case: (String) -> String? = inferredCase(typed),
+        level: Level = defaultLevel,
     ): String? {
         // iOS apply_case_changes: each candidate takes the typed capitals; ones the case rules
         // don't accept for this input are filtered out
@@ -65,6 +80,11 @@ class Autocorrect(private val lexicon: Lexicon) {
         if (t == typed) return null
         // Rule 2: never complete a one-letter word into a longer word ("a" -> "and").
         if (typed.length == 1 && t.length > 1 && t.startsWith(typed, ignoreCase = true)) return null
+        // Gentle and the like: a correction must also lead the typed letters by a margin
+        if (level.leadOverTyped > 1.0) {
+            val asTyped = candidates.firstOrNull { it.isTypedString || it.word.equals(typed, ignoreCase = true) }
+            if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return null
+        }
         // Rule 4: a correction that is not a completion of what was typed is taken as is.
         if (!(t.length >= typed.length && t.startsWith(typed))) return t
         // Rule 5: a completion needs a long enough stem (or a contraction-like ending, or the same
@@ -72,16 +92,16 @@ class Autocorrect(private val lexicon: Lexicon) {
         val gain = t.length - typed.length
         val specialEdit = t.substring(typed.length).any { it in SPECIAL_EDIT_CHARS }
         val minStem = when {
-            gain <= 1 -> MIN_STEM_ONE_LETTER
-            gain == 2 -> MIN_STEM_TWO_LETTERS
-            else -> MIN_STEM_MORE_LETTERS
+            gain <= 1 -> level.minStemOneLetter
+            gain == 2 -> level.minStemTwoLetters
+            else -> level.minStemMoreLetters
         }
         val stemOk = specialEdit || (previousCorrection != null && t.equals(previousCorrection, ignoreCase = true)) ||
             typed.length >= minStem
         if (!stemOk) return null
         val (second, s) = cased.getOrNull(1) ?: return t
         if (s.equals(t, ignoreCase = true) || s.startsWith(t, ignoreCase = true)) return t
-        return if (MIN_DOMINANCE_RATIO * exp(second.score) < exp(top.score)) t else null
+        return if (level.dominanceRatio * exp(second.score) < exp(top.score)) t else null
     }
 
     /**

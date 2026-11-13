@@ -81,6 +81,7 @@ import io.github.sillypuppyy.dogboard.engine.SuggestionStrip
 import io.github.sillypuppyy.dogboard.engine.Tap
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
 import io.github.sillypuppyy.dogboard.engine.isWordChar
+import io.github.sillypuppyy.dogboard.engine.leadingWord
 import io.github.sillypuppyy.dogboard.engine.previousContext
 import io.github.sillypuppyy.dogboard.engine.trailingWord
 import io.github.sillypuppyy.dogboard.feel.DoubleSpace
@@ -120,6 +121,20 @@ class ImeController(
     private class LastCorrection(val word: CurrentWord, val corrected: String, val separator: String)
     private var currentWord = CurrentWord()
     private var pendingTap: PendingTap? = null
+
+    /** DogBoard: the letter keys and touch parameters of the last letter tap, for words not typed just now. */
+    private var lastLetterKeys: Map<Char, KeyTarget> = emptyMap()
+    private var lastLetterParams: GaussianTouch.Params? = null
+
+    /**
+     * DogBoard: the last finished word, kept while only a plain space follows it, so the next word
+     * can still change it (iOS retrocorrection reaches back across spaces, not punctuation).
+     */
+    private class LookBack(val word: io.github.sillypuppyy.dogboard.engine.CurrentWord, val committed: String, val context: String?)
+    private var lookBack: LookBack? = null
+
+    /** DogBoard: the word the cursor rests in (text before and after it) while the bar offers corrections for it. */
+    private var wordAroundCursor: Pair<String, String>? = null
     private var lastCorrection: LastCorrection? = null
 
     // DogBoard: an autocorrection that was made, until the next word shows it was kept (iOS
@@ -158,6 +173,10 @@ class ImeController(
     /** DogBoard: where the next letter key was tapped (set on touch down, used when it emits). */
     fun notePendingTap(tap: Tap?, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
         pendingTap = PendingTap(tap, keys, params)
+        if (keys.isNotEmpty() && params != null) {
+            lastLetterKeys = keys
+            lastLetterParams = params
+        }
     }
 
     val activeTouchModelOptions = combine<Any, TouchModelOptions>(
@@ -511,6 +530,7 @@ class ImeController(
         /** Called before a word separator is typed: autocorrects the finished word. */
         private fun finishWord(separator: String) {
             lastCorrection = null
+            retrocorrect()
             confirmKeptCorrection()
             confirmAcceptedWord()
             val word = currentWord
@@ -522,7 +542,7 @@ class ImeController(
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
                     ?: TypingEngine.candidates(word, context)
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
-                val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes())
+                val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get())
                 if (BuildConfig.DEBUG) {
                     android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context)} " +
                         candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
@@ -534,12 +554,38 @@ class ImeController(
                         scope.launch { TypingEngine.noteCorrected(typed, corrected) }
                     }
                     noteFinishedWord(context, corrected)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context)
                 } else {
                     noteFinishedWord(context, typed)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context)
                 }
+            } else if (!word.isEmpty && separator == " " && word.text != rejectedWord) {
+                lookBack = null // autocorrect off or the user insisted on this word: nothing to look back at
             }
+            if (separator != " ") lookBack = null
             currentWord.clear()
             rejectedWord = null
+        }
+
+        /**
+         * iOS retrocorrection: the word finished before this one may change now that this one
+         * gives it context ("I lobe you" -> "I love you"). Runs before this word is corrected, so
+         * its correction sees the fixed context.
+         */
+        private fun retrocorrect() {
+            val back = lookBack ?: return
+            lookBack = null
+            val word = currentWord
+            if (word.isEmpty || !correctionAllowed() || cursorInsideWord() || state.flags.isIncognitoMode) return
+            val typed = word.text
+            if (!state.content.surroundingText.textBefore.endsWith("${back.committed} $typed")) return
+            val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes())
+                ?: return
+            if (!replaceBeforeCursor("${back.committed} $typed", "$newPrevious $typed")) return
+            if (BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "retro ${back.committed} -> $newPrevious before $typed")
+            // the earlier word's pending learning and kept-correction now refer to the new word
+            unconfirmedWord = unconfirmedWord?.let { (ctx, w) -> if (w == back.committed) ctx to newPrevious else ctx to w }
+            unconfirmedCorrection = null
         }
 
         /** Backspace right after an autocorrection restores what was typed. */
@@ -557,8 +603,43 @@ class ImeController(
             return true
         }
 
+        /** Corrections for the word the cursor rests in ([before] + [after] the cursor), decoded from key centres. */
+        private fun publishWordAroundCursor(sink: (List<Suggestion>) -> Unit, before: String, after: String) {
+            val whole = before + after
+            val word = CurrentWord().apply { seedFrom(whole, lastLetterKeys, lastLetterParams) }
+            if (word.tapsOrNull() == null || whole.none { it.isLetter() }) {
+                sink(emptyList())
+                return
+            }
+            val textBefore = state.content.surroundingText.textBefore
+            val context = previousContext(textBefore.subSequence(0, textBefore.length - before.length))
+            val curly = curlyApostrophes()
+            wordAroundCursor = before to after
+            suggestionJob = scope.launch {
+                val candidates = TypingEngine.candidates(word, context)
+                if (isActive) sink(SuggestionStrip.build(whole, candidates, null, TypingEngine.caseFor(word, curly), null))
+            }
+        }
+
+        /** Replaces the word the cursor rests in with [replacement]; the cursor ends up after it. */
+        private fun acceptForWordAroundCursor(suggestion: Suggestion): Boolean {
+            val (before, after) = wordAroundCursor ?: return false
+            wordAroundCursor = null
+            val surrounding = state.content.surroundingText
+            if (!surrounding.textBefore.endsWith(before) || !surrounding.textAfter.startsWith(after)) return false
+            if (suggestion.kind == Suggestion.Kind.EMOJI) return false
+            repeat(after.length) { emitForwardDelete() } // keeps the controller's copy of the text in step
+            if (!replaceBeforeCursor(before, suggestion.word)) return false
+            if (suggestion.kind == Suggestion.Kind.LITERAL) learnWord(suggestion.word)
+            lastCorrection = null
+            rejectedWord = null
+            publishSuggestions()
+            return true
+        }
+
         /** Commits a suggestion-strip pick in place of the current word, followed by a space. */
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
+            if (currentWord.isEmpty && wordAroundCursor != null) return acceptForWordAroundCursor(suggestion)
             val typed = currentWord.text
             if (suggestion.kind == Suggestion.Kind.EMOJI) return acceptEmojiSuggestion(typed, suggestion.word)
             if (typed.isEmpty() && suggestion.kind != Suggestion.Kind.PREDICTION) return false
@@ -626,6 +707,7 @@ class ImeController(
         }
 
         private fun resetWordTracking() {
+            lookBack = null
             currentWord.clear()
             pendingTap = null
             lastCorrection = null
@@ -675,12 +757,34 @@ class ImeController(
         private fun publishSuggestions() {
             val sink = suggestionSink ?: return
             suggestionJob?.cancel()
-            if (!wordEngineAllowed() || state.content.selection.isNotCollapsed() || cursorInsideWord()) {
+            wordAroundCursor = null
+            if (!wordEngineAllowed() || state.content.selection.isNotCollapsed()) {
+                sink(emptyList())
+                return
+            }
+            if (currentWord.isEmpty) {
+                // the cursor rests in or after a word not typed just now: offer corrections for the
+                // whole word (iOS and Gboard do), picking one replaces it
+                val before = trailingWord(state.content.surroundingText.textBefore)
+                val after = leadingWord(state.content.surroundingText.textAfter)
+                if ((before.isNotEmpty() || after.isNotEmpty()) && prefs.suggestion.enabled.get()) {
+                    publishWordAroundCursor(sink, before, after)
+                    return
+                }
+            }
+            if (cursorInsideWord()) {
                 sink(emptyList())
                 return
             }
             val context = wordContext()
+            // iOS "Predictive" off: no predictions or other words, but the bar still shows the
+            // autocorrection and the typed word
+            val predictive = prefs.suggestion.enabled.get()
             if (currentWord.isEmpty) {
+                if (!predictive) {
+                    sink(emptyList())
+                    return
+                }
                 // next-word predictions, only right after a space or at the start of the text
                 val textBefore = state.content.surroundingText.textBefore
                 if (textBefore.isNotEmpty() && !textBefore.last().isWhitespace()) {
@@ -697,19 +801,26 @@ class ImeController(
             val word = currentWord.snapshot()
             val rejected = rejectedWord
             val withCorrection = prefs.correction.autocorrect.get()
+            val level = prefs.correction.autocorrectLevel.get()
+            TypingEngine.blockNotSuggestible = prefs.suggestion.blockPossiblyOffensive.get()
             val textBefore = state.content.surroundingText.textBefore.toString()
             val app = state.editor.info.packageName
-            val emojiMode = if (state.flags.isIncognitoMode) io.github.sillypuppyy.dogboard.engine.EmojiSuggestionMode.OFF
-                else prefs.suggestion.emojiMode.get()
+            // off in incognito and with the emoji-suggestions switch (Media settings) off
+            val emojiMode = if (state.flags.isIncognitoMode || !prefs.emoji.suggestionEnabled.get()) {
+                io.github.sillypuppyy.dogboard.engine.EmojiSuggestionMode.OFF
+            } else prefs.suggestion.emojiMode.get()
             suggestionJob = scope.launch {
                 val candidates = TypingEngine.candidates(word, context)
                 latestDecode = decodeKey(word.text, context) to candidates
                 val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
-                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes()) else null
+                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
                 latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
                 latestCorrection = word.text to correction
                 val emoji = TypingEngine.emojiFor(textBefore, app, emojiMode, prefs.emoji.preferredSkinTone.get().id)
-                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word, curlyApostrophes()), emoji))
+                val strip = SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word, curlyApostrophes()), emoji)
+                if (isActive) {
+                    sink(if (predictive) strip else strip.filter { it.kind == Suggestion.Kind.LITERAL || it.kind == Suggestion.Kind.AUTOCORRECT })
+                }
             }
         }
 

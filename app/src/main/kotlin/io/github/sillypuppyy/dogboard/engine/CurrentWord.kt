@@ -105,6 +105,14 @@ fun trailingWord(textBefore: CharSequence, maxLength: Int = 48): String {
     return textBefore.substring(i)
 }
 
+/** The word chars at the start of [textAfter], at most [maxLength] of them ("" if it starts otherwise). */
+fun leadingWord(textAfter: CharSequence, maxLength: Int = 48): String {
+    var i = 0
+    while (i < textAfter.length && i < maxLength && isWordChar(textAfter[i])) i++
+    if (i < textAfter.length && isWordChar(textAfter[i])) return ""
+    return textAfter.substring(0, i)
+}
+
 /**
  * The context for the word that starts at the end of [textBefore]: the previous word in lowercase,
  * [Bigrams.START] at the start of the text or of a sentence, or null when the word follows

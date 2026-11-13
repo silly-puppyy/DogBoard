@@ -46,6 +46,10 @@ object TypingEngine {
      */
     private var noSuggest: Set<String> = emptySet()
 
+    /** The "block possibly offensive" setting: off lets never-suggest words be offered again. */
+    @Volatile
+    var blockNotSuggestible = true
+
     /** Words the user taught the keyboard (not in the shipped lexicon), lowercase. */
     private val learnedWords = HashSet<String>()
 
@@ -56,6 +60,13 @@ object TypingEngine {
             bigrams,
         )
         val autocorrect = Autocorrect(lexicon)
+
+        /** A second decoder for looking back at the previous word, so the live one keeps its search. */
+        val retroDecoder = Decoder(
+            lexicon,
+            Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
+            bigrams,
+        )
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
 
@@ -65,6 +76,9 @@ object TypingEngine {
 
     private const val USER_WORD_RANK = 3000
     private const val ACCEPTED_WORD_RANK = 30000
+
+    /** iOS NonRetrocorrectionBoostRatio: changing the previous word must win by 1.65x. */
+    private val RETRO_RATIO = kotlin.math.ln(1.65)
 
     val isReady: Boolean get() = loaded != null
 
@@ -171,14 +185,64 @@ object TypingEngine {
      * What [word] should become when it is finished, or null to keep it as typed.
      * [previousCorrection] is what this returned one keystroke earlier (iOS hysteresis).
      */
-    fun correction(word: CurrentWord, candidates: List<Candidate>, previousCorrection: String? = null, curly: Boolean = false): String? {
+    /**
+     * iOS retrocorrection: when [current] is finished, the word before it ([previous], committed as
+     * [previousCommitted] after [beforeContext]) may change too, if the two read much better
+     * together. Each of the previous word's top candidates is scored with the best reading of the
+     * current word after it; a different previous word must beat the committed one by
+     * [RETRO_RATIO] (iOS NonRetrocorrectionBoostRatio 1.65). Returns the new previous word, cased
+     * as it was typed, or null.
+     */
+    fun retrocorrection(
+        previous: CurrentWord,
+        previousCommitted: String,
+        beforeContext: String?,
+        current: CurrentWord,
+        curly: Boolean = false,
+    ): String? {
+        val engine = loaded ?: return null
+        val bigrams = engine.bigrams ?: return null // the look back needs a context model
+        val prevTaps = previous.tapsOrNull() ?: return null
+        val curTaps = current.tapsOrNull() ?: return null
+        if (previousCommitted.any { it.isDigit() } || isBlocked(previousCommitted)) return null
+        if (rejections.isBlocked(previous.text, previousCommitted)) return null
+        return lock.read {
+            val d = engine.retroDecoder
+            val prevCandidates = d.decode(
+                prevTaps, previous.keys, previous.params!!, 4, includeCompletions = false,
+                previous = engine.contextId(beforeContext), typed = previous.text,
+            ).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) }
+            fun joint(prevWord: String, prevScore: Double): Double {
+                val cur = d.decode(curTaps, current.keys, current.params!!, 1, includeCompletions = false,
+                    previous = bigrams.contextId(prevWord.lowercase()), typed = current.text)
+                return prevScore + (cur.firstOrNull()?.score ?: return Double.NEGATIVE_INFINITY)
+            }
+            val committed = prevCandidates.firstOrNull { it.word.equals(previousCommitted, ignoreCase = true) }
+                ?: return@read null // the committed word isn't even a candidate: nothing to compare with
+            val base = joint(committed.word, committed.score)
+            val best = prevCandidates
+                .filter { !it.word.equals(previousCommitted, ignoreCase = true) && !it.isTypedString }
+                .map { it to joint(it.word, it.score) }
+                .maxByOrNull { it.second } ?: return@read null
+            if (best.second - base < RETRO_RATIO) return@read null
+            caseFor(previous, curly)(best.first.word)?.takeIf { !rejections.isBlocked(previous.text, it) }
+        }
+    }
+
+    fun correction(
+        word: CurrentWord,
+        candidates: List<Candidate>,
+        previousCorrection: String? = null,
+        curly: Boolean = false,
+        level: AutocorrectLevel = AutocorrectLevel.STANDARD,
+    ): String? {
         val engine = loaded ?: return null
         // iOS: text replacements are tried before the engine, so a shortcut beats autocorrection
         replacementFor(word.text, word.flags, word.caseContext)?.let { phrase ->
             if (!rejections.isBlocked(word.text, phrase)) return phrase
         }
         if (candidates.isEmpty()) return null
-        val result = engine.autocorrect.correction(word.text, withoutLearnedTypo(word.text, candidates), previousCorrection, caseFor(word, curly))
+        val result = engine.autocorrect.correction(word.text, withoutLearnedTypo(word.text, candidates), previousCorrection, caseFor(word, curly), level.level)
             ?: return null
         return if (rejections.isBlocked(word.text, result)) null else result
     }
@@ -366,7 +430,7 @@ object TypingEngine {
 
     /** True if any word of [candidate] (one word, or several when words were split) is never offered. */
     private fun isNotSuggestible(candidate: String): Boolean =
-        noSuggest.isNotEmpty() && candidate.split(' ').any { it.lowercase() in noSuggest }
+        blockNotSuggestible && noSuggest.isNotEmpty() && candidate.split(' ').any { it.lowercase() in noSuggest }
 
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
 
