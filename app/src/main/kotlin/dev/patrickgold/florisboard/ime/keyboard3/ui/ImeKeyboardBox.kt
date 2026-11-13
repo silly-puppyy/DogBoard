@@ -259,6 +259,12 @@ fun ImeKeyboardBox(
                     layerId = touchLayerId.toString(),
                     shiftState = inputShiftState,
                     enterAction = enterAction,
+                    // the touch model swaps the email/URL bottom row into "base"/"shift" itself
+                    field = when (layoutVariation) {
+                        KeyVariation.EMAIL_ADDRESS -> "email"
+                        KeyVariation.URI -> "url"
+                        else -> "text"
+                    },
                     pressedKey = output?.downKey ?: trackedPeekPointer?.peekKey,
                     longPress = output?.longPress,
                     panel = livePanel,

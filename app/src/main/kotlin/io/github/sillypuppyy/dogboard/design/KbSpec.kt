@@ -280,6 +280,26 @@ object KbSpec {
                     listOf(mode("ABC", 1.8f), f(",", 1.1f), f("#+=", 1.9f), ch("0", 3f), f("=", 1.9f), f(".", 1.1f), retK(1.8f)),
                 )
             }
+            // FlorisBoard's number and phone pads, as its touch layers define them (4 x 4, with
+            // return); the design's 3 x 4 pads have no return key: question for the designer
+            "numpad" -> listOf(
+                listOf(ch("1", 2.5f), ch("2", 2.5f), ch("3", 2.5f), ch("-", 2.5f)),
+                listOf(ch("4", 2.5f), ch("5", 2.5f), ch("6", 2.5f), K("space", "spaceicon", 2.5f)),
+                listOf(ch("7", 2.5f), ch("8", 2.5f), ch("9", 2.5f), bksp(2.5f)),
+                listOf(ch(",", 2.5f), ch("0", 2.5f), ch(".", 2.5f), retK(2.5f)),
+            )
+            "telpad" -> listOf(
+                listOf(ch("1", 2.5f), ch("2", 2.5f), ch("3", 2.5f), ch("-", 2.5f)),
+                listOf(ch("4", 2.5f), ch("5", 2.5f), ch("6", 2.5f), K("space", "spaceicon", 2.5f)),
+                listOf(ch("7", 2.5f), ch("8", 2.5f), ch("9", 2.5f), bksp(2.5f)),
+                listOf(K("mode-telpad2", "mode", 2.5f, label = "+ * #"), ch("0", 2.5f), ch(".", 2.5f), retK(2.5f)),
+            )
+            "telpad2" -> listOf(
+                listOf(ch("(", 2.5f), ch("/", 2.5f), ch(")", 2.5f), ch("-", 2.5f)),
+                listOf(ch("N", 2.5f), K("pause", "fnchar", 2.5f, label = "Pause"), ch(",", 2.5f), K("space", "spaceicon", 2.5f)),
+                listOf(ch("*", 2.5f), K("wait", "fnchar", 2.5f, label = "Wait"), ch("#", 2.5f), bksp(2.5f)),
+                listOf(K("mode-telpad", "mode", 2.5f, label = "123"), ch("+", 2.5f), ch(".", 2.5f), retK(2.5f)),
+            )
             "phone", "decimal" -> {
                 fun d(n: String, sub: String) = K(n, "pad", 10f / 3, label = n, sub = if (plane == "phone") sub else "")
                 listOf(

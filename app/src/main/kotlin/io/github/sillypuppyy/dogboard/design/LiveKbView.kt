@@ -22,6 +22,8 @@ import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKey
 @Composable
 fun LiveKbView(
     layerId: String,
+    /** The field variant ("text", "email", "url"): the touch model keeps the layer id "base". */
+    field: String,
     shiftState: InputShiftState,
     enterAction: String,
     pressedKey: TouchKey?,
@@ -47,7 +49,7 @@ fun LiveKbView(
         val props = KbProps(
             dark = dark,
             plane = plane,
-            field = LiveKb.field(layerId),
+            field = field,
             shift = LiveKb.shift(shiftState),
             ret = if (enterAction in RET_WORDS) enterAction else "return",
             pressed = pressed,

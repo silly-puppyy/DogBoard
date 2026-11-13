@@ -31,13 +31,20 @@ class ImeTestActivity : Activity() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
         val field = EditText(this).apply {
             hint = "DogBoard test field"
-            // optional extra "field": email, url, name or caps, to test field-specific behaviour
+            // optional extra "field": email, url, name, caps, password, visiblepassword, number, decimal,
+            // phone or nosuggest, to test field-specific behaviour
             inputType = when (intent.getStringExtra("field")) {
                 "email" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
                 "url" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
                 "name" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PERSON_NAME or
                     InputType.TYPE_TEXT_FLAG_CAP_WORDS
                 "caps" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+                "password" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                "visiblepassword" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                "number" -> InputType.TYPE_CLASS_NUMBER
+                "decimal" -> InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                "phone" -> InputType.TYPE_CLASS_PHONE
+                "nosuggest" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
                 else -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             }
             // optional extra "action": send, search, go, next or multiline, for the return key's look

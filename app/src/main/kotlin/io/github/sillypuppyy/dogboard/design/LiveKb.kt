@@ -18,14 +18,12 @@ object LiveKb {
         layerId.startsWith("symbol-1") -> "symbol-1"
         layerId.startsWith("symbol-2") -> "symbol-2"
         layerId.startsWith("numeric") -> "numeric"
+        // number and phone fields: FlorisBoard's pads (k3 foundation layers-touch.xml), drawn
+        // key for key so the drawing matches the touch targets
+        layerId == "numpad" -> "numpad"
+        layerId == "telpad" -> "telpad"
+        layerId == "telpad2" -> "telpad2"
         else -> "base"
-    }
-
-    /** The design's field variant (bottom row) for a layout layer. */
-    fun field(layerId: String): String = when {
-        layerId.endsWith("-email") -> "email"
-        layerId.endsWith("-url") -> "url"
-        else -> "text"
     }
 
     fun shift(state: InputShiftState): String = when (state) {
@@ -48,6 +46,7 @@ object LiveKb {
             output == ImeActions.Enter -> "ret"
             key.attrs.id == TouchKey.FnKeyId -> "fn"
             key.isSuitableForSpaceBarDisplayOverride -> "space"
+            target != null && target.startsWith("telpad") -> "mode-$target"
             target != null -> "mode-" + when {
                 target.startsWith("symbol-2") -> "#+="
                 target.startsWith("symbol-1") -> "123"
