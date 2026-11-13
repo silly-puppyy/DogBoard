@@ -112,8 +112,11 @@ class Decoder(
         val nearby = Array(n) { i -> likelihood[i].entries.sortedByDescending { it.value }.take(NEARBY_KEYS).map { it.key }.toSet() }
         val nearest = CharArray(n) { i -> likelihood[i].maxBy { it.value }.key }
 
+        // keys beyond the touch model's pruning radius never match a tap (iOS key-match pruning)
+        val prune = params.pruneThreshold
         fun tapScore(c: Char, i: Int): Pair<Double, Int>? {
             val ll = likelihood[i][c] ?: return null
+            if (ll < prune) return null
             return if (c in nearby[i]) ll to 0 else (SUBSTITUTION + q[i] + ll) to 1
         }
 
@@ -151,10 +154,10 @@ class Decoder(
                     tapScore(c, i)?.let { (score, edit) -> offer(layers[i + 1], child, s.geometry + score, s.edits + edit) }
                     // Swapped pair: this tap belongs to the next letter, the next tap to this one.
                     val ll1 = if (i + 1 < n) likelihood[i + 1][c] else null
-                    if (ll1 != null) {
+                    if (ll1 != null && ll1 >= prune) {
                         lexicon.forEachChild(child) { c2, grandchild ->
                             val ll2 = likelihood[i][c2]
-                            if (c2 != c && ll2 != null) {
+                            if (c2 != c && ll2 != null && ll2 >= prune) {
                                 offer(layers[i + 2], grandchild, s.geometry + TRANSPOSITION + qRaw[i + 1] + ll1 + ll2, s.edits + 1)
                             }
                         }

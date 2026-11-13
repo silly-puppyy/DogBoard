@@ -1,8 +1,20 @@
 DogBoard word data
 
-en.lexicon.tsv
-  Converted from FlorisBoard's bundled English word list (app/src/main/assets/ime/dict/data.json,
-  FlorisBoard, Apache License 2.0) by tools/data/lexicon_from_florisboard.py.
+en.lexicon.tsv (built by tools/data/build_lexicon.py) is licensed under CC BY-SA 4.0
+(https://creativecommons.org/licenses/by-sa/4.0/), because it contains frequencies from wordfreq.
+It is built from:
+
+  SCOWL (Spell Checker Oriented Word Lists) 2020.12.07, http://wordlist.aspell.net/
+    The collective work is Copyright 2000-2018 by Kevin Atkinson and the contributors listed in
+    its copyright notice; used under that notice, included in full in licenses/SCOWL-Copyright.txt.
+  wordfreq 3.1.1 word frequencies, https://github.com/rspeer/wordfreq, data CC BY-SA 4.0,
+    by Robyn Speer and contributors, which draw on Wikipedia, OpenSubtitles (via OPUS),
+    SUBTLEX, NewsCrawl, GlobalVoices, Google Books Ngrams, Reddit and Twitter text.
+  Wikidata (https://www.wikidata.org), CC0: names of people, companies, brands, websites, apps.
+  US Census Bureau name frequency lists (1990 first names, 2010 surnames), public domain.
+  GeoNames (https://www.geonames.org), CC BY 4.0: names of cities, countries and regions.
+  Wikipedia "Lists of common misspellings/For machines", CC BY-SA 4.0: used only to leave
+    misspellings out.
 
 en.bigrams.tsv
   Word pair counts computed from English sentences of Tatoeba (https://tatoeba.org),
