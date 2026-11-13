@@ -47,7 +47,7 @@ CASES = [
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),
     ("hello{S-28}x", "Hexllo"),  # {S-28}: hold space, slide 28 dp left = 3 cursor steps (8 dp each), no space typed
-    ("abc {123}12 x", "Abc 12 x"),  # {123} = mode key; space on the 123 plane returns to letters  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
+    ("hey {123}12 x", "Hey 12 x"),  # {123} = mode key; space on the 123 plane returns to letters  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
 ]
 
 
