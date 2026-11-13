@@ -49,7 +49,15 @@ object LiveUi {
                 val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
                 kotlinx.coroutines.runBlocking { prefs.clipboard.historyEnabled.set(true) }
             }
-            // not wired yet: Select (selection mode), Dev keys, Incognito
+            "domino_mask" -> {
+                // incognito: FlorisBoard's "force incognito" setting, and this field at once
+                val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+                val on = !controller.activeState.value.flags.isIncognitoMode
+                kotlinx.coroutines.runBlocking { prefs.suggestion.forceIncognitoModeFromDynamic.set(on) }
+                controller.updateStateBlocking { state = state.copy(flags = state.flags.withIncognitoMode(on)) }
+                closePanel()
+            }
+            // not wired yet: Select (selection mode), Dev keys
         }
     }
 }

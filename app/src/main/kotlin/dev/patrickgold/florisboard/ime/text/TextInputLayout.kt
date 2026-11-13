@@ -82,6 +82,7 @@ fun TextInputLayout(
                 onBack = { ui.closePanel() },
                 // voice typing hands over to the system's voice keyboard (the design's own
                 // "Listening…" state needs in-keyboard speech recognition: later)
+                incognito = isIncognitoMode,
                 onMic = {
                     imeController.updateStateBlocking { emitDescriptor(dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ExternalVoiceInput) }
                 },

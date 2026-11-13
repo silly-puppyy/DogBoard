@@ -80,6 +80,7 @@ fun LiveKbBar(
     onTool: (String) -> Unit = {},
     onBack: () -> Unit = {},
     onMic: () -> Unit = {},
+    incognito: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -95,9 +96,11 @@ fun LiveKbBar(
             }
         }
         // the tool row replaces the suggestions while open; a panel shows its header instead
+        // incognito with nothing typed: the design's incognito note instead of predictions (Kb:131)
+        val incognitoNote = incognito && !toolRow && strip.none { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
         val props = KbProps(
-            dark = dark, slots = if (toolRow) null else slots, bar = if (toolRow) "tools" else "empty",
-            panel = panel, width = maxWidth.value, only = "bar",
+            dark = dark, slots = if (toolRow || incognitoNote) null else slots, bar = if (toolRow) "tools" else "empty",
+            panel = panel, width = maxWidth.value, only = "bar", incognito = incognito,
         )
         val render = remember(props) { KbSpec.render(props) }
         val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic) {
