@@ -39,7 +39,6 @@ import dev.patrickgold.florisboard.ime.keyboard3.hint.FlickKeyHintPlacement
 import dev.patrickgold.florisboard.ime.keyboard3.hint.LongPressKeyHintPlacement
 import dev.patrickgold.florisboard.ime.keyboard3.touch.FnKeyArrangement
 import dev.patrickgold.florisboard.ime.keyboard3.touch.InputShiftState
-import dev.patrickgold.florisboard.ime.keyboard3.touch.ShiftKeyBehavior
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchModelCache
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchModelOptions
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSuggestionType
@@ -842,21 +841,11 @@ class ImeController(
         }
 
         fun cycleInputShiftState(isDoubleTap: Boolean) {
-            val shiftKeyBehavior = prefs.typing.shiftKeyBehavior.get()
-            val oldInputShiftState = state.flags.inputShiftState
-            val newInputShiftState = when (shiftKeyBehavior) {
-                ShiftKeyBehavior.CAPSLOCK_BY_DOUBLE_TAP -> when {
-                    isDoubleTap -> InputShiftState.CAPS_LOCK
-                    oldInputShiftState == InputShiftState.UNSHIFTED -> InputShiftState.SHIFTED_MANUAL
-                    else -> InputShiftState.UNSHIFTED
-                }
-                ShiftKeyBehavior.CAPSLOCK_BY_CYCLE -> when (oldInputShiftState) {
-                    InputShiftState.UNSHIFTED -> InputShiftState.SHIFTED_MANUAL
-                    InputShiftState.SHIFTED_MANUAL -> InputShiftState.CAPS_LOCK
-                    InputShiftState.SHIFTED_AUTOMATIC -> InputShiftState.UNSHIFTED
-                    InputShiftState.CAPS_LOCK -> InputShiftState.UNSHIFTED
-                }
-            }
+            // DogBoard: the rule lives in ShiftKey (tested), with the "Enable Caps Lock" setting
+            val newInputShiftState = io.github.sillypuppyy.dogboard.feel.ShiftKey.next(
+                state.flags.inputShiftState, isDoubleTap,
+                prefs.typing.shiftKeyBehavior.get(), prefs.typing.capsLockEnabled.get(),
+            )
             state = state.copy(
                 touchLayerId = newInputShiftState.correspondingLayerId,
                 flags = state.flags.withInputShiftState(newInputShiftState),

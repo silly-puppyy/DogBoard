@@ -711,6 +711,16 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "typing__shift_key_behavior",
             default = ShiftKeyBehavior.CAPSLOCK_BY_DOUBLE_TAP,
         )
+        // DogBoard: iOS "Enable Caps Lock" (KeyboardCapsLock); off = a second shift tap just toggles
+        val capsLockEnabled = boolean(
+            key = "typing__caps_lock_enabled",
+            default = true,
+        )
+        // DogBoard: caps-lock double-tap window in ms (SetFeel:82: 150-600, default and iOS 300)
+        val capsLockDoubleTapMs = int(
+            key = "typing__caps_lock_double_tap_ms",
+            default = io.github.sillypuppyy.dogboard.feel.Timings.CapsLockDoubleTap.inWholeMilliseconds.toInt(),
+        )
     }
 
     override fun migrate(entry: PreferenceMigrationEntry): PreferenceMigrationEntry {

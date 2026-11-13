@@ -81,6 +81,9 @@ private class AndroidInteractionController(
             multiPressTimeout = system.multiPressTimeout,
             doubleTapTimeout = system.doubleTapTimeout,
         )
+    }.combine(prefs.typing.capsLockDoubleTapMs.asFlow()) { options, capsLockMs ->
+        // DogBoard: the caps-lock double-tap window is a setting (Feel › Advanced)
+        options.copy(doubleTapTimeout = capsLockMs.milliseconds)
     }.stateIn(scope, SharingStarted.Eagerly, InteractionTimingOptions.Default)
 
     override val activeFeedbackOptions = combine<Any, InteractionFeedbackOptions>(
