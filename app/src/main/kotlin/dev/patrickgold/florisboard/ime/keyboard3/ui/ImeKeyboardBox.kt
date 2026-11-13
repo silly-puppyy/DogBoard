@@ -289,7 +289,8 @@ fun ImeKeyboardBox(
                             media = media,
                             icon = if (video) "play_circle" else if (media) "image" else "",
                             label = if (video) "Video" else if (media) "Image" else "",
-                            text = item.text.orEmpty(),
+                            // clips the source app marked sensitive (passwords) are never shown in clear
+                            text = if (item.isSensitive) item.displayText(context) else item.text.orEmpty(),
                             pinned = item.isPinned,
                             thumbnail = if (media) { px -> io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, px) } else null,
                         )
