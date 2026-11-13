@@ -517,7 +517,7 @@ class ImeController(
             }
             expectedContentQueue.push(state.content)
             // iOS: on the 123 and #+= planes, space or an apostrophe returns to the letters
-            if ((value == SPACE || text == "'") && state.touchLayerId in SYMBOL_LAYERS) {
+            if ((value == SPACE || text == "'" || text == "’") && state.touchLayerId in SYMBOL_LAYERS) { // ’: smart quotes on
                 switchTouchLayer(ImeLayerIds.Base)
             }
             reevaluateInputShiftState()
@@ -676,6 +676,11 @@ class ImeController(
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
             if (currentWord.isEmpty && wordAroundCursor != null) return acceptForWordAroundCursor(suggestion)
             val typed = currentWord.text
+            // a chip from a strip built for an earlier keystroke must not replace the newer word
+            if (suggestion.forTyped != null && suggestion.forTyped != typed) {
+                publishSuggestions()
+                return false
+            }
             if (suggestion.kind == Suggestion.Kind.EMOJI) return acceptEmojiSuggestion(typed, suggestion.word)
             if (typed.isEmpty() && suggestion.kind != Suggestion.Kind.PREDICTION) return false
             val previous = wordContext()
