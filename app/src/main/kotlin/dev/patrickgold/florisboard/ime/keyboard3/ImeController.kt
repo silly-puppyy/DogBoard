@@ -539,8 +539,11 @@ class ImeController(
         private fun replaceBeforeCursor(old: String, new: String): Boolean {
             if (state.content.selection.isNotCollapsed()) return false
             if (!state.content.surroundingText.textBefore.endsWith(old)) return false
-            repeat(old.length) { rawBackspace() }
-            rawText(new)
+            // one batch: the app sees "teh" become "the", not "te", "t", "", "the"
+            state.editor.batch {
+                repeat(old.length) { rawBackspace() }
+                rawText(new)
+            }
             return true
         }
 

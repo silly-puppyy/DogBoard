@@ -83,6 +83,17 @@ open class ImeEditor(
         ic.endBatchEdit()
     }
 
+    /** DogBoard: runs [block]'s edits as one batch, so the app sees one change (batch edits nest). */
+    fun <T> batch(block: () -> T): T {
+        val ic = ic.get() ?: return block()
+        ic.beginBatchEdit()
+        try {
+            return block()
+        } finally {
+            ic.endBatchEdit()
+        }
+    }
+
     /** DogBoard: selects [start]..[end] in the field (the text-editing panel's selection mode). */
     fun setSelection(start: Int, end: Int) {
         val ic = ic.get() ?: return
