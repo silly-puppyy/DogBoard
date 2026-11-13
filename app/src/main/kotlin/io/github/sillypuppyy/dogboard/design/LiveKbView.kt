@@ -42,7 +42,8 @@ fun LiveKbView(
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f || maxHeight.value < 100f) return@BoxWithConstraints
         val plane = LiveKb.plane(layerId)
         val pressed = pressedKey?.let { LiveKb.keyId(it, plane) }.orEmpty()
-        val extended = longPress?.extendedKeys?.isNotEmpty() == true
+        // the bar is out only once the long-press delay has passed (extendedKeys is filled at touch-down)
+        val extended = longPress?.shouldShowExtendedPopup() == true
         val props = KbProps(
             dark = dark,
             plane = plane,
