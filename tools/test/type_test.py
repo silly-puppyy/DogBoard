@@ -39,7 +39,8 @@ CASES = [
     ("teh <dog", "Tehdog"),  # "<" is backspace: right after an autocorrection it restores the typed word
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
     ("abc", "ABC", "caps"),  # all-caps field
-    ("tehx{L}h ", "Tehh x"),  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
+    ("tehx{L}h ", "Tehh x"),
+    ("hello{S-40}x", "Hexllo"),  # {S-40}: drag 40 dp left on space = trackpad, 3 cursor steps, no space typed  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
 ]
 
 
@@ -148,9 +149,15 @@ def main():
         unit = w / 10.0
         row_h = h / rows
         noise_px = args.noise_mm * DP_PER_MM * density
-        for ch in re.findall(r"\{L\}|.", typed):
+        for ch in re.findall(r"\{L\}|\{S-?\d+\}|.", typed):
             if ch == "{L}":
                 adb(args.serial, "shell", "input", "keyevent", "KEYCODE_DPAD_LEFT")
+                time.sleep(args.delay)
+                continue
+            if ch.startswith("{S"):
+                dx = int(ch[2:-1]) * density
+                sx, sy = x0 + SPACE_CENTER_X * unit, y0 + 3.5 * row_h
+                adb(args.serial, "shell", "input", "swipe", str(int(sx)), str(int(sy)), str(int(sx + dx)), str(int(sy)), "400")
                 time.sleep(args.delay)
                 continue
             ux, row = key_center_units(ch)

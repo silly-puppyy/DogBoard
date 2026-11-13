@@ -46,6 +46,7 @@ import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKeyboard
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import io.github.sillypuppyy.dogboard.feel.DeleteRepeat
 import io.github.sillypuppyy.dogboard.engine.Tap
+import io.github.sillypuppyy.dogboard.feel.Trackpad
 import dev.patrickgold.florisboard.ime.keyboard3.touch.isTextKey
 import io.github.sillypuppyy.dogboard.touch.TypingSpeed
 import kotlinx.coroutines.CoroutineScope
@@ -63,10 +64,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.k3lp.lib.text.asK3String
 import org.k3lp.model.K3Model
 import org.k3lp.model.layer.K3LayerId
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.time.Duration
+
+private val SPACE = " ".asK3String()
 
 sealed interface TrackedPointer {
     val id: PointerId
@@ -91,6 +96,8 @@ sealed interface TrackedPointer {
         override val downKey: TouchKey,
         val longPress: LongPress,
         val repeatJob: Job?,
+        // DogBoard: space-bar trackpad; x (dp) where the last cursor step happened, null until active
+        val cursorAnchorDp: Float? = null,
     ) : TrackedPointer
 }
 
@@ -327,6 +334,10 @@ class PointerTracker(
             }
         }
         trackedOutputPointer.value?.takeIf { it.id == move.id }?.let { trackedPointer ->
+            if (trackedPointer.downKey.attrs.output == SPACE) {
+                moveCursorWithSpaceBar(trackedPointer, move)
+                return
+            }
             val longPress = trackedPointer.longPress
             if (longPress.shouldShowExtendedPopup()) {
                 val position = move.position.normalized(size).let { position ->
@@ -345,6 +356,30 @@ class PointerTracker(
                 }
             }
         }
+    }
+
+    /**
+     * DogBoard: dragging sideways on the space bar moves the cursor, one character per
+     * [Trackpad.STEP_DP]; it starts after [Trackpad.START_DP] so a slightly sloppy tap stays a space.
+     */
+    private suspend fun moveCursorWithSpaceBar(trackedPointer: TrackedPointer.Output, move: PointerInputChange) {
+        val xDp = move.position.x / density
+        var anchor = trackedPointer.cursorAnchorDp
+        if (anchor == null) {
+            if (abs(xDp - trackedPointer.down.position.x / density) < Trackpad.START_DP) return
+            trackedPointer.repeatJob?.cancel()
+            trackedPointer.longPress.extendedJob?.cancel()
+            anchor = xDp
+        }
+        val steps = ((xDp - anchor) / Trackpad.STEP_DP).toInt()
+        if (steps != 0) {
+            imeController.updateState {
+                val arrow = if (steps > 0) ImeActions.ArrowRight else ImeActions.ArrowLeft
+                repeat(abs(steps)) { emitDescriptor(arrow) }
+            }
+            anchor += steps * Trackpad.STEP_DP
+        }
+        trackedOutputPointer.value = trackedPointer.copy(cursorAnchorDp = anchor)
     }
 
     context(scope: CoroutineScope)
@@ -376,6 +411,7 @@ class PointerTracker(
             trackedPointer.repeatJob?.cancel()
             imeController.updateState {
                 val output = when {
+                    trackedPointer.cursorAnchorDp != null -> null // the space bar was used as a trackpad
                     trackedPointer.downKey == trackedMultiTapSeq.value?.touchKey -> null
                     trackedPointer.longPress.shouldShowExtendedPopup() -> {
                         trackedPointer.longPress.extendedKeys.getOrNull(trackedPointer.longPress.extendedFocusedIndex)
