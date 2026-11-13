@@ -18,18 +18,19 @@ class Bigrams private constructor(
     private val counts: IntArray,
     private val totals: LongArray,
 ) {
-    /** Id of the sentence-start context; word ids are 0 until lexicon size. */
-    val sentenceStart: Int get() = lexicon.size
+    /** Id of the sentence-start context; word ids are below it. */
+    val sentenceStart: Int = totals.size - 1
 
     /** Context id for a previous word (lowercase, or [START]); -1 if unknown. */
     fun contextId(previous: String): Int = if (previous == START) sentenceStart else lexicon.idOf(previous)
+        .takeIf { it < totals.size - 1 } ?: -1 // words added later have no pairs
 
     /**
      * ln P(word | previous), interpolated with the unigram probability so unseen pairs keep a
      * reasonable score. Returns [unigramLogProb] when [previous] is unknown or has no pairs.
      */
     fun logProb(previous: Int, word: Int, unigramLogProb: Double): Double {
-        if (previous < 0) return unigramLogProb
+        if (previous < 0 || previous >= totals.size) return unigramLogProb
         val total = totals[previous]
         if (total == 0L) return unigramLogProb
         val i = keys.binarySearch(key(previous, word))

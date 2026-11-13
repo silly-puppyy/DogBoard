@@ -423,6 +423,8 @@ class ImeController(
         private fun finishWord(separator: String) {
             lastCorrection = null
             val word = currentWord
+            // a reverted autocorrection that is finished unchanged is a word the user wants
+            if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
             if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord) {
                 val typed = word.text
                 val context = wordContext()
@@ -452,6 +454,7 @@ class ImeController(
             val typed = currentWord.text
             if (typed.isEmpty() && suggestion.kind != Suggestion.Kind.PREDICTION) return false
             if (!replaceBeforeCursor(typed, suggestion.word + " ")) return false
+            if (suggestion.kind == Suggestion.Kind.LITERAL) learnWord(suggestion.word)
             currentWord.clear()
             lastCorrection = null
             rejectedWord = null
@@ -459,6 +462,12 @@ class ImeController(
             reevaluateInputShiftState()
             publishSuggestions()
             return true
+        }
+
+        /** The user kept [word] against autocorrect: remember it, except in incognito mode. */
+        private fun learnWord(word: String) {
+            if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
+            scope.launch { TypingEngine.learn(word) }
         }
 
         private fun resetWordTracking() {

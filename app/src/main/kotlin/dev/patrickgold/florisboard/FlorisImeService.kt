@@ -290,6 +290,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                 io.github.sillypuppyy.dogboard.engine.TypingEngine.load(
                     openLexicon = { assets.open("dogboard/en.lexicon.tsv").bufferedReader() },
                     openBigrams = { assets.open("dogboard/en.bigrams.tsv").bufferedReader() },
+                    userWords = java.io.File(filesDir, "dogboard/user_words.txt"),
                 )
             }
             imeController.updateState { refreshSuggestions() }

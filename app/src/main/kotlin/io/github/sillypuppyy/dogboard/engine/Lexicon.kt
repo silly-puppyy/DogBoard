@@ -11,11 +11,38 @@ import kotlin.math.ln
  *     #dogboard-lexicon 1
  *     word<TAB>count
  */
-class Lexicon private constructor(val root: Node, private val words: Array<Node>) {
+class Lexicon private constructor(val root: Node, private val words: ArrayList<Node>) {
     val size: Int get() = words.size
 
     /** The word node with id [id] (ids are 0 until [size]). */
     fun node(id: Int): Node = words[id]
+
+    /**
+     * Adds [word] at probability [logProb], or raises an existing word to it; returns its id.
+     * Used for words the user taught the keyboard. Not thread-safe: callers must lock.
+     */
+    fun addWord(word: String, logProb: Double): Int {
+        val path = ArrayList<Node>(word.length + 1)
+        var node = root
+        path.add(node)
+        for (c in word) {
+            node = node.childOrCreate(c.lowercaseChar())
+            path.add(node)
+        }
+        if (!node.isWord) {
+            node.id = words.size
+            words.add(node)
+            node.word = word
+            node.logProb = logProb
+        } else if (logProb > node.logProb) {
+            node.logProb = logProb
+        }
+        for (n in path) {
+            val best = n.bestWord
+            if (best == null || node.logProb > best.logProb) n.bestWord = node
+        }
+        return node.id
+    }
 
     /** Id of [word] (case-insensitive), or -1. */
     fun idOf(word: String): Int = find(word)?.takeIf { it.isWord }?.id ?: -1
@@ -95,7 +122,7 @@ class Lexicon private constructor(val root: Node, private val words: Array<Node>
                 }
             }
             computeBest(root)
-            return Lexicon(root, words.toTypedArray())
+            return Lexicon(root, words)
         }
 
         fun parse(reader: BufferedReader): Lexicon {
