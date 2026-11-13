@@ -11,6 +11,9 @@ data class KbDevKey(
     val ind: Boolean, val indW: Float, val indMl: Float,
 )
 
+/** A live clipboard item for the panel (stage 2): text, or a media item with an icon and label. */
+data class KbClipData(val media: Boolean, val icon: String, val label: String, val text: String, val pinned: Boolean)
+
 data class KbClip(
     val media: Boolean, val icon: String, val label: String, val text: String, val pinned: Boolean,
     val selected: Boolean, val bg: Color, val ring: List<CssShadow>,
@@ -69,7 +72,7 @@ object KbExtrasSpec {
         // Kb:647-662
         val pClip = panel == "clipboard"; val pEmoji = panel == "emoji"; val pTools = panel == "tools"; val pEdit = panel == "edit"
         data class Raw(val media: Boolean = false, val icon: String = "", val label: String = "", val text: String = "", val pinned: Boolean = false, val selected: Boolean = false)
-        val clipsRaw = listOf(
+        val clipsRaw = P.clips?.map { Raw(it.media, it.icon, it.label, it.text, it.pinned) } ?: listOf(
             Raw(media = true, icon = "image", label = "Image", pinned = true),
             Raw(text = "Meet at the dog park at 6?", pinned = true),
             Raw(text = "github.com/silly-puppyy/DogBoard"),

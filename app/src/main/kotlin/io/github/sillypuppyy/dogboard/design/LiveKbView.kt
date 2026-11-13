@@ -26,6 +26,8 @@ fun LiveKbView(
     longPress: LongPress?,
     panel: String = "",
     actions: KbActions? = null,
+    clips: List<KbClipData>? = null,
+    panelVariant: String = "default",
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -51,6 +53,8 @@ fun LiveKbView(
             keyH = maxHeight.value,
             only = "live",
             panel = panel,
+            clips = clips,
+            panelVariant = panelVariant,
         )
         val render = remember(props) { KbSpec.render(props) }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }

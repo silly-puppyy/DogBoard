@@ -392,6 +392,7 @@ class ImeController(
             resetContent(initialSelection, initialSurrounding)
             expectedContentQueue.clear()
             resetWordTracking() // after the new field's text is known, so predictions fit it
+            io.github.sillypuppyy.dogboard.ime.LiveUi.closePanel() // a new field starts on the keys
         }
 
         fun handleUpdateSelection(newSelection: K3TextRange) {

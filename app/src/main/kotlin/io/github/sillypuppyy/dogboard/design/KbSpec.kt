@@ -25,6 +25,8 @@ data class KbProps(
     val slots: List<Pair<String, String>>? = null, // (text, kind) from the live strip
     val panel: String = "", // "", clipboard, emoji, tools, edit
     val panelVariant: String = "default", // default, select, locked, empty
+    /** The live clipboard (stage 2); null shows the design's sample clips. */
+    val clips: List<KbClipData>? = null,
     val skinPicker: Boolean = false,
     val devCtrl: String = "off", // off, armed, locked
     val devAlt: String = "off",

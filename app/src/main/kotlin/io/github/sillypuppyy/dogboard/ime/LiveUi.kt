@@ -13,7 +13,7 @@ object LiveUi {
     /** The bar shows the tool row instead of suggestions (its left button, Kb:668). */
     val toolRow = MutableStateFlow(false)
 
-    /** The panel shown in place of the keys: "" (none), "tools" or "edit". */
+    /** The panel shown in place of the keys: "" (none), "tools", "edit" or "clipboard". */
     val panel = MutableStateFlow("")
 
     fun closePanel() {
@@ -31,9 +31,7 @@ object LiveUi {
             "select_all" -> action(ImeActions.SelectAll)
             "content_copy" -> action(ImeActions.ClipboardCopy)
             "content_cut" -> action(ImeActions.ClipboardCut)
-            "content_paste" -> if (panel.value == "edit") action(ImeActions.ClipboardPaste) else {
-                closePanel(); action(ImeActions.ShowClipboardPanel)
-            }
+            "content_paste" -> if (panel.value == "edit") action(ImeActions.ClipboardPaste) else panel.value = "clipboard"
             "mood" -> { closePanel(); action(ImeActions.ShowMediaPanel) }
             "front_hand" -> { closePanel(); action(ImeActions.ToggleCompactLayout) }
             "picture_in_picture" -> { closePanel(); action(ImeActions.ToggleFloatingWindow) }
@@ -47,6 +45,10 @@ object LiveUi {
             "keyboard_arrow_right" -> action(ImeActions.ArrowRight)
             "first_page" -> key(KeyEvent.KEYCODE_MOVE_HOME)
             "last_page" -> key(KeyEvent.KEYCODE_MOVE_END)
+            "history_on" -> {
+                val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+                kotlinx.coroutines.runBlocking { prefs.clipboard.historyEnabled.set(true) }
+            }
             // not wired yet: Select (selection mode), Dev keys, Incognito
         }
     }

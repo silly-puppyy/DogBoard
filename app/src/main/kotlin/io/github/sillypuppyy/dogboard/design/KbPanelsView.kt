@@ -1,5 +1,6 @@
 package io.github.sillypuppyy.dogboard.design
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -201,12 +202,23 @@ fun KbPanelBody(r: KbRender) {
     Box(Modifier.fillMaxWidth().height(r.keyAreaH.dp)) {
         if (x.clipList) {
             // Kb:203-212: 2 columns, rows share the height
-            Column(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (row in x.clips.chunked(2)) {
-                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for (c in row) ClipTile(r, c)
+            // up to the design's six clips the rows share the height; a longer live history scrolls
+            // with rows of the same height
+            val scrolls = x.clips.size > 6
+            val rows = maxOf((x.clips.size + 1) / 2, 3) // the design's three rows, also when there are fewer clips
+            val rowH = ((r.keyAreaH - 4f - 8f - 2 * 8f) / 3f).dp
+            Column(
+                Modifier.fillMaxSize().then(if (scrolls) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                    .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (row in x.clips.withIndex().chunked(2)) {
+                    Row(if (scrolls) Modifier.height(rowH) else Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for ((i, c) in row) ClipTile(r, c, i)
+                        if (row.size == 1) Spacer(Modifier.weight(1f)) // a lone clip keeps its column width
                     }
                 }
+                if (!scrolls) repeat(rows - (x.clips.size + 1) / 2) { Spacer(Modifier.weight(1f)) } // ...and its row height
             }
         }
         if (x.clipMsg) {
@@ -220,7 +232,11 @@ fun KbPanelBody(r: KbRender) {
                 DText(x.clipMsgTitle, style = text(16, 500, t.barFg))
                 DText(x.clipMsgBody, style = text(13, 400, t.barMuted).copy(lineHeight = (13 * 1.4).sp), maxLines = 4)
                 if (x.clipMsgBtn) {
-                    Box(Modifier.padding(top = 4.dp).height(40.dp).background(t.act, PILL).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        Modifier.padding(top = 4.dp).height(40.dp).background(t.act, PILL)
+                            .tap(LocalKbActions.current?.let { a -> { a.onTool("history_on") } }).padding(horizontal = 20.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         DText("Turn on history", style = text(14, 600, t.actFg))
                     }
                 }
@@ -285,10 +301,11 @@ fun KbPanelBody(r: KbRender) {
 
 /** Kb:205-209: one clipboard tile. */
 @Composable
-private fun RowScope.ClipTile(r: KbRender, c: KbClip) {
+private fun RowScope.ClipTile(r: KbRender, c: KbClip, index: Int) {
     val t = r.t
+    val actions = LocalKbActions.current
     Box(
-        Modifier.weight(1f).fillMaxHeight().clip(TILE)
+        Modifier.weight(1f).fillMaxHeight().clip(TILE).tap(actions?.let { a -> { a.onClip(index) } })
             .then(if (c.stripes != null) Modifier.stripes(c.stripes.first, c.stripes.second, 6f) else Modifier.background(c.bg))
             .cssShadow(c.ring, TILE)
             .lint("clip:${c.text}${c.label}")

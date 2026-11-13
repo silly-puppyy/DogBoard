@@ -57,6 +57,8 @@ class KbActions(
     val onTool: (String) -> Unit = {},
     /** The panel header's back button (Kb:37-46). */
     val onBack: () -> Unit = {},
+    /** A clipboard tile, by its position in the list. */
+    val onClip: (Int) -> Unit = {},
 )
 
 val LocalKbActions = androidx.compose.runtime.staticCompositionLocalOf<KbActions?> { null }

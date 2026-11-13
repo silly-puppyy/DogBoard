@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard.ime.keyboard3.ui
 
+import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -245,6 +246,12 @@ fun ImeKeyboardBox(
             if (dogboardDesign) {
                 val output = trackedOutputPointer
                 val ui = io.github.sillypuppyy.dogboard.ime.LiveUi
+                // the design's clipboard panel shows FlorisBoard's clipboard history
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val clipboardManager = remember(context) { context.clipboardManager().value }
+                val history by clipboardManager.historyFlow.collectAsState()
+                val historyEnabled by prefs.clipboard.historyEnabled.collectAsState()
+                val clipItems = history.all
                 io.github.sillypuppyy.dogboard.design.LiveKbView(
                     layerId = touchLayerId.toString(),
                     shiftState = inputShiftState,
@@ -252,8 +259,34 @@ fun ImeKeyboardBox(
                     pressedKey = output?.downKey ?: trackedPeekPointer?.peekKey,
                     longPress = output?.longPress,
                     panel = livePanel,
-                    actions = remember(imeController) {
-                        io.github.sillypuppyy.dogboard.design.KbActions(onSlot = {}, onTool = { icon -> ui.run(icon, imeController) })
+                    actions = remember(imeController, clipItems) {
+                        io.github.sillypuppyy.dogboard.design.KbActions(
+                            onSlot = {},
+                            onTool = { icon -> ui.run(icon, imeController) },
+                            onClip = { i ->
+                                clipItems.getOrNull(i)?.let { item ->
+                                    ui.closePanel()
+                                    imeController.updateStateBlocking { emitClipboardItem(item) }
+                                }
+                            },
+                        )
+                    },
+                    clips = clipItems.map { item ->
+                        val media = item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT
+                        val video = item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO
+                        io.github.sillypuppyy.dogboard.design.KbClipData(
+                            media = media,
+                            icon = if (video) "play_circle" else if (media) "image" else "",
+                            label = if (video) "Video" else if (media) "Image" else "",
+                            text = item.text.orEmpty(),
+                            pinned = item.isPinned,
+                        )
+                    },
+                    // the design's messages: "locked" = phone locked (clips hidden), "empty" = history off
+                    panelVariant = when {
+                        context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true -> "locked"
+                        !historyEnabled -> "empty"
+                        else -> "default"
                     },
                 )
                 return@Box
