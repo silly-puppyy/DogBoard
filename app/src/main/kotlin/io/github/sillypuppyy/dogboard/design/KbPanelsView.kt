@@ -1,5 +1,6 @@
 package io.github.sillypuppyy.dogboard.design
 
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -304,14 +305,26 @@ fun KbPanelBody(r: KbRender) {
 private fun RowScope.ClipTile(r: KbRender, c: KbClip, index: Int) {
     val t = r.t
     val actions = LocalKbActions.current
+    // DogBoard: media clips show a preview, like Gboard (the design's stripes until it loads)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, c.thumbnail) {
+        value = c.thumbnail?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 180.dp.roundToPx() }) } }
+    }
     Box(
         Modifier.weight(1f).fillMaxHeight().clip(TILE).tap(actions?.let { a -> { a.onClip(index) } })
             .then(if (c.stripes != null) Modifier.stripes(c.stripes.first, c.stripes.second, 6f) else Modifier.background(c.bg))
             .cssShadow(c.ring, TILE)
-            .lint("clip:${c.text}${c.label}")
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .lint("clip:${c.text}${c.label}"),
     ) { LintParent("clip:${c.text}${c.label}") {
-        Row(Modifier.align(Alignment.CenterStart), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        thumb?.let { b ->
+            androidx.compose.foundation.Image(
+                b, contentDescription = c.label, modifier = Modifier.matchParentSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            )
+            if (c.icon == "play_circle") Symbol("play_circle", 32.sp, Color.White, Modifier.align(Alignment.Center), fill = 1)
+        }
+        Box(Modifier.matchParentSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
+        if (thumb == null) Row(Modifier.align(Alignment.CenterStart), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             if (c.media) {
                 Symbol(c.icon, 26.sp, t.fnFg)
                 DText(c.label, style = text(12, 500, t.fnFg))
@@ -332,6 +345,7 @@ private fun RowScope.ClipTile(r: KbRender, c: KbClip, index: Int) {
             ) {
                 for (icon in listOf("push_pin", "delete")) Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { Symbol(icon, 18.sp, t.popFg) }
             }
+        }
         }
     } }
 }

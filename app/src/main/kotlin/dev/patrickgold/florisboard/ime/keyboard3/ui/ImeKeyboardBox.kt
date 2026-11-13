@@ -271,7 +271,7 @@ fun ImeKeyboardBox(
                             },
                         )
                     },
-                    clips = clipItems.map { item ->
+                    clips = remember(clipItems) { clipItems.map { item ->
                         val media = item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT
                         val video = item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO
                         io.github.sillypuppyy.dogboard.design.KbClipData(
@@ -280,8 +280,9 @@ fun ImeKeyboardBox(
                             label = if (video) "Video" else if (media) "Image" else "",
                             text = item.text.orEmpty(),
                             pinned = item.isPinned,
+                            thumbnail = if (media) { px -> io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, px) } else null,
                         )
-                    },
+                    } },
                     // the design's messages: "locked" = phone locked (clips hidden), "empty" = history off
                     panelVariant = when {
                         context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true -> "locked"
