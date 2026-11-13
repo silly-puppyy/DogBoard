@@ -27,6 +27,8 @@ ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
 ROW_X0 = [0.0, 0.5, 48 / 37.5 + 8 / 37.5]  # row 3 starts after shift + gap
 SPACE_CENTER_X = (46.5 + 47 + 188 / 2) / 37.5
 BACKSPACE_CENTER_X = 10 - 1.28 / 2
+MODE_CENTER_X = 1.24 / 2
+DIGITS = "1234567890"
 DP_PER_MM = 6.3
 
 CASES = [
@@ -40,7 +42,8 @@ CASES = [
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),
-    ("hello{S-40}x", "Hexllo"),  # {S-40}: drag 40 dp left on space = trackpad, 3 cursor steps, no space typed  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
+    ("hello{S-28}x", "Hexllo"),  # {S-28}: hold space, slide 28 dp left = 3 cursor steps (8 dp each), no space typed
+    ("abc {123}12 x", "Abc 12 x"),  # {123} = mode key; space on the 123 plane returns to letters  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
 ]
 
 
@@ -92,6 +95,10 @@ def wait_ime_shown(serial, timeout=10.0):
 def key_center_units(ch):
     if ch == " ":
         return SPACE_CENTER_X, 3
+    if ch == "{123}":
+        return MODE_CENTER_X, 3
+    if ch in DIGITS:  # top row of the 123 plane
+        return DIGITS.index(ch) + 0.5, 0
     if ch == "<":
         return BACKSPACE_CENTER_X, 2
     for row, letters in enumerate(ROWS):
@@ -149,15 +156,18 @@ def main():
         unit = w / 10.0
         row_h = h / rows
         noise_px = args.noise_mm * DP_PER_MM * density
-        for ch in re.findall(r"\{L\}|\{S-?\d+\}|.", typed):
+        for ch in re.findall(r"\{L\}|\{123\}|\{S-?\d+\}|.", typed):
             if ch == "{L}":
                 adb(args.serial, "shell", "input", "keyevent", "KEYCODE_DPAD_LEFT")
                 time.sleep(args.delay)
                 continue
             if ch.startswith("{S"):
+                # hold space 0.6 s (trackpad needs 0.375 s), then slide dx dp in 8 moves, then lift
                 dx = int(ch[2:-1]) * density
                 sx, sy = x0 + SPACE_CENTER_X * unit, y0 + 3.5 * row_h
-                adb(args.serial, "shell", "input", "swipe", str(int(sx)), str(int(sy)), str(int(sx + dx)), str(int(sy)), "400")
+                moves = " ; ".join(f"input motionevent MOVE {int(sx + dx * i / 8)} {int(sy)}" for i in range(1, 9))
+                adb(args.serial, "shell",
+                    f"input motionevent DOWN {int(sx)} {int(sy)} ; sleep 0.6 ; {moves} ; input motionevent UP {int(sx + dx)} {int(sy)}")
                 time.sleep(args.delay)
                 continue
             ux, row = key_center_units(ch)

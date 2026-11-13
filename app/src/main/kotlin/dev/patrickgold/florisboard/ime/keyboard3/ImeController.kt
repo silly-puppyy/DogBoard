@@ -411,6 +411,10 @@ class ImeController(
                 lastSpaceUptime = null
             }
             expectedContentQueue.push(state.content)
+            // iOS: on the 123 and #+= planes, space or an apostrophe returns to the letters
+            if ((value == SPACE || text == "'") && state.touchLayerId in SYMBOL_LAYERS) {
+                switchTouchLayer(ImeLayerIds.Base)
+            }
             reevaluateInputShiftState()
             publishSuggestions()
         }
@@ -945,6 +949,7 @@ enum class OperationScope {
 
 private val SPACE = " ".asK3String()
 private val WORD_SEPARATORS = setOf(" ", ".", ",", "!", "?", ";", ":")
+private val SYMBOL_LAYERS = setOf(K3LayerId("symbol-1"), K3LayerId("symbol-2"))
 private val PERIOD_SPACE = ". ".asK3String()
 private val NO_DOUBLE_SPACE_VARIATIONS = setOf(
     InputAttributes.Variation.EMAIL_ADDRESS,

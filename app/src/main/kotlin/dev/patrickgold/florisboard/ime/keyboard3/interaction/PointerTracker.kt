@@ -98,7 +98,13 @@ sealed interface TrackedPointer {
         val repeatJob: Job?,
         // DogBoard: space-bar trackpad; x (dp) where the last cursor step happened, null until active
         val cursorAnchorDp: Float? = null,
-    ) : TrackedPointer
+        // DogBoard: the finger moved too far before the trackpad hold time; this stays a space
+        val trackpadCancelled: Boolean = false,
+    ) : TrackedPointer {
+        /** DogBoard: the space bar was held long enough to be a trackpad, even if never moved. */
+        fun isTrackpad(nowUptime: Long): Boolean = cursorAnchorDp != null ||
+            (downKey.attrs.output == SPACE && !trackpadCancelled && nowUptime - down.uptimeMillis >= Trackpad.HOLD_MS)
+    }
 }
 
 data class TrackedMultiTapSeq(
@@ -359,14 +365,22 @@ class PointerTracker(
     }
 
     /**
-     * DogBoard: dragging sideways on the space bar moves the cursor, one character per
-     * [Trackpad.STEP_DP]; it starts after [Trackpad.START_DP] so a slightly sloppy tap stays a space.
+     * DogBoard: holding space for [Trackpad.HOLD_MS] turns it into a trackpad (moving more than
+     * [Trackpad.ALLOWABLE_MOVEMENT_DP] before that cancels it); sliding then moves the cursor one
+     * character per [Trackpad.STEP_DP].
      */
     private suspend fun moveCursorWithSpaceBar(trackedPointer: TrackedPointer.Output, move: PointerInputChange) {
         val xDp = move.position.x / density
         var anchor = trackedPointer.cursorAnchorDp
         if (anchor == null) {
-            if (abs(xDp - trackedPointer.down.position.x / density) < Trackpad.START_DP) return
+            if (trackedPointer.trackpadCancelled) return
+            if (move.uptimeMillis - trackedPointer.down.uptimeMillis < Trackpad.HOLD_MS) {
+                val movedDp = (move.position - trackedPointer.down.position).getDistance() / density
+                if (movedDp > Trackpad.ALLOWABLE_MOVEMENT_DP) {
+                    trackedOutputPointer.value = trackedPointer.copy(trackpadCancelled = true)
+                }
+                return
+            }
             trackedPointer.repeatJob?.cancel()
             trackedPointer.longPress.extendedJob?.cancel()
             anchor = xDp
@@ -411,7 +425,7 @@ class PointerTracker(
             trackedPointer.repeatJob?.cancel()
             imeController.updateState {
                 val output = when {
-                    trackedPointer.cursorAnchorDp != null -> null // the space bar was used as a trackpad
+                    trackedPointer.isTrackpad(up.uptimeMillis) -> null // the space bar was used as a trackpad
                     trackedPointer.downKey == trackedMultiTapSeq.value?.touchKey -> null
                     trackedPointer.longPress.shouldShowExtendedPopup() -> {
                         trackedPointer.longPress.extendedKeys.getOrNull(trackedPointer.longPress.extendedFocusedIndex)

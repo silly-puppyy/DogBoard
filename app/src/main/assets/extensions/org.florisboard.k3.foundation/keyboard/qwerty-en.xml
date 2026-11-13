@@ -31,16 +31,15 @@
         <key id="bksp" output="@k3:action/backspace" width="1.28" />
         <key id="enter" output="@k3:action/enter" width="2.4933" />
         <key id="space" output="\u{0020}" width="5.0133" />
-        <key id="space-email" output="\u{0020}" width="3.0133" />
-        <key id="at-email" output="@" width="1" />
-        <key id="period-email" output="." width="1" />
-        <key id="slash-url" output="/" width="1" />
-        <key id="dotcom" output=".com" width="3.0133" longPressKeyIds="tld-net tld-org tld-edu tld-co tld-io" />
-        <key id="tld-net" output=".net" />
+        <key id="space-email" output="\u{0020}" width="2.5133" />
+        <key id="at-email" output="@" width="1.25" />
+        <key id="period-email" output="." width="1.25" />
+        <key id="period-url" output="." width="1.68" />
+        <key id="slash-url" output="/" width="1.6533" />
+        <key id="dotcom" output=".com" width="1.68" longPressKeyIds="tld-org tld-edu tld-net" />
         <key id="tld-org" output=".org" />
         <key id="tld-edu" output=".edu" />
-        <key id="tld-co" output=".co" />
-        <key id="tld-io" output=".io" />
+        <key id="tld-net" output=".net" />
         <key id="fn-key" gap="true" width="1.2533" />
         <key id="gap-left" gap="true" width="0.2133" />
         <key id="gap-right" gap="true" width="0.2267" />
@@ -67,13 +66,12 @@
         <key id="s-semicolon" output=";" />
         <key id="s-lparen" output="(" />
         <key id="s-rparen" output=")" />
-        <key id="s-dollar" output="$" longPressKeyIds="s-dollar-alt0 s-dollar-alt1 s-dollar-alt2 s-dollar-alt3 s-dollar-alt4 s-dollar-alt5" longPressDefaultKeyId="s-dollar-alt0" />
-        <key id="s-dollar-alt0" output="₽" />
-        <key id="s-dollar-alt1" output="¥" />
-        <key id="s-dollar-alt2" output="€" />
-        <key id="s-dollar-alt3" output="¢" />
-        <key id="s-dollar-alt4" output="£" />
-        <key id="s-dollar-alt5" output="₩" />
+        <key id="s-dollar" output="$" longPressKeyIds="s-dollar-alt0 s-dollar-alt1 s-dollar-alt2 s-dollar-alt3 s-dollar-alt4" longPressDefaultKeyId="s-dollar-alt0" />
+        <key id="s-dollar-alt0" output="€" />
+        <key id="s-dollar-alt1" output="£" />
+        <key id="s-dollar-alt2" output="¥" />
+        <key id="s-dollar-alt3" output="₩" />
+        <key id="s-dollar-alt4" output="₽" />
         <key id="s-amp" output="&amp;" longPressKeyIds="s-amp-alt0" longPressDefaultKeyId="s-amp-alt0" />
         <key id="s-amp-alt0" output="§" />
         <key id="s-at" output="@" />
@@ -410,14 +408,14 @@
             <row keys="q w e r t y u i o p" />
             <row keys="a s d f g h j k l" />
             <row keys="base-to-shift gap-left z x c v b n m gap-right bksp" />
-            <row keys="to-symbol-1 fn-key period-email slash-url dotcom enter" />
+            <row keys="to-symbol-1 fn-key period-url slash-url dotcom enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P" />
             <row keys="A S D F G H J K L" />
             <row keys="shift-to-base gap-left Z X C V B N M gap-right bksp" />
-            <row keys="to-symbol-1 fn-key period-email slash-url dotcom enter" />
+            <row keys="to-symbol-1 fn-key period-url slash-url dotcom enter" />
         </layer>
 
         <layer id="numeric">

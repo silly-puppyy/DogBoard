@@ -28,12 +28,14 @@ MODE = w(46.5)       # 123 / ABC
 FN = w(47)           # emoji / language key
 SPACE = w(188)       # space absorbs the 37.5 dp a dictation key would take
 RETURN = w(93.5)
-# Email and URL bottom rows (iOS arrangement; widths estimated: one letter key each for @ . /,
-# space or .com take the rest; verify on an iPhone)
-FIELD_KEY = w(37.5)
-SPACE_EMAIL = w(375 - 46.5 - 47 - 2 * 37.5 - 93.5)
-DOTCOM = w(375 - 46.5 - 47 - 2 * 37.5 - 93.5)
-TLDS = ".net .org .edu .co .io"
+# Email and URL bottom rows: iOS arrangement and widths (email from the 320 pt layout stretched to
+# 375, URL from the 375 pt layout); TLD and currency long-press sets as in iOS
+EMAIL_KEY = w(40 * 375 / 320)  # 320 pt email row (40 pt keys) stretched to 375
+SPACE_EMAIL = w(375 - 46.5 - 47 - 2 * 40 * 375 / 320 - 93.5)  # space + the merged dictation slot
+PERIOD_URL = w(63)
+SLASH_URL = w(62)
+DOTCOM = w(63)
+TLDS = ".org .edu .net"  # long-press on .com
 PUNCT_WIDE = "1.4"   # the five wide punctuation keys on the symbol layers (5 x 1.4 = 7 letters)
 
 # Long-press alternatives per letter, in popup order (iOS arrangement).
@@ -64,7 +66,7 @@ SYMBOLS = {
     "s-1": ("1", ""), "s-2": ("2", ""), "s-3": ("3", ""), "s-4": ("4", ""), "s-5": ("5", ""),
     "s-6": ("6", ""), "s-7": ("7", ""), "s-8": ("8", ""), "s-9": ("9", ""), "s-0": ("0", "°"),
     "s-hyphen": ("-", "– — •"), "s-slash": ("/", "\\"), "s-colon": (":", ""), "s-semicolon": (";", ""),
-    "s-lparen": ("(", ""), "s-rparen": (")", ""), "s-dollar": ("$", "₽ ¥ € ¢ £ ₩"), "s-amp": ("&", "§"),
+    "s-lparen": ("(", ""), "s-rparen": (")", ""), "s-dollar": ("$", "€ £ ¥ ₩ ₽"), "s-amp": ("&", "§"),
     "s-at": ("@", ""), "s-dquote": ('"', "„ “ ” « »"),
     "s-lsquare": ("[", ""), "s-rsquare": ("]", ""), "s-lcurly": ("{", ""), "s-rcurly": ("}", ""),
     "s-hash": ("#", ""), "s-percent": ("%", "‰"), "s-caret": ("^", ""), "s-asterisk": ("*", ""),
@@ -120,7 +122,7 @@ def bottom_row(mode_key: str) -> str:
 # Field-specific bottom rows; the app swaps a "<layer>-<variant>" layer in for base and shift.
 FIELD_ROWS = {
     "email": "to-symbol-1 fn-key space-email at-email period-email enter",
-    "url": "to-symbol-1 fn-key period-email slash-url dotcom enter",
+    "url": "to-symbol-1 fn-key period-url slash-url dotcom enter",
 }
 
 
@@ -141,9 +143,10 @@ def build() -> str:
         f'<key id="enter" output="@k3:action/enter" width="{RETURN}" />',
         f'<key id="space" output="\\u{{0020}}" width="{SPACE}" />',
         f'<key id="space-email" output="\\u{{0020}}" width="{SPACE_EMAIL}" />',
-        f'<key id="at-email" output="@" width="{FIELD_KEY}" />',
-        f'<key id="period-email" output="." width="{FIELD_KEY}" />',
-        f'<key id="slash-url" output="/" width="{FIELD_KEY}" />',
+        f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
+        f'<key id="period-email" output="." width="{EMAIL_KEY}" />',
+        f'<key id="period-url" output="." width="{PERIOD_URL}" />',
+        f'<key id="slash-url" output="/" width="{SLASH_URL}" />',
         f'<key id="dotcom" output=".com" width="{DOTCOM}" longPressKeyIds="{" ".join("tld-" + t.strip(".").replace(".", "-") for t in TLDS.split())}" />',
         *[f'<key id="tld-{t.strip(".").replace(".", "-")}" output="{t}" />' for t in TLDS.split()],
         f'<key id="fn-key" gap="true" width="{FN}" />',

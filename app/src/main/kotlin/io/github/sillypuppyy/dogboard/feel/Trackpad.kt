@@ -1,10 +1,13 @@
 package io.github.sillypuppyy.dogboard.feel
 
-/** Space-bar trackpad: drag sideways on space to move the cursor. */
+/** Space-bar trackpad: hold space, then slide to move the cursor (iOS one-finger rule). */
 object Trackpad {
-    /** Sideways movement on space before it turns into a trackpad (about 2 mm). */
-    const val START_DP = 12f
+    /** Hold time on space before it becomes a trackpad. */
+    const val HOLD_MS = 375L
 
-    /** Finger movement per one-character cursor step. */
+    /** Movement allowed during the hold; moving farther first cancels it (the tap stays a space). */
+    const val ALLOWABLE_MOVEMENT_DP = 16f
+
+    /** Finger movement per one-character cursor step (not from iOS; tune by feel). */
     const val STEP_DP = 8f
 }
