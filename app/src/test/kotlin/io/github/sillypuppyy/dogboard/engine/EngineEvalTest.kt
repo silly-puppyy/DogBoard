@@ -55,7 +55,7 @@ class EngineEvalTest : FunSpec({
             val literal = String(taps.map { nearestKey(it.x, it.y) }.toCharArray())
             val t0 = System.nanoTime()
             val candidates = decoder.decode(taps, keys, params)
-            val final = autocorrect.correction(literal, candidates) ?: literal
+            val final = autocorrect.correction(literal, candidates, decoder.literalCost(taps, literal, keys, params)) ?: literal
             nanos += System.nanoTime() - t0
             val isLiteralOk = literal.equals(word, ignoreCase = true)
             val isFinalOk = final.equals(word, ignoreCase = true)

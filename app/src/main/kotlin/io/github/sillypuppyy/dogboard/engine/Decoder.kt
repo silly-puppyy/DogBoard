@@ -143,6 +143,20 @@ class Decoder(private val lexicon: Lexicon, private val config: Config = Config(
         return results.values.sortedBy { it.cost }.take(maxResults)
     }
 
+    /**
+     * Spatial cost of reading [taps] as exactly [word] (one tap per letter), or null if a letter
+     * is not on the keyboard or the lengths differ. Used for the "keep what was typed" choice.
+     */
+    fun literalCost(taps: List<Tap>, word: String, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params): Double? {
+        if (taps.size != word.length) return null
+        var cost = 0.0
+        for ((i, c) in word.withIndex()) {
+            val key = keys[c.lowercaseChar()] ?: return null
+            cost -= config.spatialWeight * GaussianTouch.logLikelihood(key, taps[i].x, taps[i].y, params)
+        }
+        return cost
+    }
+
     /** Keeps the best states, ranked by cost plus the best word reachable below each node. */
     private fun prune(layer: HashMap<Lexicon.Node, State>) {
         if (layer.size <= config.beamWidth) return

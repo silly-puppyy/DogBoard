@@ -23,7 +23,7 @@ private fun topWord(typed: String) = DECODER.decode(centreTaps(typed), KEYS, PAR
 
 private fun corrected(typed: String): String {
     val candidates = DECODER.decode(centreTaps(typed), KEYS, PARAMS)
-    return AUTOCORRECT.correction(typed, candidates) ?: typed
+    return AUTOCORRECT.correction(typed, candidates, DECODER.literalCost(centreTaps(typed), typed, KEYS, PARAMS)) ?: typed
 }
 
 class EngineTest : FunSpec({
@@ -85,6 +85,7 @@ class EngineTest : FunSpec({
         }
         test("leaves gibberish with no close word alone") {
             corrected("qzxvpq") shouldBe "qzxvpq"
+            corrected("tehteh") shouldBe "tehteh"
         }
     }
 })

@@ -7,8 +7,13 @@ class Autocorrect(private val lexicon: Lexicon, private val config: Config = Con
     data class Config(
         /** A known word is only replaced if another word is cheaper by at least this much. */
         val knownWordMargin: Double = 4.0,
-        /** An unknown word is replaced if the best word's spatial cost is at most this. */
-        val maxUnknownSpatialCost: Double = 16.0,
+        /**
+         * Cost of the user meaning a word the lexicon does not know (a name, slang): an unknown
+         * word is replaced only if the best word is cheaper than its taps' cost plus this.
+         */
+        val unknownWordCost: Double = 13.0, // from EngineSweepTest: 96.8% right at 1.5x2.0 mm, 89% of unknown words kept
+        /** An unknown word is only replaced by a word at most this many typing errors away. */
+        val maxUnknownEdits: Int = 2,
     )
 
     /**
@@ -16,15 +21,18 @@ class Autocorrect(private val lexicon: Lexicon, private val config: Config = Con
      * the literal's casing, or null to keep what was typed.
      *
      * @param candidates decoder output for the same taps, best first
+     * @param literalSpatialCost spatial cost of the taps read as exactly [literal]
+     *   ([Decoder.literalCost]), or null if unknown (then the literal costs nothing extra)
      */
-    fun correction(literal: String, candidates: List<Candidate>): String? {
+    fun correction(literal: String, candidates: List<Candidate>, literalSpatialCost: Double? = null): String? {
         val best = candidates.firstOrNull { !it.isCompletion } ?: return null
         if (best.word.equals(literal, ignoreCase = true)) return fixedForm(literal)
         val literalCandidate = candidates.firstOrNull { !it.isCompletion && it.word.equals(literal, ignoreCase = true) }
         val replace = if (lexicon.contains(literal)) {
             literalCandidate == null || literalCandidate.cost - best.cost >= config.knownWordMargin
         } else {
-            best.spatialCost <= config.maxUnknownSpatialCost
+            best.edits <= config.maxUnknownEdits &&
+                best.cost < (literalSpatialCost ?: 0.0) + config.unknownWordCost
         }
         return if (replace) matchCase(best.word, literal) else null
     }

@@ -34,7 +34,8 @@ object TypingEngine {
     fun correction(word: CurrentWord, candidates: List<Candidate> = candidates(word)): String? {
         val engine = loaded ?: return null
         if (candidates.isEmpty()) return null
-        return engine.autocorrect.correction(word.text, candidates)
+        val literalCost = word.tapsOrNull()?.let { engine.decoder.literalCost(it, word.text, word.keys, word.params!!) }
+        return engine.autocorrect.correction(word.text, candidates, literalCost)
     }
 
     fun isKnownWord(word: String): Boolean = loaded?.lexicon?.contains(word) == true
