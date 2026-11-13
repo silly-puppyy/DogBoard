@@ -65,4 +65,29 @@ class KbSpecTest : FunSpec({
         CssShadow.parse("0 1px 3px rgba(0,0,0,0.16), 0 6px 18px rgba(0,0,0,0.14)").map { it.blur } shouldContainExactly listOf(3f, 18f)
         CssShadow.parse("inset 0 0 0 1.5px #8a8a8a").single().let { it.inset shouldBe true; it.spread shouldBe 1.5f }
     }
+    test("theme swatches on the Themes page match the token table (Themes:97-106 vs Kb:365-394)") {
+        // Ground, Keys, Function, Return, Chip
+        val swatches = listOf(
+            Triple("dogboard", false, "#ededf4 #ffffff #dbe2f9 #435e91 #d8e2ff"),
+            Triple("dogboard", true, "#1a1b20 #33353a #3f4759 #adc7ff #2a4678"),
+            Triple("brand", false, "#f0eee2 #ffffff #e2e5c2 #59631f #ddea96"),
+            Triple("paper", false, "#e3e4e6 #fdfdfd #c9cbcf #2d2f33 #ffffff"),
+            Triple("midnight", true, "#16171b #2c2e33 #212328 #9db8f2 #2a3a5c"),
+            Triple("ink", true, "#000000 #1a1b1f #111216 #2a4678 #1d2940"),
+            // Borderless: the page shows key = ground (#ededf4) and fn = its 1 dp outline (#c4c6d0)
+            Triple("bold", true, "#000000 #1f1f1f #ffe14d #ffe14d #ffe14d"),
+            Triple("dog", false, "#fbebe0 #ffffff #ffdcc0 #87521a #ffdcc0"),
+            Triple("dog", true, "#221a14 #3c332c #59422d #feb877 #6a3b02"),
+        )
+        for ((id, dark, hex) in swatches) {
+            val t = KbThemes.tokens(id, dark)
+            listOf(t.bg, t.key, t.fn, t.act, t.chip) shouldContainExactly hex.split(" ").map { css(it) }
+        }
+        KbThemes.tokens("borderless", false).let { it.key shouldBe androidx.compose.ui.graphics.Color.Transparent; it.fnShadow.single().color shouldBe css("#c4c6d0") }
+    }
+    test("glass contrast rule (Themes:87-93): label colour and ratio") {
+        // capL = kop + (1 - kop) * 0.3 * (1 - dim); white if 1.05/(capL+.05) >= (capL+.05)/(lumInk+.05)
+        KbThemes.tokens("glass", false, dim = 0.35f, keyOpacity = 0.3f).keyFg shouldBe css("#1b1c1e")
+        KbThemes.tokens("glass", false, dim = 0.8f, keyOpacity = 0.0f).keyFg shouldBe css("#ffffff")
+    }
 })

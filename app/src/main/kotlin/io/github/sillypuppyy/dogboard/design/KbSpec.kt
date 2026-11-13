@@ -143,6 +143,10 @@ data class KbRender(
     val rootShadow: List<CssShadow>,
     val x: KbExtras,
     val slotOverflow: String,
+    /** Kb:18-23 glass theme: blurred picture behind the keys, dimmed. */
+    val glass: Boolean,
+    val blurPx: Float,
+    val dimA: Float,
 )
 
 object KbSpec {
@@ -423,7 +427,7 @@ object KbSpec {
             trackpad = trackpad, tpX = kbW / 2 - 28 + stripL.w, tpY = keyAreaH - rowH / 2 - 28,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
             x = KbExtrasSpec.extras(P, t, W),
-            slotOverflow = P.slotOverflow,
+            slotOverflow = P.slotOverflow, glass = P.theme == "glass", blurPx = P.blur, dimA = P.dim,
             rootShadow = if (floating) CssShadow.parse("0 2px 6px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.18)") else emptyList(),
         )
     }

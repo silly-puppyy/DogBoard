@@ -40,7 +40,7 @@ class DesignGalleryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val only = intent.getIntExtra("frame", -1)
-        val all = STATES + PANELS
+        val all = STATES + PANELS + THEMES
         val frames = if (only in all.indices) listOf(only to all[only]) else all.withIndex().map { it.index to it.value }
         setContent {
             LazyColumn(
@@ -75,6 +75,23 @@ class DesignGalleryActivity : ComponentActivity() {
 
     companion object {
         const val TAG = "DesignLint"
+
+        // Themes.dc.html:97-108 (defaults Themes:84-86: bar teh, ret send, shift off)
+        val THEMES = listOf(
+            Frame("DogBoard · Default · light", "Follows the wallpaper. White letter keys on a tinted ground, a primary return only when the field has an action.", KbProps(theme = "dogboard", bar = "teh", ret = "send")),
+            Frame("DogBoard · Default · dark", "Same roles, dark scheme. Switches with system dark mode, or on its own night schedule.", KbProps(theme = "dogboard", dark = true, bar = "teh", ret = "send")),
+            Frame("Brand · No dynamic colour", "Used when dynamic colour is off or unavailable, and in the store listing. Tonal palette from tennis-ball green.", KbProps(theme = "brand", bar = "teh", ret = "send")),
+            Frame("Paper · Neutral light", "Greys only, a 1 dp key edge instead of a shadow, no wallpaper tint. The classic system feel.", KbProps(theme = "paper", bar = "teh", ret = "send")),
+            Frame("Midnight · Dark", "Neutral dark with a quiet blue accent. Function keys sit darker than letters.", KbProps(theme = "midnight", bar = "teh", ret = "send")),
+            Frame("Ink · AMOLED black", "Pure black ground saves power on OLED. Dim caps, no pure-white text, a tonal return instead of a bright one.", KbProps(theme = "ink", bar = "teh", ret = "send")),
+            Frame("Borderless · Minimal", "No key caps; labels sit on the ground. Function keys keep a 1 dp outline so they stay easy to find.", KbProps(theme = "borderless", bar = "teh", ret = "send")),
+            Frame("Bold · High contrast", "The accessibility preset: yellow on black, 600-weight labels 8% larger, 12 sp hints, 1.5 dp key outlines.", KbProps(theme = "bold", bar = "teh", ret = "send")),
+            Frame("Dog · Pack showcase", "Warm fur tones, rounder 14 dp keys and a paw on plain return. Ships as an example theme pack.", KbProps(theme = "dog", bar = "emoji", ret = "return")),
+            Frame("Dog · Dark", "The same pack after dark.", KbProps(theme = "dog", dark = true, bar = "emoji", ret = "return")),
+            Frame("Glass keys", "Dim 35% · blur 12 · key opacity 30%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.35f, blur = 12f, keyOpacity = 0.3f)),
+            Frame("Too little dim", "Dim 5% · blur 4 · key opacity 12%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.05f, blur = 4f, keyOpacity = 0.12f)),
+            Frame("Solid keys", "Dim 10% · blur 18 · key opacity 85%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.1f, blur = 18f, keyOpacity = 0.85f)),
+        )
 
         // initialised before the frame lists that use it
         private val LONG = listOf("“Supercalifragilistic”" to "lit", "Superb" to "ac", "Supercalifragilisticexpialidocious" to "w")

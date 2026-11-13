@@ -1,6 +1,11 @@
 package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.ui.draw.clipToBounds
@@ -58,6 +63,7 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
             .background(t.bg, RoundedCornerShape(r.rootRadius.dp)) // no clip: popups overflow the root (Kb:16)
             .lint("kb"),
     ) { LintParent("kb") {
+        if (r.glass) GlassBackdrop(r)
         Column(Modifier.fillMaxSize()) {
             // Kb:27-31 floating handle
             if (r.floatH > 0f) {
@@ -335,3 +341,48 @@ fun Modifier.fadeEnd(length: androidx.compose.ui.unit.Dp): Modifier =
         val start = (1f - length.toPx() / size.width).coerceIn(0f, 1f)
         drawRect(Brush.horizontalGradient(0f to Color.Black, start to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
     }
+
+/**
+ * Kb:18-23: the glass theme's stand-in photo: five CSS gradients on a box 48 dp larger than the
+ * keyboard on every side, blurred by blurPx, under rgba(0,0,0,dim), clipped to the root shape.
+ */
+@Composable
+private fun GlassBackdrop(r: KbRender) {
+    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(r.rootRadius.dp))) {
+        Box(
+            Modifier.matchParentSize().layout { m, c ->
+                val grow = 48.dp.roundToPx()
+                val p = m.measure(Constraints.fixed(c.maxWidth + 2 * grow, c.maxHeight + 2 * grow))
+                layout(c.maxWidth, c.maxHeight) { p.place(-grow, -grow) }
+            }.blur(r.blurPx.dp, BlurredEdgeTreatment.Unbounded).drawBehind {
+                // linear-gradient(170deg, #b88a5e, #4f6670): CSS angles run clockwise from "to top"
+                drawRect(cssLinearGradient(170f, size, css("#b88a5e"), css("#4f6670")))
+                // later CSS layers draw first: listed top layer first, so paint in reverse
+                for ((cx, cy, color, stop) in listOf(
+                    Quad(0.12f, 0.92f, "#5f7f5a", 0.38f), Quad(0.58f, 0.78f, "#7a5536", 0.42f),
+                    Quad(0.70f, 0.30f, "#8fb3c9", 0.40f), Quad(0.22f, 0.38f, "#f3c78f", 0.34f),
+                )) {
+                    val center = Offset(size.width * cx, size.height * cy)
+                    // circle, farthest-corner: the 100% radius reaches the farthest corner
+                    val far = listOf(Offset.Zero, Offset(size.width, 0f), Offset(0f, size.height), Offset(size.width, size.height))
+                        .maxOf { (it - center).getDistance() }
+                    val c = css(color)
+                    drawRect(Brush.radialGradient(0f to c, stop to c.copy(alpha = 0f), center = center, radius = far))
+                }
+            },
+        )
+        Box(Modifier.matchParentSize().background(Color(0f, 0f, 0f, r.dimA)))
+    }
+}
+
+private data class Quad(val cx: Float, val cy: Float, val color: String, val stop: Float)
+
+/** CSS linear-gradient(angle, a, b) over a box of [size]: the line runs through the centre at [deg]. */
+private fun cssLinearGradient(deg: Float, size: androidx.compose.ui.geometry.Size, a: Color, b: Color): Brush {
+    val rad = Math.toRadians(deg.toDouble())
+    val dx = kotlin.math.sin(rad).toFloat(); val dy = -kotlin.math.cos(rad).toFloat()
+    // gradient length so the corners get the end colours (CSS spec)
+    val half = (kotlin.math.abs(size.width * dx) + kotlin.math.abs(size.height * dy)) / 2
+    val c = Offset(size.width / 2, size.height / 2)
+    return Brush.linearGradient(listOf(a, b), start = c - Offset(dx, dy) * half, end = c + Offset(dx, dy) * half)
+}
