@@ -124,11 +124,18 @@ fun TypingScreen() {
             }
 
             SegmentedListColumn(title = stringRes(R.string.pref__correction__title)) {
-                val count = 2
+                val count = 3
                 val isAutoSpacePunctuationEnabled by prefs.correction.autoSpacePunctuation.collectAsState()
+                // DogBoard
+                SwitchPreference(
+                    prefs.correction.autocorrect,
+                    shapes = ListItemDefaults.segmentedShapes(0, count),
+                    title = stringRes(R.string.pref__correction__autocorrect__label),
+                    summary = stringRes(R.string.pref__correction__autocorrect__summary),
+                )
                 SwitchPreference(
                     prefs.correction.autoSpacePunctuation,
-                    shapes = ListItemDefaults.segmentedShapes(0, count),
+                    shapes = ListItemDefaults.segmentedShapes(1, count),
                     icon = Icons.Default.SpaceBar,
                     title = stringRes(R.string.pref__correction__auto_space_punctuation__label),
                     summary = stringRes(R.string.pref__correction__auto_space_punctuation__summary),
@@ -152,7 +159,7 @@ fun TypingScreen() {
                 }
                 SwitchPreference(
                     prefs.correction.doubleSpacePeriod,
-                    shapes = ListItemDefaults.segmentedShapes(1, count),
+                    shapes = ListItemDefaults.segmentedShapes(2, count),
                     title = stringRes(R.string.pref__correction__double_space_period__label),
                     summary = stringRes(R.string.pref__correction__double_space_period__summary),
                 )
