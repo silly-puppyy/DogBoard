@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.engine
 
 import java.io.BufferedReader
+import kotlin.math.exp
 import kotlin.math.ln
 
 /**
@@ -29,19 +30,39 @@ class Lexicon private constructor(val root: Node, private val words: ArrayList<N
             node = node.childOrCreate(c.lowercaseChar())
             path.add(node)
         }
-        if (!node.isWord) {
-            node.id = words.size
-            words.add(node)
-            node.word = word
-            node.logProb = logProb
-        } else if (logProb > node.logProb) {
-            node.logProb = logProb
+        val added = when {
+            !node.isWord -> {
+                node.id = words.size
+                words.add(node)
+                node.word = word
+                node.logProb = logProb
+                exp(logProb)
+            }
+            logProb > node.logProb -> exp(logProb) - exp(node.logProb).also { node.logProb = logProb }
+            else -> 0.0
         }
+        for (n in path) n.mass += added
         for (n in path) {
             val best = n.bestWord
             if (best == null || node.logProb > best.logProb) n.bestWord = node
         }
         return node.id
+    }
+
+    /**
+     * ln P(next letter | [prefix]) for each letter that continues a known word, from the word
+     * probabilities below the prefix; null if no known word starts with [prefix].
+     */
+    fun nextLetterLogProbs(prefix: CharSequence): Map<Char, Double>? {
+        var node = root
+        for (c in prefix) node = node.child(c.lowercaseChar()) ?: return null
+        if (node.mass <= 0.0) return null
+        return buildMap {
+            for (i in 0 until node.childCount) {
+                val child = node.childAt(i)
+                if (child.mass > 0.0) put(node.keyAt(i), ln(child.mass / node.mass))
+            }
+        }
     }
 
     /** Id of [word] (case-insensitive), or -1. */
@@ -61,6 +82,10 @@ class Lexicon private constructor(val root: Node, private val words: ArrayList<N
 
         /** Most frequent word at or below this node. */
         var bestWord: Node? = null
+            internal set
+
+        /** Total probability of the words at or below this node. */
+        var mass: Double = 0.0
             internal set
 
         /** Index of the word ending here, or -1. */
@@ -140,11 +165,16 @@ class Lexicon private constructor(val root: Node, private val words: ArrayList<N
 
         private fun computeBest(node: Node): Node? {
             var best: Node? = if (node.isWord) node else null
+            var mass = if (node.isWord) exp(node.logProb) else 0.0
             for (i in 0 until node.childCount) {
-                val b = computeBest(node.childAt(i)) ?: continue
+                val child = node.childAt(i)
+                val b = computeBest(child)
+                mass += child.mass
+                if (b == null) continue
                 if (best == null || b.logProb > best.logProb) best = b
             }
             node.bestWord = best
+            node.mass = mass
             return best
         }
     }

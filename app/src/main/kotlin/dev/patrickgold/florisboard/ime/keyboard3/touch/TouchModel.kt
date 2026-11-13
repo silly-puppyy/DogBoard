@@ -104,6 +104,7 @@ class TouchKeyboard(
         keyboardWidthDp: Float,
         keyboardHeightDp: Float,
         typingInterval: Double,
+        letterPrior: ((Char) -> Double)? = null,
     ): TouchKey? {
         val rectKey = findKey(layerId, position)
         if (rectKey != null && !rectKey.attrs.gap && !rectKey.isTextKey()) {
@@ -113,11 +114,17 @@ class TouchKeyboard(
         if (textKeys.isEmpty()) return rectKey
         val targets = textKeys.map { it.target(keyboardWidthDp, keyboardHeightDp) }
         val params = GaussianTouch.params(medianHalfWidth(targets), typingInterval)
+        val prior: (Int) -> Double = if (letterPrior == null) {
+            { 0.0 }
+        } else {
+            { i -> (textKeys[i].attrs.output as K3String).toText().singleOrNull()?.takeIf { it.isLetter() }?.let(letterPrior) ?: 0.0 }
+        }
         val index = GaussianTouch.pick(
             targets,
             position.x * keyboardWidthDp,
             position.y * keyboardHeightDp,
             params,
+            prior,
         )
         return index?.let { textKeys[it] } ?: rectKey?.takeIf { !it.attrs.gap }
     }

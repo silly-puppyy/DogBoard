@@ -38,6 +38,13 @@ class EngineTest : FunSpec({
             (LEXICON.logProb("the")!! > LEXICON.logProb("married")!!) shouldBe true
             LEXICON.logProb("qzxv").shouldBeNull()
         }
+        test("next-letter probabilities follow the words below the prefix") {
+            val p = LEXICON.nextLetterLogProbs("th")!!
+            (p.getValue('e') > p.getValue('r')) shouldBe true
+            p.containsKey('q') shouldBe false
+            (kotlin.math.exp(p.values.maxOf { it }) <= 1.0) shouldBe true
+            LEXICON.nextLetterLogProbs("qzx").shouldBeNull()
+        }
         test("each node knows its most frequent completion") {
             var node = LEXICON.root
             for (c in "hel") node = node.child(c)!!

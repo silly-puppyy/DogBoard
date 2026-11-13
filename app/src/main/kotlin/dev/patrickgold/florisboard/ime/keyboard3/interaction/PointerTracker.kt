@@ -169,6 +169,7 @@ class PointerTracker(
             keyboardWidthDp = size.width / density,
             keyboardHeightDp = size.height / density,
             typingInterval = typingSpeed.interval,
+            letterPrior = imeController.letterPrior(),
         ) ?: return
         // DogBoard: remember where letter keys were tapped, for the word decoder
         if (downKey.isTextKey()) {

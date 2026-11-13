@@ -83,6 +83,7 @@ import io.github.sillypuppyy.dogboard.engine.Tap
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
 import io.github.sillypuppyy.dogboard.engine.isWordChar
 import io.github.sillypuppyy.dogboard.engine.previousContext
+import io.github.sillypuppyy.dogboard.engine.trailingWord
 import io.github.sillypuppyy.dogboard.feel.DoubleSpace
 import io.github.sillypuppyy.dogboard.ime.DogBoardCandidate
 import io.github.sillypuppyy.dogboard.touch.GaussianTouch
@@ -124,6 +125,19 @@ class ImeController(
 
     /** Receives the suggestion strip whenever the current word changes. */
     var suggestionSink: ((List<Suggestion>) -> Unit)? = null
+
+    /**
+     * DogBoard: prior for the next letter key from the word at the cursor (likely letters get
+     * slightly larger keys), or null where the word engine is off (passwords, email, URLs).
+     */
+    fun letterPrior(): ((Char) -> Double)? {
+        val state = activeState.value
+        val attrs = state.editor.info.inputAttributes
+        if (attrs.type != InputAttributes.Type.TEXT || attrs.variation in NO_DOUBLE_SPACE_VARIATIONS ||
+            attrs.flagTextNoSuggestions || state.content.selection.isNotCollapsed()
+        ) return null
+        return TypingEngine.keyPrior(trailingWord(state.content.surroundingText.textBefore))
+    }
 
     /** DogBoard: where the next letter key was tapped (set on touch down, used when it emits). */
     fun notePendingTap(tap: Tap?, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {

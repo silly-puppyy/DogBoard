@@ -99,6 +99,20 @@ object TypingEngine {
         }
     }
 
+    /**
+     * Log prior for each letter key given the word typed so far ([prefix]), for the touch model:
+     * likely next letters get slightly larger keys. Null when not loaded or no known word starts
+     * with [prefix]. Weight and floor from TouchPriorSweepTest.
+     */
+    fun keyPrior(prefix: CharSequence): ((Char) -> Double)? {
+        val engine = loaded ?: return null
+        val logProbs = lock.read { engine.lexicon.nextLetterLogProbs(prefix) } ?: return null
+        return { c -> KEY_PRIOR_WEIGHT * maxOf(KEY_PRIOR_FLOOR, logProbs[c.lowercaseChar()] ?: KEY_PRIOR_FLOOR) }
+    }
+
+    private const val KEY_PRIOR_WEIGHT = 0.10
+    private const val KEY_PRIOR_FLOOR = -6.0
+
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
 
     /** Forgets everything loaded (tests only). */
