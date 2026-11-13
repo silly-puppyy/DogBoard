@@ -384,7 +384,24 @@ class ImeController(
                         // typing on at the end of an existing word continues that word
                         currentWord.seedFrom(state.content.surroundingText.textBefore, tap?.keys ?: emptyMap(), tap?.params)
                     }
-                    currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params)
+                    // iOS case rules need how each letter was shifted, and the context the word started in
+                    val shiftState = state.flags.inputShiftState
+                    val shiftFlag = when {
+                        !wordChar.isUpperCase() -> 0
+                        shiftState == InputShiftState.SHIFTED_AUTOMATIC -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.AUTOSHIFTED
+                        else -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.SHIFTED
+                    }
+                    val caseContext = when (shiftState) {
+                        InputShiftState.SHIFTED_MANUAL -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.SHIFT
+                        InputShiftState.CAPS_LOCK -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.CAPS_LOCK
+                        InputShiftState.SHIFTED_AUTOMATIC -> when (state.editor.info.inputAttributes.capsMode) {
+                            InputAttributes.CapsMode.WORDS -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.AUTOSHIFT_WORDS
+                            InputAttributes.CapsMode.ALL -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.AUTOSHIFT_ALL
+                            else -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.AUTOSHIFT
+                        }
+                        InputShiftState.UNSHIFTED -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.NONE
+                    }
+                    currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params, shiftFlag, caseContext)
                     lastCorrection = null
                 }
                 text in WORD_SEPARATORS -> finishWord(text)
@@ -570,7 +587,7 @@ class ImeController(
                 val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice) else null
                 latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
                 latestCorrection = word.text to correction
-                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction))
+                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word)))
             }
         }
 

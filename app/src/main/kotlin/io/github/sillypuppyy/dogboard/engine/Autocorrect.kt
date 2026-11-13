@@ -21,14 +21,11 @@ class Autocorrect(private val lexicon: Lexicon) {
         /** Characters that make a completion a "special edit" (contractions and the like). */
         private val SPECIAL_EDIT_CHARS = setOf('\'', '’', '&')
 
-        /**
-         * Applies the casing the user typed: all caps stays all caps, a capitalised first letter
-         * (typed or from auto-shift) carries over; the word's own capitals ("I", names) are kept.
-         */
-        fun matchCase(word: String, typed: String): String = when {
-            typed.length > 1 && typed.all { !it.isLetter() || it.isUpperCase() } -> word.uppercase()
-            typed.firstOrNull()?.isUpperCase() == true -> word.replaceFirstChar { it.uppercaseChar() }
-            else -> word
+        /** The casing rules when nothing more is known: capitals in [typed] count as shifted by the user. */
+        fun inferredCase(typed: String): (String) -> String? {
+            val flags = typed.map { if (it.isUpperCase()) CaseAdapt.SHIFTED else 0 }
+            val context = if (flags.firstOrNull() == CaseAdapt.SHIFTED) CaseAdapt.Context.SHIFT else CaseAdapt.Context.NONE
+            return { word -> CaseAdapt.apply(word, typed, flags, context, CaseAdapt.NoDictionary) }
         }
     }
 
@@ -40,9 +37,16 @@ class Autocorrect(private val lexicon: Lexicon) {
      * @param previousCorrection what this rule chose at the previous keystroke, if anything
      *   (a completion that was already the choice one letter earlier skips the length gate)
      */
-    fun correction(typed: String, candidates: List<Candidate>, previousCorrection: String? = null): String? {
-        val top = candidates.firstOrNull() ?: return null
-        val t = matchCase(top.word, typed)
+    fun correction(
+        typed: String,
+        candidates: List<Candidate>,
+        previousCorrection: String? = null,
+        case: (String) -> String? = inferredCase(typed),
+    ): String? {
+        // iOS apply_case_changes: each candidate takes the typed capitals; ones the case rules
+        // don't accept for this input are filtered out
+        val cased = candidates.mapNotNull { c -> case(c.word)?.let { c to it } }
+        val (top, t) = cased.firstOrNull() ?: return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
         // Rule 2: never complete a one-letter word into a longer word ("a" -> "and").
@@ -61,8 +65,7 @@ class Autocorrect(private val lexicon: Lexicon) {
         val stemOk = specialEdit || (previousCorrection != null && t.equals(previousCorrection, ignoreCase = true)) ||
             typed.length >= minStem
         if (!stemOk) return null
-        val second = candidates.getOrNull(1) ?: return t
-        val s = matchCase(second.word, typed)
+        val (second, s) = cased.getOrNull(1) ?: return t
         if (s.equals(t, ignoreCase = true) || s.startsWith(t, ignoreCase = true)) return t
         return if (MIN_DOMINANCE_RATIO * exp(second.score) < exp(top.score)) t else null
     }

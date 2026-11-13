@@ -132,9 +132,24 @@ object TypingEngine {
     fun correction(word: CurrentWord, candidates: List<Candidate>, previousCorrection: String? = null): String? {
         val engine = loaded ?: return null
         if (candidates.isEmpty()) return null
-        val result = engine.autocorrect.correction(word.text, candidates, previousCorrection) ?: return null
+        val result = engine.autocorrect.correction(word.text, candidates, previousCorrection, caseFor(word)) ?: return null
         val rejected = synchronized(rejections) { (word.text.lowercase() to result.lowercase()) in rejections }
         return if (rejected) null else result
+    }
+
+    /**
+     * The case rules for [word] as it was typed (its shift flags), with the lexicon saying which
+     * words exist capitalised: maps a candidate to its cased form, or null if not acceptable.
+     */
+    fun caseFor(word: CurrentWord): (String) -> String? {
+        val engine = loaded
+        val casing = object : CaseAdapt.Casing {
+            override fun hasCapitalisedForm(word: String): Boolean =
+                engine != null && lock.read { engine.lexicon.storedForm(word) }?.firstOrNull()?.isUpperCase() == true
+        }
+        val typed = word.text
+        val flags = word.flags.takeIf { it.size == typed.length } ?: typed.map { if (it.isUpperCase()) CaseAdapt.SHIFTED else 0 }
+        return { candidate -> CaseAdapt.apply(candidate, typed, flags, word.caseContext, casing) }
     }
 
     /** The user undid the correction [typed] -> [correction]: it is not auto-applied again. */

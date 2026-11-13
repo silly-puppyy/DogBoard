@@ -93,6 +93,14 @@ class EngineTest : FunSpec({
             corrected("Teh") shouldBe "The"
             corrected("TEH") shouldBe "THE"
         }
+        test("capitals follow the iOS case rules (google / Google / GOOGLE, YouTube)") {
+            corrected("googel") shouldBe "Google" // the lexicon has one casing for now: the company
+            corrected("Googel") shouldBe "Google"
+            corrected("GOOGEL") shouldBe "GOOGLE"
+            corrected("youtubr") shouldBe "YouTube"
+            corrected("Youtubr") shouldBe "YouTube"
+            corrected("YOUTUBR") shouldBe "YOUTUBE"
+        }
         test("iOS rule 2: a one-letter word is never completed into a longer word") {
             corrected("a") shouldBe "a"
         }

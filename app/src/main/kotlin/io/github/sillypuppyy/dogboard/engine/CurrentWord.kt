@@ -13,6 +13,13 @@ class CurrentWord {
     private val taps = ArrayList<Tap>()
     private var decodable = true
 
+    /** Per letter: how shift was set when it was typed ([CaseAdapt.SHIFTED], [CaseAdapt.AUTOSHIFTED]). */
+    private val shiftFlags = ArrayList<Int>()
+
+    /** The shift context when the word started (iOS shiftContextForShiftState). */
+    var caseContext: CaseAdapt.Context = CaseAdapt.Context.NONE
+        private set
+
     /** Letter-key targets and touch parameters of the keyboard the taps were made on. */
     var keys: Map<Char, KeyTarget> = emptyMap()
         private set
@@ -20,16 +27,26 @@ class CurrentWord {
         private set
 
     val text: String get() = letters.toString()
+    val flags: List<Int> get() = shiftFlags.toList()
     val isEmpty: Boolean get() = letters.isEmpty()
 
     /**
      * Adds a typed letter. [tap] is where its key was tapped, or null if the letter came from
      * elsewhere; then the key's centre stands in when the letter is on the keyboard.
      */
-    fun addLetter(letter: Char, tap: Tap?, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
+    fun addLetter(
+        letter: Char,
+        tap: Tap?,
+        keys: Map<Char, KeyTarget>,
+        params: GaussianTouch.Params?,
+        shiftFlag: Int = if (letter.isUpperCase()) CaseAdapt.SHIFTED else 0,
+        context: CaseAdapt.Context? = null,
+    ) {
         if (keys.isNotEmpty()) this.keys = keys
         if (params != null) this.params = params
+        if (letters.isEmpty()) caseContext = context ?: if (shiftFlag != 0) CaseAdapt.Context.SHIFT else CaseAdapt.Context.NONE
         letters.append(letter)
+        shiftFlags.add(shiftFlag)
         val position = tap ?: this.keys[letter.lowercaseChar()]?.let { Tap(it.centerX, it.centerY) }
         if (position == null) decodable = false else taps.add(position)
     }
@@ -37,6 +54,7 @@ class CurrentWord {
     fun removeLast() {
         if (letters.isEmpty()) return
         letters.setLength(letters.length - 1)
+        if (shiftFlags.size > letters.length) shiftFlags.removeAt(shiftFlags.size - 1)
         if (taps.size > letters.length) taps.removeAt(taps.size - 1)
         if (letters.isEmpty()) clear()
     }
@@ -44,6 +62,8 @@ class CurrentWord {
     fun clear() {
         letters.setLength(0)
         taps.clear()
+        shiftFlags.clear()
+        caseContext = CaseAdapt.Context.NONE
         decodable = true
     }
 
@@ -63,6 +83,8 @@ class CurrentWord {
     fun snapshot(): CurrentWord = CurrentWord().also {
         it.letters.append(letters)
         it.taps.addAll(taps)
+        it.shiftFlags.addAll(shiftFlags)
+        it.caseContext = caseContext
         it.decodable = decodable
         it.keys = keys
         it.params = params

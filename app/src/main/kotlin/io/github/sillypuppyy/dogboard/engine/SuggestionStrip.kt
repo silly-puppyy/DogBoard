@@ -24,7 +24,12 @@ data class Suggestion(val word: String, val kind: Kind) {
 object SuggestionStrip {
     const val SLOTS = 3
 
-    fun build(typed: String, candidates: List<Candidate>, correction: String?): List<Suggestion> {
+    fun build(
+        typed: String,
+        candidates: List<Candidate>,
+        correction: String?,
+        case: (String) -> String? = Autocorrect.inferredCase(typed),
+    ): List<Suggestion> {
         if (typed.isEmpty()) return emptyList()
         val result = ArrayList<Suggestion>(SLOTS)
         result.add(Suggestion(typed, Suggestion.Kind.LITERAL))
@@ -34,7 +39,7 @@ object SuggestionStrip {
         for (candidate in candidates) {
             if (result.size >= SLOTS) break
             if (candidate.isTypedString) continue
-            val word = Autocorrect.matchCase(candidate.word, typed)
+            val word = case(candidate.word) ?: continue
             if (seen.add(word.lowercase())) result.add(Suggestion(word, Suggestion.Kind.WORD))
         }
         return result

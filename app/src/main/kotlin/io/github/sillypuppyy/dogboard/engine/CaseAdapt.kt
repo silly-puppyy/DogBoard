@@ -38,6 +38,11 @@ object CaseAdapt {
         fun keepsLowercaseStart(word: String): Boolean = word.length > 1 && word[0].isLowerCase() && word.drop(1).any { it.isUpperCase() }
     }
 
+    /** For callers without a dictionary: only the candidate's own capitals are known. */
+    object NoDictionary : Casing {
+        override fun hasCapitalisedForm(word: String) = false
+    }
+
     fun classify(input: String, flags: List<Int>, context: Context): Type {
         if (flags.isEmpty()) return Type.NONE
         val hasLower = input.any { it.isLowerCase() }
