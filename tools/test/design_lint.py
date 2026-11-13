@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Runs the design lint over every frame of the debug design gallery (tools/test/design_lint.py).
 
-    tools/test/design_lint.py [--serial emulator-5554] [--frames 0-56] [--package io.github.sillypuppyy.dogboard.debug]
+    tools/test/design_lint.py [--serial emulator-5554] [--frames 0-60] [--package io.github.sillypuppyy.dogboard.debug]
 
 Each frame of DesignGalleryActivity is drawn alone, with the lint on (DesignLint.kt): text wider
 than its box, elements outside their container or the keyboard, overlapping caps, caps not where
@@ -26,7 +26,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--serial", default="emulator-5554")
     ap.add_argument("--package", default="io.github.sillypuppyy.dogboard.debug")
-    ap.add_argument("--frames", default="0-56", help="range a-b of frame indices")
+    ap.add_argument("--frames", default="0-60", help="range a-b of frame indices")
     args = ap.parse_args()
     lo, _, hi = args.frames.partition("-")
     problems, missing = [], []

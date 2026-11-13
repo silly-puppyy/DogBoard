@@ -77,7 +77,10 @@ class DesignLint {
             }
             // 2. leaving its parent (floating elements may)
             val parent = n.parent?.let { nodes[it] }
-            if (parent != null && n.kind != Kind.FLOATING && n.kind != Kind.SCROLLED && !parent.bounds.containsRect(n.bounds)) {
+            // (a child of a clipping container may extend past it: it is clipped, not escaping)
+            if (parent != null && n.kind != Kind.FLOATING && n.kind != Kind.SCROLLED && parent.kind != Kind.SCROLLED &&
+                !parent.bounds.containsRect(n.bounds)
+            ) {
                 out += "ESCAPE ${n.id} ${n.bounds.str()} outside ${parent.id} ${parent.bounds.str()}"
             }
             // 3. leaving the keyboard sideways (popups included: they must stay on screen)
@@ -205,7 +208,18 @@ private fun SquashedText(text: String, modifier: Modifier, style: TextStyle, id:
     BoxWithConstraints(modifier) {
         val natural = remember(text, style) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width }
         val available = constraints.maxWidth
-        val scale = if (natural <= available || available <= 0) 1f else (available.toFloat() / natural).coerceAtLeast(SQUASH_MIN_SCALE)
+        // Narrowing is not exactly linear (glyph positions round), so measure, correct and repeat
+        // until the squashed line really fits, or the floor is reached.
+        val scale = remember(text, style, available) {
+            if (natural <= available || available <= 0) return@remember 1f
+            var sc = (available.toFloat() / natural).coerceAtLeast(SQUASH_MIN_SCALE)
+            repeat(4) {
+                val w = measurer.measure(text, style.copy(textGeometricTransform = TextGeometricTransform(scaleX = sc)), maxLines = 1, softWrap = false).size.width
+                if (w <= available || sc <= SQUASH_MIN_SCALE) return@remember sc
+                sc = (sc * (available - 0.5f) / w).coerceAtLeast(SQUASH_MIN_SCALE)
+            }
+            sc
+        }
         DText(
             text, Modifier, style.copy(textGeometricTransform = TextGeometricTransform(scaleX = scale)),
             id = id, kind = kind, maxLines = 1, softWrap = false, overflow = TextOverflow.MiddleEllipsis,

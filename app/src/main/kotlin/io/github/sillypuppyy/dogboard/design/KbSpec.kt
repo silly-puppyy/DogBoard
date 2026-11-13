@@ -46,6 +46,14 @@ data class KbProps(
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
     val only: String = "", // "", keys, bar
+    // DogBoard options (user, 2026-11-13; notes/research/suggestion-overflow.md), not in the design:
+    /**
+     * A word too long for its slot, one setting with two choices:
+     * "squash" (default, like Gboard/LatinIME): narrow to 70%, then cut in the middle; a centre
+     * word that still can't fit takes the whole slot area. "fade" (like iOS): the word keeps its
+     * size and its end fades out.
+     */
+    val slotOverflow: String = "squash",
 )
 
 /** One key cap (Kb:561-565) or a gap (Kb:526). x/w are dp from the keyboard's left edge. */
@@ -134,6 +142,7 @@ data class KbRender(
     val rootRadius: Float,
     val rootShadow: List<CssShadow>,
     val x: KbExtras,
+    val slotOverflow: String,
 )
 
 object KbSpec {
@@ -414,6 +423,7 @@ object KbSpec {
             trackpad = trackpad, tpX = kbW / 2 - 28 + stripL.w, tpY = keyAreaH - rowH / 2 - 28,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
             x = KbExtrasSpec.extras(P, t, W),
+            slotOverflow = P.slotOverflow,
             rootShadow = if (floating) CssShadow.parse("0 2px 6px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.18)") else emptyList(),
         )
     }

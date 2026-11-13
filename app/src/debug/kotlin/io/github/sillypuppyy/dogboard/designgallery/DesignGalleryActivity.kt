@@ -76,6 +76,9 @@ class DesignGalleryActivity : ComponentActivity() {
     companion object {
         const val TAG = "DesignLint"
 
+        // initialised before the frame lists that use it
+        private val LONG = listOf("“Supercalifragilistic”" to "lit", "Superb" to "ac", "Supercalifragilisticexpialidocious" to "w")
+
         // Panels.dc.html:100-108 (bar cards, only = bar) and 128-145 (panel and mode cells, defaults
         // Panels:86: bar empty, ret send)
         val PANELS = listOf(
@@ -107,7 +110,13 @@ class DesignGalleryActivity : ComponentActivity() {
         ) + listOf("return", "send", "search", "go", "next", "done", "join", "route", "continue").map {
             // Panels:111-119: every return word in the cap
             Frame("Return: $it", "Panels.dc.html:111-119", KbProps(ret = it))
-        }
+        } + listOf(
+            // DogBoard options for words that don't fit (notes/research/suggestion-overflow.md)
+            Frame("Long words: squash (default)", "Narrow to 70%, then cut in the middle.", KbProps(only = "bar", slots = LONG)),
+            Frame("Long words: fade", "Words keep their size; the end fades out.", KbProps(only = "bar", slots = LONG, slotOverflow = "fade")),
+            Frame("Long chip: fade", "Text replacement with fade: the chip keeps its slot and fades.", KbProps(only = "bar", bar = "omw", slotOverflow = "fade")),
+            Frame("Long chip: squash, centre wide", "Too long even at 70%: the centre word takes the whole slot area (LatinIME).", KbProps(only = "bar", slots = listOf("“intl”" to "lit", "internationalization" to "ac", "into" to "w"))),
+        )
 
         // States.dc.html:52-84, props as overrides of States:47 defaults (= KbProps defaults)
         val STATES = listOf(

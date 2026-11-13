@@ -1,6 +1,16 @@
 package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -172,22 +182,7 @@ private fun KbBar(r: KbRender) {
         // Kb:81-90
         Row(Modifier.weight(1f).height(48.dp), verticalAlignment = Alignment.CenterVertically) {
             if (!r.mSlots) KbBarSpecial(r)
-            if (r.mSlots) {
-                for (s in r.slots) {
-                    if (s.showDiv) Box(Modifier.size(1.dp, 22.dp).background(t.div))
-                    Box(Modifier.weight(1f).height(48.dp).lint("slot:${s.text}"), contentAlignment = Alignment.Center) { LintParent("slot:${s.text}") {
-                        DText(
-                            s.text,
-                            Modifier.cssShadow(s.ring, RoundedCornerShape(50))
-                                .background(s.bg, RoundedCornerShape(50))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = designTextStyle(s.fs.sp, s.wt, s.fg).copy(lineHeight = 20.sp),
-                            maxLines = 1,
-                            squash = true,
-                        )
-                    } }
-                }
-            }
+            if (r.mSlots) KbSlots(r)
         }
         // Kb:135-139
         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
@@ -267,3 +262,76 @@ fun Modifier.placeAt(rect: Rect): Modifier = layout { measurable, _ ->
     val p = measurable.measure(Constraints.fixed(w, h))
     layout(w, h) { p.place(l, t) }
 }
+
+/**
+ * Kb:83-89 slots, with DogBoard's setting for words that don't fit, [KbRender.slotOverflow]
+ * (user, 2026-11-13): "squash" narrows, then cuts in the middle, and, like LatinIME, lets the
+ * centre (best) suggestion take the whole slot area when it can't fit even at [SQUASH_MIN_SCALE];
+ * "fade" clips with a fading end.
+ */
+@Composable
+private fun RowScope.KbSlots(r: KbRender) {
+    val t = r.t
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    BoxWithConstraints(Modifier.weight(1f).height(48.dp)) {
+        val centre = r.slots.getOrNull(1)
+        val centreAlone = r.slotOverflow == "squash" && centre != null && r.slots.size == 3 && run {
+            val dividers = r.slots.count { it.showDiv }
+            val slotText = (maxWidth - dividers.dp) / r.slots.size - SLOT_PADDING_H * 2
+            val natural = measurer.measure(centre.text, slotStyle(centre), maxLines = 1, softWrap = false).size.width
+            natural * SQUASH_MIN_SCALE > with(density) { slotText.toPx() }
+        }
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            for (s in if (centreAlone) listOf(centre!!) else r.slots) {
+                if (s.showDiv && !centreAlone) Box(Modifier.size(1.dp, 22.dp).background(t.div))
+                Box(Modifier.weight(1f).height(48.dp).lint("slot:${s.text}"), contentAlignment = Alignment.Center) {
+                    LintParent("slot:${s.text}") { SlotText(r, s) }
+                }
+            }
+        }
+    }
+}
+
+private val SLOT_PADDING_H = 12.dp
+
+/** Fade length for "fade" overflow. Provisional: Apple's mask length is not measured yet. */
+private val FADE_LENGTH = 16.dp
+
+private fun slotStyle(s: KbSlot) = designTextStyle(s.fs.sp, s.wt, s.fg).copy(lineHeight = 20.sp)
+
+@Composable
+private fun SlotText(r: KbRender, s: KbSlot) {
+    val chip = Modifier.cssShadow(s.ring, RoundedCornerShape(50))
+        .background(s.bg, RoundedCornerShape(50))
+        .padding(horizontal = SLOT_PADDING_H, vertical = 6.dp)
+    if (r.slotOverflow != "fade") {
+        DText(s.text, chip, style = slotStyle(s), maxLines = 1, squash = true)
+        return
+    }
+    // "fade": the word keeps its size; if it is wider than the slot, it starts at the left edge
+    // and its end fades out
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(chip) {
+        val natural = measurer.measure(s.text, slotStyle(s), maxLines = 1, softWrap = false).size.width
+        if (natural <= constraints.maxWidth) {
+            DText(s.text, style = slotStyle(s))
+        } else {
+            Box(
+                Modifier.fillMaxWidth().clipToBounds().fadeEnd(FADE_LENGTH).lint("fade:${s.text}", DesignLint.Kind.SCROLLED),
+            ) {
+                LintParent("fade:${s.text}") {
+                    DText(s.text, Modifier.wrapContentWidth(Alignment.Start, unbounded = true), style = slotStyle(s).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                }
+            }
+        }
+    }
+}
+
+/** Fades the last [length] of this element to transparent (a DstIn gradient mask, like a scroll view's edge mask). */
+fun Modifier.fadeEnd(length: androidx.compose.ui.unit.Dp): Modifier =
+    graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen).drawWithContent {
+        drawContent()
+        val start = (1f - length.toPx() / size.width).coerceIn(0f, 1f)
+        drawRect(Brush.horizontalGradient(0f to Color.Black, start to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+    }
