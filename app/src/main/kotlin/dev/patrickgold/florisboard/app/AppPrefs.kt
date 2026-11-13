@@ -716,6 +716,15 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "typing__shift_key_behavior",
             default = ShiftKeyBehavior.CAPSLOCK_BY_DOUBLE_TAP,
         )
+        // DogBoard: iOS Smart Punctuation, two switches as in iOS (smartQuotesEnabled, smartDashesEnabled)
+        val smartQuotes = boolean(
+            key = "typing__smart_quotes",
+            default = true,
+        )
+        val smartDashes = boolean(
+            key = "typing__smart_dashes",
+            default = true,
+        )
         // DogBoard: iOS "Enable Caps Lock" (KeyboardCapsLock); off = a second shift tap just toggles
         val capsLockEnabled = boolean(
             key = "typing__caps_lock_enabled",

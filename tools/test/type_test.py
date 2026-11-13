@@ -39,7 +39,7 @@ CASES = [
     # neighbouring-key typos: adb taps are slow (0.4+ s apart), and iOS-rule edit costs such as a
     # swapped pair grow with the time between taps, so timing-dependent typos are unit-tested instead
     ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
-    ("i dont know", "I don't know"),
+    ("i dont know", "I don’t know"),  # smart quotes on (iOS default): the restored apostrophe is curly
     # "<" is backspace: right after an autocorrection it restores the typed word. Undoing also
     # rejects a correction (iOS rule: blocked for under a day after one undo, see Rejections.kt),
     # so smoke.sh clears the learned files before each run.

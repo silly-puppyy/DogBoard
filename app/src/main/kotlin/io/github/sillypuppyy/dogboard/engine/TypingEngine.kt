@@ -151,14 +151,14 @@ object TypingEngine {
      * What [word] should become when it is finished, or null to keep it as typed.
      * [previousCorrection] is what this returned one keystroke earlier (iOS hysteresis).
      */
-    fun correction(word: CurrentWord, candidates: List<Candidate>, previousCorrection: String? = null): String? {
+    fun correction(word: CurrentWord, candidates: List<Candidate>, previousCorrection: String? = null, curly: Boolean = false): String? {
         val engine = loaded ?: return null
         // iOS: text replacements are tried before the engine, so a shortcut beats autocorrection
         replacementFor(word.text, word.flags, word.caseContext)?.let { phrase ->
             if (!rejections.isBlocked(word.text, phrase)) return phrase
         }
         if (candidates.isEmpty()) return null
-        val result = engine.autocorrect.correction(word.text, candidates, previousCorrection, caseFor(word)) ?: return null
+        val result = engine.autocorrect.correction(word.text, candidates, previousCorrection, caseFor(word, curly)) ?: return null
         return if (rejections.isBlocked(word.text, result)) null else result
     }
 
@@ -166,7 +166,7 @@ object TypingEngine {
      * The case rules for [word] as it was typed (its shift flags), with the lexicon saying which
      * words exist capitalised: maps a candidate to its cased form, or null if not acceptable.
      */
-    fun caseFor(word: CurrentWord): (String) -> String? {
+    fun caseFor(word: CurrentWord, curly: Boolean = false): (String) -> String? {
         val engine = loaded
         val casing = object : CaseAdapt.Casing {
             override fun hasCapitalisedForm(word: String): Boolean =
@@ -174,7 +174,8 @@ object TypingEngine {
         }
         val typed = word.text
         val flags = word.flags.takeIf { it.size == typed.length } ?: typed.map { if (it.isUpperCase()) CaseAdapt.SHIFTED else 0 }
-        return { candidate -> CaseAdapt.apply(candidate, typed, flags, word.caseContext, casing) }
+        // with smart quotes on, apostrophes are curly, as the user's own are (iOS treats ' and ’ alike)
+        return { candidate -> CaseAdapt.apply(candidate, typed, flags, word.caseContext, casing)?.let { if (curly) it.replace('\'', '’') else it } }
     }
 
     /** The user undid [typed] -> [correction] (or kept their word while it was offered): a hard rejection. */

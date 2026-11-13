@@ -386,6 +386,18 @@ class ImeController(
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             deletingWord = null
             val text = value.toText()
+            // DogBoard: iOS smart punctuation: curly quotes, dashes, ellipsis (SmartPunctuation)
+            if (wordEngineAllowed()) {
+                val smart = io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput(
+                    text, state.content.surroundingText.textBefore, state.content.surroundingText.textAfter,
+                    prefs.typing.smartQuotes.get(), prefs.typing.smartDashes.get(),
+                )
+                if (smart != null && (smart.deleteBefore > 0 || smart.insert != text)) {
+                    repeat(smart.deleteBefore) { rawBackspace() }
+                    emitText(smart.insert.asK3String())
+                    return
+                }
+            }
             // emoji typed from the panel or search count as emoji use (iOS ranking and show rule)
             if (text.isNotEmpty() && text.codePoints().anyMatch { Character.getType(it) == Character.OTHER_SYMBOL.toInt() && it >= 0x2190 } &&
                 !state.flags.isIncognitoMode
@@ -489,7 +501,7 @@ class ImeController(
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
                     ?: TypingEngine.candidates(word, context)
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
-                val corrected = TypingEngine.correction(word, candidates, previousChoice)
+                val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes())
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
                     if (!state.flags.isIncognitoMode) {
@@ -598,6 +610,9 @@ class ImeController(
         private fun cursorInsideWord(): Boolean =
             state.content.surroundingText.textAfter.firstOrNull()?.let { isWordChar(it) } == true
 
+        /** Smart quotes are on here, so apostrophes in corrections are curly like the typed ones. */
+        private fun curlyApostrophes(): Boolean = wordEngineAllowed() && prefs.typing.smartQuotes.get()
+
         private fun correctionAllowed(): Boolean = prefs.correction.autocorrect.get() && wordEngineAllowed()
 
         private fun wordEngineAllowed(): Boolean {
@@ -653,11 +668,11 @@ class ImeController(
                 val candidates = TypingEngine.candidates(word, context)
                 latestDecode = decodeKey(word.text, context) to candidates
                 val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
-                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice) else null
+                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes()) else null
                 latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
                 latestCorrection = word.text to correction
                 val emoji = TypingEngine.emojiFor(textBefore, app, emojiMode, prefs.emoji.preferredSkinTone.get().id)
-                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word), emoji))
+                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word, curlyApostrophes()), emoji))
             }
         }
 
