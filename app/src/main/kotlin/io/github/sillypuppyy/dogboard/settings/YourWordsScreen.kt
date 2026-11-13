@@ -106,7 +106,7 @@ fun YourWordsScreen() {
         )
         "add:rejected" -> TwoFieldDialog(
             title = "Add a rule", first = "Typed", second = "Never correct it to",
-            onDone = { t, c -> dialog = null; if (t.isNotBlank() && c.isNotBlank()) change { TypingEngine.reject(t.trim(), c.trim()) } },
+            onDone = { t, c -> dialog = null; if (t.isNotBlank() && c.isNotBlank()) change { TypingEngine.neverCorrect(t.trim(), c.trim()) } },
             onCancel = { dialog = null },
         )
         else -> {

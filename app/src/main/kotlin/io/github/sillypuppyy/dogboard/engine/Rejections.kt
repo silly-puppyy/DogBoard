@@ -19,7 +19,8 @@ import kotlin.math.ln
  * accents or punctuation, else 20.
  */
 class Rejections(private val file: File? = null, private val now: () -> Long = System::currentTimeMillis) {
-    private class Row(var performed: Int = 0, var soft: Int = 0, var hard: Int = 0, var lastSoft: Long = 0, var lastHard: Long = 0)
+    /** [permanent]: the user added "never correct typed to correction" in settings; no expiry. */
+    private class Row(var performed: Int = 0, var soft: Int = 0, var hard: Int = 0, var lastSoft: Long = 0, var lastHard: Long = 0, var permanent: Boolean = false)
 
     private class Deleted(val typed: String, val correction: String, val time: Long, var count: Int = 0)
 
@@ -36,6 +37,16 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
     fun recordHard(typed: String, correction: String) {
         val row = rows.getOrPut(typed to correction) { Row() }
         row.hard++
+        row.lastHard = now()
+        save()
+    }
+
+    /** The user said in settings: never correct [typed] to [correction]. Lasts until removed. */
+    @Synchronized
+    fun neverCorrect(typed: String, correction: String) {
+        val row = rows.getOrPut(typed to correction) { Row() }
+        row.permanent = true
+        row.hard = maxOf(row.hard, 1)
         row.lastHard = now()
         save()
     }
@@ -77,6 +88,7 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
     fun isBlocked(typed: String, correction: String, ignoreSoft: Boolean = false, consume: Boolean = false): Boolean {
         if (!ignoreSoft && softBlocks(typed, correction, consume)) return true
         val row = rows[typed to correction] ?: return false
+        if (row.permanent) return true
         if (row.hard == 0) return false
         val days = (now() - row.lastHard) / MS_PER_DAY
         if (days > HARD_MAX_DAYS) return false
@@ -104,7 +116,7 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
     /** The user took back their undo of [correction] for [typed]: it may be made again. */
     @Synchronized
     fun restore(typed: String, correction: String) {
-        rows[typed to correction]?.let { it.hard = 0; it.soft = 0; it.lastHard = 0; it.lastSoft = 0 }
+        rows[typed to correction]?.let { it.hard = 0; it.soft = 0; it.lastHard = 0; it.lastSoft = 0; it.permanent = false }
         save()
     }
 
@@ -125,7 +137,10 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
                 // the earlier format: "typed<TAB>correction", a permanent block; becomes one hard
                 // rejection dated by the file
                 2 -> rows.getOrPut(p[0] to p[1]) { Row() }.apply { hard = maxOf(hard, 1); lastHard = f.lastModified() }
-                7 -> rows[p[0] to p[1]] = Row(p[2].toInt(), p[3].toInt(), p[4].toInt(), p[5].toLong(), p[6].toLong())
+                7, 8 -> rows[p[0] to p[1]] = Row(
+                    p[2].toIntOrNull() ?: 0, p[3].toIntOrNull() ?: 0, p[4].toIntOrNull() ?: 0,
+                    p[5].toLongOrNull() ?: 0, p[6].toLongOrNull() ?: 0, p.getOrNull(7) == "1",
+                )
             }
         }
     }
@@ -136,7 +151,7 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
             f.parentFile?.mkdirs()
             val tmp = File(f.path + ".tmp")
             tmp.bufferedWriter().use { w ->
-                for ((k, r) in rows) w.write("${k.first}\t${k.second}\t${r.performed}\t${r.soft}\t${r.hard}\t${r.lastSoft}\t${r.lastHard}\n")
+                for ((k, r) in rows) w.write("${k.first}\t${k.second}\t${r.performed}\t${r.soft}\t${r.hard}\t${r.lastSoft}\t${r.lastHard}\t${if (r.permanent) 1 else 0}\n")
             }
             tmp.renameTo(f)
         }

@@ -80,4 +80,15 @@ class RejectionsTest : FunSpec({
         f.writeText("hrllo\thello\n")
         fresh(f).hardCount("hrllo", "hello") shouldBe 1
     }
+    test("a rule added in settings never expires, survives a reload, and can be removed") {
+        val f = File.createTempFile("rejections", ".tsv")
+        val r = Rejections(f) { t }
+        r.neverCorrect("Qwopz", "Quips")
+        t += 400 * day
+        r.isBlocked("Qwopz", "Quips") shouldBe true
+        Rejections(f) { t }.isBlocked("Qwopz", "Quips") shouldBe true
+        r.restore("Qwopz", "Quips")
+        r.isBlocked("Qwopz", "Quips") shouldBe false
+        f.delete()
+    }
 })

@@ -435,6 +435,9 @@ object TypingEngine {
         }
     }
 
+    /** The user added "never correct [typed] to [correction]" in settings: permanent until removed. */
+    fun neverCorrect(typed: String, correction: String) = rejections.neverCorrect(typed, correction)
+
     /** The user undid [typed] -> [correction] (or kept their word while it was offered): a hard rejection. */
     fun reject(typed: String, correction: String) = rejections.recordHard(typed, correction)
 
