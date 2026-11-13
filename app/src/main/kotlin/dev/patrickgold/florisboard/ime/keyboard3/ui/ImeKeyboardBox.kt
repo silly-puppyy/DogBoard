@@ -246,6 +246,9 @@ fun ImeKeyboardBox(
             if (dogboardDesign) {
                 val output = trackedOutputPointer
                 val ui = io.github.sillypuppyy.dogboard.ime.LiveUi
+                // the space-bar trackpad in use: the keys show the design's trackpad mode, the bar fades
+                val trackpadX = output?.trackpadLastXDp?.takeIf { output.cursorAnchorDp != null }
+                androidx.compose.runtime.SideEffect { ui.trackpad.value = trackpadX != null }
                 // the design's clipboard panel shows FlorisBoard's clipboard history
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val clipboardManager = remember(context) { context.clipboardManager().value }
@@ -259,6 +262,7 @@ fun ImeKeyboardBox(
                     pressedKey = output?.downKey ?: trackedPeekPointer?.peekKey,
                     longPress = output?.longPress,
                     panel = livePanel,
+                    trackpadX = trackpadX,
                     fnKey = if (prefs.keyboard.fnKeyArrangement.collectAsState().value.simpleAction.output == ImeActions.SwitchToNextSubtype) "globe" else "emoji",
                     actions = remember(imeController, clipItems) {
                         io.github.sillypuppyy.dogboard.design.KbActions(

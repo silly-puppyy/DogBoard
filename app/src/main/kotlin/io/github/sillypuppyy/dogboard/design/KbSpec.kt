@@ -33,6 +33,8 @@ data class KbProps(
     val dev: Boolean = false,
     val incognito: Boolean = false,
     val trackpad: Boolean = false,
+    /** Live trackpad: the finger's x in dp from the keyboard's left edge (the puck follows it). */
+    val trackpadX: Float? = null,
     val oneHanded: String = "", // "", left, right
     val floating: Boolean = false,
     val landscape: Boolean = false,
@@ -428,7 +430,7 @@ object KbSpec {
             leftFill = if (toolsOpen || incognito) 1 else 0,
             micIcon = if (mVoice) "stop" else "mic", micAria = if (mVoice) "Stop dictation" else "Voice input",
             micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else t.barMuted, micFill = if (mVoice) 1 else 0,
-            trackpad = trackpad, tpX = kbW / 2 - 28 + stripL.w, tpY = keyAreaH - rowH / 2 - 28,
+            trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowH / 2 - 28,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
             x = KbExtrasSpec.extras(P, t, W),
             slotOverflow = P.slotOverflow, glass = P.theme == "glass", blurPx = P.blur, dimA = P.dim,

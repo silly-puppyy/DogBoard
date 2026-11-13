@@ -16,6 +16,9 @@ object LiveUi {
     /** The panel shown in place of the keys: "" (none), "tools", "edit" or "clipboard". */
     val panel = MutableStateFlow("")
 
+    /** The space-bar trackpad is in use (the bar fades, Kb:511-512). */
+    val trackpad = MutableStateFlow(false)
+
     /** Selection mode in the text-editing panel: the arrows extend the selection. */
     val selecting = MutableStateFlow(false)
     private var selAnchor = 0

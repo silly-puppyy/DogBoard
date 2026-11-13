@@ -1,5 +1,7 @@
 package io.github.sillypuppyy.dogboard.design
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +32,8 @@ fun LiveKbView(
     panelVariant: String = "default",
     /** "emoji" or "globe": what the fn key does (FlorisBoard's fn key setting). */
     fnKey: String = "emoji",
+    /** The space-bar trackpad's finger x (dp), or null when it isn't in use. */
+    trackpadX: Float? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -58,6 +62,8 @@ fun LiveKbView(
             clips = clips,
             panelVariant = panelVariant,
             fnKey = fnKey,
+            trackpad = trackpadX != null,
+            trackpadX = trackpadX,
         )
         val render = remember(props) { KbSpec.render(props) }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
@@ -98,9 +104,10 @@ fun LiveKbBar(
         // the tool row replaces the suggestions while open; a panel shows its header instead
         // incognito with nothing typed: the design's incognito note instead of predictions (Kb:131)
         val incognitoNote = incognito && !toolRow && strip.none { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
+        val trackpad by io.github.sillypuppyy.dogboard.ime.LiveUi.trackpad.collectAsState()
         val props = KbProps(
             dark = dark, slots = if (toolRow || incognitoNote) null else slots, bar = if (toolRow) "tools" else "empty",
-            panel = panel, width = maxWidth.value, only = "bar", incognito = incognito,
+            panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
         )
         val render = remember(props) { KbSpec.render(props) }
         val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic) {
