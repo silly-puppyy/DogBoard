@@ -20,3 +20,9 @@ en.bigrams.tsv
   Word pair counts computed from English sentences of Tatoeba (https://tatoeba.org),
   licensed under CC BY 2.0 FR (https://creativecommons.org/licenses/by/2.0/fr/), by
   tools/data/bigrams_from_tatoeba.py. Only counts are included, not sentences.
+
+Fonts (res/font, subsets made by tools/fonts/subset_fonts.py)
+  roboto_flex.ttf: Roboto Flex, Copyright 2017 The Roboto Flex Project Authors, SIL Open Font
+    License 1.1, included in licenses/RobotoFlex-OFL.txt.
+  material_symbols_rounded.ttf: Material Symbols Rounded by Google, Apache License 2.0, included
+    in licenses/MaterialSymbols-Apache-2.0.txt.
