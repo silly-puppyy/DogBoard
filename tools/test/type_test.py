@@ -207,10 +207,13 @@ def main():
                 time.sleep(args.delay)
                 continue
             if ch.startswith("{S"):
-                # hold space 0.6 s (trackpad needs 0.375 s), then slide dx dp in 8 moves, then lift
-                dx = int(ch[2:-1]) * density
+                # hold space 0.6 s (trackpad needs 0.375 s), then slide dx dp slowly (1 dp moves, where
+                # iOS's acceleration adds ~4%: a precise drag), then lift
+                dx_dp = int(ch[2:-1])
+                dx = dx_dp * density
+                n = max(abs(dx_dp), 1)
                 sx, sy = x0 + SPACE_CENTER_X * unit, y0 + 3.5 * row_h
-                moves = " ; ".join(f"input motionevent MOVE {int(sx + dx * i / 8)} {int(sy)}" for i in range(1, 9))
+                moves = " ; ".join(f"input motionevent MOVE {int(sx + dx * i / n)} {int(sy)}" for i in range(1, n + 1))
                 adb(args.serial, "shell",
                     f"input motionevent DOWN {int(sx)} {int(sy)} ; sleep 0.6 ; {moves} ; input motionevent UP {int(sx + dx)} {int(sy)}")
                 time.sleep(args.delay)

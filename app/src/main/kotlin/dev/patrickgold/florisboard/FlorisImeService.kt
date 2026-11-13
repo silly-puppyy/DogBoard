@@ -283,6 +283,7 @@ class FlorisImeService : LifecycleInputMethodService() {
 
         // DogBoard: word engine feeding the suggestion strip; the dictionary loads in the background
         imeController.suggestionSink = { strip ->
+            io.github.sillypuppyy.dogboard.ime.LiveStrip.strip.value = strip // the design's bar
             nlpManager.suggestDirectly(strip.map { io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(it) })
         }
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {

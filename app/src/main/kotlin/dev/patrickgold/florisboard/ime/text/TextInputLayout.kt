@@ -62,7 +62,23 @@ fun TextInputLayout(
             .fillMaxWidth()
             .wrapContentHeight(),
     ) {
-        Smartbar()
+        // DogBoard: stage 2 of the design port: the ported bar instead of FlorisBoard's Smartbar
+        val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
+        if (dogboardDesign) {
+            val strip by io.github.sillypuppyy.dogboard.ime.LiveStrip.strip.collectAsState()
+            io.github.sillypuppyy.dogboard.design.LiveKbBar(
+                strip = strip,
+                onPick = { s ->
+                    imeController.updateStateBlocking { emitCandidate(io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(s)) }
+                },
+                // the design's tools panel isn't ported yet: FlorisBoard's quick actions stand in
+                onLeft = {
+                    imeController.updateStateBlocking { emitDescriptor(dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ToggleActionsOverflow) }
+                },
+            )
+        } else {
+            Smartbar()
+        }
         if (isActionsOverflowVisible) {
             QuickActionsOverflowPanel()
         } else {

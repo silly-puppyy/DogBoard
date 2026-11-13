@@ -3,6 +3,9 @@ package io.github.sillypuppyy.dogboard.design
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -52,3 +55,35 @@ fun LiveKbView(
 }
 
 private val RET_WORDS = setOf("send", "search", "go", "next", "done", "join", "route", "continue")
+
+/**
+ * Stage 2: the suggestion bar drawn by the ported view from the live strip ([strip]); a tap on a
+ * slot calls [onPick] with that suggestion.
+ */
+@Composable
+fun LiveKbBar(
+    strip: List<io.github.sillypuppyy.dogboard.engine.Suggestion>,
+    onPick: (io.github.sillypuppyy.dogboard.engine.Suggestion) -> Unit,
+    onLeft: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dark = isSystemInDarkTheme()
+    BoxWithConstraints(modifier.fillMaxWidth().height(48.dp)) {
+        if (!maxWidth.value.isFinite() || maxWidth.value < 100f) return@BoxWithConstraints
+        val slots = strip.map { s ->
+            when (s.kind) {
+                io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.LITERAL -> "“${s.word}”" to "lit"
+                io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.AUTOCORRECT -> s.word to "ac"
+                io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION -> s.word to "p"
+                io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.EMOJI -> s.word to "emo"
+                else -> s.word to "w"
+            }
+        }
+        val props = KbProps(dark = dark, slots = slots, width = maxWidth.value, only = "bar")
+        val render = remember(props) { KbSpec.render(props) }
+        val actions = remember(strip, onPick, onLeft) {
+            KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft)
+        }
+        androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
+    }
+}

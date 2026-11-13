@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
@@ -46,6 +47,14 @@ import androidx.compose.ui.unit.DpOffset
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+/** Taps on the live keyboard's bar (stage 2). Null in the design gallery, where nothing is tappable. */
+class KbActions(val onSlot: (Int) -> Unit, val onLeft: () -> Unit = {}, val onMic: () -> Unit = {})
+
+val LocalKbActions = androidx.compose.runtime.staticCompositionLocalOf<KbActions?> { null }
+
+private fun Modifier.tap(action: (() -> Unit)?): Modifier =
+    if (action == null) this else this.then(Modifier.clickable(onClick = action))
 
 /**
  * The Kb.dc.html template (Kb:16-322) drawn from a [KbRender]. Panels, the dev row and the special
@@ -178,9 +187,10 @@ private fun KbSideStrip(r: KbRender, s: KbStrip) {
 @Composable
 private fun KbBar(r: KbRender) {
     val t = r.t
+    val actions = LocalKbActions.current
     Row(Modifier.fillMaxWidth().height(48.dp).alpha(r.barOp), verticalAlignment = Alignment.CenterVertically) {
         // Kb:76-80
-        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(48.dp).tap(actions?.onLeft), contentAlignment = Alignment.Center) {
             Box(Modifier.size(36.dp).background(r.leftBg, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
                 Symbol(r.leftIcon, 22.sp, r.leftFg, fill = r.leftFill)
             }
@@ -191,7 +201,7 @@ private fun KbBar(r: KbRender) {
             if (r.mSlots) KbSlots(r)
         }
         // Kb:135-139
-        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(48.dp).tap(actions?.onMic), contentAlignment = Alignment.Center) {
             Box(Modifier.size(36.dp).background(r.micBg, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
                 Symbol(r.micIcon, 22.sp, r.micFg, fill = r.micFill)
             }
@@ -288,10 +298,14 @@ private fun RowScope.KbSlots(r: KbRender) {
             val natural = measurer.measure(centre.text, slotStyle(centre), maxLines = 1, softWrap = false).size.width
             natural * SQUASH_MIN_SCALE > with(density) { slotText.toPx() }
         }
+        val actions = LocalKbActions.current
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            for (s in if (centreAlone) listOf(centre!!) else r.slots) {
+            for ((i, s) in (if (centreAlone) listOf(1 to centre!!) else r.slots.withIndex().map { it.index to it.value })) {
                 if (s.showDiv && !centreAlone) Box(Modifier.size(1.dp, 22.dp).background(t.div))
-                Box(Modifier.weight(1f).height(48.dp).lint("slot:${s.text}"), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.weight(1f).height(48.dp).lint("slot:${s.text}").tap(actions?.let { a -> { a.onSlot(i) } }),
+                    contentAlignment = Alignment.Center,
+                ) {
                     LintParent("slot:${s.text}") { SlotText(r, s) }
                 }
             }
