@@ -75,7 +75,7 @@ class Decoder(
         private const val DEFAULT_INTERVAL_S = 0.3
     }
 
-    private class State(val node: Lexicon.Node, val geometry: Double, val edits: Int)
+    private class State(val node: Int, val geometry: Double, val edits: Int)
 
     /**
      * @param taps the taps of the current word
@@ -117,9 +117,9 @@ class Decoder(
             return if (c in nearby[i]) ll to 0 else (SUBSTITUTION + q[i] + ll) to 1
         }
 
-        val layers = Array(n + 1) { HashMap<Lexicon.Node, State>() }
-        layers[0][lexicon.root] = State(lexicon.root, 0.0, 0)
-        fun offer(layer: HashMap<Lexicon.Node, State>, node: Lexicon.Node, geometry: Double, edits: Int) {
+        val layers = Array(n + 1) { HashMap<Int, State>() }
+        layers[0][Lexicon.ROOT] = State(Lexicon.ROOT, 0.0, 0)
+        fun offer(layer: HashMap<Int, State>, node: Int, geometry: Double, edits: Int) {
             val old = layer[node]
             if (old == null || geometry > old.geometry) layer[node] = State(node, geometry, edits)
         }
@@ -130,14 +130,13 @@ class Decoder(
             // one skipped key per position, optionally after an apostrophe (iOS compares words by
             // a sort key without apostrophes, so "dont" reaches "don't" at no cost).
             fun insertAfter(s: State, allowApostrophe: Boolean) {
-                if (s.node.depth >= i + MAX_EXTRA_LETTERS + 1) return
-                for (k in 0 until s.node.childCount) {
-                    val c = s.node.keyAt(k)
-                    val child = s.node.childAt(k)
+                if (lexicon.depth(s.node) >= i + MAX_EXTRA_LETTERS + 1) return
+                lexicon.forEachChild(s.node) { c, child ->
                     if (c == '\'' || c == '’') {
-                        if (!allowApostrophe) continue
-                        offer(layer, child, s.geometry, s.edits)
-                        layer[child]?.let { insertAfter(it, allowApostrophe = false) }
+                        if (allowApostrophe) {
+                            offer(layer, child, s.geometry, s.edits)
+                            layer[child]?.let { insertAfter(it, allowApostrophe = false) }
+                        }
                     } else if (i > 0) { // no inserting before the first tap
                         offer(layer, child, s.geometry + INSERTION + q[minOf(i, n - 1)], s.edits + 1)
                     }
@@ -148,18 +147,16 @@ class Decoder(
             if (i == n) break
 
             for (s in layer.values) {
-                for (k in 0 until s.node.childCount) {
-                    val c = s.node.keyAt(k)
-                    val child = s.node.childAt(k)
+                lexicon.forEachChild(s.node) { c, child ->
                     tapScore(c, i)?.let { (score, edit) -> offer(layers[i + 1], child, s.geometry + score, s.edits + edit) }
                     // Swapped pair: this tap belongs to the next letter, the next tap to this one.
-                    if (i + 1 < n) {
-                        val ll1 = likelihood[i + 1][c] ?: continue
-                        for (k2 in 0 until child.childCount) {
-                            val c2 = child.keyAt(k2)
-                            if (c2 == c) continue
-                            val ll2 = likelihood[i][c2] ?: continue
-                            offer(layers[i + 2], child.childAt(k2), s.geometry + TRANSPOSITION + qRaw[i + 1] + ll1 + ll2, s.edits + 1)
+                    val ll1 = if (i + 1 < n) likelihood[i + 1][c] else null
+                    if (ll1 != null) {
+                        lexicon.forEachChild(child) { c2, grandchild ->
+                            val ll2 = likelihood[i][c2]
+                            if (c2 != c && ll2 != null) {
+                                offer(layers[i + 2], grandchild, s.geometry + TRANSPOSITION + qRaw[i + 1] + ll1 + ll2, s.edits + 1)
+                            }
                         }
                     }
                 }
@@ -171,24 +168,25 @@ class Decoder(
             }
         }
 
-        fun lm(node: Lexicon.Node): Double = bigrams?.logProb(previous, node.id, node.logProb) ?: node.logProb
+        fun lm(node: Int): Double = bigrams?.logProb(previous, lexicon.wordId(node), lexicon.logProb(node)) ?: lexicon.logProb(node)
         val results = HashMap<String, Candidate>()
         fun add(candidate: Candidate) {
             val old = results[candidate.word]
             if (old == null || candidate.score > old.score) results[candidate.word] = candidate
         }
         for (s in layers[n].values) {
-            if (s.node.isWord) {
+            if (lexicon.isWord(s.node)) {
                 val l = lm(s.node)
-                add(Candidate(s.node.word!!, s.geometry + w * l, s.geometry, l, s.edits, isCompletion = false))
+                add(Candidate(lexicon.word(s.node)!!, s.geometry + w * l, s.geometry, l, s.edits, isCompletion = false))
             }
             if (includeCompletions) {
-                val best = s.node.bestWord ?: continue
-                if (best === s.node) continue
-                val added = best.depth - s.node.depth
-                val geometry = s.geometry + w * (PREDICTION_COSTS[minOf(s.node.depth, 5)] + (added - 1) * PREDICTION_PER_LETTER)
+                val best = lexicon.bestWord(s.node)
+                if (best == Lexicon.NONE || best == s.node) continue
+                val depth = lexicon.depth(s.node)
+                val added = lexicon.depth(best) - depth
+                val geometry = s.geometry + w * (PREDICTION_COSTS[minOf(depth, 5)] + (added - 1) * PREDICTION_PER_LETTER)
                 val l = lm(best)
-                add(Candidate(best.word!!, geometry + w * l, geometry, l, s.edits, isCompletion = true))
+                add(Candidate(lexicon.word(best)!!, geometry + w * l, geometry, l, s.edits, isCompletion = true))
             }
         }
         if (typed != null && typed.length == n && !lexicon.contains(typed)) {
@@ -206,21 +204,24 @@ class Decoder(
      * and for the missing word end.
      */
     fun typedStringLogProb(typed: String): Double {
-        var node: Lexicon.Node? = lexicon.root
+        var node = Lexicon.ROOT
         var score = 0.0
         for (c in typed) {
-            val child = node?.child(c.lowercaseChar())
-            score += if (node != null && child != null && node.mass > 0.0) ln(child.mass / node.mass) else UNKNOWN_LETTER
+            val child = if (node == Lexicon.NONE) Lexicon.NONE else lexicon.child(node, c.lowercaseChar())
+            score += if (child != Lexicon.NONE && lexicon.mass(node) > 0.0) ln(lexicon.mass(child) / lexicon.mass(node)) else UNKNOWN_LETTER
             node = child
         }
         return score + UNKNOWN_LETTER
     }
 
     /** Keeps the best states, ranked by geometry plus the best word reachable below each node. */
-    private fun prune(layer: HashMap<Lexicon.Node, State>, w: Double) {
+    private fun prune(layer: HashMap<Int, State>, w: Double) {
         if (layer.size <= config.beamWidth) return
         val keep = layer.values
-            .sortedByDescending { it.geometry + w * (it.node.bestWord?.logProb ?: -50.0) }
+            .sortedByDescending { s ->
+                val best = lexicon.bestWord(s.node)
+                s.geometry + w * (if (best == Lexicon.NONE) -50.0 else lexicon.logProb(best))
+            }
             .take(config.beamWidth)
         layer.clear()
         for (s in keep) layer[s.node] = s

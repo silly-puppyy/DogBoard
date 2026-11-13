@@ -36,7 +36,7 @@ object TypingEngine {
         )
         val autocorrect = Autocorrect(lexicon)
         /** Learned words get the probability of a moderately common word. */
-        val userWordLogProb = lexicon.node(minOf(USER_WORD_RANK, lexicon.size - 1)).logProb
+        val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
     }
 
     private const val USER_WORD_RANK = 3000
@@ -152,7 +152,7 @@ object TypingEngine {
         val bigrams = engine.bigrams ?: return emptyList()
         return lock.read {
             bigrams.followers(engine.contextId(previous), n + blocked.size.coerceAtMost(4))
-                .map { (id, _) -> engine.lexicon.node(id).word!! }
+                .map { (id, _) -> engine.lexicon.word(engine.lexicon.nodeOfWord(id))!! }
                 .filter { !isBlocked(it) }
                 .take(n)
         }

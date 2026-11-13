@@ -47,9 +47,8 @@ class EngineTest : FunSpec({
             LEXICON.nextLetterLogProbs("qzx").shouldBeNull()
         }
         test("each node knows its most frequent completion") {
-            var node = LEXICON.root
-            for (c in "hel") node = node.child(c)!!
-            node.bestWord!!.word shouldBe "help"
+            val node = LEXICON.find("hel")
+            LEXICON.word(LEXICON.bestWord(node)) shouldBe "help"
         }
     }
 

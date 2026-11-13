@@ -65,7 +65,7 @@ class Bigrams private constructor(
         val letterCounts = HashMap<Char, Long>()
         var total = 0L
         while (i < keys.size && (keys[i] ushr 32).toInt() == previous) {
-            val word = lexicon.node((keys[i] and 0xffffffffL).toInt()).word!!
+            val word = lexicon.word(lexicon.nodeOfWord((keys[i] and 0xffffffffL).toInt()))!!
             if (word.length > prefix.length && word.startsWith(prefix, ignoreCase = true)) {
                 val c = word[prefix.length].lowercaseChar()
                 letterCounts[c] = (letterCounts[c] ?: 0L) + counts[i]
