@@ -86,7 +86,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        PupLogo(36f)
+                        PawLogo(36f)
                         DText("DogBoard", style = appNameStyle())
                     }
                     // live: no help page yet, so no help button

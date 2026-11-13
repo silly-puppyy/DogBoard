@@ -33,7 +33,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,8 +68,9 @@ object SetColors {
     val onSecondaryContainer = css("#3f4759")
     val errorContainer = css("#ffdad6") // SetDict:67
     val onErrorContainer = css("#93000a")
-    val brandGreen = css("#c8e03c")
-    val brandInk = css("#1b1c15")
+    // Brand.dc.html: Fur and Ink
+    val brandFur = css("#d9893d")
+    val brandInk = css("#221a14")
 }
 
 /** Settings text: Roboto Flex, start-aligned (the keyboard's design text is centred). */
@@ -196,22 +198,25 @@ fun TryItDock(modifier: Modifier = Modifier, live: Boolean = false) {
     }
 }
 
-/** SetHome:20: the simplified pup logo (viewBox 108), drawn at [sizeDp]. */
+/** Brand.dc.html: the paw mark (one path, viewBox 108) on a Fur disc, drawn at [sizeDp]. */
 @Composable
-fun PupLogo(sizeDp: Float = 36f) {
+fun PawLogo(sizeDp: Float = 36f) {
+    val paw = remember { PathParser().parsePathString(PAW_PATH).toPath() }
     Canvas(Modifier.size(sizeDp.dp)) {
         val k = size.width / 108f
-        fun rr(x: Float, y: Float, w: Float, h: Float, r: Float, c: Color) =
-            drawRoundRect(c, Offset(x * k, y * k), Size(w * k, h * k), CornerRadius(r * k, r * k))
-        rr(0f, 0f, 108f, 108f, 54f, SetColors.brandGreen)
-        rotate(18f, Offset(30f * k, 34f * k)) { rr(22f, 30f, 16f, 34f, 8f, SetColors.brandInk) }
-        rotate(-18f, Offset(78f * k, 34f * k)) { rr(70f, 30f, 16f, 34f, 8f, SetColors.brandInk) }
-        rr(32f, 32f, 44f, 44f, 12f, SetColors.brandInk)
-        drawCircle(SetColors.brandGreen, 4f * k, Offset(45f * k, 50f * k))
-        drawCircle(SetColors.brandGreen, 4f * k, Offset(63f * k, 50f * k))
-        rr(44f, 61f, 20f, 6f, 3f, SetColors.brandGreen)
+        drawCircle(SetColors.brandFur, 54f * k, Offset(54f * k, 54f * k))
+        // transform="translate(54 54) scale(0.56) translate(-51.3 -48.75)"
+        withTransform({
+            scale(k, k, Offset.Zero)
+            translate(54f, 54f)
+            scale(0.56f, 0.56f, Offset.Zero)
+            translate(-51.3f, -48.75f)
+        }) { drawPath(paw, SetColors.brandInk) }
     }
 }
+
+/** Brand.dc.html: the paw mark's single path (also in res/drawable/ic_app_icon_foreground.xml). */
+private const val PAW_PATH = "M34.7 97.0 C35.7 96.9 38.6 96.4 41.2 96.0 C49.8 94.5 51.7 94.5 60.4 96.0 C67.4 97.3 71.0 97.5 73.9 97.0 C81.1 95.7 86.1 91.2 87.7 84.7 C88.1 83.1 88.0 79.1 87.5 77.4 C86.3 72.9 83.8 69.2 79.8 66.1 C72.5 60.4 71.0 58.9 67.0 53.0 C64.3 49.1 62.4 46.9 60.2 45.5 C53.2 40.8 44.5 41.6 38.6 47.5 C37.1 49.0 36.3 50.0 34.7 52.3 C34.2 53.0 33.4 54.1 32.9 54.9 C30.1 58.8 28.0 60.9 22.3 65.4 C17.4 69.2 15.0 72.5 13.8 77.1 C11.3 86.5 17.3 95.4 27.3 97.0 C29.8 97.4 31.6 97.4 34.7 97.0Z M18.2 62.2 C24.3 60.6 27.2 52.2 24.4 44.0 C23.5 41.3 20.5 35.5 18.8 33.1 C14.9 27.8 10.5 27.3 6.2 31.6 C1.9 35.9 0.0 43.1 1.7 49.0 C2.1 50.4 3.5 53.4 4.5 54.8 C8.3 60.5 13.7 63.4 18.2 62.2Z M88.5 62.2 C94.2 60.7 99.9 53.8 101.0 47.0 C102.6 37.5 95.1 26.8 88.5 29.0 C85.7 29.9 83.1 33.0 80.1 39.1 C77.6 44.0 77.0 46.0 76.9 49.6 C76.8 54.1 77.9 57.5 80.3 59.9 C82.6 62.2 85.4 62.9 88.5 62.2Z M37.9 42.1 C44.2 40.5 48.9 32.7 48.9 23.8 C48.9 16.0 47.5 9.4 45.1 6.3 C40.4 0.0 29.0 4.9 24.2 15.1 C22.3 19.0 21.9 23.3 23.0 28.4 C24.9 37.9 31.3 43.8 37.9 42.1Z M69.3 42.0 C77.2 39.7 82.2 26.8 78.9 16.9 C76.0 8.2 66.5 1.6 60.2 4.0 C56.1 5.5 53.9 11.5 53.5 22.2 C53.4 25.9 53.7 28.6 54.8 31.6 C57.3 39.4 63.4 43.7 69.3 42.0Z"
 
 /** SetHome:21: the app name, 30 / 400, letter-spacing -0.01em. */
 fun appNameStyle() = setText(30f).copy(letterSpacing = (-0.01).em)

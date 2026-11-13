@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- debug builds: the inverse brand icon (Ink disc, Fur paw), to tell them apart -->
+    <color name="ic_app_icon_background">#221A14</color>
+</resources>
