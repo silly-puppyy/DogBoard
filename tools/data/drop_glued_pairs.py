@@ -34,6 +34,11 @@ def scowl_words(final_dir):
     return words
 
 
+# hand-reviewed words that build_lexicon.py always adds (hotspot, dropdown): never dropped
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "en.extra_words.txt"), encoding="utf-8") as _f:
+    EXTRA = {l.strip() for l in _f if l.strip() and not l.startswith("#")}
+
+
 def main():
     lex_path = os.path.join(ASSETS, "en.lexicon.tsv")
     lines = open(lex_path, encoding="utf-8").read().split("\n")
@@ -56,7 +61,7 @@ def main():
     pair_total = sum(pairs.values())
     drop = {}
     for w, c in counts.items():
-        if len(w) < 4 or not w.isalpha() or w in real or w in capitalised or w in KEEP:
+        if len(w) < 4 or not w.isalpha() or w in real or w in capitalised or w in KEEP or w in EXTRA:
             continue
         best = max((pairs.get((w[:i], w[i:]), 0.0) for i in range(1, len(w))), default=0.0)
         if best and (best / pair_total) >= RATIO * (c / lex_total):

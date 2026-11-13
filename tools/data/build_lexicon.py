@@ -48,6 +48,9 @@ MIN_ZIPF_POSSESSIVE = 2.5
 # a name or place takes wordfreq's frequency of its lowercase form, but at most this (the lowercase
 # count also includes other uses and typos: "teh" as a surname)
 NAME_ZIPF_CAP = 4.0
+# hand-reviewed common words below the web-only cut (en.extra_words.txt), and their floor
+EXTRA_WORDS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "en.extra_words.txt")
+EXTRA_ZIPF_FLOOR = 1.5
 # a lowercase word from this SCOWL level up loses to a capitalised form of the same letters
 LOWERCASE_RARE_LEVEL = 35
 # drop a plain spelling when its contraction is this much more frequent ("dont" vs "don't")
@@ -103,6 +106,11 @@ def load_other_region_spellings(final_dir: str, us_words) -> set:
         with open(os.path.join(final_dir, fn), encoding="latin-1") as f:
             other.update(w.lower() for w in f.read().split("\n") if w)
     return other - {w.lower() for w in us_words}
+
+
+def load_extra_words():
+    with open(EXTRA_WORDS, encoding="utf-8") as f:
+        return [l.strip() for l in f if l.strip() and not l.startswith("#")]
 
 
 def load_wordfreq(path: str):
@@ -250,6 +258,9 @@ def main():
         if z < MIN_ZIPF_WEB_ONLY or w in forms or w in other_regions or not WORD_RE.match(w) or "." in w:
             continue
         add(w, z, "wordfreq")
+    for w in load_extra_words():
+        if w not in forms:
+            add(w, zipf.get(w, EXTRA_ZIPF_FLOOR), "extra")
 
     # casings: when SCOWL lists a word in more than one casing (google/Google, may/May), keep each
     # casing that is at least MIN_CASING_SHARE of mid-sentence use in edited text, splitting the
