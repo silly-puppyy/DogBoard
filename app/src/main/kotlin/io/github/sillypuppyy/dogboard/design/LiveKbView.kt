@@ -79,6 +79,7 @@ fun LiveKbBar(
     panel: String = "",
     onTool: (String) -> Unit = {},
     onBack: () -> Unit = {},
+    onMic: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -99,8 +100,8 @@ fun LiveKbBar(
             panel = panel, width = maxWidth.value, only = "bar",
         )
         val render = remember(props) { KbSpec.render(props) }
-        val actions = remember(strip, onPick, onLeft, onTool, onBack) {
-            KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft, onTool = onTool, onBack = onBack)
+        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic) {
+            KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic)
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
     }
