@@ -92,6 +92,18 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
     @Synchronized
     fun hardCount(typed: String, correction: String): Int = rows[typed to correction]?.hard ?: 0
 
+    /** Corrections the user undid, for the settings screen: (typed, correction, times), most first. */
+    @Synchronized
+    fun undone(): List<Triple<String, String, Int>> =
+        rows.filter { it.value.hard > 0 }.map { (k, r) -> Triple(k.first, k.second, r.hard) }.sortedByDescending { it.third }
+
+    /** The user took back their undo of [correction] for [typed]: it may be made again. */
+    @Synchronized
+    fun restore(typed: String, correction: String) {
+        rows[typed to correction]?.let { it.hard = 0; it.soft = 0; it.lastHard = 0; it.lastSoft = 0 }
+        save()
+    }
+
     @Synchronized
     fun clear() {
         rows.clear()

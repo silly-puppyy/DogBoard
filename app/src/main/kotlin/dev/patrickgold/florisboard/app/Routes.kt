@@ -309,7 +309,11 @@ object Routes {
 
             composableWithDeepLink(Settings.Typing::class) { TypingScreen() }
 
-            composableWithDeepLink(Settings.Dictionary::class) { DictionaryScreen() }
+            composableWithDeepLink(Settings.Dictionary::class) {
+                // DogBoard: the designed "Your words" screen (SetDict.dc.html) with the design on
+                val prefs by FlorisPreferenceStore
+                if (prefs.keyboard.dogboardDesign.get()) io.github.sillypuppyy.dogboard.settings.YourWordsScreen() else DictionaryScreen()
+            }
             composableWithDeepLink(Settings.UserDictionary::class) { navBackStack ->
                 val payload = navBackStack.toRoute<Settings.UserDictionary>()
                 UserDictionaryScreen(payload.type)

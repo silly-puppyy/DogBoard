@@ -59,6 +59,8 @@ object SetColors {
     val row = css("#ffffff")
     val secondaryContainer = css("#dbe2f9")
     val onSecondaryContainer = css("#3f4759")
+    val errorContainer = css("#ffdad6") // SetDict:67
+    val onErrorContainer = css("#93000a")
     val brandGreen = css("#c8e03c")
     val brandInk = css("#1b1c15")
 }

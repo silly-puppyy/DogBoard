@@ -70,6 +70,17 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     }
 
     /** Negative evidence for [word]: removed if used fewer than [FORGET_BELOW] times, else halved. */
+    /** Removes [word] completely (the user removed it in settings; [forget] only weakens a much-used word). */
+    @Synchronized
+    fun remove(word: String) {
+        version++
+        val w = word.lowercase()
+        words.remove(w); uses.remove(w)
+        pairs.keys.removeAll { it.first == w || it.second == w }
+        cacheDay = -1
+        save()
+    }
+
     @Synchronized
     fun forget(word: String) {
         version++

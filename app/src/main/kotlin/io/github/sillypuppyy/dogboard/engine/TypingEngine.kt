@@ -102,12 +102,14 @@ object TypingEngine {
         openNoSuggest: (() -> BufferedReader)? = null,
         snapshotDir: File? = null,
         snapshotKey: String = "",
+        addedWords: File? = null,
     ) {
         if (loaded != null) return
+        addedWordsFile = addedWords
         reload = {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
-                textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey,
+                textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -191,6 +193,84 @@ object TypingEngine {
 
     /** How much the user uses [emoji], by the iOS recents score (EmojiUsage), for ordering recents. */
     fun emojiScore(emoji: String): Double = emojiUsage.score(emoji)
+
+    /** Words the user added in settings (a subset of the learned words, listed apart). */
+    private var addedWordsFile: File? = null
+
+    /** The settings screen's word lists (design SetDict: Learned, Added, Blocked, Undone). */
+    data class DictionaryLists(
+        /** Learned from typing: (word as stored, why). */
+        val learned: List<Pair<String, String>>,
+        val added: List<String>,
+        val blocked: List<String>,
+        /** Undone corrections: (typed, correction, times). */
+        val undone: List<Triple<String, String, Int>>,
+    )
+
+    fun dictionaryLists(): DictionaryLists {
+        val engine = loaded ?: return DictionaryLists(emptyList(), emptyList(), emptyList(), emptyList())
+        val added = readLines(addedWordsFile)
+        val addedKeys = added.map { it.lowercase() }.toSet()
+        val learned = lock.read { learnedWords.toList() }.filter { it !in addedKeys }.sorted().map { w ->
+            val shown = lock.read { engine.lexicon.storedForm(w) } ?: w
+            val uses = personal.uses(w)
+            shown to if (uses > 0) "You used it $uses ${if (uses == 1) "time" else "times"}" else "You kept it as typed"
+        }
+        return DictionaryLists(learned, added, lock.read { blocked.sorted() }, rejections.undone())
+    }
+
+    /** The user added [word] in settings: learned now, and listed under Added. */
+    fun addWord(word: String) {
+        val w = word.trim()
+        if (w.isEmpty() || !w.all { isWordChar(it) }) return
+        learn(w)
+        if (readLines(addedWordsFile).none { it.equals(w, ignoreCase = true) }) {
+            addedWordsFile?.let { f -> runCatching { f.parentFile?.mkdirs(); f.appendText(w + "\n") } }
+        }
+    }
+
+    /**
+     * The user removed [word] in settings: it goes back to being corrected (out of the learned
+     * and added lists and the personal model; the word data is loaded again, as learned words
+     * live in the lexicon).
+     */
+    @Synchronized
+    fun forgetWord(word: String) {
+        loaded ?: return
+        val key = word.lowercase()
+        for (f in listOfNotNull(userWordsFile, addedWordsFile)) {
+            runCatching { if (f.exists()) f.writeText(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
+        }
+        personal.remove(word)
+        lock.write { learnedWords.remove(key) }
+        lastMix = null
+        loaded = null
+        reload?.invoke()
+        val names = contactNames
+        contactNames = emptySet()
+        setContactNames(names)
+    }
+
+    /** The user unblocked [word] in settings: it can be suggested again. */
+    fun unblock(word: String) {
+        val key = word.lowercase()
+        if (!lock.write { blocked.remove(key) }) return
+        blockedWordsFile?.let { f ->
+            runCatching { if (f.exists()) f.writeText(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
+        }
+    }
+
+    /** The text replacements, (shortcut, phrase), for the settings screen. */
+    fun textReplacements(): List<Pair<String, String>> = replacements.all()
+
+    /** Adds a text replacement from settings. */
+    fun addTextReplacement(shortcut: String, phrase: String) = replacements.put(shortcut, phrase)
+
+    /** The user took back an undo in settings: [typed] -> [correction] may be made again. */
+    fun restoreCorrection(typed: String, correction: String) = rejections.restore(typed, correction)
+
+    private fun readLines(f: File?): List<String> =
+        f?.takeIf { it.exists() }?.readLines()?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
     /** Loads again with what [load] was given (after a dictionary reset). */
     private var reload: (() -> Unit)? = null

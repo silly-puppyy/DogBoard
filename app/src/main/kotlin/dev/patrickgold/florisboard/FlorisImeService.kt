@@ -288,23 +288,7 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
-                io.github.sillypuppyy.dogboard.engine.TypingEngine.load(
-                    openLexicon = { assets.open("dogboard/en.lexicon.tsv").bufferedReader() },
-                    openBigrams = { assets.open("dogboard/en.bigrams.tsv").bufferedReader() },
-                    userWords = java.io.File(filesDir, "dogboard/user_words.txt"),
-                    blockedWords = java.io.File(filesDir, "dogboard/blocked_words.txt"),
-                    rejectedCorrections = java.io.File(filesDir, "dogboard/rejected_corrections.txt"),
-                    openAbbreviations = { assets.open("dogboard/en.abbreviations.txt").bufferedReader() },
-                    openNoSuggest = { assets.open("dogboard/en.nosuggest.txt").bufferedReader() },
-                    personalModel = java.io.File(filesDir, "dogboard/personal.tsv"),
-                    textReplacements = java.io.File(filesDir, "dogboard/text_replacements.tsv"),
-                    openEmojiIndex = { assets.open("dogboard/en.emoji.tsv").bufferedReader() },
-                    openEmojiTones = { assets.open("dogboard/en.emoji-tones.tsv").bufferedReader() },
-                    emojiUsageFile = java.io.File(filesDir, "dogboard/emoji_usage.tsv"),
-                    // parsed word data, rebuilt when the app (and so its assets) changes
-                    snapshotDir = java.io.File(noBackupFilesDir, "dogboard-data"),
-                    snapshotKey = packageManager.getPackageInfo(packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
-                )
+                io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService)
             }
             // DogBoard: contact names, only when the user opted in and granted access
             if (prefs.spelling.useContacts.get()) {

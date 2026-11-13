@@ -167,3 +167,42 @@ class ContactNamesTest : FunSpec({
         }
     }
 })
+
+class DictionaryListsTest : FunSpec({
+    test("the settings lists: learned, added, blocked, undone, and taking each back") {
+        val dir = Files.createTempDirectory("dogboard-lists").toFile()
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+                userWords = File(dir, "user_words.txt"),
+                blockedWords = File(dir, "blocked.txt"),
+                rejectedCorrections = File(dir, "rejected.txt"),
+                personalModel = File(dir, "personal.tsv"),
+                addedWords = File(dir, "added.txt"),
+            )
+            TypingEngine.learn("thibk")
+            TypingEngine.addWord("Zyxandra")
+            TypingEngine.block("keyboards")
+            TypingEngine.reject("teh", "the")
+            var l = TypingEngine.dictionaryLists()
+            l.learned.map { it.first } shouldBe listOf("thibk")
+            l.added shouldBe listOf("Zyxandra")
+            l.blocked shouldBe listOf("keyboards")
+            l.undone.map { it.first to it.second } shouldBe listOf("teh" to "the")
+
+            TypingEngine.forgetWord("thibk")
+            TypingEngine.isKnownWord("thibk") shouldBe false
+            TypingEngine.isKnownWord("Zyxandra") shouldBe true // other learned data survives the reload
+            TypingEngine.unblock("keyboards")
+            TypingEngine.restoreCorrection("teh", "the")
+            l = TypingEngine.dictionaryLists()
+            l.learned shouldBe emptyList()
+            l.blocked shouldBe emptyList()
+            l.undone shouldBe emptyList()
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
+})
