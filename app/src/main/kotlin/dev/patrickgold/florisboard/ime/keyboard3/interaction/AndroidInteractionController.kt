@@ -55,7 +55,7 @@ private class AndroidInteractionController(
     val composeView: WeakReference<View>,
     val audioManager: WeakReference<AudioManager>,
     scope: CoroutineScope,
-    prefs: FlorisPreferenceModel,
+    private val prefs: FlorisPreferenceModel,
     systemTimingOptionsFlow: StateFlow<InteractionTimingOptions>,
 ) : InteractionController {
     override val activeSystemTimingOptions: StateFlow<InteractionTimingOptions> = systemTimingOptionsFlow
@@ -194,7 +194,8 @@ private class AndroidInteractionController(
         // DogBoard: no haptic on key release; presses and repeats use the DogBoard profile
         if (kind == InteractionKind.KeyRelease) return
         val feedbackClass = feedbackClassFor(kind, output)
-        if (feedbackClass != null && hapticPlayer?.play(feedbackClass) == true) return
+        val soft = prefs.inputFeedback.hapticStyle.get() == io.github.sillypuppyy.dogboard.feel.HapticStyle.SOFT
+        if (soft && feedbackClass != null && hapticPlayer?.play(feedbackClass) == true) return
         val hfc = when (kind) {
             InteractionKind.KeyPress -> HFC_KEYBOARD_PRESS
             InteractionKind.KeyRelease -> HFC_KEYBOARD_RELEASE

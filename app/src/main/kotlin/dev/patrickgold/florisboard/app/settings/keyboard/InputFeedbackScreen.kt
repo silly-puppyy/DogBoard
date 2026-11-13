@@ -25,7 +25,10 @@ import dev.patrickgold.florisboard.app.components.SegmentedListColumn
 import dev.patrickgold.florisboard.app.components.FlorisScreenNg
 import dev.patrickgold.jetpref.datastore.ui.DialogSliderPreference
 import dev.patrickgold.jetpref.datastore.ui.ExperimentalJetPrefDatastoreUi
+import dev.patrickgold.jetpref.datastore.ui.ListPreference
 import dev.patrickgold.jetpref.datastore.ui.SwitchPreference
+import dev.patrickgold.jetpref.datastore.ui.listPrefEntries
+import io.github.sillypuppyy.dogboard.feel.HapticStyle
 import org.florisboard.lib.compose.stringRes
 
 @OptIn(ExperimentalJetPrefDatastoreUi::class)
@@ -95,7 +98,7 @@ fun InputFeedbackScreen() {
             }
 
             SegmentedListColumn(title = stringRes(R.string.pref__input_feedback__group_haptic__label)) {
-                val count = 6
+                val count = 7
                 SwitchPreference(
                     prefs.inputFeedback.hapticEnabled,
                     shapes = ListItemDefaults.segmentedShapes(0, count),
@@ -103,37 +106,48 @@ fun InputFeedbackScreen() {
                     summaryOn = stringRes(R.string.enum__input_feedback_activation_mode__haptic_respect_system_settings),
                     summaryOff = stringRes(R.string.pref__input_feedback__haptic_enabled__summary_disabled),
                 )
+                // DogBoard
+                ListPreference(
+                    prefs.inputFeedback.hapticStyle,
+                    shapes = ListItemDefaults.segmentedShapes(1, count),
+                    title = stringRes(R.string.pref__input_feedback__haptic_style__label),
+                    entries = listPrefEntries {
+                        entry(HapticStyle.PHONE, stringRes(R.string.enum__haptic_style__phone))
+                        entry(HapticStyle.SOFT, stringRes(R.string.enum__haptic_style__soft))
+                    },
+                    enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },
+                )
                 SwitchPreference(
                     prefs.inputFeedback.hapticFeatKeyPress,
-                    shapes = ListItemDefaults.segmentedShapes(1, count),
+                    shapes = ListItemDefaults.segmentedShapes(2, count),
                     title = stringRes(R.string.pref__input_feedback__haptic_feat_key_press__label),
                     summary = stringRes(R.string.pref__input_feedback__any_feat_key_press__summary),
                     enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },
                 )
                 SwitchPreference(
                     prefs.inputFeedback.hapticFeatKeyLongPress,
-                    shapes = ListItemDefaults.segmentedShapes(2, count),
+                    shapes = ListItemDefaults.segmentedShapes(3, count),
                     title = stringRes(R.string.pref__input_feedback__haptic_feat_key_long_press__label),
                     summary = stringRes(R.string.pref__input_feedback__any_feat_key_long_press__summary),
                     enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },
                 )
                 SwitchPreference(
                     prefs.inputFeedback.hapticFeatKeyRepeatedAction,
-                    shapes = ListItemDefaults.segmentedShapes(3, count),
+                    shapes = ListItemDefaults.segmentedShapes(4, count),
                     title = stringRes(R.string.pref__input_feedback__haptic_feat_key_repeated_action__label),
                     summary = stringRes(R.string.pref__input_feedback__any_feat_key_repeated_action__summary),
                     enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },
                 )
                 SwitchPreference(
                     prefs.inputFeedback.hapticFeatGestureSwipe,
-                    shapes = ListItemDefaults.segmentedShapes(4, count),
+                    shapes = ListItemDefaults.segmentedShapes(5, count),
                     title = stringRes(R.string.pref__input_feedback__haptic_feat_gesture_swipe__label),
                     summary = stringRes(R.string.pref__input_feedback__any_feat_gesture_swipe__summary),
                     enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },
                 )
                 SwitchPreference(
                     prefs.inputFeedback.hapticFeatGestureMovingSwipe,
-                    shapes = ListItemDefaults.segmentedShapes(5, count),
+                    shapes = ListItemDefaults.segmentedShapes(6, count),
                     title = stringRes(R.string.pref__input_feedback__haptic_feat_gesture_moving_swipe__label),
                     summary = stringRes(R.string.pref__input_feedback__audio_feat_gesture_moving_swipe__label),
                     enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },

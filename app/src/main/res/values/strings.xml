@@ -501,6 +501,9 @@
     <string name="enum__autocorrect_level__gentle">Gentle</string>
     <string name="enum__autocorrect_level__standard">Standard</string>
     <string name="enum__autocorrect_level__strong">Strong</string>
+    <string name="pref__input_feedback__haptic_style__label" comment="Preference title">Vibration style</string>
+    <string name="enum__haptic_style__phone">Your phone’s key click</string>
+    <string name="enum__haptic_style__soft">Soft tap</string>
     <string name="pref__typing__smart_quotes__label" comment="Preference title">Smart quotes</string>
     <string name="pref__typing__smart_quotes__summary" comment="Preference summary">Turns straight quotes into curly ones and apostrophes into ’</string>
     <string name="pref__typing__smart_dashes__label" comment="Preference title">Smart dashes</string>
