@@ -1,0 +1,10 @@
+DogBoard word data
+
+en.lexicon.tsv
+  Converted from FlorisBoard's bundled English word list (app/src/main/assets/ime/dict/data.json,
+  FlorisBoard, Apache License 2.0) by tools/data/lexicon_from_florisboard.py.
+
+en.bigrams.tsv
+  Word pair counts computed from English sentences of Tatoeba (https://tatoeba.org),
+  licensed under CC BY 2.0 FR (https://creativecommons.org/licenses/by/2.0/fr/), by
+  tools/data/bigrams_from_tatoeba.py. Only counts are included, not sentences.

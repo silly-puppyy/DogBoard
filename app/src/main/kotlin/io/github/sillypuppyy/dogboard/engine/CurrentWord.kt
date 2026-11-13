@@ -79,3 +79,18 @@ fun trailingWord(textBefore: CharSequence, maxLength: Int = 48): String {
     if (i > 0 && isWordChar(textBefore[i - 1])) return "" // longer than maxLength: not a word we track
     return textBefore.substring(i)
 }
+
+/**
+ * The context for the word that starts at the end of [textBefore]: the previous word in lowercase,
+ * [Bigrams.START] at the start of the text or of a sentence, or null when the word follows
+ * something else (digits, symbols).
+ */
+fun previousContext(textBefore: CharSequence): String? {
+    var i = textBefore.length
+    while (i > 0 && textBefore[i - 1].isWhitespace()) i--
+    if (i == 0) return Bigrams.START
+    val last = textBefore[i - 1]
+    if (last == '.' || last == '!' || last == '?') return Bigrams.START
+    val word = trailingWord(textBefore.subSequence(0, i))
+    return word.takeIf { it.isNotEmpty() }?.lowercase()?.replace('’', '\'')
+}

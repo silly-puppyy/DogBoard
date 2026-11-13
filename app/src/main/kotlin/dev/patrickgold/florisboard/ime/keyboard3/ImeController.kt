@@ -74,6 +74,7 @@ import org.k3lp.runtime.K3TextRange
 import java.lang.ref.WeakReference
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import io.github.sillypuppyy.dogboard.engine.Bigrams
 import io.github.sillypuppyy.dogboard.engine.Candidate
 import io.github.sillypuppyy.dogboard.engine.CurrentWord
 import io.github.sillypuppyy.dogboard.engine.Suggestion
@@ -81,6 +82,7 @@ import io.github.sillypuppyy.dogboard.engine.SuggestionStrip
 import io.github.sillypuppyy.dogboard.engine.Tap
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
 import io.github.sillypuppyy.dogboard.engine.isWordChar
+import io.github.sillypuppyy.dogboard.engine.previousContext
 import io.github.sillypuppyy.dogboard.feel.DoubleSpace
 import io.github.sillypuppyy.dogboard.ime.DogBoardCandidate
 import io.github.sillypuppyy.dogboard.touch.GaussianTouch
@@ -423,7 +425,9 @@ class ImeController(
             val word = currentWord
             if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord) {
                 val typed = word.text
-                val candidates = latestDecode?.takeIf { it.first == typed }?.second ?: TypingEngine.candidates(word)
+                val context = wordContext()
+                val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
+                    ?: TypingEngine.candidates(word, context)
                 val corrected = TypingEngine.correction(word, candidates)
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
@@ -446,7 +450,8 @@ class ImeController(
         /** Commits a suggestion-strip pick in place of the current word, followed by a space. */
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
             val typed = currentWord.text
-            if (typed.isEmpty() || !replaceBeforeCursor(typed, suggestion.word + " ")) return false
+            if (typed.isEmpty() && suggestion.kind != Suggestion.Kind.PREDICTION) return false
+            if (!replaceBeforeCursor(typed, suggestion.word + " ")) return false
             currentWord.clear()
             lastCorrection = null
             rejectedWord = null
@@ -473,19 +478,44 @@ class ImeController(
                 !attrs.flagTextNoSuggestions
         }
 
+        /** The previous word (or sentence start) for the word being typed at the cursor. */
+        private fun wordContext(): String? {
+            val textBefore = state.content.surroundingText.textBefore
+            val typed = currentWord.text
+            val end = if (textBefore.endsWith(typed)) textBefore.length - typed.length else textBefore.length
+            return previousContext(textBefore.subSequence(0, end))
+        }
+
+        private fun decodeKey(typed: String, context: String?) = "$typed\u0000$context"
+
         private fun publishSuggestions() {
             val sink = suggestionSink ?: return
             suggestionJob?.cancel()
-            if (currentWord.isEmpty || !wordEngineAllowed()) {
+            if (!wordEngineAllowed() || state.content.selection.isNotCollapsed()) {
                 sink(emptyList())
+                return
+            }
+            val context = wordContext()
+            if (currentWord.isEmpty) {
+                // next-word predictions, only right after a space or at the start of the text
+                val textBefore = state.content.surroundingText.textBefore
+                if (textBefore.isNotEmpty() && !textBefore.last().isWhitespace()) {
+                    sink(emptyList())
+                    return
+                }
+                suggestionJob = scope.launch {
+                    val words = TypingEngine.predictions(context)
+                    val cased = if (context == Bigrams.START) words.map { w -> w.replaceFirstChar { it.uppercaseChar() } } else words
+                    if (isActive) sink(cased.map { Suggestion(it, Suggestion.Kind.PREDICTION) })
+                }
                 return
             }
             val word = currentWord.snapshot()
             val rejected = rejectedWord
             val withCorrection = prefs.correction.autocorrect.get()
             suggestionJob = scope.launch {
-                val candidates = TypingEngine.candidates(word)
-                latestDecode = word.text to candidates
+                val candidates = TypingEngine.candidates(word, context)
+                latestDecode = decodeKey(word.text, context) to candidates
                 val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates) else null
                 if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction))
             }

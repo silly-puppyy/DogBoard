@@ -70,6 +70,16 @@ class WordTrackingTest : FunSpec({
         }
     }
 
+    context("previousContext") {
+        test("previous word in lowercase, sentence start, or nothing after symbols") {
+            previousContext("") shouldBe Bigrams.START
+            previousContext("Hello. ") shouldBe Bigrams.START
+            previousContext("I ") shouldBe "i"
+            previousContext("I don't ") shouldBe "don't"
+            previousContext("Call me at 5 ").shouldBeNull()
+        }
+    }
+
     context("SuggestionStrip") {
         test("typed word in quotes, then the correction, then the next best word") {
             val strip = SuggestionStrip.build(

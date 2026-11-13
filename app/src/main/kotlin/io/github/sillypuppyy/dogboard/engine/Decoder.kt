@@ -23,7 +23,11 @@ data class Candidate(
  * letter with the Gaussian touch model, allowing a few typing errors (missed letter, extra tap,
  * swapped pair, a key far from the tap).
  */
-class Decoder(private val lexicon: Lexicon, private val config: Config = Config()) {
+class Decoder(
+    private val lexicon: Lexicon,
+    private val config: Config = Config(),
+    private val bigrams: Bigrams? = null,
+) {
     data class Config(
         /** Converts [GaussianTouch.logLikelihood] (half a Gaussian log density) into a cost. */
         val spatialWeight: Double = 2.0,
@@ -51,6 +55,7 @@ class Decoder(private val lexicon: Lexicon, private val config: Config = Config(
      * @param keys letter (lowercase) -> touch target, in the same dp space as [taps]
      * @param params touch-model parameters for the current key size and typing speed
      * @param maxResults number of candidates to return, best first
+     * @param previous context id of the previous word ([Bigrams.contextId]), -1 for none
      */
     fun decode(
         taps: List<Tap>,
@@ -58,6 +63,7 @@ class Decoder(private val lexicon: Lexicon, private val config: Config = Config(
         params: GaussianTouch.Params,
         maxResults: Int = 8,
         includeCompletions: Boolean = true,
+        previous: Int = -1,
     ): List<Candidate> {
         val n = taps.size
         if (n == 0) return emptyList()
@@ -130,14 +136,16 @@ class Decoder(private val lexicon: Lexicon, private val config: Config = Config(
             val old = results[candidate.word]
             if (old == null || candidate.cost < old.cost) results[candidate.word] = candidate
         }
+        fun lm(node: Lexicon.Node): Double =
+            bigrams?.logProb(previous, node.id, node.logProb) ?: node.logProb
         for (s in layers[n].values) {
             if (s.node.isWord) {
-                add(Candidate(s.node.word!!, s.cost - config.lmWeight * s.node.logProb, s.cost, s.edits, false))
+                add(Candidate(s.node.word!!, s.cost - config.lmWeight * lm(s.node), s.cost, s.edits, false))
             }
             if (includeCompletions) {
                 val best = s.node.bestWord ?: continue
                 if (best === s.node) continue
-                add(Candidate(best.word!!, s.cost + config.completionCost - config.lmWeight * best.logProb, s.cost, s.edits, true))
+                add(Candidate(best.word!!, s.cost + config.completionCost - config.lmWeight * lm(best), s.cost, s.edits, true))
             }
         }
         return results.values.sortedBy { it.cost }.take(maxResults)

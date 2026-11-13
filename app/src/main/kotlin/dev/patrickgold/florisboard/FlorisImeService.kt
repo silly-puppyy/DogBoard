@@ -287,9 +287,10 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
-                io.github.sillypuppyy.dogboard.engine.TypingEngine.load {
-                    assets.open("dogboard/en.lexicon.tsv").bufferedReader()
-                }
+                io.github.sillypuppyy.dogboard.engine.TypingEngine.load(
+                    openLexicon = { assets.open("dogboard/en.lexicon.tsv").bufferedReader() },
+                    openBigrams = { assets.open("dogboard/en.bigrams.tsv").bufferedReader() },
+                )
             }
         }
 

@@ -11,6 +11,9 @@ data class Suggestion(val word: String, val kind: Kind) {
 
         /** Another likely word or completion. */
         WORD,
+
+        /** A likely next word, shown before anything is typed. */
+        PREDICTION,
     }
 }
 

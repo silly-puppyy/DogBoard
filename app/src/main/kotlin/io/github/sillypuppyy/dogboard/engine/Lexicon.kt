@@ -11,7 +11,15 @@ import kotlin.math.ln
  *     #dogboard-lexicon 1
  *     word<TAB>count
  */
-class Lexicon private constructor(val root: Node, val size: Int) {
+class Lexicon private constructor(val root: Node, private val words: Array<Node>) {
+    val size: Int get() = words.size
+
+    /** The word node with id [id] (ids are 0 until [size]). */
+    fun node(id: Int): Node = words[id]
+
+    /** Id of [word] (case-insensitive), or -1. */
+    fun idOf(word: String): Int = find(word)?.takeIf { it.isWord }?.id ?: -1
+
     class Node(val depth: Int) {
         private var keys = CharArray(0)
         private var nodes = arrayOfNulls<Node>(0)
@@ -26,6 +34,10 @@ class Lexicon private constructor(val root: Node, val size: Int) {
 
         /** Most frequent word at or below this node. */
         var bestWord: Node? = null
+            internal set
+
+        /** Index of the word ending here, or -1. */
+        var id: Int = -1
             internal set
 
         val isWord: Boolean get() = word != null
@@ -67,20 +79,23 @@ class Lexicon private constructor(val root: Node, val size: Int) {
         fun of(counts: Map<String, Long>): Lexicon {
             val total = counts.values.sum().toDouble()
             val root = Node(0)
-            var size = 0
+            val words = ArrayList<Node>()
             for ((word, count) in counts) {
                 if (word.isEmpty() || count <= 0) continue
                 var node = root
                 for (c in word) node = node.childOrCreate(c.lowercaseChar())
                 val lp = ln(count / total)
                 if (node.word == null || lp > node.logProb) {
-                    if (node.word == null) size++
+                    if (node.word == null) {
+                        node.id = words.size
+                        words.add(node)
+                    }
                     node.word = word
                     node.logProb = lp
                 }
             }
             computeBest(root)
-            return Lexicon(root, size)
+            return Lexicon(root, words.toTypedArray())
         }
 
         fun parse(reader: BufferedReader): Lexicon {
