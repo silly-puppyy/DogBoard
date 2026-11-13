@@ -292,6 +292,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                     openBigrams = { assets.open("dogboard/en.bigrams.tsv").bufferedReader() },
                 )
             }
+            imeController.updateState { refreshSuggestions() }
         }
 
         WindowCompat.setDecorFitsSystemWindows(window.window!!, false)

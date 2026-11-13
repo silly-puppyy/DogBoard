@@ -329,9 +329,9 @@ class ImeController(
                         }
                     )
             )
-            resetWordTracking()
             resetContent(initialSelection, initialSurrounding)
             expectedContentQueue.clear()
+            resetWordTracking() // after the new field's text is known, so predictions fit it
         }
 
         fun handleUpdateSelection(newSelection: K3TextRange) {
@@ -487,6 +487,9 @@ class ImeController(
         }
 
         private fun decodeKey(typed: String, context: String?) = "$typed\u0000$context"
+
+        /** Recomputes the suggestion strip, e.g. once the engine has finished loading. */
+        fun refreshSuggestions() = publishSuggestions()
 
         private fun publishSuggestions() {
             val sink = suggestionSink ?: return
