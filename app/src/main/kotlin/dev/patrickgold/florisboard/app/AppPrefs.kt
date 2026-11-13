@@ -619,9 +619,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "spelling__language_mode",
             default = SpellingLanguageMode.USE_KEYBOARD_SUBTYPES,
         )
+        // DogBoard: also contact names as suggestions; opt-in (off until the user turns it on in onboarding)
         val useContacts = boolean(
             key = "spelling__use_contacts",
-            default = true,
+            default = false,
         )
         val useUdmEntries = boolean(
             key = "spelling__use_udm_entries",

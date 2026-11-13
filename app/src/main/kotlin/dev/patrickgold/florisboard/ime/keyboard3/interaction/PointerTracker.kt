@@ -96,8 +96,11 @@ sealed interface TrackedPointer {
         override val downKey: TouchKey,
         val longPress: LongPress,
         val repeatJob: Job?,
-        // DogBoard: space-bar trackpad; x (dp) where the last cursor step happened, null until active
+        // DogBoard: space-bar trackpad; the accelerated distance (dp) not yet turned into cursor
+        // steps, null until active
         val cursorAnchorDp: Float? = null,
+        // DogBoard: the finger's x (dp) at the last move, for the per-move acceleration
+        val trackpadLastXDp: Float? = null,
         // DogBoard: the finger moved too far before the trackpad hold time; this stays a space
         val trackpadCancelled: Boolean = false,
     ) : TrackedPointer {
@@ -383,17 +386,20 @@ class PointerTracker(
             }
             trackedPointer.repeatJob?.cancel()
             trackedPointer.longPress.extendedJob?.cancel()
-            anchor = xDp
+            anchor = 0f
         }
-        val steps = ((xDp - anchor) / Trackpad.STEP_DP).toInt()
+        // iOS: each movement is accelerated by its own size (fast flicks go far, slow drags stay precise)
+        val lastX = trackedPointer.trackpadLastXDp ?: xDp
+        anchor += Trackpad.accelerated(xDp - lastX)
+        val steps = (anchor / Trackpad.STEP_DP).toInt()
         if (steps != 0) {
             imeController.updateState {
                 val arrow = if (steps > 0) ImeActions.ArrowRight else ImeActions.ArrowLeft
                 repeat(abs(steps)) { emitDescriptor(arrow) }
             }
-            anchor += steps * Trackpad.STEP_DP
+            anchor -= steps * Trackpad.STEP_DP
         }
-        trackedOutputPointer.value = trackedPointer.copy(cursorAnchorDp = anchor)
+        trackedOutputPointer.value = trackedPointer.copy(cursorAnchorDp = anchor, trackpadLastXDp = xDp)
     }
 
     context(scope: CoroutineScope)

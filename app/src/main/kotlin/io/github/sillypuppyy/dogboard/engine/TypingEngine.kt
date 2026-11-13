@@ -102,6 +102,12 @@ object TypingEngine {
         openNoSuggest: (() -> BufferedReader)? = null,
     ) {
         if (loaded != null) return
+        reload = {
+            load(
+                openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
+                textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest,
+            )
+        }
         noSuggest = openNoSuggest?.let { open ->
             open().useLines { lines -> lines.map { it.trim().lowercase() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toHashSet() }
         }.orEmpty()
@@ -135,6 +141,51 @@ object TypingEngine {
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
         }
         loaded = engine
+    }
+
+    /**
+     * Names from the user's contacts (opt-in, ContactNames), known as words at the probability of
+     * a moderately common word. Kept in memory only; a different set reloads the word data so
+     * removed names are forgotten.
+     */
+    fun setContactNames(names: Collection<String>) {
+        val engine = loaded ?: return
+        val fresh = names.toSet()
+        if (fresh == contactNames) return
+        if (!contactNames.all { it in fresh }) {
+            contactNames = emptySet()
+            loaded = null
+            reload?.invoke()
+            return setContactNames(fresh)
+        }
+        lock.write { for (n in fresh) if (!engine.lexicon.contains(n)) engine.lexicon.addWord(n, engine.userWordLogProb) }
+        contactNames = fresh
+    }
+
+    @Volatile
+    private var contactNames: Set<String> = emptySet()
+
+    /** Loads again with what [load] was given (after a dictionary reset). */
+    private var reload: (() -> Unit)? = null
+
+    /**
+     * iOS "Reset Keyboard Dictionary": forgets every learned word, the personal model and the
+     * rejected corrections; text replacements, blocked words and emoji use stay. The word data is
+     * loaded again, as learned words live in the lexicon.
+     */
+    @Synchronized
+    fun resetDictionary() {
+        loaded ?: return
+        personal.clear()
+        rejections.clear()
+        userWordsFile?.let { runCatching { it.delete() } }
+        lock.write { learnedWords.clear() }
+        lastMix = null
+        loaded = null
+        reload?.invoke()
+        val names = contactNames // contact names aren't learned words: they come back
+        contactNames = emptySet()
+        setContactNames(names)
     }
 
     /**
@@ -449,5 +500,7 @@ object TypingEngine {
         noSuggest = emptySet()
         learnedWords.clear()
         lastMix = null
+        reload = null
+        contactNames = emptySet()
     }
 }

@@ -114,6 +114,13 @@ class ImeController(
     // DogBoard: uptime of the last typed space, or null after any other edit (double-space period)
     private var lastSpaceUptime: Long? = null
 
+    /**
+     * DogBoard: the text before the cursor when the user last tapped shift. While it is unchanged
+     * (nothing typed, cursor not moved) automatic shifting leaves the user's choice alone (iOS
+     * preventAutoshift: shift tapped off at a sentence start stays off).
+     */
+    private var shiftChosenAt: String? = null
+
     /** DogBoard: the space before the cursor was added by the keyboard (after a picked suggestion). */
     private var autoSpace = false
     // DogBoard: word tracking, autocorrect and suggestions
@@ -1133,6 +1140,7 @@ class ImeController(
                 touchLayerId = newInputShiftState.correspondingLayerId,
                 flags = state.flags.withInputShiftState(newInputShiftState),
             )
+            shiftChosenAt = state.content.surroundingText.textBefore.toString()
         }
 
         fun revertCycleInputShiftState(
@@ -1148,6 +1156,8 @@ class ImeController(
         fun reevaluateInputShiftState() {
             val isPeekOngoing = false // TODO
             if (state.flags.inputShiftState == InputShiftState.CAPS_LOCK || isPeekOngoing) return
+            if (shiftChosenAt != null && shiftChosenAt == state.content.surroundingText.textBefore.toString()) return
+            shiftChosenAt = null
             // DogBoard: iOS auto-shift rules (AutoShift, notes/design/settings-model.md §3) instead of
             // Android's TextUtils.getCapsMode, which treats every period as a sentence end
             val type = when (state.editor.info.inputAttributes.capsMode) {

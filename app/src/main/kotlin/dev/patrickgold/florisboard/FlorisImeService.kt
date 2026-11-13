@@ -302,6 +302,11 @@ class FlorisImeService : LifecycleInputMethodService() {
                     emojiUsageFile = java.io.File(filesDir, "dogboard/emoji_usage.tsv"),
                 )
             }
+            // DogBoard: contact names, only when the user opted in and granted access
+            if (prefs.spelling.useContacts.get()) {
+                val names = io.github.sillypuppyy.dogboard.contacts.ContactNames.read(this@FlorisImeService)
+                if (names.isNotEmpty()) io.github.sillypuppyy.dogboard.engine.TypingEngine.setContactNames(names)
+            }
             imeController.updateState { refreshSuggestions() }
         }
 

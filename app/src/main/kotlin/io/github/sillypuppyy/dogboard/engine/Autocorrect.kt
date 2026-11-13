@@ -22,8 +22,11 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         val minStemOneLetter: Int,
         val minStemTwoLetters: Int,
         val minStemMoreLetters: Int,
-        /** A correction must be this many times more likely than the typed letters as they are. */
-        val leadOverTyped: Double = 1.0,
+        /**
+         * A correction must be this many times more likely than the typed letters as they are
+         * (iOS: 1.39, FilterNondominantCorrectionOfMoreWords with one typed word).
+         */
+        val leadOverTyped: Double = SORT_KEY_MATCH_BOOST_RATIO,
     ) {
         companion object {
             val STANDARD = Level(MIN_DOMINANCE_RATIO, 8, 6, 4)
@@ -39,6 +42,13 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          * context compared with on their own (iOS "insufficient linguistic support").
          */
         private val MIN_CONTEXT_SUPPORT = ln(0.1)
+
+        /**
+         * iOS FilterNondominantCorrectionOfMoreWords (SortKeyMatchBoostRatio 1.39): a candidate
+         * that keeps more of the typed words wins when within this ratio of the top. For one typed
+         * word: what was typed stays unless the correction is 1.39x more likely.
+         */
+        const val SORT_KEY_MATCH_BOOST_RATIO = 1.39
 
         /** iOS BoostMinimumVariation: a plainer spelling this close to the top goes first. */
         private val MIN_VARIATION_RATIO = ln(1.1)
@@ -80,8 +90,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         if (t == typed) return null
         // Rule 2: never complete a one-letter word into a longer word ("a" -> "and").
         if (typed.length == 1 && t.length > 1 && t.startsWith(typed, ignoreCase = true)) return null
-        // Gentle and the like: a correction must also lead the typed letters by a margin
-        if (level.leadOverTyped > 1.0) {
+        // iOS filter 20 (keep more typed words when nearly as likely), and Gentle's larger margin;
+        // a correction with the typed letters ("dont" -> "don't") keeps the typed word already
+        if (sortKey(t) != sortKey(typed)) {
             val asTyped = candidates.firstOrNull { it.isTypedString || it.word.equals(typed, ignoreCase = true) }
             if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return null
         }

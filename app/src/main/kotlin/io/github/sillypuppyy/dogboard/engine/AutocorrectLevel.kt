@@ -6,9 +6,9 @@ package io.github.sillypuppyy.dogboard.engine
  * (notes/design/settings-model.md §4).
  */
 enum class AutocorrectLevel(val level: Autocorrect.Level) {
-    /** A correction must be twice as likely as the typed letters: wrong changes ~1/3 of Standard. */
+    /** A correction must be twice as likely as the typed letters: the fewest wrong changes. */
     GENTLE(Autocorrect.Level.STANDARD.copy(leadOverTyped = 2.0)),
     STANDARD(Autocorrect.Level.STANDARD),
-    /** More and shorter completions. Provisional: the eval has no unfinished words yet to measure it. */
-    STRONG(Autocorrect.Level(dominanceRatio = 1.8, minStemOneLetter = 5, minStemTwoLetters = 4, minStemMoreLetters = 3)),
+    /** No keep-the-typed-word margin: fixes the most for very sloppy typing (eval: 2.5 mm scatter). */
+    STRONG(Autocorrect.Level.STANDARD.copy(leadOverTyped = 1.0)),
 }

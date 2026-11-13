@@ -126,3 +126,44 @@ class LearningTest : FunSpec({
         }
     }
 })
+
+class ResetDictionaryTest : FunSpec({
+    test("resetting the dictionary forgets learned words and rejections") {
+        val dir = Files.createTempDirectory("dogboard-reset").toFile()
+        val userWords = File(dir, "user_words.txt")
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+                userWords = userWords,
+                rejectedCorrections = File(dir, "rejected.txt"),
+                personalModel = File(dir, "personal.tsv"),
+            )
+            TypingEngine.learn("thibk")
+            TypingEngine.isKnownWord("thibk") shouldBe true
+            TypingEngine.resetDictionary()
+            TypingEngine.isKnownWord("thibk") shouldBe false
+            userWords.exists() shouldBe false
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
+})
+
+class ContactNamesTest : FunSpec({
+    test("contact names are known words while set, and forgotten when removed") {
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+            TypingEngine.isKnownWord("Zyxandra") shouldBe false
+            TypingEngine.setContactNames(listOf("Zyxandra", "Quolby"))
+            TypingEngine.isKnownWord("Zyxandra") shouldBe true
+            TypingEngine.setContactNames(listOf("Quolby"))
+            TypingEngine.isKnownWord("Zyxandra") shouldBe false
+            TypingEngine.isKnownWord("Quolby") shouldBe true
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
+})
