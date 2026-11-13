@@ -737,9 +737,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             default = ShiftKeyBehavior.CAPSLOCK_BY_DOUBLE_TAP,
         )
         // DogBoard: iOS Smart Punctuation, two switches as in iOS (smartQuotesEnabled, smartDashesEnabled)
+        // default off (user, 2026-11-14), unlike iOS
         val smartQuotes = boolean(
             key = "typing__smart_quotes",
-            default = true,
+            default = false,
         )
         val smartDashes = boolean(
             key = "typing__smart_dashes",
