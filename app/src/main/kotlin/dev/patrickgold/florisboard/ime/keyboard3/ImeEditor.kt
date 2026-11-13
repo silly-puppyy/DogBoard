@@ -193,11 +193,10 @@ open class ImeEditor(
 
     override fun setComposition(newComposition: K3TextRange?) {
         val ic = ic.get() ?: return
-        if (newComposition == null || newComposition.isCollapsed()) {
-            ic.finishComposingText()
-        } else {
-            ic.setComposingRegion(newComposition.start, newComposition.end)
-        }
+        // DogBoard: the current word is tracked here, not marked in the app: a composing region
+        // makes apps underline the word being typed, which iOS (and Gboard, FUTO) don't show.
+        // replaceText still swaps the word through a composing region within one batch edit.
+        ic.finishComposingText()
     }
 
     private inline fun InputConnection.batchEdit(block: () -> Unit) {
