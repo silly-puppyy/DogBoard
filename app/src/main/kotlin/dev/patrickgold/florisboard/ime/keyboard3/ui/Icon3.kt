@@ -19,34 +19,34 @@ package dev.patrickgold.florisboard.ime.keyboard3.ui
 import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.KeyboardReturn
-import androidx.compose.material.icons.automirrored.filled.Redo
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.rounded.ArrowRightAlt
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardReturn
+import androidx.compose.material.icons.automirrored.rounded.Redo
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Backspace
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ContentCut
-import androidx.compose.material.icons.filled.ContentPasteGo
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.FontDownload
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.KeyboardDoubleArrowUp
-import androidx.compose.material.icons.filled.KeyboardHide
-import androidx.compose.material.icons.filled.KeyboardVoice
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SpaceBar
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.ContentPasteGo
+import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material.icons.rounded.FontDownload
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.KeyboardDoubleArrowUp
+import androidx.compose.material.icons.rounded.KeyboardHide
+import androidx.compose.material.icons.rounded.KeyboardVoice
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.SentimentSatisfiedAlt
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SpaceBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -93,21 +93,21 @@ fun Icon3(
     val imageVector = remember(value, imeOptions, inputAttributes, inputShiftState, windowMode) {
         when (value) {
             ImeIcons.DragMarker -> {
-                if (debugShowDragAndDropHelpers) Icons.Default.Close else null
+                if (debugShowDragAndDropHelpers) Icons.Rounded.Close else null
             }
             ImeIcons.Enter -> {
                 if (imeOptions.flagNoEnterAction || inputAttributes.flagTextMultiLine) {
-                    Icons.AutoMirrored.Filled.KeyboardReturn
+                    Icons.AutoMirrored.Rounded.KeyboardReturn
                 } else {
                     when (imeOptions.action) {
-                        ImeOptions.Action.DONE -> Icons.Default.Done
-                        ImeOptions.Action.GO -> Icons.AutoMirrored.Filled.ArrowRightAlt
-                        ImeOptions.Action.NEXT -> Icons.AutoMirrored.Filled.ArrowRightAlt
-                        ImeOptions.Action.NONE -> Icons.AutoMirrored.Filled.KeyboardReturn
-                        ImeOptions.Action.PREVIOUS -> Icons.AutoMirrored.Filled.ArrowRightAlt
-                        ImeOptions.Action.SEARCH -> Icons.Default.Search
-                        ImeOptions.Action.SEND -> Icons.AutoMirrored.Filled.Send
-                        ImeOptions.Action.UNSPECIFIED -> Icons.AutoMirrored.Filled.KeyboardReturn
+                        ImeOptions.Action.DONE -> Icons.Rounded.Done
+                        ImeOptions.Action.GO -> Icons.AutoMirrored.Rounded.ArrowRightAlt
+                        ImeOptions.Action.NEXT -> Icons.AutoMirrored.Rounded.ArrowRightAlt
+                        ImeOptions.Action.NONE -> Icons.AutoMirrored.Rounded.KeyboardReturn
+                        ImeOptions.Action.PREVIOUS -> Icons.AutoMirrored.Rounded.ArrowRightAlt
+                        ImeOptions.Action.SEARCH -> Icons.Rounded.Search
+                        ImeOptions.Action.SEND -> Icons.AutoMirrored.Rounded.Send
+                        ImeOptions.Action.UNSPECIFIED -> Icons.AutoMirrored.Rounded.KeyboardReturn
                     }
                 }
             }
@@ -140,41 +140,41 @@ fun Icon3(
 
 fun staticIcon3(value: K3Descriptor, context: Context): ImageVector? {
     return when (value) {
-        ImeIcons.ArrowDown -> Icons.Default.KeyboardArrowDown
-        ImeIcons.ArrowLeft -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
-        ImeIcons.ArrowRight -> Icons.AutoMirrored.Filled.KeyboardArrowRight
-        ImeIcons.ArrowUp -> Icons.Default.KeyboardArrowUp
+        ImeIcons.ArrowDown -> Icons.Rounded.KeyboardArrowDown
+        ImeIcons.ArrowLeft -> Icons.AutoMirrored.Rounded.KeyboardArrowLeft
+        ImeIcons.ArrowRight -> Icons.AutoMirrored.Rounded.KeyboardArrowRight
+        ImeIcons.ArrowUp -> Icons.Rounded.KeyboardArrowUp
         ImeIcons.Backspace -> Icons.AutoMirrored.Outlined.Backspace
-        ImeIcons.ClipboardClearPrimaryClip -> Icons.Default.DeleteSweep
-        ImeIcons.ClipboardCopy -> Icons.Default.ContentCopy
-        ImeIcons.ClipboardCut -> Icons.Default.ContentCut
-        ImeIcons.ClipboardPaste -> Icons.Default.ContentPasteGo
-        ImeIcons.Close -> Icons.Default.Close
+        ImeIcons.ClipboardClearPrimaryClip -> Icons.Rounded.DeleteSweep
+        ImeIcons.ClipboardCopy -> Icons.Rounded.ContentCopy
+        ImeIcons.ClipboardCut -> Icons.Rounded.ContentCut
+        ImeIcons.ClipboardPaste -> Icons.Rounded.ContentPasteGo
+        ImeIcons.Close -> Icons.Rounded.Close
         ImeIcons.Delete -> Icons.AutoMirrored.Default.ForwardDelete
-        ImeIcons.DragMarker -> Icons.Default.Close
-        ImeIcons.Enter -> Icons.AutoMirrored.Filled.KeyboardReturn
-        ImeIcons.HideKeyboard -> Icons.Default.KeyboardHide
-        ImeIcons.LanguageSwitch -> Icons.Default.Language
+        ImeIcons.DragMarker -> Icons.Rounded.Close
+        ImeIcons.Enter -> Icons.AutoMirrored.Rounded.KeyboardReturn
+        ImeIcons.HideKeyboard -> Icons.Rounded.KeyboardHide
+        ImeIcons.LanguageSwitch -> Icons.Rounded.Language
         ImeIcons.ClipboardPanel -> Icons.AutoMirrored.Outlined.Assignment
-        ImeIcons.MediaPanel -> Icons.Default.SentimentSatisfiedAlt
+        ImeIcons.MediaPanel -> Icons.Rounded.SentimentSatisfiedAlt
         ImeIcons.TextPanel -> context.vectorResource(R.drawable.ic_abc)
-        ImeIcons.Noop -> Icons.Default.Close
-        ImeIcons.Redo -> Icons.AutoMirrored.Filled.Redo
+        ImeIcons.Noop -> Icons.Rounded.Close
+        ImeIcons.Redo -> Icons.AutoMirrored.Rounded.Redo
         ImeIcons.Shift -> context.vectorResource(R.drawable.ic_shift_off)
         ImeIcons.ShiftLock -> context.vectorResource(R.drawable.ic_shift_lock)
         ImeIcons.ShiftOff -> context.vectorResource(R.drawable.ic_shift_off)
         ImeIcons.ShiftOn -> context.vectorResource(R.drawable.ic_shift_on)
-        ImeIcons.ShowKeyboard -> Icons.Default.KeyboardDoubleArrowUp // TODO
-        ImeIcons.SelectAll -> Icons.Default.SelectAll
-        ImeIcons.Settings -> Icons.Default.Settings
-        ImeIcons.SpaceBar -> Icons.Default.SpaceBar
-        ImeIcons.ToggleActionsOverflow -> Icons.Default.MoreHoriz
-        ImeIcons.ToggleAutocorrect -> Icons.Default.FontDownload
+        ImeIcons.ShowKeyboard -> Icons.Rounded.KeyboardDoubleArrowUp // TODO
+        ImeIcons.SelectAll -> Icons.Rounded.SelectAll
+        ImeIcons.Settings -> Icons.Rounded.Settings
+        ImeIcons.SpaceBar -> Icons.Rounded.SpaceBar
+        ImeIcons.ToggleActionsOverflow -> Icons.Rounded.MoreHoriz
+        ImeIcons.ToggleAutocorrect -> Icons.Rounded.FontDownload
         ImeIcons.ToggleCompactLayout -> context.vectorResource(R.drawable.ic_accessibility_one_handed)
         ImeIcons.ToggleFloatingWindow -> context.vectorResource(R.drawable.ic_floating_keyboard)
         ImeIcons.ToggleResizeMode -> context.vectorResource(R.drawable.ic_resize)
-        ImeIcons.Undo -> Icons.AutoMirrored.Filled.Undo
-        ImeIcons.Voice -> Icons.Default.KeyboardVoice
+        ImeIcons.Undo -> Icons.AutoMirrored.Rounded.Undo
+        ImeIcons.Voice -> Icons.Rounded.KeyboardVoice
         else -> null
     }
 }
