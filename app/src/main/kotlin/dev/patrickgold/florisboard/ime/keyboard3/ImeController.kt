@@ -133,6 +133,10 @@ class ImeController(
     private class LookBack(val word: io.github.sillypuppyy.dogboard.engine.CurrentWord, val committed: String, val context: String?)
     private var lookBack: LookBack? = null
 
+    /** DogBoard: the last retrocorrection ([old] -> [new], followed by [tail]), undone by a backspace right after. */
+    private class LastRetro(val old: String, val new: String, val typedOld: String, val tail: String)
+    private var lastRetro: LastRetro? = null
+
     /** DogBoard: the word the cursor rests in (text before and after it) while the bar offers corrections for it. */
     private var wordAroundCursor: Pair<String, String>? = null
     private var lastCorrection: LastCorrection? = null
@@ -408,6 +412,7 @@ class ImeController(
         override fun emitText(value: K3String) {
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             deletingWord = null
+            lastRetro = null // set again by finishWord below when this input ends a word
             val text = value.toText()
             // DogBoard: punctuation right after the keyboard's own space (a picked suggestion) goes
             // before it: "word ," -> "word, "; closing quotes and brackets just take its place
@@ -530,10 +535,11 @@ class ImeController(
         /** Called before a word separator is typed: autocorrects the finished word. */
         private fun finishWord(separator: String) {
             lastCorrection = null
-            retrocorrect()
+            val retro = retrocorrect()
             confirmKeptCorrection()
             confirmAcceptedWord()
             val word = currentWord
+            var committed = word.text // what this word ends up as
             // a reverted autocorrection that is finished unchanged is a word the user wants
             if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
             if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord() && !followsDot(word.text)) {
@@ -548,6 +554,7 @@ class ImeController(
                         candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
                 }
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
+                    committed = corrected
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
                     if (!state.flags.isIncognitoMode) {
                         unconfirmedCorrection = typed to corrected
@@ -563,6 +570,11 @@ class ImeController(
                 lookBack = null // autocorrect off or the user insisted on this word: nothing to look back at
             }
             if (separator != " ") lookBack = null
+            // a backspace right after this word's separator undoes the retrocorrection (once this
+            // word's own correction, if any, has been undone first)
+            if (retro != null) {
+                lastRetro = LastRetro(retro.first, retro.second, retro.third, " $committed$separator")
+            }
             currentWord.clear()
             rejectedWord = null
         }
@@ -572,20 +584,31 @@ class ImeController(
          * gives it context ("I lobe you" -> "I love you"). Runs before this word is corrected, so
          * its correction sees the fixed context.
          */
-        private fun retrocorrect() {
-            val back = lookBack ?: return
+        /** Returns (old, new, old as typed) when the previous word was changed. */
+        private fun retrocorrect(): Triple<String, String, String>? {
+            val back = lookBack ?: return null
             lookBack = null
             val word = currentWord
-            if (word.isEmpty || !correctionAllowed() || cursorInsideWord() || state.flags.isIncognitoMode) return
+            if (word.isEmpty || !correctionAllowed() || cursorInsideWord() || state.flags.isIncognitoMode) return null
             val typed = word.text
-            if (!state.content.surroundingText.textBefore.endsWith("${back.committed} $typed")) return
+            if (!state.content.surroundingText.textBefore.endsWith("${back.committed} $typed")) return null
             val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes())
-                ?: return
-            if (!replaceBeforeCursor("${back.committed} $typed", "$newPrevious $typed")) return
+                ?: return null
+            if (!replaceBeforeCursor("${back.committed} $typed", "$newPrevious $typed")) return null
             if (BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "retro ${back.committed} -> $newPrevious before $typed")
             // the earlier word's pending learning and kept-correction now refer to the new word
             unconfirmedWord = unconfirmedWord?.let { (ctx, w) -> if (w == back.committed) ctx to newPrevious else ctx to w }
             unconfirmedCorrection = null
+            return Triple(back.committed, newPrevious, back.word.text)
+        }
+
+        /** Backspace right after a retrocorrected pair restores the earlier word, remembered as rejected. */
+        private fun revertLastRetro(): Boolean {
+            val retro = lastRetro ?: return false
+            lastRetro = null
+            if (!replaceBeforeCursor(retro.new + retro.tail, retro.old + retro.tail)) return false
+            if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.reject(retro.typedOld, retro.new) }
+            return true
         }
 
         /** Backspace right after an autocorrection restores what was typed. */
@@ -708,6 +731,7 @@ class ImeController(
 
         private fun resetWordTracking() {
             lookBack = null
+            lastRetro = null
             currentWord.clear()
             pendingTap = null
             lastCorrection = null
@@ -937,11 +961,12 @@ class ImeController(
             autoSpace = false
             lastSpaceUptime = null
             pendingTap = null
-            if (revertLastCorrection()) {
+            if (revertLastCorrection() || revertLastRetro()) {
                 reevaluateInputShiftState()
                 publishSuggestions()
                 return
             }
+            lastRetro = null
             // DogBoard: remember the word being deleted into; report it once it is gone (iOS soft rejections)
             val wordBeforeDelete = trailingWord(state.content.surroundingText.textBefore)
             if (deletingWord == null && wordBeforeDelete.isNotEmpty()) deletingWord = wordBeforeDelete
