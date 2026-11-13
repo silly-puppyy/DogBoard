@@ -8,20 +8,21 @@ import androidx.compose.ui.unit.dp
  * added on top. Key widths live in the layout files (see tools/layouts/gen_qwerty_en.py).
  */
 object Geometry {
-    /** Screens at least this wide use the taller portrait key area. */
-    val WidePhoneMinWidth: Dp = 414.dp
+    /** The design's phone width (Kb.dc.html draws a 375 dp keyboard). */
+    val DesignWidth: Dp = 375.dp
 
-    /** Four key rows on portrait phones narrower than [WidePhoneMinWidth] (54 dp per row). */
+    /** Four key rows at [DesignWidth] (54 dp per row, the design's keyH). */
     val KeyAreaHeightPortrait: Dp = 216.dp
-
-    /** Four key rows on portrait phones at least [WidePhoneMinWidth] wide (56.5 dp per row). */
-    val KeyAreaHeightPortraitWide: Dp = 226.dp
 
     /** Four key rows in landscape (40.5 dp per row). */
     val KeyAreaHeightLandscape: Dp = 162.dp
 
+    /**
+     * Portrait key area that keeps the design's key shape: 216 dp at 375 dp wide, scaled with the
+     * screen width (wider phones get taller keys instead of squarer ones; user, 2026-11-14).
+     */
     fun keyAreaHeightPortrait(screenWidth: Dp): Dp =
-        if (screenWidth >= WidePhoneMinWidth) KeyAreaHeightPortraitWide else KeyAreaHeightPortrait
+        KeyAreaHeightPortrait * (screenWidth / DesignWidth).coerceIn(1f, 1.2f)
 
     /**
      * Space between a key's visible cap and its touch cell, per side. Estimated: a 37.5 x 54 dp
