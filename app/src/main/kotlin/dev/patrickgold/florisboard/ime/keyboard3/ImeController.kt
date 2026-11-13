@@ -453,7 +453,9 @@ class ImeController(
                 }
             }
             // emoji typed from the panel or search count as emoji use (iOS ranking and show rule)
-            if (text.isNotEmpty() && text.codePoints().anyMatch { Character.getType(it) == Character.OTHER_SYMBOL.toInt() && it >= 0x2190 } &&
+            // only a single emoji counts, and never in password-type or incognito fields (pasted
+            // text must not end up in the usage file)
+            if (io.github.sillypuppyy.dogboard.engine.EmojiUsage.isSingleEmoji(text) && wordEngineAllowed() &&
                 !state.flags.isIncognitoMode
             ) {
                 val app = state.editor.info.packageName

@@ -119,13 +119,38 @@ class EmojiUsage(private val file: File? = null) {
             val p = line.split('\t')
             when {
                 p[0].startsWith("#") && p.size >= 2 -> sequence = p[1].toLongOrNull() ?: 0
-                p[0] == "u" && p.size == 3 -> uses.add(p[1] to p[2].toLong())
-                p[0] == "a" && p.size == 3 -> apps[p[1]] = p[2].toInt()
+                // a damaged file must not stop the engine from loading
+                // entries that aren't one emoji came from the old recording rule (pasted text): dropped
+                p[0] == "u" && p.size == 3 && isSingleEmoji(p[1]) -> p[2].toLongOrNull()?.let { uses.add(p[1] to it) }
+                p[0] == "a" && p.size == 3 -> p[2].toIntOrNull()?.let { apps[p[1]] = it }
             }
         }
     }
 
     companion object {
+        /**
+         * Whether [text] is exactly one emoji (one grapheme with an emoji code point): only that
+         * counts as emoji use, never pasted or typed text that merely contains a symbol.
+         */
+        fun isSingleEmoji(text: String): Boolean {
+            if (text.isEmpty()) return false
+            // one emoji = one base code point plus joiners, variation selectors, skin tones,
+            // keycap, tags, or a second regional indicator (a flag); explicit, so the JVM and
+            // Android agree (the JDK's BreakIterator splits ZWJ sequences)
+            val cps = text.codePoints().toArray()
+            var clusters = 0
+            var joined = false
+            var flagHalf = false
+            for (cp in cps) {
+                val continues = joined || cp == 0x200D || cp == 0xFE0F || cp == 0xFE0E || cp in 0x1F3FB..0x1F3FF ||
+                    cp == 0x20E3 || cp in 0xE0020..0xE007F || (flagHalf && cp in 0x1F1E6..0x1F1FF)
+                if (!continues) clusters++
+                flagHalf = cp in 0x1F1E6..0x1F1FF && !(flagHalf && continues)
+                joined = cp == 0x200D
+            }
+            return clusters == 1 && cps.any { Character.getType(it) == Character.OTHER_SYMBOL.toInt() && it >= 0x2190 }
+        }
+
         /** iOS: prune when the sequence passes 1000, keep the last 500. */
         const val KEEP = 500
         private const val PRUNE_AT = 1000
