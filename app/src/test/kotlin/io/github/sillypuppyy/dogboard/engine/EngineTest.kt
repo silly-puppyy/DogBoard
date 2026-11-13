@@ -4,6 +4,7 @@ import io.github.sillypuppyy.dogboard.touch.GaussianTouch
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 import java.io.File
 
@@ -45,6 +46,19 @@ class EngineTest : FunSpec({
             ((p['q'] ?: -99.0) < -8.0) shouldBe true // only rare words continue "thq"
             (kotlin.math.exp(p.values.maxOf { it }) <= 1.0) shouldBe true
             LEXICON.nextLetterLogProbs("qzx").shouldBeNull()
+        }
+        test("a word can be stored in several casings, each with its share") {
+            val lex = Lexicon.of(linkedMapOf("Google" to 90L, "google" to 10L, "the" to 900L))
+            lex.formsOf("google").map { it } shouldBe listOf("Google", "google")
+            val node = lex.find("google")
+            val total = kotlin.math.ln(100.0 / 1000.0)
+            (lex.logProb(node) - total) shouldBe (0.0 plusOrMinus 1e-6)
+            lex.size shouldBe 2 // one word id per spelling
+        }
+        test("the real lexicon keeps measured casings (may/May, google/Google, Smith)") {
+            LEXICON.formsOf("may") shouldBe listOf("may", "May")
+            LEXICON.formsOf("google") shouldBe listOf("Google", "google")
+            LEXICON.formsOf("smith") shouldBe listOf("Smith")
         }
         test("each node knows its most frequent completion") {
             val node = LEXICON.find("hel")

@@ -62,6 +62,20 @@ def zipf_floor(level: int) -> float:
     return LEVEL_FLOOR[-1][1]
 
 
+# a casing below this share of a word's mid-sentence use is dropped (paris: 0 of 2786)
+MIN_CASING_SHARE = 0.02
+
+
+def load_casing(path: str) -> dict:
+    """lowercase word -> {casing: mid-sentence count} from casing_counts.py."""
+    out = {}
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            form, n = line.rstrip("\n").split("\t")
+            out.setdefault(form.lower(), {})[form] = int(n)
+    return out
+
+
 def load_scowl(final_dir: str, max_level: int):
     """word -> (level, kind) for the en_US lists up to max_level (latin-1 files)."""
     words = {}
@@ -193,6 +207,7 @@ def main():
     ap.add_argument("--max-words", type=int, default=0, help="keep only the N most frequent (0 = all)")
     ap.add_argument("--max-surnames", type=int, default=20000, help="most common Census surnames to include")
     ap.add_argument("--out", default="app/src/main/assets/dogboard/en.lexicon.tsv")
+    ap.add_argument("--casing", default="", help="casing_counts.py output; keeps SCOWL's casings of a word with a measured split")
     args = ap.parse_args()
 
     final_dir = os.path.join(args.data, "scowl/scowl-2020.12.07/final")
@@ -236,10 +251,33 @@ def main():
             continue
         add(w, z, "wordfreq")
 
-    # choose one surface form per key: an ordinary lowercase word wins unless it is uncommon
-    # (SCOWL level >= LOWERCASE_RARE_LEVEL) and a capitalised form exists (paris -> Paris)
+    # casings: when SCOWL lists a word in more than one casing (google/Google, may/May), keep each
+    # casing that is at least MIN_CASING_SHARE of mid-sentence use in edited text, splitting the
+    # word's frequency by that use (casing_counts.py); iOS keeps such variants as separate entries
+    casing = load_casing(args.casing) if args.casing else {}
     lexicon = {}
+    with_variants = set()
     for key, cands in forms.items():
+        variants = {f: n for f, n in casing.get(key, {}).items() if f in cands}
+        if len(variants) > 1:
+            total = sum(variants.values()) + 0.5 * len(variants)
+            shares = {f: (n + 0.5) / total for f, n in variants.items()}
+            kept = {f: sh for f, sh in shares.items() if sh >= MIN_CASING_SHARE}
+            if len(kept) > 1:
+                z = max(cands.values())
+                norm = sum(kept.values())
+                for f, sh in kept.items():
+                    lexicon[f] = z + math.log10(sh / norm)
+                with_variants.add(key)
+            elif kept:
+                # one casing carries (almost) all use: that one ("Smith", not "smith")
+                lexicon[next(iter(kept))] = max(cands.values())
+                with_variants.add(key)
+    # otherwise one surface form per key: an ordinary lowercase word wins unless it is uncommon
+    # (SCOWL level >= LOWERCASE_RARE_LEVEL) and a capitalised form exists (paris -> Paris)
+    for key, cands in forms.items():
+        if key in with_variants:
+            continue
         proper = [f for f in cands if f != key]
         lowercase_rare = key in cands and scowl.get(key, (0, ""))[0] >= LOWERCASE_RARE_LEVEL
         if key in cands and not (proper and lowercase_rare):

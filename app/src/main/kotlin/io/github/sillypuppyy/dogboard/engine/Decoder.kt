@@ -180,7 +180,12 @@ class Decoder(
         for (s in layers[n].values) {
             if (lexicon.isWord(s.node)) {
                 val l = lm(s.node)
-                add(Candidate(lexicon.word(s.node)!!, s.geometry + w * l, s.geometry, l, s.edits, isCompletion = false))
+                // each casing of the word ("google", "Google") with its share of the word's probability
+                val nodeLp = lexicon.logProb(s.node)
+                for ((form, formLp) in lexicon.forms(s.node)) {
+                    val lf = l + (formLp - nodeLp)
+                    add(Candidate(form, s.geometry + w * lf, s.geometry, lf, s.edits, isCompletion = false))
+                }
             }
             if (includeCompletions) {
                 val best = lexicon.bestWord(s.node)

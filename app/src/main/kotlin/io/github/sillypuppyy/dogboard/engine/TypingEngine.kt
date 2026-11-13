@@ -145,7 +145,7 @@ object TypingEngine {
         val engine = loaded
         val casing = object : CaseAdapt.Casing {
             override fun hasCapitalisedForm(word: String): Boolean =
-                engine != null && lock.read { engine.lexicon.storedForm(word) }?.firstOrNull()?.isUpperCase() == true
+                engine != null && lock.read { engine.lexicon.formsOf(word) }.any { it.firstOrNull()?.isUpperCase() == true }
         }
         val typed = word.text
         val flags = word.flags.takeIf { it.size == typed.length } ?: typed.map { if (it.isUpperCase()) CaseAdapt.SHIFTED else 0 }
@@ -250,8 +250,8 @@ object TypingEngine {
     fun shouldAutoShift(before: CharSequence, type: AutoShift.Type): Boolean {
         val engine = loaded
         val forms = AutoShift.WordForms { word ->
-            val stored = engine?.let { e -> lock.read { e.lexicon.storedForm(word)?.takeIf { e.lexicon.contains(word) } } }
-            listOfNotNull(stored) + abbreviations[word.lowercase()].orEmpty()
+            val stored = engine?.let { e -> lock.read { e.lexicon.formsOf(word) } }.orEmpty()
+            stored + abbreviations[word.lowercase()].orEmpty()
         }
         return AutoShift.shouldShift(before, type, forms)
     }

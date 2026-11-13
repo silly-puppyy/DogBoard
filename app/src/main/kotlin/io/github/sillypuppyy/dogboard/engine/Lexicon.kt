@@ -33,6 +33,12 @@ class Lexicon private constructor(capacity: Int) {
     /** Surface forms that differ from the lowercase path ("Paris", "I'm"), by node. */
     private val surface = HashMap<Int, String>()
 
+    /**
+     * Nodes stored in more than one casing ("google" and "Google"): each casing with its own
+     * ln P; the node's [logProb] is their total and [surface] the most likely casing.
+     */
+    private val casings = HashMap<Int, List<Pair<String, Float>>>()
+
     init {
         newNode(NONE, '\u0000')
     }
@@ -73,6 +79,16 @@ class Lexicon private constructor(capacity: Int) {
         }
         return String(chars)
     }
+
+    /** Every casing of the word at [node] with its own ln P, most likely first. */
+    fun forms(node: Int): List<Pair<String, Double>> {
+        if (wordId[node] == NONE) return emptyList()
+        casings[node]?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
+        return listOf(word(node)!! to logProb[node].toDouble())
+    }
+
+    /** Every stored casing of [word] (case-insensitive lookup). */
+    fun formsOf(word: String): List<String> = find(word).takeIf { it != NONE }?.let { n -> forms(n).map { it.first } }.orEmpty()
 
     /** Calls [action] with the letter and node of each child of [node]. */
     inline fun forEachChild(node: Int, action: (key: Char, child: Int) -> Unit) {
@@ -224,6 +240,7 @@ class Lexicon private constructor(capacity: Int) {
         fun of(counts: Map<String, Long>): Lexicon {
             val total = counts.values.sum().toDouble()
             val lexicon = Lexicon(counts.size * 3 + 16)
+            val byNode = LinkedHashMap<Int, MutableList<Pair<String, Double>>>()
             for ((word, count) in counts) {
                 if (word.isEmpty() || count <= 0) continue
                 var node = ROOT
@@ -231,13 +248,15 @@ class Lexicon private constructor(capacity: Int) {
                     val lc = c.lowercaseChar()
                     node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
                 }
-                val lp = ln(count / total)
-                if (lexicon.wordId[node] == NONE) {
-                    lexicon.setWord(node, word, lp)
-                } else if (lp > lexicon.logProb[node]) {
-                    lexicon.logProb[node] = lp.toFloat()
-                    if (word != word.lowercase()) lexicon.surface[node] = word else lexicon.surface.remove(node)
-                }
+                byNode.getOrPut(node) { ArrayList(1) }.add(word to ln(count / total))
+            }
+            // word ids follow the file (frequency) order of each node's first casing
+            for ((node, forms) in byNode) {
+                forms.sortByDescending { it.second }
+                val best = forms[0]
+                val lp = if (forms.size == 1) best.second else ln(forms.sumOf { kotlin.math.exp(it.second) })
+                lexicon.setWord(node, best.first, lp)
+                if (forms.size > 1) lexicon.casings[node] = forms.map { (w, l) -> w to l.toFloat() }
             }
             lexicon.computeSubtrees()
             lexicon.resize(lexicon.nodeCount + 1024) // room for learned words
