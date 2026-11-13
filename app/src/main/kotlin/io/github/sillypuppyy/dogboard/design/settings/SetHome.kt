@@ -43,7 +43,7 @@ object SetHomeSpec {
         Section(icon, title, sub, c.first, c.second, target)
 
     val sections = listOf(
-        s("translate", "Languages and layouts", "English (US) · QWERTY · iOS-style", P),
+        s("translate", "Languages and layouts", "English (US) · QWERTY · Simple layout", P),
         s("palette", "Look", "Theme, key height, key shape", T, "SetLook"),
         s("spellcheck", "Typing and correction", "Autocorrect, suggestions, text replacements", S),
         s("menu_book", "Dictionaries and models", "Your words, blocked words, language models", P, "SetDict"),
@@ -89,10 +89,11 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         PupLogo(36f)
                         DText("DogBoard", style = appNameStyle())
                     }
-                    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Symbol("help", 24.sp, SetColors.onSurfaceVariant) }
+                    // live: no help page yet, so no help button
+                    if (actions == null) Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Symbol("help", 24.sp, SetColors.onSurfaceVariant) }
                 }
-                // SetHome:26-29 search
-                Row(
+                // SetHome:26-29 search (live: hidden until settings search exists)
+                if (actions == null) Row(
                     Modifier.fillMaxWidth().height(56.dp).background(SetColors.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(horizontal = 18.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -101,9 +102,10 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 }
                 // SetHome:31-81 main choices
                 SetGroup("Main choices") {
-                    SetBlockRow("main:layout") {
+                    // live: hidden until the comma-and-period layout exists
+                    if (actions == null) SetBlockRow("main:layout") {
                         TitleSub("Layout style", "How the bottom row and long-press work")
-                        Segmented("seg:layout", listOf("iOS-style", "Android-style", "Custom"), 0, listOf(1f, 1f, 0.8f))
+                        Segmented("seg:layout", listOf("Simple", "Comma & period", "Custom"), 0, listOf(1f, 1f, 0.8f))
                     }
                     SetLinkRow("main:languages", actions?.onLanguages) {
                         TitleSub("Languages", "English (US) · QWERTY", Modifier.weight(1f))
@@ -130,15 +132,20 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         // SetHome:67
                         BasicText(
                             buildAnnotatedString {
-                                append("Standard matches iOS. ")
+                                append("Most people never need to change this. ")
                                 withStyle(SpanStyle(color = SetColors.primary, fontWeight = FontWeight(500))) { append("Customise…") }
                             },
                             style = setText(13f, color = SetColors.onSurfaceVariant),
+                            modifier = actions?.let { a -> Modifier.clickable { a.onSection("Typing and correction") } } ?: Modifier,
                         )
                     }
-                    SetBlockRow("main:feel") {
+                    // live: no presets until they are designed; the row opens the vibration and sound settings
+                    if (actions == null) SetBlockRow("main:feel") {
                         TitleSub("Feel", "Vibration and sound on each key")
                         Segmented("seg:feel", listOf("Quiet", "Default", "Crisp", "Custom"), 1, listOf(1f, 1.3f, 1f, 1f), checkGap = 4)
+                    } else SetLinkRow("main:feel", { actions.onSection("Feel") }) {
+                        TitleSub("Feel", "Vibration and sound on each key", Modifier.weight(1f))
+                        Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
                     }
                 }
                 // SetHome:83-93 all settings
@@ -148,7 +155,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     }
                 }
             }
-            TryItDock(Modifier.align(Alignment.BottomCenter))
+            TryItDock(Modifier.align(Alignment.BottomCenter), live = actions != null)
         }
     }
 }

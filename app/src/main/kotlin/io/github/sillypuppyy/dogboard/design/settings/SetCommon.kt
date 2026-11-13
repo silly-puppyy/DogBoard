@@ -7,6 +7,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -161,7 +167,7 @@ fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color
 
 /** SetHome:95-100: the Try-it dock pinned to the bottom of every page. */
 @Composable
-fun TryItDock(modifier: Modifier = Modifier) {
+fun TryItDock(modifier: Modifier = Modifier, live: Boolean = false) {
     Box(
         modifier.fillMaxWidth().cssShadow(listOf(CssShadow(false, 0f, -1f, 0f, 0f, SetColors.surfaceContainerHighest)), RoundedCornerShape(0.dp))
             .background(SetColors.screen).padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
@@ -171,7 +177,20 @@ fun TryItDock(modifier: Modifier = Modifier) {
                 .background(SetColors.row, RoundedCornerShape(26.dp)).padding(horizontal = 18.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
-            DText("Try it here", Modifier.weight(1f), style = setText(16f, color = SetColors.onSurfaceVariant))
+            // SetHome:109: an input with the placeholder "Try it here", text 16 / onSurface
+            if (live) {
+                var text by remember { mutableStateOf("") }
+                BasicTextField(
+                    text, { text = it }, Modifier.weight(1f), singleLine = true,
+                    textStyle = setText(16f), cursorBrush = SolidColor(SetColors.primary),
+                    decorationBox = { inner ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (text.isEmpty()) DText("Try it here", style = setText(16f, color = SetColors.onSurfaceVariant))
+                            inner()
+                        }
+                    },
+                )
+            } else DText("Try it here", Modifier.weight(1f), style = setText(16f, color = SetColors.onSurfaceVariant))
             Symbol("keyboard", 22.sp, SetColors.onSurfaceVariant)
         }
     }
