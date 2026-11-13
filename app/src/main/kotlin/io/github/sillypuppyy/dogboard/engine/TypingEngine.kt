@@ -54,8 +54,12 @@ object TypingEngine {
         userWords: File? = null,
         blockedWords: File? = null,
         rejectedCorrections: File? = null,
+        openAbbreviations: (() -> BufferedReader)? = null,
     ) {
         if (loaded != null) return
+        abbreviations = openAbbreviations?.let { open ->
+            open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toList() }
+        }.orEmpty().groupBy { it.removeSuffix(".").lowercase() }
         val lexicon = openLexicon().use { Lexicon.parse(it) }
         val bigrams = openBigrams?.let { open -> open().use { Bigrams.parse(it, lexicon) } }
         val engine = Loaded(lexicon, bigrams)
@@ -219,6 +223,24 @@ object TypingEngine {
 
     private const val LEARN_AFTER_KEPT = 3
 
+    /** Words that keep their period ("e.g.", "U.S."), by lowercase form without the final period. */
+    @Volatile
+    private var abbreviations: Map<String, List<String>> = emptyMap()
+
+    /**
+     * Whether the keyboard should turn shift on for the next letter after [before] in a field of
+     * [type] (iOS auto-shift, [AutoShift]); the lexicon and the abbreviations say which words keep
+     * their period. Before the lexicon is loaded every period ends a sentence.
+     */
+    fun shouldAutoShift(before: CharSequence, type: AutoShift.Type): Boolean {
+        val engine = loaded
+        val forms = AutoShift.WordForms { word ->
+            val stored = engine?.let { e -> lock.read { e.lexicon.storedForm(word)?.takeIf { e.lexicon.contains(word) } } }
+            listOfNotNull(stored) + abbreviations[word.lowercase()].orEmpty()
+        }
+        return AutoShift.shouldShift(before, type, forms)
+    }
+
     private fun isBlocked(word: String): Boolean = word.lowercase() in blocked
 
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
@@ -232,5 +254,6 @@ object TypingEngine {
         rejectionsFile = null
         synchronized(rejections) { rejections.clear() }
         synchronized(keptUnknown) { keptUnknown.clear() }
+        abbreviations = emptyMap()
     }
 }

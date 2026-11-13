@@ -26,3 +26,7 @@ Fonts (res/font, subsets made by tools/fonts/subset_fonts.py)
     License 1.1, included in licenses/RobotoFlex-OFL.txt.
   material_symbols_rounded.ttf: Material Symbols Rounded by Google, Apache License 2.0, included
     in licenses/MaterialSymbols-Apache-2.0.txt.
+
+en.abbreviations.txt (built by tools/data/build_abbreviations.py)
+  From Unicode CLDR (https://github.com/unicode-org/cldr, common/segments/en.xml), Copyright ©
+  Unicode, Inc., Unicode License v3, included in licenses/Unicode-License.txt.

@@ -876,9 +876,16 @@ class ImeController(
         fun reevaluateInputShiftState() {
             val isPeekOngoing = false // TODO
             if (state.flags.inputShiftState == InputShiftState.CAPS_LOCK || isPeekOngoing) return
-            val capsMode = state.content.cursorCapsMode(state.editor.info.inputAttributes)
-            val shift = prefs.typing.autoCapitalization.get()
-                && capsMode != InputAttributes.CapsMode.NONE
+            // DogBoard: iOS auto-shift rules (AutoShift, notes/design/settings-model.md §3) instead of
+            // Android's TextUtils.getCapsMode, which treats every period as a sentence end
+            val type = when (state.editor.info.inputAttributes.capsMode) {
+                InputAttributes.CapsMode.ALL -> io.github.sillypuppyy.dogboard.engine.AutoShift.Type.ALL
+                InputAttributes.CapsMode.WORDS -> io.github.sillypuppyy.dogboard.engine.AutoShift.Type.WORDS
+                InputAttributes.CapsMode.SENTENCES -> io.github.sillypuppyy.dogboard.engine.AutoShift.Type.SENTENCES
+                InputAttributes.CapsMode.NONE -> io.github.sillypuppyy.dogboard.engine.AutoShift.Type.NONE
+            }
+            val shift = prefs.typing.autoCapitalization.get() &&
+                io.github.sillypuppyy.dogboard.engine.TypingEngine.shouldAutoShift(state.content.surroundingText.textBefore, type)
                 // && subtypeManager.activeSubtype.primaryLocale.supportsCapitalization
             val inputShiftState = when {
                 shift -> InputShiftState.SHIFTED_AUTOMATIC

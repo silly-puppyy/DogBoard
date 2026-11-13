@@ -26,7 +26,16 @@ echo "== install on $SERIAL"
 "$ADB" -s "$SERIAL" install -r -t "$APK" | tail -1
 
 echo "== startup (cold, until keys drawn)"
-python3 -I tools/perf/ime_startup.py --serial "$SERIAL" --mode cold --until keys --runs 2 --timeout 15 | tail -1
+dogboard_crash() {
+  # DogBoard's own crash trace, if any (its uid only)
+  local uid
+  uid=$("$ADB" -s "$SERIAL" shell pm list packages -U "$PKG" | sed 's/.*uid://' | tr -d '\r')
+  "$ADB" -s "$SERIAL" logcat -d --uid "$uid" | grep -A6 "FATAL EXCEPTION" | head -20
+}
+PKG=io.github.sillypuppyy.dogboard.debug
+startup=$(python3 -I tools/perf/ime_startup.py --serial "$SERIAL" --mode cold --until keys --runs 2 --timeout 15)
+echo "$startup" | tail -1
+if echo "$startup" | grep -q TIMEOUT; then echo "FAIL: keys never drawn"; dogboard_crash; exit 1; fi
 
 echo "== typing"
 python3 -I tools/test/type_test.py --serial "$SERIAL" --history

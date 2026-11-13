@@ -293,6 +293,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                     userWords = java.io.File(filesDir, "dogboard/user_words.txt"),
                     blockedWords = java.io.File(filesDir, "dogboard/blocked_words.txt"),
                     rejectedCorrections = java.io.File(filesDir, "dogboard/rejected_corrections.txt"),
+                    openAbbreviations = { assets.open("dogboard/en.abbreviations.txt").bufferedReader() },
                 )
             }
             imeController.updateState { refreshSuggestions() }
