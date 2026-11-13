@@ -292,7 +292,8 @@ object TypingEngine {
         loaded ?: return
         personal.clear()
         rejections.clear()
-        userWordsFile?.let { runCatching { it.delete() } }
+        // iOS "Reset Keyboard Dictionary": every word the keyboard was taught goes, added ones too
+        for (f in listOfNotNull(userWordsFile, addedWordsFile)) runCatching { f.delete() }
         lock.write { learnedWords.clear() }
         lastMix = null
         loaded = null

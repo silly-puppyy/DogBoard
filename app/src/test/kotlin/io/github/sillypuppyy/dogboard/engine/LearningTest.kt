@@ -138,12 +138,17 @@ class ResetDictionaryTest : FunSpec({
                 userWords = userWords,
                 rejectedCorrections = File(dir, "rejected.txt"),
                 personalModel = File(dir, "personal.tsv"),
+                addedWords = File(dir, "added_words.txt"),
             )
             TypingEngine.learn("thibk")
+            TypingEngine.addWord("Qwopz")
             TypingEngine.isKnownWord("thibk") shouldBe true
             TypingEngine.resetDictionary()
             TypingEngine.isKnownWord("thibk") shouldBe false
             userWords.exists() shouldBe false
+            // added words go too: the list must not show words the engine no longer knows
+            TypingEngine.dictionaryLists().added shouldBe emptyList()
+            TypingEngine.isKnownWord("Qwopz") shouldBe false
         } finally {
             TypingEngine.unloadForTest()
             dir.deleteRecursively()
