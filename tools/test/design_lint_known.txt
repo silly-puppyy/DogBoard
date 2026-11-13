@@ -15,3 +15,6 @@ TRUNCATED clip:
 # Intended (squash setting): words still too long at 70% are cut in the middle (gallery "Long words: squash")
 TRUNCATED slot:“Supercalifragilistic”/
 TRUNCATED slot:Supercalifragilisticexpialidocious/
+# SetHome:89 section subs are one line with an ellipsis; "Your words, blocked words, language models"
+# is cut at 390 dp (question 2026-11-13)
+TRUNCATED section:Dictionaries and models/

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
@@ -40,7 +41,7 @@ class DesignGalleryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val only = intent.getIntExtra("frame", -1)
-        val all = STATES + PANELS + THEMES
+        val all = STATES + PANELS + THEMES + PAGES
         val frames = if (only in all.indices) listOf(only to all[only]) else all.withIndex().map { it.index to it.value }
         setContent {
             LazyColumn(
@@ -54,13 +55,15 @@ class DesignGalleryActivity : ComponentActivity() {
                         val render = remember(f) { KbSpec.render(f.props) }
                         val lint = remember(f) { DesignLint() }
                         Box(Modifier.padding(top = f.top.dp, bottom = f.bottom.dp).horizontalScroll(rememberScrollState())) {
-                            CompositionLocalProvider(LocalDesignLint provides lint) { KbView(render) }
+                            CompositionLocalProvider(LocalDesignLint provides lint) {
+                                if (f.page != null) Box(Modifier.width(f.pageWidth.dp)) { f.page.invoke() } else KbView(render)
+                            }
                         }
                         // lint after the frame is laid out (two frames: layout, then positions)
                         LaunchedEffect(f) {
                             withFrameNanos { }
                             withFrameNanos { }
-                            val problems = lint.check("kb", render.W)
+                            val problems = lint.check("kb", if (f.page != null) f.pageWidth else render.W)
                             if (problems.isEmpty()) Log.i(TAG, "frame $index OK: ${f.title}")
                             for (p in problems) Log.w(TAG, "frame $index FAIL: ${f.title}: $p")
                             Log.i(TAG, "frame $index done")
@@ -71,7 +74,11 @@ class DesignGalleryActivity : ComponentActivity() {
         }
     }
 
-    data class Frame(val title: String, val note: String, val props: KbProps, val top: Int = 0, val bottom: Int = 0)
+    data class Frame(
+        val title: String, val note: String, val props: KbProps = KbProps(), val top: Int = 0, val bottom: Int = 0,
+        /** An app page instead of the keyboard (width in dp for the lint's off-screen check). */
+        val page: (@androidx.compose.runtime.Composable () -> Unit)? = null, val pageWidth: Float = 390f,
+    )
 
     companion object {
         const val TAG = "DesignLint"
@@ -91,6 +98,11 @@ class DesignGalleryActivity : ComponentActivity() {
             Frame("Glass keys", "Dim 35% · blur 12 · key opacity 30%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.35f, blur = 12f, keyOpacity = 0.3f)),
             Frame("Too little dim", "Dim 5% · blur 4 · key opacity 12%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.05f, blur = 4f, keyOpacity = 0.12f)),
             Frame("Solid keys", "Dim 10% · blur 18 · key opacity 85%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.1f, blur = 18f, keyOpacity = 0.85f)),
+        )
+
+        // app pages (SetHome.dc.html etc.), drawn at the canvas width 390 dp
+        val PAGES = listOf(
+            Frame("Settings home", "SetHome.dc.html", page = { io.github.sillypuppyy.dogboard.design.settings.SetHome() }),
         )
 
         // initialised before the frame lists that use it
