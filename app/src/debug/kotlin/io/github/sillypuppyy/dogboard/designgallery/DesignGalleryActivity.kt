@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.designgallery
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -14,13 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.sillypuppyy.dogboard.design.DesignLint
 import io.github.sillypuppyy.dogboard.design.KbProps
+import io.github.sillypuppyy.dogboard.design.LocalDesignLint
 import io.github.sillypuppyy.dogboard.design.KbSpec
 import io.github.sillypuppyy.dogboard.design.KbView
 
@@ -33,26 +40,75 @@ class DesignGalleryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val only = intent.getIntExtra("frame", -1)
-        val frames = if (only in STATES.indices) listOf(STATES[only]) else STATES
+        val all = STATES + PANELS
+        val frames = if (only in all.indices) listOf(only to all[only]) else all.withIndex().map { it.index to it.value }
         setContent {
             LazyColumn(
                 Modifier.fillMaxSize().background(Color(0xFFF7F7F2)),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                items(frames) { f ->
+                items(frames) { (index, f) ->
                     Column(Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
                         BasicText(f.title, style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold))
                         BasicText(f.note, Modifier.padding(bottom = 8.dp), style = TextStyle(fontSize = 14.sp, color = Color(0xFF47483B)))
-                        Box(Modifier.padding(top = f.top.dp).horizontalScroll(rememberScrollState())) { KbView(KbSpec.render(f.props)) }
+                        val render = remember(f) { KbSpec.render(f.props) }
+                        val lint = remember(f) { DesignLint() }
+                        Box(Modifier.padding(top = f.top.dp, bottom = f.bottom.dp).horizontalScroll(rememberScrollState())) {
+                            CompositionLocalProvider(LocalDesignLint provides lint) { KbView(render) }
+                        }
+                        // lint after the frame is laid out (two frames: layout, then positions)
+                        LaunchedEffect(f) {
+                            withFrameNanos { }
+                            withFrameNanos { }
+                            val problems = lint.check("kb", render.W)
+                            if (problems.isEmpty()) Log.i(TAG, "frame $index OK: ${f.title}")
+                            for (p in problems) Log.w(TAG, "frame $index FAIL: ${f.title}: $p")
+                            Log.i(TAG, "frame $index done")
+                        }
                     }
                 }
             }
         }
     }
 
-    data class Frame(val title: String, val note: String, val props: KbProps, val top: Int = 0)
+    data class Frame(val title: String, val note: String, val props: KbProps, val top: Int = 0, val bottom: Int = 0)
 
     companion object {
+        const val TAG = "DesignLint"
+
+        // Panels.dc.html:100-108 (bar cards, only = bar) and 128-145 (panel and mode cells, defaults
+        // Panels:86: bar empty, ret send)
+        val PANELS = listOf(
+            Frame("Bar: Text replacement", "Your shortcut wins over autocorrect and shows as the chip.", KbProps(only = "bar", bar = "omw")),
+            Frame("Bar: Undone correction", "Delete after a correction restores the word, ringed. teh → the is never auto-applied again.", KbProps(only = "bar", bar = "undone")),
+            Frame("Bar: Removed suggestion", "Long-press any suggestion to remove it for good. Undo stays 4 s.", KbProps(only = "bar", bar = "removed")),
+            Frame("Bar: Copied an image", "Recent-copy chip replaces suggestions for 60 s. Tap to paste.", KbProps(only = "bar", bar = "clip")),
+            Frame("Bar: Passwords", "System autofill chips sit in the slot area, never over the keys.", KbProps(only = "bar", bar = "autofill")),
+            Frame("Bar: Incognito", "Mask in place of tools. Nothing is learned; predictions are off.", KbProps(only = "bar", bar = "empty", incognito = true)),
+            Frame("Bar: Tools row open", "The tools button fills; up to six pinned tools; the last opens the full Tools panel.", KbProps(only = "bar", bar = "tools")),
+            Frame("Bar: Dictation", "On-device voice (future). The mic becomes Stop on a primary circle.", KbProps(only = "bar", bar = "voice")),
+            Frame("Bar: Dark", "Same layout, dark roles.", KbProps(only = "bar", bar = "teh", dark = true)),
+            Frame("Tools row in the bar", "One tap on the left button. Pinned tools only; the last button opens everything.", KbProps(bar = "tools", ret = "send")),
+            Frame("Tools panel", "4 × 3 tiles, 16 dp corners, 20 dp icons. Drag to reorder, long-press to pin. Edit opens the actions editor.", KbProps(panel = "tools", ret = "send")),
+            Frame("Clipboard", "Two-column grid, newest first. Images and video as previews; pin keeps a clip past the 1-hour limit.", KbProps(panel = "clipboard", ret = "send")),
+            Frame("Clipboard · long-press a clip", "The clip is ringed and offers Pin and Delete. Clear (header) removes unpinned clips only.", KbProps(panel = "clipboard", panelVariant = "select", ret = "send")),
+            Frame("Clipboard · locked", "Before unlock, nothing is shown, pinned clips included.", KbProps(panel = "clipboard", panelVariant = "locked", ret = "send")),
+            Frame("Clipboard · history off", "Off by default, with one clear reason to turn it on.", KbProps(panel = "clipboard", panelVariant = "empty", ret = "send")),
+            Frame("Emoji + skin tone", "Search on top, recents first, categories at the bottom. Long-press opens tones; the chosen one becomes the default.", KbProps(panel = "emoji", skinPicker = true, ret = "send"), top = 40),
+            Frame("Text editing", "Cursor pad with a Select toggle; Select all, Copy, Cut, Paste, Home, End.", KbProps(panel = "edit", ret = "send")),
+            Frame("One-handed · right", "Keys at 84% width. The strip moves it to the other side or back to full width.", KbProps(oneHanded = "right", bar = "teh", ret = "send")),
+            Frame("One-handed · left", "For left-handed use. Remembered per orientation.", KbProps(oneHanded = "left", bar = "hi", ret = "send")),
+            Frame("Floating", "80% width, 28 dp corners, drag handle on top. Resize from the corners (60–100%).", KbProps(floating = true, width = 300f, ret = "send"), top = 28, bottom = 28),
+            Frame("Developer row", "Off by default; per-app. Ctrl armed for one key (tonal + dot), Alt locked by double-tap (primary + bar).", KbProps(dev = true, devCtrl = "armed", devAlt = "locked", bar = "empty", ret = "return")),
+            Frame("Incognito", "Automatic in private fields, or from Tools. Mask stays visible the whole time.", KbProps(incognito = true, ret = "send")),
+            Frame("Dictation (future)", "Listening state in the bar; words stream into the field; punctuation spoken or added by the model.", KbProps(bar = "voice", ret = "send")),
+            Frame("Clipboard, dark", "Tiles on surfaceContainerHigh.", KbProps(panel = "clipboard", dark = true, ret = "send")),
+            Frame("Tools, Dog theme", "Panels inherit every theme role.", KbProps(panel = "tools", theme = "dog", ret = "send")),
+        ) + listOf("return", "send", "search", "go", "next", "done", "join", "route", "continue").map {
+            // Panels:111-119: every return word in the cap
+            Frame("Return: $it", "Panels.dc.html:111-119", KbProps(ret = it))
+        }
+
         // States.dc.html:52-84, props as overrides of States:47 defaults (= KbProps defaults)
         val STATES = listOf(
             Frame("Shift off", "Outline glyph on a function-tone key. Bar shows next-word predictions after “Hi ”.", KbProps(bar = "hi", ret = "send")),

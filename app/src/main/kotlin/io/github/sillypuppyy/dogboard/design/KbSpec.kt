@@ -9,7 +9,7 @@ import kotlin.math.roundToInt
  * Kb.dc.html, ported 1:1: the component's props (Kb:324-350) and `renderVals()` (Kb:352-708) as
  * plain Kotlin. Names and order follow the JS so the two can be read side by side; each block
  * cites its lines. Lengths are dp (the canvas is CSS px on a 375-wide phone), font sizes sp.
- * Not yet ported here: panels (Kb:646-680), dev row (Kb:637-644), special bar states.
+ * Panels, dev row and special bar states: [KbExtrasSpec] (KbPanels.kt).
  */
 data class KbProps(
     val theme: String = "dogboard",
@@ -23,7 +23,11 @@ data class KbProps(
     val hints: Boolean = false,
     val bar: String = "empty",
     val slots: List<Pair<String, String>>? = null, // (text, kind) from the live strip
-    val panel: String = "",
+    val panel: String = "", // "", clipboard, emoji, tools, edit
+    val panelVariant: String = "default", // default, select, locked, empty
+    val skinPicker: Boolean = false,
+    val devCtrl: String = "off", // off, armed, locked
+    val devAlt: String = "off",
     val dev: Boolean = false,
     val incognito: Boolean = false,
     val trackpad: Boolean = false,
@@ -129,6 +133,7 @@ data class KbRender(
     val tpY: Float,
     val rootRadius: Float,
     val rootShadow: List<CssShadow>,
+    val x: KbExtras,
 )
 
 object KbSpec {
@@ -408,6 +413,7 @@ object KbSpec {
             micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else t.barMuted, micFill = if (mVoice) 1 else 0,
             trackpad = trackpad, tpX = kbW / 2 - 28 + stripL.w, tpY = keyAreaH - rowH / 2 - 28,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
+            x = KbExtrasSpec.extras(P, t, W),
             rootShadow = if (floating) CssShadow.parse("0 2px 6px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.18)") else emptyList(),
         )
     }

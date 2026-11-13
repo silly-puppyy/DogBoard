@@ -32,6 +32,11 @@ echo "== typing"
 python3 -I tools/test/type_test.py --serial "$SERIAL" --history
 python3 -I tools/test/type_test.py --serial "$SERIAL" --noise-mm 1.0 --seed 11 --history
 
+echo "== design lint (gallery frames: overflow, escapes, spacing)"
+lint_out=$(python3 -I tools/test/design_lint.py --serial "$SERIAL"); lint_rc=$?
+echo "$lint_out" | grep -v " OK: " | tail -15
+[ $lint_rc -eq 0 ] || { echo "FAIL: design lint"; exit 1; }
+
 echo "== crash check"
 if "$ADB" -s "$SERIAL" logcat -d | grep -E "FATAL EXCEPTION|CrashDialogActivity" | grep -q dogboard; then
   echo "FAIL: DogBoard crashed during the smoke test"

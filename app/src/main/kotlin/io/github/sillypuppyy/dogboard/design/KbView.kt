@@ -14,18 +14,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.innerShadow
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.DpOffset
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -42,8 +45,9 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
             .width(r.W.dp)
             .height(r.H.dp)
             .cssShadow(r.rootShadow, RoundedCornerShape(r.rootRadius.dp))
-            .background(t.bg, RoundedCornerShape(r.rootRadius.dp)), // no clip: popups overflow the root (Kb:16)
-    ) {
+            .background(t.bg, RoundedCornerShape(r.rootRadius.dp)) // no clip: popups overflow the root (Kb:16)
+            .lint("kb"),
+    ) { LintParent("kb") {
         Column(Modifier.fillMaxSize()) {
             // Kb:27-31 floating handle
             if (r.floatH > 0f) {
@@ -51,23 +55,21 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
                     Box(Modifier.size(32.dp, 4.dp).alpha(0.6f).background(t.barMuted, RoundedCornerShape(2.dp)))
                 }
             }
-            // Kb:33-144 suggestion bar
-            if (r.showBar) KbBar(r)
+            // Kb:33-144 suggestion bar (panel header while a panel is open)
+            if (r.showBar) { if (r.x.panel.isNotEmpty()) KbPanelHeader(r) else KbBar(r) }
+            // Kb:146-156 dev row
+            if (r.x.dev) KbDevRow(r)
+            // Kb:199-282 panels
+            if (r.x.showPanel) KbPanelBody(r)
             // Kb:158-197 keys
             if (r.showKeys) {
                 Box(Modifier.fillMaxWidth().height(r.keyAreaH.dp)) {
-                    Row(Modifier.fillMaxSize()) {
-                        if (r.stripL.show) KbSideStrip(r, r.stripL)
-                        Column(Modifier.width(r.kbW.dp)) {
-                            for (row in r.rows) {
-                                Row(Modifier.height(r.rowH.dp)) {
-                                    for (k in row.keys) {
-                                        if (k.gap) Spacer(Modifier.width(k.w.dp)) else KbKeyCap(r, k)
-                                    }
-                                }
-                            }
-                        }
-                        if (r.stripR.show) KbSideStrip(r, r.stripR)
+                    if (r.stripL.show) Box(Modifier.align(Alignment.CenterStart)) { KbSideStrip(r, r.stripL) }
+                    if (r.stripR.show) Box(Modifier.align(Alignment.CenterEnd)) { KbSideStrip(r, r.stripR) }
+                    // Each cap at its spec rectangle (Kb:558), edges snapped to pixels one by one: a row
+                    // of fixed widths would add up each key's rounding (1.5 dp by the end of a row).
+                    for ((ri, row) in r.rows.withIndex()) {
+                        for (k in row.keys) if (!k.gap) KbKeyCap(r, k, ri)
                     }
                     // Kb:193-195 trackpad puck
                     if (r.trackpad) {
@@ -94,28 +96,34 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
             }
         }
         KbPopups(r)
-    }
+    } }
 }
 
 /** Kb:173-180: one key; the cap is inset by mv/mh inside its touch cell. */
 @Composable
-private fun KbKeyCap(r: KbRender, k: KbKey) {
+private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
     val t = r.t
     val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
-    Box(Modifier.width(k.w.dp).height(r.rowH.dp).padding(vertical = r.mv.dp, horizontal = r.mh.dp)) {
+    // Kb:558: where the spec puts this cap, for the lint's spacing check
+    val capTop = r.floatH + r.barH + r.devH + ri * r.rowH + r.mv
+    val capId = "cap:$ri:${k.id}"
+    val expected = Rect(k.x + r.mh, capTop, k.x + k.w - r.mh, capTop + r.rowH - 2 * r.mv)
+    val inArea = Rect(k.x + r.mh, ri * r.rowH + r.mv, k.x + k.w - r.mh, (ri + 1) * r.rowH - r.mv)
+    Box(Modifier.placeAt(inArea)) {
         Box(
-            Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape).background(k.bg, shape),
+            Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape).background(k.bg, shape)
+                .lint(capId, DesignLint.Kind.CAP, expected),
             contentAlignment = Alignment.Center,
-        ) {
+        ) { LintParent(capId) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (k.icon.isNotEmpty()) {
                     Symbol(k.icon, k.iconSize.sp, k.fg, Modifier.alpha(r.labelOp), fill = k.fill)
                 } else if (k.label.isNotEmpty()) {
-                    BasicText(k.label, Modifier.alpha(r.labelOp), style = designTextStyle(k.fs.sp, k.fw, k.fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+                    DText(k.label, Modifier.alpha(r.labelOp), style = designTextStyle(k.fs.sp, k.fw, k.fg), id = "$capId/label", kind = DesignLint.Kind.LABEL)
                 }
                 if (k.sub.isNotEmpty()) {
                     // Kb:177
-                    BasicText(
+                    DText(
                         k.sub, Modifier.padding(top = 3.dp).alpha(r.labelOp),
                         style = designTextStyle(10.sp, 600, t.hint).copy(letterSpacing = 1.sp),
                         overflow = TextOverflow.Visible,
@@ -124,13 +132,13 @@ private fun KbKeyCap(r: KbRender, k: KbKey) {
             }
             if (k.hint.isNotEmpty()) {
                 // Kb:178
-                BasicText(
+                DText(
                     k.hint, Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 4.dp).alpha(r.labelOp),
                     style = designTextStyle(t.hintFs.sp, t.hintFw, t.hint),
                     overflow = TextOverflow.Visible,
                 )
             }
-        }
+        } }
     }
 }
 
@@ -163,11 +171,12 @@ private fun KbBar(r: KbRender) {
         }
         // Kb:81-90
         Row(Modifier.weight(1f).height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (!r.mSlots) KbBarSpecial(r)
             if (r.mSlots) {
                 for (s in r.slots) {
                     if (s.showDiv) Box(Modifier.size(1.dp, 22.dp).background(t.div))
-                    Box(Modifier.weight(1f).height(48.dp), contentAlignment = Alignment.Center) {
-                        BasicText(
+                    Box(Modifier.weight(1f).height(48.dp).lint("slot:${s.text}"), contentAlignment = Alignment.Center) { LintParent("slot:${s.text}") {
+                        DText(
                             s.text,
                             Modifier.cssShadow(s.ring, RoundedCornerShape(50))
                                 .background(s.bg, RoundedCornerShape(50))
@@ -176,7 +185,7 @@ private fun KbBar(r: KbRender) {
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                    }
+                    } }
                 }
             }
         }
@@ -199,38 +208,39 @@ private fun KbPopups(r: KbRender) {
     val popShape = RoundedCornerShape(16.dp)
     r.pv?.let { pv ->
         Box(
-            Modifier.offset(pv.x.dp, pv.y.dp).size(pv.w.dp, 58.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape),
+            Modifier.offset(pv.x.dp, pv.y.dp).size(pv.w.dp, 58.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape)
+                .lint("preview", DesignLint.Kind.FLOATING),
             contentAlignment = Alignment.Center,
-        ) { BasicText(pv.label, style = designTextStyle(30.sp, pv.fw, t.popFg), overflow = TextOverflow.Visible) }
+        ) { LintParent("preview") { DText(pv.label, style = designTextStyle(30.sp, pv.fw, t.popFg), overflow = TextOverflow.Visible) } }
     }
     r.lp?.let { lp ->
-        Row(Modifier.offset(lp.x.dp, lp.y.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape).padding(4.dp)) {
+        Row(Modifier.offset(lp.x.dp, lp.y.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape).lint("longpress", DesignLint.Kind.FLOATING).padding(4.dp)) { LintParent("longpress") {
             for ((c, bg, fg) in lp.items) {
-                Box(Modifier.size(34.dp, 46.dp).background(bg, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(34.dp, 46.dp).background(bg, RoundedCornerShape(12.dp)).lint("longpress:$c"), contentAlignment = Alignment.Center) { LintParent("longpress:$c") {
                     // CSS lets a long variant (".org") overflow its 34 dp cell on one line
-                    BasicText(c, Modifier.wrapContentWidth(unbounded = true), style = designTextStyle(24.sp, 400, fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
-                }
+                    DText(c, Modifier.wrapContentWidth(unbounded = true), style = designTextStyle(24.sp, 400, fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+                } }
             }
-        }
+        } }
     }
     r.lm?.let { lm ->
         Column(
             Modifier.offset(lm.x.dp, lm.y.dp).width(240.dp).cssShadow(MENU_SHADOW, popShape).background(t.pop, popShape)
-                .padding(vertical = 8.dp),
+                .lint("langmenu", DesignLint.Kind.FLOATING).padding(vertical = 8.dp),
         ) {
             for (m in lm.items) {
                 Row(Modifier.fillMaxWidth().height(44.dp).background(m.bg).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.width(20.dp)) { if (m.icon.isNotEmpty()) Symbol(m.icon, 20.sp, t.linkFg) }
                     Spacer(Modifier.width(12.dp))
-                    BasicText(m.label, Modifier.weight(1f), style = designTextStyle(15.sp, 400, t.popFg).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), overflow = TextOverflow.Visible)
-                    BasicText(m.sub, Modifier.alpha(0.7f), style = designTextStyle(12.sp, 400, t.popFg), overflow = TextOverflow.Visible)
+                    DText(m.label, Modifier.weight(1f), style = designTextStyle(15.sp, 400, t.popFg).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), overflow = TextOverflow.Visible)
+                    DText(m.sub, Modifier.alpha(0.7f), style = designTextStyle(12.sp, 400, t.popFg), overflow = TextOverflow.Visible)
                 }
             }
             Box(Modifier.fillMaxWidth().padding(vertical = 6.dp).height(1.dp).background(t.div))
             Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.width(20.dp)) { Symbol("settings", 20.sp, t.popFg) }
                 Spacer(Modifier.width(12.dp))
-                BasicText("Languages and layouts", style = designTextStyle(15.sp, 400, t.popFg), overflow = TextOverflow.Visible)
+                DText("Languages and layouts", style = designTextStyle(15.sp, 400, t.popFg), overflow = TextOverflow.Visible)
             }
         }
     }
@@ -246,4 +256,14 @@ fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
         m = m.innerShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
     }
     return m
+}
+
+/** Lays this element out at [rect] (dp, parent-relative), each edge rounded to a whole pixel. */
+fun Modifier.placeAt(rect: Rect): Modifier = layout { measurable, _ ->
+    val l = (rect.left * density).roundToInt()
+    val t = (rect.top * density).roundToInt()
+    val w = (rect.right * density).roundToInt() - l
+    val h = (rect.bottom * density).roundToInt() - t
+    val p = measurable.measure(Constraints.fixed(w, h))
+    layout(w, h) { p.place(l, t) }
 }

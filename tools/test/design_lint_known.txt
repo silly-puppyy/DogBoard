@@ -1,0 +1,18 @@
+# Design lint problems that come from the design itself and wait for a decision (user/designer).
+# One substring per line; a lint line containing it is reported as "known", not as a failure.
+# Remove a line once the design question is settled and the code follows the answer.
+
+# Kb:303 long-press cells are 34 dp; ".org/.edu/.net" at 24 sp don't fit (question 2026-11-13)
+ESCAPE longpress:.org/
+ESCAPE longpress:.edu/
+ESCAPE longpress:.net/
+# Kb:118-119 removed-suggestion message + Undo are wider than the slot area at 375 dp (question 2026-11-13)
+OVERFLOW kb/text:Undo
+# Kb:585-589 an 11-variant long-press bar (a, u, o ...) is 382 dp wide; clamped at x = 2 it passes 375 (question 2026-11-13)
+OFFSCREEN longpress [
+# Kb:87 slots ellipsize; at 375 dp a slot fits ~68 dp of text, so "keyboards" (16 sp) and the
+# "On my way!" chip (16/600) show cut ("keyboa…", "On my …") (question 2026-11-13)
+TRUNCATED slot:keyboards/
+TRUNCATED slot:On my way!/
+# Intended by the design: clipboard text clamps at 2 lines (Kb:207 -webkit-line-clamp: 2)
+TRUNCATED clip:
