@@ -495,7 +495,7 @@ class ImeController(
             val word = currentWord
             // a reverted autocorrection that is finished unchanged is a word the user wants
             if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
-            if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord()) {
+            if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord() && !followsDot(word.text)) {
                 val typed = word.text
                 val context = wordContext()
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
@@ -611,6 +611,16 @@ class ImeController(
         }
 
         /** True when a letter follows the cursor: only part of the word is before it. */
+        /**
+         * iOS FilterAlteredURLFragments: a word right after a "." with no space ("www.exmaple",
+         * "file.tx") is part of an address or file name and is not corrected.
+         */
+        private fun followsDot(word: String): Boolean {
+            val before = state.content.surroundingText.textBefore
+            val i = before.length - word.length - 1
+            return i >= 0 && before.endsWith(word) && before[i] == '.'
+        }
+
         private fun cursorInsideWord(): Boolean =
             state.content.surroundingText.textAfter.firstOrNull()?.let { isWordChar(it) } == true
 

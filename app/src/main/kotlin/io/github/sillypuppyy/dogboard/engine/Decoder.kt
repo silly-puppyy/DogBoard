@@ -89,6 +89,8 @@ class Decoder(
          */
         const val MAX_WORDS = 3
 
+        private val SHORT_WORDS = listOf("u" to "you", "o" to "oh")
+
         /** Word restarts kept per tap: the most likely few. */
         private const val MAX_RESTARTS = 3
     }
@@ -148,6 +150,26 @@ class Decoder(
     }
 
     private var search: Search? = null
+
+    /**
+     * iOS RescoreShortWords (English): "u" and "o" score as well as "you" and "oh" would in the
+     * same place, so typing them on purpose isn't taken for a rare word. Node of the short word
+     * -> node of its long form, looked up again when the lexicon changes.
+     */
+    private var shortWords: Map<Int, Int> = emptyMap()
+    private var shortWordsVersion = -1
+
+    private fun shortWordMap(): Map<Int, Int> {
+        if (shortWordsVersion != lexicon.version) {
+            shortWords = SHORT_WORDS.mapNotNull { (short, long) ->
+                val a = lexicon.find(short)
+                val b = lexicon.find(long)
+                if (a != Lexicon.NONE && b != Lexicon.NONE && lexicon.isWord(a) && lexicon.isWord(b)) a to b else null
+            }.toMap()
+            shortWordsVersion = lexicon.version
+        }
+        return shortWords
+    }
 
     private fun key(prefix: Int, node: Int) = (prefix.toLong() shl 32) or node.toLong()
 
@@ -217,10 +239,15 @@ class Decoder(
         }
 
         fun context(prefix: Int) = prefixes[prefix]?.last ?: previous
+        val shortWords = shortWordMap()
         fun lm(node: Int, prev: Int): Double {
-            val base = bigrams?.logProb(prev, lexicon.wordId(node), lexicon.logProb(node)) ?: lexicon.logProb(node)
-            // the personal model mixed in (PersonalModel: iOS dynamic model weights)
-            return personal?.invoke(node, base) ?: base
+            fun of(n: Int): Double {
+                val base = bigrams?.logProb(prev, lexicon.wordId(n), lexicon.logProb(n)) ?: lexicon.logProb(n)
+                // the personal model mixed in (PersonalModel: iOS dynamic model weights)
+                return personal?.invoke(n, base) ?: base
+            }
+            val own = of(node)
+            return shortWords[node]?.let { maxOf(own, of(it)) } ?: own
         }
         /** The prefix for [s]'s words plus the word at [s]'s node. */
         fun restart(s: State): Int {

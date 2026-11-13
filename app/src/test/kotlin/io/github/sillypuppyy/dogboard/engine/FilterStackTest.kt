@@ -61,4 +61,13 @@ class FilterStackTest : FunSpec({
             dir.deleteRecursively()
         }
     }
+
+    test("RescoreShortWords: \"u\" scores like \"you\"") {
+        val lex = Lexicon.of(linkedMapOf("you" to 100_000L, "i" to 50_000L, "y" to 300L, "u" to 100L))
+        val keys = KEYS
+        val u = keys.getValue('u').let { Tap(it.centerX, it.centerY) }
+        val top = Decoder(lex).decode(listOf(u), keys, PARAMS, includeCompletions = false).first()
+        top.word shouldBe "u"
+        (top.languageModel > lex.logProb("u")!!) shouldBe true
+    }
 })
