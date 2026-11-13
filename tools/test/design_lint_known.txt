@@ -10,9 +10,9 @@ ESCAPE longpress:.net/
 OVERFLOW kb/text:Undo
 # Kb:585-589 an 11-variant long-press bar (a, u, o ...) is 382 dp wide; clamped at x = 2 it passes 375 (question 2026-11-13)
 OFFSCREEN longpress [
-# Kb:87 slots ellipsize; at 375 dp a slot fits ~68 dp of text, so "keyboards" (16 sp) and the
-# "On my way!" chip (16/600) show cut ("keyboa…", "On my …") (question 2026-11-13)
-TRUNCATED slot:keyboards/
+# Slots squash to 70% then cut in the middle (user, 2026-11-13, like Gboard/LatinIME). "keyboards"
+# now fits squashed; the "On my way!" chip still needs the cut at 375 dp ("On …way!"). Open: give
+# the centre word the whole slot area as LatinIME does (notes/research/suggestion-overflow.md)
 TRUNCATED slot:On my way!/
 # Intended by the design: clipboard text clamps at 2 lines (Kb:207 -webkit-line-clamp: 2)
 TRUNCATED clip:

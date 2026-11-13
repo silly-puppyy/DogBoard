@@ -183,7 +183,7 @@ private fun KbBar(r: KbRender) {
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             style = designTextStyle(s.fs.sp, s.wt, s.fg).copy(lineHeight = 20.sp),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            squash = true,
                         )
                     } }
                 }

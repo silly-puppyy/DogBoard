@@ -1,6 +1,10 @@
 package io.github.sillypuppyy.dogboard.design
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextGeometricTransform
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -148,7 +152,12 @@ fun DText(
     maxLines: Int = 1,
     softWrap: Boolean = maxLines > 1,
     overflow: TextOverflow = TextOverflow.Visible,
+    squash: Boolean = false,
 ) {
+    if (squash) {
+        SquashedText(text, modifier, style, id, kind)
+        return
+    }
     val lint = LocalDesignLint.current
     if (lint == null) {
         BasicText(text, modifier, style = style, maxLines = maxLines, softWrap = softWrap, overflow = overflow)
@@ -183,3 +192,26 @@ private fun LayoutCoordinates.unclippedDp(density: Float): Rect {
     val p = positionInRoot()
     return Rect(p.x / density, p.y / density, (p.x + size.width) / density, (p.y + size.height) / density)
 }
+
+/**
+ * DogBoard rule for suggestion slots (user, 2026-11-13, replaces the design's end ellipsis,
+ * Kb:87), as Gboard does it: a word that doesn't fit is first narrowed (horizontal scale down to
+ * [SQUASH_MIN_SCALE]), and only then shortened in the middle ("On… way!"), so the start and the
+ * end of the word stay readable.
+ */
+@Composable
+private fun SquashedText(text: String, modifier: Modifier, style: TextStyle, id: String?, kind: DesignLint.Kind) {
+    val measurer = rememberTextMeasurer()
+    BoxWithConstraints(modifier) {
+        val natural = remember(text, style) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width }
+        val available = constraints.maxWidth
+        val scale = if (natural <= available || available <= 0) 1f else (available.toFloat() / natural).coerceAtLeast(SQUASH_MIN_SCALE)
+        DText(
+            text, Modifier, style.copy(textGeometricTransform = TextGeometricTransform(scaleX = scale)),
+            id = id, kind = kind, maxLines = 1, softWrap = false, overflow = TextOverflow.MiddleEllipsis,
+        )
+    }
+}
+
+/** Narrowest horizontal scale for squashed text; below this, letters get hard to tell apart. */
+const val SQUASH_MIN_SCALE = 0.7f
