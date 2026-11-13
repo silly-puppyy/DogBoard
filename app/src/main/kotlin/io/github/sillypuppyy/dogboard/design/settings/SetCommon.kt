@@ -1,5 +1,8 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -93,9 +96,10 @@ fun SetBlockRow(id: String, content: @Composable ColumnScope.() -> Unit) {
 
 /** SetHome:44-57: a link row (title/sub with something before and after). */
 @Composable
-fun SetLinkRow(id: String, content: @Composable RowScope.() -> Unit) {
+fun SetLinkRow(id: String, onClick: (() -> Unit)? = null, content: @Composable RowScope.() -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 48.dp).background(SetColors.row).lint(id).padding(16.dp),
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).background(SetColors.row)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).lint(id).padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
     ) { LintParent(id) { content() } }
 }
@@ -105,7 +109,10 @@ fun SetLinkRow(id: String, content: @Composable RowScope.() -> Unit) {
  * is secondaryContainer with a check. [weights]: the design's flex values per option.
  */
 @Composable
-fun Segmented(id: String, options: List<String>, selected: Int, weights: List<Float> = options.map { 1f }, checkGap: Int = 6) {
+fun Segmented(
+    id: String, options: List<String>, selected: Int, weights: List<Float> = options.map { 1f }, checkGap: Int = 6,
+    onSelect: ((Int) -> Unit)? = null,
+) {
     val shape = RoundedCornerShape(20.dp)
     Row(
         Modifier.fillMaxWidth().height(40.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), shape).clip(shape).lint(id),
@@ -115,7 +122,8 @@ fun Segmented(id: String, options: List<String>, selected: Int, weights: List<Fl
                 if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(SetColors.outline))
                 val on = i == selected
                 Row(
-                    Modifier.weight(weights[i]).fillMaxHeight().background(if (on) SetColors.secondaryContainer else Color.Transparent).lint("$id:$o"),
+                    Modifier.weight(weights[i]).fillMaxHeight().background(if (on) SetColors.secondaryContainer else Color.Transparent)
+                        .then(if (onSelect != null) Modifier.clickable { onSelect(i) } else Modifier).lint("$id:$o"),
                     horizontalArrangement = Arrangement.spacedBy(checkGap.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     LintParent("$id:$o") {
@@ -131,9 +139,11 @@ fun Segmented(id: String, options: List<String>, selected: Int, weights: List<Fl
 
 /** SetHome:87-90: a section row: 40 dp tonal disc with a 22 dp icon, title, one-line sub. */
 @Composable
-fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color) {
+fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color, onClick: (() -> Unit)? = null) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).lint("section:$title").padding(horizontal = 16.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .lint("section:$title").padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
         LintParent("section:$title") {

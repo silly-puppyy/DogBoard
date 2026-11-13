@@ -16,6 +16,9 @@
 
 package dev.patrickgold.florisboard.app.settings
 
+import dev.patrickgold.jetpref.datastore.model.collectAsState
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.filled.Gesture
@@ -49,6 +52,47 @@ fun HomeScreen() {
     val context = LocalContext.current
     val isFlorisBoardEnabled by InputMethodUtils.observeIsFlorisboardEnabled()
     val isFlorisBoardSelected by InputMethodUtils.observeIsFlorisboardSelected()
+
+    // DogBoard: the ported settings home (SetHome.dc.html); its rows lead to the existing screens
+    // until those are ported too
+    val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+    val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
+    if (dogboardDesign) {
+        val autocorrectOn by prefs.correction.autocorrect.collectAsState()
+        val level by prefs.correction.autocorrectLevel.collectAsState()
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
+        io.github.sillypuppyy.dogboard.design.settings.SetHome(
+            modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+            actions = io.github.sillypuppyy.dogboard.design.settings.SetHomeActions(
+                autocorrect = if (!autocorrectOn) 0 else 1 + L.indexOf(level),
+                onAutocorrect = { i ->
+                    scope.launch {
+                        prefs.correction.autocorrect.set(i > 0)
+                        if (i > 0) prefs.correction.autocorrectLevel.set(L[i - 1])
+                    }
+                },
+                onLanguages = { navController.navigate(Routes.Settings.Localization) },
+                onLook = { navController.navigate(Routes.Settings.Theme) },
+                onSection = { title ->
+                    navController.navigate(
+                        when (title) {
+                            "Languages and layouts" -> Routes.Settings.Localization
+                            "Look" -> Routes.Settings.Theme
+                            "Typing and correction", "Privacy" -> Routes.Settings.Typing
+                            "Dictionaries and models" -> Routes.Settings.Dictionary
+                            "Feel" -> Routes.Settings.Keyboard.InputFeedback
+                            "Gestures" -> Routes.Settings.Gestures
+                            "Toolbar and tools" -> Routes.Settings.Smartbar
+                            "Advanced" -> Routes.Settings.Other
+                            else -> Routes.Settings.About
+                        }
+                    )
+                },
+            ),
+        )
+        return
+    }
 
     FlorisScreenNg(
         title = stringRes(R.string.settings__home__title),

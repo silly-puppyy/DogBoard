@@ -1,5 +1,8 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,12 +57,27 @@ object SetHomeSpec {
 }
 
 /** SetHome.dc.html:16-101, the settings home page as drawn (static, like the canvas). */
+/**
+ * What the live settings app wires into the home page (null in the design gallery, where the page
+ * is static): the autocorrect choice (0 Off ... 3 Strong) and where each row leads.
+ */
+class SetHomeActions(
+    val autocorrect: Int,
+    val onAutocorrect: (Int) -> Unit,
+    val onLanguages: () -> Unit,
+    val onLook: () -> Unit,
+    /** A section row, by its title (SetHomeSpec.sections). */
+    val onSection: (String) -> Unit,
+)
+
 @Composable
-fun SetHome(modifier: Modifier = Modifier) {
+fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
     Box(modifier.background(SetColors.screen).lint("kb")) {
         LintParent("kb") {
             Column(
-                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 104.dp),
+                Modifier.fillMaxWidth()
+                    .then(if (actions != null) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                    .padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 104.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 // SetHome:18-24 top bar
@@ -87,7 +105,7 @@ fun SetHome(modifier: Modifier = Modifier) {
                         TitleSub("Layout style", "How the bottom row and long-press work")
                         Segmented("seg:layout", listOf("iOS-style", "Android-style", "Custom"), 0, listOf(1f, 1f, 0.8f))
                     }
-                    SetLinkRow("main:languages") {
+                    SetLinkRow("main:languages", actions?.onLanguages) {
                         TitleSub("Languages", "English (US) · QWERTY", Modifier.weight(1f))
                         // SetHome:46 outlined Add button
                         Row(
@@ -98,14 +116,17 @@ fun SetHome(modifier: Modifier = Modifier) {
                             DText("Add", style = setText(14f, 500, SetColors.primary))
                         }
                     }
-                    SetLinkRow("main:look") {
+                    SetLinkRow("main:look", actions?.onLook) {
                         MiniKeyboard()
                         TitleSub("Look", "DogBoard · follows your wallpaper", Modifier.weight(1f))
                         Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
                     }
                     SetBlockRow("main:autocorrect") {
                         TitleSub("Autocorrect", "How readily typos are fixed when you press space")
-                        Segmented("seg:autocorrect", listOf("Off", "Gentle", "Standard", "Strong"), 2, listOf(1f, 1f, 1.3f, 1f), checkGap = 4)
+                        Segmented(
+                            "seg:autocorrect", listOf("Off", "Gentle", "Standard", "Strong"), actions?.autocorrect ?: 2,
+                            listOf(1f, 1f, 1.3f, 1f), checkGap = 4, onSelect = actions?.onAutocorrect,
+                        )
                         // SetHome:67
                         BasicText(
                             buildAnnotatedString {
@@ -122,7 +143,9 @@ fun SetHome(modifier: Modifier = Modifier) {
                 }
                 // SetHome:83-93 all settings
                 SetGroup("All settings") {
-                    for (s in SetHomeSpec.sections) SetSectionRow(s.icon, s.title, s.sub, s.bg, s.fg)
+                    for (s in SetHomeSpec.sections) {
+                        SetSectionRow(s.icon, s.title, s.sub, s.bg, s.fg, actions?.let { a -> { a.onSection(s.title) } })
+                    }
                 }
             }
             TryItDock(Modifier.align(Alignment.BottomCenter))
