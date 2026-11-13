@@ -560,7 +560,7 @@ class ImeController(
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
                     ?: TypingEngine.candidates(word, context)
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
-                val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get())
+                val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)
                 if (BuildConfig.DEBUG) {
                     android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context)} " +
                         candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })

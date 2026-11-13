@@ -58,10 +58,12 @@ class RejectionsTest : FunSpec({
         Rejections.softLimit("bery", "very") shouldBe 20
         val r = fresh()
         r.noteCorrected("cafe", "café"); r.noteDeleted("café")
-        r.isBlocked("cafe", "café") shouldBe true
-        r.isBlocked("cafe", "café") shouldBe true
-        r.isBlocked("cafe", "café") shouldBe true
-        r.isBlocked("cafe", "café") shouldBe false // limit 3 used up
+        // the suggestion bar's checks while typing use up nothing
+        repeat(10) { r.isBlocked("cafe", "café") shouldBe true }
+        r.isBlocked("cafe", "café", consume = true) shouldBe true
+        r.isBlocked("cafe", "café", consume = true) shouldBe true
+        r.isBlocked("cafe", "café", consume = true) shouldBe true
+        r.isBlocked("cafe", "café", consume = true) shouldBe false // limit 3 used up by finished words
     }
     test("only the last 3 deletions are remembered") {
         val r = fresh()

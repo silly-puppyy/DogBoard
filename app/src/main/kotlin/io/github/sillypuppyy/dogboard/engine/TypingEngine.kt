@@ -400,16 +400,18 @@ object TypingEngine {
         previousCorrection: String? = null,
         curly: Boolean = false,
         level: AutocorrectLevel = AutocorrectLevel.STANDARD,
+        /** The word is being finished (not a suggestion-bar preview): soft blocks count. */
+        commit: Boolean = false,
     ): String? {
         val engine = loaded ?: return null
         // iOS: text replacements are tried before the engine, so a shortcut beats autocorrection
         replacementFor(word.text, word.flags, word.caseContext)?.let { phrase ->
-            if (!rejections.isBlocked(word.text, phrase)) return phrase
+            if (!rejections.isBlocked(word.text, phrase, consume = commit)) return phrase
         }
         if (candidates.isEmpty()) return null
         val result = engine.autocorrect.correction(word.text, withoutLearnedTypo(word.text, candidates), previousCorrection, caseFor(word, curly), level.level)
             ?: return null
-        return if (rejections.isBlocked(word.text, result)) null else result
+        return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
     }
 
     /**

@@ -68,10 +68,14 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
         save()
     }
 
-    /** Whether autocorrection must not turn [typed] into [correction] now. */
+    /**
+     * Whether autocorrection must not turn [typed] into [correction] now. [consume]: this check
+     * is the correction actually being made (a word finished), so a soft block it applies counts
+     * toward that block's limit; the suggestion bar's checks while typing don't count.
+     */
     @Synchronized
-    fun isBlocked(typed: String, correction: String, ignoreSoft: Boolean = false): Boolean {
-        if (!ignoreSoft && softBlocks(typed, correction)) return true
+    fun isBlocked(typed: String, correction: String, ignoreSoft: Boolean = false, consume: Boolean = false): Boolean {
+        if (!ignoreSoft && softBlocks(typed, correction, consume)) return true
         val row = rows[typed to correction] ?: return false
         if (row.hard == 0) return false
         val days = (now() - row.lastHard) / MS_PER_DAY
@@ -79,12 +83,12 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
         return ln(days) / ln(4.0) < row.hard - 1
     }
 
-    private fun softBlocks(typed: String, correction: String): Boolean {
+    private fun softBlocks(typed: String, correction: String, consume: Boolean): Boolean {
         val t = now()
         deleted.removeAll { t - it.time > SOFT_WINDOW_MS }
         val limit = softLimit(typed, correction)
         val entry = deleted.lastOrNull { it.typed == typed && it.correction == correction && it.count < limit } ?: return false
-        entry.count++
+        if (consume) entry.count++
         return true
     }
 
