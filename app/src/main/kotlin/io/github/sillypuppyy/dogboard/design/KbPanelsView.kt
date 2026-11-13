@@ -39,7 +39,7 @@ private fun text(size: Int, weight: Int, color: Color) = designTextStyle(size.sp
 /** Kb:38 etc.: the 48 dp "back to keyboard" button of every panel header. */
 @Composable
 private fun BackButton(r: KbRender) {
-    Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Symbol("keyboard", 24.sp, r.t.barFg) }
+    Box(Modifier.size(48.dp).tap(LocalKbActions.current?.onBack), contentAlignment = Alignment.Center) { Symbol("keyboard", 24.sp, r.t.barFg) }
 }
 
 /** Kb:36-72: the bar while a panel is open. */
@@ -119,7 +119,11 @@ fun RowScope.KbBarSpecial(r: KbRender) {
     val t = r.t; val x = r.x
     when {
         x.mTools -> Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceBetween) {
-            for (b in x.toolRow) Box(Modifier.size(44.dp, 48.dp), contentAlignment = Alignment.Center) { Symbol(b.icon, 24.sp, t.barFg) }
+            val actions = LocalKbActions.current
+            for (b in x.toolRow) Box(
+                Modifier.size(44.dp, 48.dp).tap(actions?.let { a -> { a.onTool(b.icon) } }),
+                contentAlignment = Alignment.Center,
+            ) { Symbol(b.icon, 24.sp, t.barFg) }
         }
         x.mClip -> Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             // Kb:102-105
@@ -226,11 +230,12 @@ fun KbPanelBody(r: KbRender) {
         if (x.pTools) {
             // Kb:252-263
             Column(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = 4.dp)) {
+                val actions = LocalKbActions.current
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (row in x.tools.chunked(4)) {
                         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             for (o in row) {
-                                Box(Modifier.weight(1f).fillMaxHeight().background(t.tile, TILE).lint("tool:${o.label}")) { LintParent("tool:${o.label}") {
+                                Box(Modifier.weight(1f).fillMaxHeight().background(t.tile, TILE).lint("tool:${o.label}").tap(actions?.let { a -> { a.onTool(o.icon) } })) { LintParent("tool:${o.label}") {
                                     Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         Symbol(o.icon, 20.sp, t.tileFg)
                                         DText(o.label, style = text(11, 500, t.tileFg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
@@ -248,10 +253,15 @@ fun KbPanelBody(r: KbRender) {
         }
         if (x.pEdit) {
             // Kb:267-278: 3:2 columns
+            val actions = LocalKbActions.current
             Row(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (row in x.pad.chunked(3)) Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        for (p in row) Box(Modifier.weight(1f).fillMaxHeight().background(p.bg, TILE), contentAlignment = Alignment.Center) {
+                        for (p in row) Box(
+                            Modifier.weight(1f).fillMaxHeight().background(p.bg, TILE)
+                                .tap(actions?.takeIf { p.icon.isNotEmpty() || p.text.isNotEmpty() }?.let { a -> { a.onTool(p.icon.ifEmpty { p.text }) } }),
+                            contentAlignment = Alignment.Center,
+                        ) {
                             if (p.icon.isNotEmpty()) Symbol(p.icon, 24.sp, p.fg) else if (p.text.isNotEmpty()) DText(p.text, style = text(13, 500, p.fg))
                         }
                     }
@@ -259,7 +269,8 @@ fun KbPanelBody(r: KbRender) {
                 Column(Modifier.weight(2f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (row in x.editOps.chunked(2)) Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         for (o in row) Column(
-                            Modifier.weight(1f).fillMaxHeight().background(t.tile, TILE).lint("edit:${o.label}"),
+                            Modifier.weight(1f).fillMaxHeight().background(t.tile, TILE).lint("edit:${o.label}")
+                                .tap(actions?.let { a -> { a.onTool(o.icon) } }),
                             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
                         ) {
                             Symbol(o.icon, 20.sp, t.tileFg)

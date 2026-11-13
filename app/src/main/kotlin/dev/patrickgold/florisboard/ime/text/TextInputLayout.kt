@@ -66,15 +66,20 @@ fun TextInputLayout(
         val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
         if (dogboardDesign) {
             val strip by io.github.sillypuppyy.dogboard.ime.LiveStrip.strip.collectAsState()
+            val ui = io.github.sillypuppyy.dogboard.ime.LiveUi
+            val toolRow by ui.toolRow.collectAsState()
+            val panel by ui.panel.collectAsState()
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
                 strip = strip,
                 onPick = { s ->
                     imeController.updateStateBlocking { emitCandidate(io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(s)) }
                 },
-                // the design's tools panel isn't ported yet: FlorisBoard's quick actions stand in
-                onLeft = {
-                    imeController.updateStateBlocking { emitDescriptor(dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ToggleActionsOverflow) }
-                },
+                // the left button swaps the suggestions for the tool row (Kb:668)
+                onLeft = { ui.toolRow.value = !ui.toolRow.value },
+                toolRow = toolRow,
+                panel = panel,
+                onTool = { icon -> ui.run(icon, imeController) },
+                onBack = { ui.closePanel() },
             )
         } else {
             Smartbar()

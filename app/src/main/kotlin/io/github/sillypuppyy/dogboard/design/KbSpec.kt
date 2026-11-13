@@ -97,6 +97,8 @@ data class KbSlot(
 data class KbStrip(val show: Boolean, val w: Float, val icons: List<Pair<String, String>>)
 
 data class KbRender(
+    /** KbProps.only: "" (whole keyboard), keys, bar, live. */
+    val only: String,
     val t: KbTokens,
     val W: Float,
     val H: Float,
@@ -414,7 +416,7 @@ object KbSpec {
         val H = hFloat + barH + devH + (if (only == "bar") 0f else keyAreaH) + (if (showNav) navH else 0f) + (if (floating) 8f else 0f)
 
         return KbRender(
-            t = t, W = W, H = H, radius = radius, kbW = kbW, rowH = rowH, mv = mv, mh = mh, keyAreaH = keyAreaH, navH = navH,
+            only = only, t = t, W = W, H = H, radius = radius, kbW = kbW, rowH = rowH, mv = mv, mh = mh, keyAreaH = keyAreaH, navH = navH,
             rows = rows, stripL = stripL, stripR = stripR, showBar = showBar, barH = barH, devH = devH, floatH = hFloat,
             showKeys = showKeys, showNav = showNav, navIcons = !landscape, labelOp = labelOp, capOp = capOp, pos = pos, pv = pv, lp = lp, lm = lm,
             mSlots = mSlots, slots = slots, barOp = if (trackpad) 0.35f else 1f,

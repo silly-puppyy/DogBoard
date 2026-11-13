@@ -195,6 +195,8 @@ fun ImeKeyboardBox(
         val trackedPeekPointer by pointerTracker.trackedPeekPointer.collectAsState()
         val trackedMultiTapSeq by pointerTracker.trackedMultiTapSeq.collectAsState()
 
+        // DogBoard: a design panel (tools, text editing) in the key area takes the touches itself
+        val livePanel by io.github.sillypuppyy.dogboard.ime.LiveUi.panel.collectAsState()
         val keyboardRowHeightDp = FlorisImeSizing.keyboardRowBaseHeight
         val peekLineWidthPx = with(density) { 8.dp.toPx() }
 
@@ -210,7 +212,7 @@ fun ImeKeyboardBox(
                     val placeable = measurable.measure(effConstraints)
                     layout(placeable.width, placeable.height) { placeable.place(0, 0) }
                 }
-                .trackPointerInput(pointerTracker, model)
+                .then(if (livePanel.isEmpty()) Modifier.trackPointerInput(pointerTracker, model) else Modifier)
                 // DogBoard: debug builds log the key area's screen bounds for automated typing tests
                 .onGloballyPositioned { coordinates ->
                     if (dev.patrickgold.florisboard.BuildConfig.DEBUG || dev.patrickgold.florisboard.BuildConfig.BUILD_TYPE == "benchmark") {
@@ -242,12 +244,17 @@ fun ImeKeyboardBox(
             val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
             if (dogboardDesign) {
                 val output = trackedOutputPointer
+                val ui = io.github.sillypuppyy.dogboard.ime.LiveUi
                 io.github.sillypuppyy.dogboard.design.LiveKbView(
                     layerId = touchLayerId.toString(),
                     shiftState = inputShiftState,
                     enterAction = enterAction,
                     pressedKey = output?.downKey ?: trackedPeekPointer?.peekKey,
                     longPress = output?.longPress,
+                    panel = livePanel,
+                    actions = remember(imeController) {
+                        io.github.sillypuppyy.dogboard.design.KbActions(onSlot = {}, onTool = { icon -> ui.run(icon, imeController) })
+                    },
                 )
                 return@Box
             }

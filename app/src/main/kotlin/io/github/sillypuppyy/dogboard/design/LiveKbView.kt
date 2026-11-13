@@ -24,6 +24,8 @@ fun LiveKbView(
     enterAction: String,
     pressedKey: TouchKey?,
     longPress: LongPress?,
+    panel: String = "",
+    actions: KbActions? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -48,9 +50,10 @@ fun LiveKbView(
             width = maxWidth.value,
             keyH = maxHeight.value,
             only = "live",
+            panel = panel,
         )
         val render = remember(props) { KbSpec.render(props) }
-        KbView(render)
+        androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
     }
 }
 
@@ -65,6 +68,10 @@ fun LiveKbBar(
     strip: List<io.github.sillypuppyy.dogboard.engine.Suggestion>,
     onPick: (io.github.sillypuppyy.dogboard.engine.Suggestion) -> Unit,
     onLeft: () -> Unit,
+    toolRow: Boolean = false,
+    panel: String = "",
+    onTool: (String) -> Unit = {},
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -79,10 +86,14 @@ fun LiveKbBar(
                 else -> s.word to "w"
             }
         }
-        val props = KbProps(dark = dark, slots = slots, width = maxWidth.value, only = "bar")
+        // the tool row replaces the suggestions while open; a panel shows its header instead
+        val props = KbProps(
+            dark = dark, slots = if (toolRow) null else slots, bar = if (toolRow) "tools" else "empty",
+            panel = panel, width = maxWidth.value, only = "bar",
+        )
         val render = remember(props) { KbSpec.render(props) }
-        val actions = remember(strip, onPick, onLeft) {
-            KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft)
+        val actions = remember(strip, onPick, onLeft, onTool, onBack) {
+            KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft, onTool = onTool, onBack = onBack)
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
     }

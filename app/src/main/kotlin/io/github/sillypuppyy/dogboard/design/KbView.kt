@@ -49,11 +49,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Taps on the live keyboard's bar (stage 2). Null in the design gallery, where nothing is tappable. */
-class KbActions(val onSlot: (Int) -> Unit, val onLeft: () -> Unit = {}, val onMic: () -> Unit = {})
+class KbActions(
+    val onSlot: (Int) -> Unit,
+    val onLeft: () -> Unit = {},
+    val onMic: () -> Unit = {},
+    /** A tool tapped in the bar's tool row or the tools panel, by its icon name (Kb:663-668). */
+    val onTool: (String) -> Unit = {},
+    /** The panel header's back button (Kb:37-46). */
+    val onBack: () -> Unit = {},
+)
 
 val LocalKbActions = androidx.compose.runtime.staticCompositionLocalOf<KbActions?> { null }
 
-private fun Modifier.tap(action: (() -> Unit)?): Modifier =
+internal fun Modifier.tap(action: (() -> Unit)?): Modifier =
     if (action == null) this else this.then(Modifier.clickable(onClick = action))
 
 /**
@@ -85,7 +93,7 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
             // Kb:146-156 dev row
             if (r.x.dev) KbDevRow(r)
             // Kb:199-282 panels
-            if (r.x.showPanel) KbPanelBody(r)
+            if (r.x.showPanel && r.only != "bar") KbPanelBody(r) // a bar-only render (the live bar) has no body
             // Kb:158-197 keys
             if (r.showKeys) {
                 Box(Modifier.fillMaxWidth().height(r.keyAreaH.dp)) {
