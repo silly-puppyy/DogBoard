@@ -16,6 +16,9 @@ object TypingEngine {
     private var loaded: Loaded? = null
     private val lock = ReentrantReadWriteLock()
     private var userWordsFile: File? = null
+    private var blockedWordsFile: File? = null
+    /** Words the user removed from suggestions (lowercase); never suggested or corrected to. */
+    private val blocked = HashSet<String>()
 
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?) {
         val decoder = Decoder(lexicon, bigrams = bigrams)
@@ -33,7 +36,12 @@ object TypingEngine {
      * read now and appended to by [learn].
      */
     @Synchronized
-    fun load(openLexicon: () -> BufferedReader, openBigrams: (() -> BufferedReader)? = null, userWords: File? = null) {
+    fun load(
+        openLexicon: () -> BufferedReader,
+        openBigrams: (() -> BufferedReader)? = null,
+        userWords: File? = null,
+        blockedWords: File? = null,
+    ) {
         if (loaded != null) return
         val lexicon = openLexicon().use { Lexicon.parse(it) }
         val bigrams = openBigrams?.let { open -> open().use { Bigrams.parse(it, lexicon) } }
@@ -42,6 +50,11 @@ object TypingEngine {
             if (line.isNotBlank()) lexicon.addWord(line.trim(), engine.userWordLogProb)
         }
         userWordsFile = userWords
+        blockedWordsFile = blockedWords
+        lock.write {
+            blocked.clear()
+            blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
+        }
         loaded = engine
     }
 
@@ -78,7 +91,9 @@ object TypingEngine {
         val engine = loaded ?: return emptyList()
         val taps = word.tapsOrNull() ?: return emptyList()
         return lock.read {
-            engine.decoder.decode(taps, word.keys, word.params!!, maxResults, previous = engine.contextId(previous))
+            engine.decoder.decode(taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4), previous = engine.contextId(previous))
+                .filter { !isBlocked(it.word) }
+                .take(maxResults)
         }
     }
 
@@ -95,7 +110,10 @@ object TypingEngine {
         val engine = loaded ?: return emptyList()
         val bigrams = engine.bigrams ?: return emptyList()
         return lock.read {
-            bigrams.followers(engine.contextId(previous), n).map { (id, _) -> engine.lexicon.node(id).word!! }
+            bigrams.followers(engine.contextId(previous), n + blocked.size.coerceAtMost(4))
+                .map { (id, _) -> engine.lexicon.node(id).word!! }
+                .filter { !isBlocked(it) }
+                .take(n)
         }
     }
 
@@ -113,11 +131,35 @@ object TypingEngine {
     private const val KEY_PRIOR_WEIGHT = 0.10
     private const val KEY_PRIOR_FLOOR = -6.0
 
+    /**
+     * The user removed [word] from the suggestions: it is never suggested or corrected to again,
+     * and forgotten if it was learned. Saved to the blocked-words file.
+     */
+    fun block(word: String) {
+        val key = word.lowercase()
+        val isNew = lock.write { blocked.add(key) }
+        if (!isNew) return
+        runCatching {
+            blockedWordsFile?.let { file ->
+                file.parentFile?.mkdirs()
+                file.appendText(key + "\n")
+            }
+            userWordsFile?.takeIf { it.exists() }?.let { file ->
+                val kept = file.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }
+                file.writeText(kept.joinToString("") { it + "\n" })
+            }
+        }
+    }
+
+    private fun isBlocked(word: String): Boolean = word.lowercase() in blocked
+
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
 
     /** Forgets everything loaded (tests only). */
     internal fun unloadForTest() {
         loaded = null
         userWordsFile = null
+        blockedWordsFile = null
+        blocked.clear()
     }
 }

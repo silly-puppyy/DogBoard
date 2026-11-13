@@ -69,4 +69,34 @@ class LearningTest : FunSpec({
             dir.deleteRecursively()
         }
     }
+
+    test("a removed word is never suggested or corrected to, is unlearned, and stays removed") {
+        val dir = Files.createTempDirectory("dogboard-block").toFile()
+        val userWords = File(dir, "user_words.txt")
+        val blockedWords = File(dir, "blocked_words.txt")
+        fun load() = TypingEngine.load(
+            openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+            userWords = userWords,
+            blockedWords = blockedWords,
+        )
+        try {
+            TypingEngine.unloadForTest()
+            load()
+            finished("thibk") shouldBe "think"
+            TypingEngine.block("think")
+            TypingEngine.candidates(typed("thibk"), null).none { it.word == "think" } shouldBe true
+            (finished("thibk") == "think") shouldBe false
+
+            TypingEngine.learn("zorbit")
+            TypingEngine.block("Zorbit")
+            userWords.readLines() shouldBe emptyList()
+
+            TypingEngine.unloadForTest()
+            load()
+            TypingEngine.candidates(typed("thibk"), null).none { it.word == "think" } shouldBe true
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
 })

@@ -291,6 +291,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                     openLexicon = { assets.open("dogboard/en.lexicon.tsv").bufferedReader() },
                     openBigrams = { assets.open("dogboard/en.bigrams.tsv").bufferedReader() },
                     userWords = java.io.File(filesDir, "dogboard/user_words.txt"),
+                    blockedWords = java.io.File(filesDir, "dogboard/blocked_words.txt"),
                 )
             }
             imeController.updateState { refreshSuggestions() }

@@ -250,6 +250,12 @@ class NlpManager(context: Context) {
     }
 
     fun removeSuggestion(subtype: Subtype, candidate: SuggestionCandidate): Boolean {
+        // DogBoard: our strip words are removed in the engine; then the strip is recomputed
+        if (candidate is io.github.sillypuppyy.dogboard.ime.DogBoardCandidate) {
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.block(candidate.suggestion.word)
+            imeController.updateStateBlocking { refreshSuggestions() }
+            return true
+        }
         return runBlocking { candidate.sourceProvider?.removeSuggestion(subtype, candidate) == true }.also { result ->
             if (result) {
                 scope.launch {
