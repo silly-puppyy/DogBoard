@@ -33,6 +33,9 @@ data class LongPress(
     val extendedKeys: List<TouchPopupKey> = emptyList(),
     val extendedFocusedIndex: Int = 0,
     val extendedJob: Job? = null,
+    /** DogBoard: the pressed key's cell (normalized) and the keyboard's width, for the one-row bar. */
+    val keyBounds: Rect = Rect.Zero,
+    val keyboardWidthDp: Float = 0f,
 ) {
     fun shouldShowSimplePopup(): Boolean {
         return !simpleBounds.isEmpty
@@ -42,17 +45,41 @@ data class LongPress(
         return !extendedBounds.isEmpty
     }
 
+    /**
+     * DogBoard: the bar is one row (iOS), so the item is chosen by the finger's x alone: the cell
+     * under it, or the nearest end beyond the bar; moving up or down keeps the choice.
+     */
     fun getNearestKeyIndex(position: Offset): Int {
+        if (extendedKeys.isEmpty()) return extendedFocusedIndex
+        var best = extendedFocusedIndex
+        var bestDistance = Float.MAX_VALUE
         extendedKeys.fastForEachIndexed { index, extendedKey ->
-            if (extendedKey.bounds.contains(position)) {
-                return index
-            }
+            val b = extendedKey.bounds
+            val d = if (position.x < b.left) b.left - position.x else if (position.x > b.right) position.x - b.right else 0f
+            if (d < bestDistance) { bestDistance = d; best = index }
         }
-        return extendedFocusedIndex
+        return best
     }
 
     companion object {
         val None = LongPress()
+    }
+}
+
+/**
+ * DogBoard: the extended keys in one row, in list order, exactly where the live keyboard draws
+ * its long-press bar ([io.github.sillypuppyy.dogboard.design.KbSpec.longPressBarX]): item 0 over
+ * the key, the bar shifted to stay on screen. FlorisBoard's grid layout (below) is not used.
+ */
+fun layoutLongPressBarRow(extendedKeys: List<TouchPopupKey>, keyBounds: Rect, anchorBounds: Rect, keyboardWidthDp: Float): List<TouchPopupKey> {
+    val spec = io.github.sillypuppyy.dogboard.design.KbSpec
+    val w = keyboardWidthDp
+    val capX = keyBounds.left * w + spec.KEY_MH
+    val capW = keyBounds.width * w - 2 * spec.KEY_MH
+    val x0 = spec.longPressBarX(capX, capW, w, extendedKeys.size)
+    return extendedKeys.mapIndexed { i, key ->
+        val left = (x0 + 4 + i * spec.LP_CELL) / w
+        key.withNewBounds(Rect(left, anchorBounds.top, left + spec.LP_CELL / w, anchorBounds.bottom))
     }
 }
 

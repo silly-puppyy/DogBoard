@@ -264,6 +264,8 @@ class PointerTracker(
                         extendedBounds = Rect.Zero,
                         extendedKeys = downKey.extendedPopupKeys,
                         extendedFocusedIndex = 0,
+                        keyBounds = downKey.bounds,
+                        keyboardWidthDp = size.width / density,
                         extendedJob = if (downKey.isSuitableForExtendedPopup) {
                             launchExtendedLongPressJob(longPressTimeout)
                         } else null,
@@ -524,7 +526,9 @@ class PointerTracker(
             val trackedPointer = trackedOutputPointer.value ?: return@mutateLocked
             val longPress = trackedPointer.longPress
             val anchorBounds = longPress.anchorBounds
-            val extendedKeys = layoutExtendedLongPressKeys(longPress.extendedKeys, anchorBounds)
+            val extendedKeys = if (longPress.keyboardWidthDp > 0f) {
+                layoutLongPressBarRow(longPress.extendedKeys, longPress.keyBounds, anchorBounds, longPress.keyboardWidthDp)
+            } else layoutExtendedLongPressKeys(longPress.extendedKeys, anchorBounds)
             val extendedBounds = anchorBounds.copy(
                 left = extendedKeys.fastFold(anchorBounds.left) { acc, key -> minOf(acc, key.bounds.left) },
                 top = extendedKeys.fastFold(anchorBounds.top) { acc, key -> minOf(acc, key.bounds.top) },

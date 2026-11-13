@@ -50,6 +50,8 @@ data class KbProps(
     val preview: String = "",
     val longpress: String = "",
     val lpSel: Int = 0,
+    /** The live keyboard's long-press list (FlorisBoard's extended keys, in order); empty: the [KbSpec.LP] sample. */
+    val lpItems: List<String> = emptyList(),
     val pressed: String = "",
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
@@ -160,6 +162,22 @@ data class KbRender(
 )
 
 object KbSpec {
+    /** Kb:577: long-press bar cell width and the key caps' side margin (dp). */
+    const val LP_CELL = 34f
+    const val KEY_MH = 3f
+
+    /**
+     * Kb:578-581: the long-press bar's left edge for a key cap at [capX] wide [capW] on a
+     * keyboard [w] wide with [n] items (cell i spans x + 4 + i·[LP_CELL]); shared with the touch
+     * targets (LongPress.kt) so the drawn cells are the ones that select.
+     */
+    fun longPressBarX(capX: Float, capW: Float, w: Float, n: Int): Float {
+        val cw = LP_CELL; val pw = n * cw + 8
+        var x = capX + capW / 2 - cw / 2 - 4
+        if (x + pw > w - 2) x = capX + capW / 2 + cw / 2 + 4 - pw
+        return max(2f, min(w - pw - 2, x))
+    }
+
     /** Kb:454 long-press sets; `.com` has a list. */
     val LP: Map<String, List<String>> = mapOf(
         "w" to "ŵ", "e" to "èéêëěẽēėę", "r" to "ř", "t" to "țťþ", "y" to "ýŷÿ", "u" to "ùúûüǔũūűůų",
@@ -246,7 +264,7 @@ object KbSpec {
             if (oneHanded == "right") stripL = s else stripR = s
         }
         val mv = if (landscape) 4f else 6f
-        val mh = 3f
+        val mh = KEY_MH
 
         // Kb:453-503 layouts
         val upper = shift != "off"
@@ -399,13 +417,10 @@ object KbSpec {
         // Kb:577-590 long-press bar
         val lp = P.longpress.takeIf { it.isNotEmpty() && it in pos }?.let { id ->
             val p = pos.getValue(id)
-            var vars = LP[p.base] ?: emptyList()
-            if (upper && plane == "base") vars = vars.map(::up)
+            var vars = P.lpItems.ifEmpty { LP[p.base] ?: emptyList() }
+            if (P.lpItems.isEmpty() && upper && plane == "base") vars = vars.map(::up)
             val sel = P.lpSel
-            val cw = 34f; val pw = vars.size * cw + 8
-            var x = p.capX + p.capW / 2 - cw / 2 - 4
-            if (x + pw > W - 2) x = p.capX + p.capW / 2 + cw / 2 + 4 - pw
-            x = max(2f, min(W - pw - 2, x))
+            val x = longPressBarX(p.capX, p.capW, W, vars.size)
             KbLongPress(x, p.capTop - 8 - 54, vars.mapIndexed { i, c -> Triple(c, if (i == sel) t.sel else Color.Transparent, if (i == sel) t.selFg else t.popFg) })
         }?.takeIf { it.items.isNotEmpty() }
         // Kb:591-599 language menu

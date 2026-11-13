@@ -58,6 +58,11 @@ fun LiveKbView(
             preview = if (longPress?.shouldShowSimplePopup() == true && !extended) pressed else "",
             longpress = if (extended) pressed else "",
             lpSel = longPress?.extendedFocusedIndex ?: 0,
+            // what FlorisBoard will commit, in its order (the static design table differs for
+            // shifted S and I, and for keys the design has no list for)
+            lpItems = if (extended) longPress!!.extendedKeys.map { k ->
+                (k.data.output as? org.k3lp.lib.text.K3String)?.toText() ?: ""
+            } else emptyList(),
             width = maxWidth.value,
             keyH = maxHeight.value,
             only = "live",
