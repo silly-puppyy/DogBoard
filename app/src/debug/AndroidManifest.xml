@@ -9,5 +9,10 @@
             android:taskAffinity="io.github.sillypuppyy.dogboard.imetest"
             android:theme="@android:style/Theme.Material.Light.NoActionBar"
             android:windowSoftInputMode="stateAlwaysVisible" />
+        <!-- DogBoard: debug-only gallery of the ported design (States.dc.html frames) -->
+        <activity
+            android:name="io.github.sillypuppyy.dogboard.designgallery.DesignGalleryActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 </manifest>
