@@ -20,13 +20,16 @@ private val LEXICON_PATH = System.getenv("DOGBOARD_LEXICON")
     ?: File("build/eval-lexicon-path.txt").takeIf { it.exists() }?.readText()?.trim()
     ?: "src/main/assets/dogboard/en.lexicon.tsv"
 
+/** The slow accuracy evaluations run only on request: DOGBOARD_EVAL=1 ./gradlew :app:testDebugUnitTest */
+internal val EVAL = System.getenv("DOGBOARD_EVAL") == "1"
+
 class EngineContextEvalTest : FunSpec({
     val tatoeba = File(
         System.getenv("DOGBOARD_TATOEBA")
             ?: "${System.getProperty("user.home")}/Documents/Code/AI/keyboard/data/tatoeba/eng_sentences.tsv"
     )
 
-    test("context from the previous word makes more words come out right").config(enabled = tatoeba.exists()) {
+    test("context from the previous word makes more words come out right").config(enabled = EVAL && tatoeba.exists()) {
         val lexicon = File(LEXICON_PATH).bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val keys = QwertyGeometry.letterKeys(375f, 216f)
@@ -92,7 +95,7 @@ class EngineContextEvalTest : FunSpec({
         }
     }
 
-    test("key prior: raw letters with no prior, the word prior, and the word + previous-word prior").config(enabled = tatoeba.exists()) {
+    test("key prior: raw letters with no prior, the word prior, and the word + previous-word prior").config(enabled = EVAL && tatoeba.exists()) {
         val lexicon = File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val keys = QwertyGeometry.letterKeys(375f, 216f)

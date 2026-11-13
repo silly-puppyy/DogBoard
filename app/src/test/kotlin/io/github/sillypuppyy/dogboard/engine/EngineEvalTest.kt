@@ -66,7 +66,7 @@ class EngineEvalTest : FunSpec({
         return Result(literalOk.toDouble() / n, correctedOk.toDouble() / n, broken.toDouble() / n, nanos / 1e6 / n)
     }
 
-    test("autocorrect beats raw taps and rarely breaks a correctly typed word") {
+    test("autocorrect beats raw taps and rarely breaks a correctly typed word").config(enabled = EVAL) {
         // warm up the JIT so the timing is closer to steady state
         run(1.5, 2.0, n = 200, seed = 1)
         for ((sx, sy) in listOf(1.0 to 1.5, 1.5 to 2.0, 2.2 to 3.2)) {
@@ -80,7 +80,7 @@ class EngineEvalTest : FunSpec({
         }
     }
 
-    test("per-keystroke decode time (printed; the phone is roughly 2-3x slower)") {
+    test("per-keystroke decode time (printed; the phone is roughly 2-3x slower)").config(enabled = EVAL) {
         val rng = Random(11)
         val times = ArrayList<Double>()
         repeat(400) {

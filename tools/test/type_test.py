@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 ADB = "/opt/android-sdk/platform-tools/adb"
 PKG = "io.github.sillypuppyy.dogboard.debug"  # provides the test screen
@@ -143,6 +144,15 @@ def main():
     adb(args.serial, "shell", "ime", "set", ime)
     density = int(adb(args.serial, "shell", "wm", "density").split(":")[-1].strip()) / 160.0
 
+    # taps straight into the touch device (bench_keyboards.taptype) on a rooted emulator: one
+    # process per word instead of one adb command per letter
+    taps_dev = None
+    if "uid=0" in adb(args.serial, "shell", "id"):
+        sys.path.insert(0, str(Path(__file__).parent))
+        import bench_keyboards
+        taps_dev = bench_keyboards.Device(args.serial)
+        bench_keyboards.ensure_taptype(taps_dev)
+
     failures = 0
     cases = [c for c in CASES if args.case is None or args.case in c[0]] * args.repeat
     for case in cases:
@@ -176,7 +186,22 @@ def main():
         unit = w / 10.0
         row_h = h / rows
         noise_px = args.noise_mm * DP_PER_MM * density
+        pending = []  # plain taps, sent together through taptype when the device allows it
+
+        def flush():
+            if not pending:
+                return
+            if taps_dev:
+                taps_dev.tap(pending, gap_s=max(args.delay - 0.04, 0.0))
+            else:
+                for x, y in pending:
+                    adb(args.serial, "shell", "input", "tap", str(int(x)), str(int(y)))
+                    time.sleep(args.delay)
+            pending.clear()
+
         for ch in re.findall(r"\{L\}|\{123\}|\{S-?\d+\}|.", typed):
+            if ch.startswith("{") and len(ch) > 1:
+                flush()
             if ch == "{L}":
                 adb(args.serial, "shell", "input", "keyevent", "KEYCODE_DPAD_LEFT")
                 time.sleep(args.delay)
@@ -193,8 +218,8 @@ def main():
             ux, row = key_center_units(ch)
             x = x0 + ux * unit + rng.gauss(0, noise_px)
             y = y0 + (row + 0.5) * row_h + rng.gauss(0, noise_px)
-            adb(args.serial, "shell", "input", "tap", str(int(x)), str(int(y)))
-            time.sleep(args.delay)
+            pending.append((x, y))
+        flush()
         time.sleep(0.8)
         m = last_match(args.serial, "DogBoardText", r"text=\[(.*)\]")
         got = m.group(1) if m else None
