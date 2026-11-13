@@ -16,6 +16,8 @@
 
 package dev.patrickgold.florisboard.ime.keyboard3.touch
 
+import dev.patrickgold.florisboard.ime.text.key.KeyVariation
+
 import dev.patrickgold.florisboard.ime.keyboard3.hint.FlickKeyHintPlacement
 import dev.patrickgold.florisboard.ime.keyboard3.hint.LongPressKeyHintPlacement
 
@@ -28,6 +30,8 @@ data class TouchModelOptions(
     val multiTapHighlightEnabled: Boolean,
     val flickKeyHintEnabled: Boolean,
     val flickKeyHintPlacement: FlickKeyHintPlacement,
+    // DogBoard: field type, selects the email/URL bottom-row variants of the letter layers
+    val keyVariation: KeyVariation = KeyVariation.NORMAL,
 ) {
     companion object {
         val Default = TouchModelOptions(

@@ -28,6 +28,12 @@ MODE = w(46.5)       # 123 / ABC
 FN = w(47)           # emoji / language key
 SPACE = w(188)       # space absorbs the 37.5 dp a dictation key would take
 RETURN = w(93.5)
+# Email and URL bottom rows (iOS arrangement; widths estimated: one letter key each for @ . /,
+# space or .com take the rest; verify on an iPhone)
+FIELD_KEY = w(37.5)
+SPACE_EMAIL = w(375 - 46.5 - 47 - 2 * 37.5 - 93.5)
+DOTCOM = w(375 - 46.5 - 47 - 2 * 37.5 - 93.5)
+TLDS = ".net .org .edu .co .io"
 PUNCT_WIDE = "1.4"   # the five wide punctuation keys on the symbol layers (5 x 1.4 = 7 letters)
 
 # Long-press alternatives per letter, in popup order (iOS arrangement).
@@ -111,6 +117,13 @@ def bottom_row(mode_key: str) -> str:
     return f"{mode_key} fn-key space enter"
 
 
+# Field-specific bottom rows; the app swaps a "<layer>-<variant>" layer in for base and shift.
+FIELD_ROWS = {
+    "email": "to-symbol-1 fn-key space-email at-email period-email enter",
+    "url": "to-symbol-1 fn-key period-email slash-url dotcom enter",
+}
+
+
 def build() -> str:
     keys = [
         "",
@@ -127,6 +140,12 @@ def build() -> str:
         f'<key id="bksp" output="@k3:action/backspace" width="{SHIFT}" />',
         f'<key id="enter" output="@k3:action/enter" width="{RETURN}" />',
         f'<key id="space" output="\\u{{0020}}" width="{SPACE}" />',
+        f'<key id="space-email" output="\\u{{0020}}" width="{SPACE_EMAIL}" />',
+        f'<key id="at-email" output="@" width="{FIELD_KEY}" />',
+        f'<key id="period-email" output="." width="{FIELD_KEY}" />',
+        f'<key id="slash-url" output="/" width="{FIELD_KEY}" />',
+        f'<key id="dotcom" output=".com" width="{DOTCOM}" longPressKeyIds="{" ".join("tld-" + t.strip(".").replace(".", "-") for t in TLDS.split())}" />',
+        *[f'<key id="tld-{t.strip(".").replace(".", "-")}" output="{t}" />' for t in TLDS.split()],
         f'<key id="fn-key" gap="true" width="{FN}" />',
         f'<key id="gap-left" gap="true" width="{GAP_LEFT}" />',
         f'<key id="gap-right" gap="true" width="{GAP_RIGHT}" />',
@@ -165,6 +184,12 @@ def build() -> str:
                       f"to-symbol-2 gap-left {wide} gap-right bksp", bottom_row("to-base")]),
         ("symbol-2", [" ".join(SYMBOL_2[0]), " ".join(SYMBOL_2[1]),
                       f"to-symbol-1-row3 gap-left {wide} gap-right bksp", bottom_row("to-base")]),
+        *[(f"{layer}-{variant}", rows[:3] + [row]) for variant, row in FIELD_ROWS.items()
+          for layer, rows in (
+              ("base", [letters[0], letters[1], f"base-to-shift gap-left {letters[2]} gap-right bksp", ""]),
+              ("shift", [letters[0].upper(), letters[1].upper(),
+                         f"shift-to-base gap-left {letters[2].upper()} gap-right bksp", ""]),
+          )],
         ("numeric", [
             "plus-numeric 1-numeric 2-numeric 3-numeric percent-numeric",
             "open-paren-numeric 4-numeric 5-numeric 6-numeric space-numeric",
@@ -186,6 +211,7 @@ def build() -> str:
         '        <display keyId="to-symbol-2" display="#+=" />',
         '        <display keyId="to-base" display="ABC" />',
         '        <display keyId="space" display="space" />',
+        '        <display keyId="space-email" display="space" />',
         '        <display keyId="base-numeric" display="ABC" />',
         '        <display keyId="symbols-numeric" display="#+=" />',
         '        <display keyId="space-numeric" display="@fl:icon/space_bar" />',

@@ -30,7 +30,12 @@ class ImeTestActivity : Activity() {
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
         val field = EditText(this).apply {
             hint = "DogBoard test field"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            // optional extra "field": email or url, to test the field-specific layouts
+            inputType = when (intent.getStringExtra("field")) {
+                "email" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+                "url" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+                else -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            }
         }
         setContentView(field)
         field.addTextChangedListener(object : android.text.TextWatcher {

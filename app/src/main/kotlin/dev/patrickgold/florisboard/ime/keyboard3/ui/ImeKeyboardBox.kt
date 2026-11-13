@@ -95,7 +95,11 @@ fun ImeKeyboardBox(
         derivedStateOf { with(density) { windowSpec.keyMarginV.toPx() } }
     }
 
-    val touchModelOptions by imeController.activeTouchModelOptions.collectAsState()
+    val baseTouchModelOptions by imeController.activeTouchModelOptions.collectAsState()
+    // DogBoard: email and URL fields get their own bottom row
+    val touchModelOptions = remember(baseTouchModelOptions, imeState.flags.keyVariation) {
+        baseTouchModelOptions.copy(keyVariation = imeState.flags.keyVariation)
+    }
     var activeTouchModel by remember {
         mutableStateOf(imeController.touchModelCache.getFor(model, touchModelOptions) ?: TouchModel.Empty)
     }

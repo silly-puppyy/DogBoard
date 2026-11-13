@@ -1,6 +1,7 @@
 package dev.patrickgold.florisboard.ime.keyboard3
 
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchModelOptions
+import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import dev.patrickgold.florisboard.ime.keyboard3.touch.computeTouchModel
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -114,5 +115,26 @@ class QwertyEnLayoutTest : FunSpec({
         )?.attrs?.layerId?.toString() shouldBe "shift"
         // 25 dp above the centre of g (row 2) is closer to g than to t or y in row 1
         tap(187.5f, 81f - 25f) shouldBe "g".asK3String()
+    }
+
+    test("email and URL fields get their own bottom row; other fields keep space") {
+        val result = compileLayout("keyboard/qwerty-en.xml")
+        result.shouldBeInstanceOf<K3CompileResult.Success>()
+        suspend fun bottomRow(variation: KeyVariation, layer: org.k3lp.model.layer.K3LayerId): List<String> {
+            val options = TouchModelOptions.Default.copy(keyVariation = variation)
+            val keyboard = coroutineScope { computeTouchModel(result.model, options) }.selectKeyboard(deviceWidthMm = 70)
+            val keys = keyboard.layers.getValue(layer).keys
+            val bottom = keys.maxOf { it.bounds.top }
+            // slot 1 is the fn key, which the app replaces with a generated key
+            return keys.filter { it.bounds.top == bottom }.sortedBy { it.bounds.left }
+                .mapIndexed { i, key -> if (i == 1) "fn-key" else key.attrs.id.toString() }
+        }
+        bottomRow(KeyVariation.NORMAL, ImeLayerIds.Base) shouldBe listOf("to-symbol-1", "fn-key", "space", "enter")
+        bottomRow(KeyVariation.EMAIL_ADDRESS, ImeLayerIds.Base) shouldBe
+            listOf("to-symbol-1", "fn-key", "space-email", "at-email", "period-email", "enter")
+        bottomRow(KeyVariation.EMAIL_ADDRESS, ImeLayerIds.Shift) shouldBe
+            listOf("to-symbol-1", "fn-key", "space-email", "at-email", "period-email", "enter")
+        bottomRow(KeyVariation.URI, ImeLayerIds.Base) shouldBe
+            listOf("to-symbol-1", "fn-key", "period-email", "slash-url", "dotcom", "enter")
     }
 })

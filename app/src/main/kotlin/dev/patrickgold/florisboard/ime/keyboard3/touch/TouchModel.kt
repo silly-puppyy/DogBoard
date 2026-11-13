@@ -37,6 +37,7 @@ import org.k3lp.model.flick.K3Flick
 import org.k3lp.model.key.K3Key
 import org.k3lp.model.key.K3KeyId
 import org.k3lp.model.layer.K3LayerId
+import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import org.k3lp.model.layer.K3TouchLayers
 import kotlin.contracts.contract
 import kotlin.math.roundToInt
@@ -276,6 +277,9 @@ private fun FnKeyAction.asK3Key(): K3Key {
     )
 }
 
+private fun K3LayerId.isFieldVariantLayer(): Boolean =
+    value.let { it.endsWith("-email") || it.endsWith("-url") }
+
 private fun computeTouchKeyboard(
     model: K3Model,
     layersGroup: K3TouchLayers,
@@ -294,18 +298,28 @@ private fun computeTouchKeyboard(
     val rowCount = layers.maxOf { (_, layer) -> layer.rows.size }.coerceAtLeast(4) +
         if (numberRow != null) 1 else 0
 
+    // DogBoard: email and URL fields use "<layer>-email" / "<layer>-url" rows for base and shift
+    val variantSuffix = when (options.keyVariation) {
+        KeyVariation.EMAIL_ADDRESS -> "-email"
+        KeyVariation.URI -> "-url"
+        else -> null
+    }
     val touchLayers = buildMap {
         for ((_, layer) in layers) {
-            if (layer.id == ImeLayerIds.Numrow) {
+            if (layer.id == ImeLayerIds.Numrow || layer.id.isFieldVariantLayer()) {
                 // the numrow layer is not intended as a standalone layer => do not waste compute time on it here
                 put(layer.id, TouchLayer.Empty)
                 continue
             }
+            val sourceLayer = variantSuffix
+                ?.takeIf { layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift }
+                ?.let { layers[K3LayerId(layer.id.value + it)] }
+                ?: layer
             val rows = buildList {
                 if (numberRow != null && (layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift)) {
                     add(numberRow)
                 }
-                layer.rows.forEach { row ->
+                sourceLayer.rows.forEach { row ->
                     add(row.withKeysResolved(model, keyPredicate))
                 }
             }
