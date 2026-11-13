@@ -257,6 +257,12 @@
     "text-max-lines": "1",
     "text-overflow": "ellipsis"
   },
+  "smartbar-candidate-word[auto-commit=1]": {
+    "background": "var(--surface)",
+    "foreground": "var(--on-surface)",
+    "font-weight": "bold",
+    "shape": "rounded-corner(12dp, 12dp, 12dp, 12dp)"
+  },
   "smartbar-candidate-word:pressed": {
     "background": "var(--surface)",
     "foreground": "var(--on-surface)"

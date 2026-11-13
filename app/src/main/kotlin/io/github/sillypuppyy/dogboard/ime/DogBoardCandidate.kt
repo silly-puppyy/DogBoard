@@ -13,7 +13,8 @@ data class DogBoardCandidate(val suggestion: Suggestion) : SuggestionCandidate {
     }
     override val secondaryText: CharSequence? = null
     override val confidence: Double = if (suggestion.kind == Suggestion.Kind.AUTOCORRECT) 1.0 else 0.0
-    override val isEligibleForAutoCommit: Boolean = false
+    // marks the slot space will commit; themes style it via smartbar-candidate-word[auto-commit=1]
+    override val isEligibleForAutoCommit: Boolean = suggestion.kind == Suggestion.Kind.AUTOCORRECT
     override val isEligibleForUserRemoval: Boolean = false
     override val sourceProvider: SuggestionProvider? = null
     override val icon: ImageVector? = null
