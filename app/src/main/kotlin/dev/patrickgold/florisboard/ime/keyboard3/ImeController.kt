@@ -112,6 +112,9 @@ class ImeController(
     private var emitInterceptor = AtomicReference<EmitInterceptor?>(null)
     // DogBoard: uptime of the last typed space, or null after any other edit (double-space period)
     private var lastSpaceUptime: Long? = null
+
+    /** DogBoard: the space before the cursor was added by the keyboard (after a picked suggestion). */
+    private var autoSpace = false
     // DogBoard: word tracking, autocorrect and suggestions
     private class PendingTap(val tap: Tap?, val keys: Map<Char, KeyTarget>, val params: GaussianTouch.Params?)
     private class LastCorrection(val word: CurrentWord, val corrected: String, val separator: String)
@@ -368,6 +371,7 @@ class ImeController(
                 return
             }
             lastSpaceUptime = null
+            autoSpace = false
             resetWordTracking()
             resetContent(newSelection, state.editor.getSurroundingText(50, 10))
             expectedContentQueue.push(state.content)
@@ -386,6 +390,23 @@ class ImeController(
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             deletingWord = null
             val text = value.toText()
+            // DogBoard: punctuation right after the keyboard's own space (a picked suggestion) goes
+            // before it: "word ," -> "word, "; closing quotes and brackets just take its place
+            if (autoSpace) {
+                autoSpace = false
+                if (text in SWAP_WITH_AUTO_SPACE || text in REPLACE_AUTO_SPACE) {
+                    if (state.content.surroundingText.textBefore.endsWith(" ")) {
+                        rawBackspace()
+                        emitText(value)
+                        if (text in SWAP_WITH_AUTO_SPACE) {
+                            emitText(" ".asK3String())
+                            lastSpaceUptime = null // not a typed space: no double-space period
+                            autoSpace = true // "?!" swaps again
+                        }
+                        return
+                    }
+                }
+            }
             // DogBoard: iOS smart punctuation: curly quotes, dashes, ellipsis (SmartPunctuation)
             if (wordEngineAllowed()) {
                 val smart = io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput(
@@ -551,6 +572,7 @@ class ImeController(
             lastCorrection = null
             rejectedWord = null
             lastSpaceUptime = SystemClock.uptimeMillis()
+            autoSpace = true
             reevaluateInputShiftState()
             publishSuggestions()
             return true
@@ -570,6 +592,7 @@ class ImeController(
             lastCorrection = null
             rejectedWord = null
             lastSpaceUptime = SystemClock.uptimeMillis()
+            autoSpace = true
             reevaluateInputShiftState()
             publishSuggestions()
             return true
@@ -800,6 +823,7 @@ class ImeController(
         }
 
         override fun emitBackspace() {
+            autoSpace = false
             lastSpaceUptime = null
             pendingTap = null
             if (revertLastCorrection()) {
@@ -1063,6 +1087,12 @@ class ImeController(
 
     companion object {
         private val NEWLINE_SEQ = "\n".asK3String()
+
+        /** DogBoard: marks that go before an automatic space, which then follows them. */
+        private val SWAP_WITH_AUTO_SPACE = setOf(".", ",", "!", "?", ":", ";")
+
+        /** DogBoard: marks that replace an automatic space (closing quotes and brackets). */
+        private val REPLACE_AUTO_SPACE = setOf(")", "]", "}", "”", "’", "»") // not straight quotes: they may open one
     }
 }
 
