@@ -28,6 +28,8 @@ fun LiveKbView(
     actions: KbActions? = null,
     clips: List<KbClipData>? = null,
     panelVariant: String = "default",
+    /** "emoji" or "globe": what the fn key does (FlorisBoard's fn key setting). */
+    fnKey: String = "emoji",
     modifier: Modifier = Modifier,
 ) {
     val dark = isSystemInDarkTheme()
@@ -55,6 +57,7 @@ fun LiveKbView(
             panel = panel,
             clips = clips,
             panelVariant = panelVariant,
+            fnKey = fnKey,
         )
         val render = remember(props) { KbSpec.render(props) }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }

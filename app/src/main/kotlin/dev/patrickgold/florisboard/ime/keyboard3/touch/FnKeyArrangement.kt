@@ -38,8 +38,9 @@ data class FnKeyArrangement(
     }
 
     companion object {
+        // DogBoard: the design's fn key is the emoji key by default (Kb:552); globe is the option
         val Default = FnKeyArrangement(
-            simpleAction = FnKeyAction(ImeActions.SwitchToNextSubtype),
+            simpleAction = FnKeyAction(ImeActions.ShowMediaPanel),
             longPressActions = listOf(
                 FnKeyAction(ImeActions.ShowInputMethodPicker),
             ),

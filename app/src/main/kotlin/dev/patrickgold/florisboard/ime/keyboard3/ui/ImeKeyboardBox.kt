@@ -259,6 +259,7 @@ fun ImeKeyboardBox(
                     pressedKey = output?.downKey ?: trackedPeekPointer?.peekKey,
                     longPress = output?.longPress,
                     panel = livePanel,
+                    fnKey = if (prefs.keyboard.fnKeyArrangement.collectAsState().value.simpleAction.output == ImeActions.SwitchToNextSubtype) "globe" else "emoji",
                     actions = remember(imeController, clipItems) {
                         io.github.sillypuppyy.dogboard.design.KbActions(
                             onSlot = {},
