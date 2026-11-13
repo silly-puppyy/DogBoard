@@ -33,6 +33,7 @@ object SuggestionStrip {
         result.forEach { seen.add(it.word.lowercase()) }
         for (candidate in candidates) {
             if (result.size >= SLOTS) break
+            if (candidate.isTypedString) continue
             val word = Autocorrect.matchCase(candidate.word, typed)
             if (seen.add(word.lowercase())) result.add(Suggestion(word, Suggestion.Kind.WORD))
         }

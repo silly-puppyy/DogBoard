@@ -122,6 +122,9 @@ class ImeController(
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
     @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
+    // DogBoard: the autocorrection chosen for the word one keystroke ago, as (typed text, choice)
+    @Volatile private var previousKeystrokeCorrection: Pair<String, String?>? = null
+    @Volatile private var latestCorrection: Pair<String, String?>? = null
 
     /** Receives the suggestion strip whenever the current word changes. */
     var suggestionSink: ((List<Suggestion>) -> Unit)? = null
@@ -450,7 +453,8 @@ class ImeController(
                 val context = wordContext()
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
                     ?: TypingEngine.candidates(word, context)
-                val corrected = TypingEngine.correction(word, candidates)
+                val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
+                val corrected = TypingEngine.correction(word, candidates, previousChoice)
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
                 } else {
@@ -468,6 +472,9 @@ class ImeController(
             if (!replaceBeforeCursor(correction.corrected + correction.separator, correction.word.text)) return false
             currentWord = correction.word
             rejectedWord = correction.word.text
+            if (!state.flags.isIncognitoMode) {
+                scope.launch { TypingEngine.reject(correction.word.text, correction.corrected) }
+            }
             return true
         }
 
@@ -560,7 +567,10 @@ class ImeController(
             suggestionJob = scope.launch {
                 val candidates = TypingEngine.candidates(word, context)
                 latestDecode = decodeKey(word.text, context) to candidates
-                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates) else null
+                val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
+                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice) else null
+                latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
+                latestCorrection = word.text to correction
                 if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction))
             }
         }

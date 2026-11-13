@@ -9,7 +9,7 @@ private val KEYS = QwertyGeometry.letterKeys(375f, 216f)
 private val PARAMS = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
 
 private fun candidate(word: String, cost: Double, completion: Boolean = false) =
-    Candidate(word, cost, cost, 0, completion)
+    Candidate(word, -cost, -cost, 0.0, 0, completion)
 
 class WordTrackingTest : FunSpec({
     context("CurrentWord") {

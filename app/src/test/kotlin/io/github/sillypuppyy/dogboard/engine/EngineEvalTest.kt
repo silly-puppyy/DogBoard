@@ -23,7 +23,7 @@ class EngineEvalTest : FunSpec({
     val keys = QwertyGeometry.letterKeys(375f, 216f)
     val keyList = keys.entries.toList()
     val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-    val decoder = Decoder(lexicon)
+    val decoder = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
     val autocorrect = Autocorrect(lexicon)
 
     fun sample(rng: Random): String {
@@ -54,8 +54,8 @@ class EngineEvalTest : FunSpec({
             }
             val literal = String(taps.map { nearestKey(it.x, it.y) }.toCharArray())
             val t0 = System.nanoTime()
-            val candidates = decoder.decode(taps, keys, params)
-            val final = autocorrect.correction(literal, candidates, decoder.literalCost(taps, literal, keys, params)) ?: literal
+            val candidates = decoder.decode(taps, keys, params, typed = literal)
+            val final = autocorrect.correction(literal, candidates) ?: literal
             nanos += System.nanoTime() - t0
             val isLiteralOk = literal.equals(word, ignoreCase = true)
             val isFinalOk = final.equals(word, ignoreCase = true)

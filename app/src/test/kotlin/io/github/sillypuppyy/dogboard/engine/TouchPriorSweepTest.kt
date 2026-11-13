@@ -26,7 +26,7 @@ class TouchPriorSweepTest : FunSpec({
         val letters = keys.keys.toList()
         val targets = letters.map { keys.getValue(it) }
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-        val decoder = Decoder(lexicon)
+        val decoder = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
         val autocorrect = Autocorrect(lexicon)
 
         val rng = Random(9)
@@ -65,13 +65,13 @@ class TouchPriorSweepTest : FunSpec({
             for ((w, t) in knownSamples) {
                 val lit = literal(t, weight, floor)
                 if (lit == w) rawKnown++
-                val fin = autocorrect.correction(lit, decoder.decode(t, keys, params), decoder.literalCost(t, lit, keys, params)) ?: lit
+                val fin = autocorrect.correction(lit, decoder.decode(t, keys, params, typed = lit)) ?: lit
                 if (fin == w) finalKnown++
             }
             for ((w, t) in unknownSamples) {
                 val lit = literal(t, weight, floor)
                 if (lit == w) rawUnknown++
-                val fin = autocorrect.correction(lit, decoder.decode(t, keys, params), decoder.literalCost(t, lit, keys, params)) ?: lit
+                val fin = autocorrect.correction(lit, decoder.decode(t, keys, params, typed = lit)) ?: lit
                 if (fin == w) finalUnknown++
             }
             println(

@@ -190,7 +190,7 @@ class PointerTracker(
             val heightDp = size.height / density
             val (letterKeys, params) = touchKeyboard.letterTargets(downLayerId, widthDp, heightDp, typingSpeed.interval)
             val normalized = down.position.normalized(size)
-            imeController.notePendingTap(Tap(normalized.x * widthDp, normalized.y * heightDp), letterKeys, params)
+            imeController.notePendingTap(Tap(normalized.x * widthDp, normalized.y * heightDp, down.uptimeMillis), letterKeys, params)
         } else {
             imeController.notePendingTap(null, emptyMap(), null)
         }

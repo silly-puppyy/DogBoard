@@ -12,18 +12,19 @@ private val LEXICON by lazy {
 }
 private val KEYS = QwertyGeometry.letterKeys(375f, 216f)
 private val PARAMS = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-private val DECODER by lazy { Decoder(LEXICON) }
+private val DECODER by lazy { Decoder(LEXICON, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM)) }
 private val AUTOCORRECT by lazy { Autocorrect(LEXICON) }
 
 /** Taps at the centres of the keys for [letters]. */
 private fun centreTaps(letters: String) =
     letters.lowercase().map { c -> KEYS.getValue(c).let { Tap(it.centerX, it.centerY) } }
 
-private fun topWord(typed: String) = DECODER.decode(centreTaps(typed), KEYS, PARAMS).first { !it.isCompletion }.word
+private fun topWord(typed: String) =
+    DECODER.decode(centreTaps(typed), KEYS, PARAMS, typed = typed).first { !it.isCompletion }.word
 
 private fun corrected(typed: String): String {
-    val candidates = DECODER.decode(centreTaps(typed), KEYS, PARAMS)
-    return AUTOCORRECT.correction(typed, candidates, DECODER.literalCost(centreTaps(typed), typed, KEYS, PARAMS)) ?: typed
+    val candidates = DECODER.decode(centreTaps(typed), KEYS, PARAMS, typed = typed)
+    return AUTOCORRECT.correction(typed, candidates) ?: typed
 }
 
 class EngineTest : FunSpec({
@@ -93,9 +94,11 @@ class EngineTest : FunSpec({
             corrected("Teh") shouldBe "The"
             corrected("TEH") shouldBe "THE"
         }
-        test("leaves gibberish with no close word alone") {
-            corrected("qzxvpq") shouldBe "qzxvpq"
-            corrected("tehteh") shouldBe "tehteh"
+        test("iOS rule 2: a one-letter word is never completed into a longer word") {
+            corrected("a") shouldBe "a"
+        }
+        test("iOS rule 5: short stems are not auto-completed") {
+            corrected("keyb") shouldBe "keyb"
         }
     }
 })

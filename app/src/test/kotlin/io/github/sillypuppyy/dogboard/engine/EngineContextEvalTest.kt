@@ -24,7 +24,7 @@ class EngineContextEvalTest : FunSpec({
         val keys = QwertyGeometry.letterKeys(375f, 216f)
         val keyList = keys.entries.toList()
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-        val plain = Decoder(lexicon)
+        val plain = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
         val withContext = Decoder(lexicon, bigrams = bigrams)
         val autocorrect = Autocorrect(lexicon)
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
@@ -61,10 +61,9 @@ class EngineContextEvalTest : FunSpec({
                         )
                     }
                     val literal = String(taps.map { tap -> keyList.maxBy { GaussianTouch.logLikelihood(it.value, tap.x, tap.y, params) }.key }.toCharArray())
-                    val literalCost = plain.literalCost(taps, literal, keys, params)
                     fun final(decoder: Decoder, context: Int): String {
-                        val candidates = decoder.decode(taps, keys, params, previous = context)
-                        return autocorrect.correction(literal, candidates, literalCost) ?: literal
+                        val candidates = decoder.decode(taps, keys, params, previous = context, typed = literal)
+                        return autocorrect.correction(literal, candidates) ?: literal
                     }
                     words++
                     if (literal == letters) raw++

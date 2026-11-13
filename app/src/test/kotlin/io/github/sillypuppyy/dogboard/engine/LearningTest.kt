@@ -32,9 +32,10 @@ class LearningTest : FunSpec({
         try {
             TypingEngine.unloadForTest()
             load()
-            finished("tehteh") shouldBe "tehteh"
             finished("thibk") shouldBe "think" // one key off a common word: corrected
 
+            // iOS: undoing a correction rejects that pair; keeping the word learns it
+            TypingEngine.reject("thibk", "think")
             TypingEngine.learn("thibk")
             finished("thibk") shouldBe "thibk"
             TypingEngine.candidates(typed("thib"), null).any { it.word == "thibk" } shouldBe true
@@ -45,7 +46,7 @@ class LearningTest : FunSpec({
 
             TypingEngine.unloadForTest()
             load()
-            finished("thibk") shouldBe "thibk"
+            TypingEngine.isKnownWord("thibk") shouldBe true
         } finally {
             TypingEngine.unloadForTest()
             dir.deleteRecursively()

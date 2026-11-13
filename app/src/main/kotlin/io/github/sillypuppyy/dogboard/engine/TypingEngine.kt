@@ -19,6 +19,9 @@ object TypingEngine {
     private val lock = ReentrantReadWriteLock()
     private var userWordsFile: File? = null
     private var blockedWordsFile: File? = null
+    private var rejectionsFile: File? = null
+    /** (typed, correction) pairs the user undid; never auto-applied again (iOS rejections). */
+    private val rejections = HashSet<Pair<String, String>>()
     /** How often each unknown word was typed and kept in this session. */
     private val keptUnknown = HashMap<String, Int>()
 
@@ -26,7 +29,11 @@ object TypingEngine {
     private val blocked = HashSet<String>()
 
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?) {
-        val decoder = Decoder(lexicon, bigrams = bigrams)
+        val decoder = Decoder(
+            lexicon,
+            Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
+            bigrams,
+        )
         val autocorrect = Autocorrect(lexicon)
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.node(minOf(USER_WORD_RANK, lexicon.size - 1)).logProb
@@ -46,6 +53,7 @@ object TypingEngine {
         openBigrams: (() -> BufferedReader)? = null,
         userWords: File? = null,
         blockedWords: File? = null,
+        rejectedCorrections: File? = null,
     ) {
         if (loaded != null) return
         val lexicon = openLexicon().use { Lexicon.parse(it) }
@@ -56,6 +64,14 @@ object TypingEngine {
         }
         userWordsFile = userWords
         blockedWordsFile = blockedWords
+        rejectionsFile = rejectedCorrections
+        synchronized(rejections) {
+            rejections.clear()
+            rejectedCorrections?.takeIf { it.exists() }?.forEachLine { line ->
+                val tab = line.indexOf('\t')
+                if (tab > 0) rejections.add(line.substring(0, tab) to line.substring(tab + 1))
+            }
+        }
         lock.write {
             blocked.clear()
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
@@ -96,18 +112,38 @@ object TypingEngine {
         val engine = loaded ?: return emptyList()
         val taps = word.tapsOrNull() ?: return emptyList()
         return lock.read {
-            engine.decoder.decode(taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4), previous = engine.contextId(previous))
+            engine.decoder.decode(
+                taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4),
+                previous = engine.contextId(previous), typed = word.text,
+            )
                 .filter { !isBlocked(it.word) }
                 .take(maxResults)
         }
     }
 
-    /** What [word] should become when it is finished, or null to keep it as typed. */
-    fun correction(word: CurrentWord, candidates: List<Candidate>): String? {
+    /**
+     * What [word] should become when it is finished, or null to keep it as typed.
+     * [previousCorrection] is what this returned one keystroke earlier (iOS hysteresis).
+     */
+    fun correction(word: CurrentWord, candidates: List<Candidate>, previousCorrection: String? = null): String? {
         val engine = loaded ?: return null
         if (candidates.isEmpty()) return null
-        val literalCost = word.tapsOrNull()?.let { engine.decoder.literalCost(it, word.text, word.keys, word.params!!) }
-        return lock.read { engine.autocorrect.correction(word.text, candidates, literalCost) }
+        val result = engine.autocorrect.correction(word.text, candidates, previousCorrection) ?: return null
+        val rejected = synchronized(rejections) { (word.text.lowercase() to result.lowercase()) in rejections }
+        return if (rejected) null else result
+    }
+
+    /** The user undid the correction [typed] -> [correction]: it is not auto-applied again. */
+    fun reject(typed: String, correction: String) {
+        val pair = typed.lowercase() to correction.lowercase()
+        val isNew = synchronized(rejections) { rejections.add(pair) }
+        if (!isNew) return
+        runCatching {
+            rejectionsFile?.let { file ->
+                file.parentFile?.mkdirs()
+                file.appendText("${pair.first}\t${pair.second}\n")
+            }
+        }
     }
 
     /** The [n] most likely next words after [previous] (stored casing), for the empty strip. */
@@ -193,6 +229,8 @@ object TypingEngine {
         userWordsFile = null
         blockedWordsFile = null
         blocked.clear()
+        rejectionsFile = null
+        synchronized(rejections) { rejections.clear() }
         synchronized(keptUnknown) { keptUnknown.clear() }
     }
 }
