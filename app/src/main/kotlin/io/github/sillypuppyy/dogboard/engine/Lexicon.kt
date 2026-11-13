@@ -184,6 +184,29 @@ class Lexicon private constructor(capacity: Int) {
         return wordId[node]
     }
 
+    /**
+     * Writes the word data as it is now (call right after parsing, before learned words are
+     * added) for [readSnapshot]: the arrays as they are, so loading is a bulk copy, not a parse.
+     */
+    fun writeSnapshot(out: java.io.OutputStream) {
+        val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
+        val n = nodeCount
+        d.writeInt(SNAPSHOT_MAGIC); d.writeInt(n); d.writeInt(wordCount)
+        for (i in 0 until n) d.writeChar(key[i].code)
+        for (a in listOf(firstChild, nextSibling, parent, best, wordId)) for (i in 0 until n) d.writeInt(a[i])
+        for (i in 0 until n) d.writeShort(depth[i].toInt())
+        for (a in listOf(logProb, mass)) for (i in 0 until n) d.writeFloat(a[i])
+        for (i in 0 until wordCount) d.writeInt(wordNode[i])
+        d.writeInt(surface.size)
+        for ((node, form) in surface) { d.writeInt(node); d.writeUTF(form) }
+        d.writeInt(casings.size)
+        for ((node, forms) in casings) {
+            d.writeInt(node); d.writeInt(forms.size)
+            for ((form, lp) in forms) { d.writeUTF(form); d.writeFloat(lp) }
+        }
+        d.flush()
+    }
+
     private fun setWord(node: Int, word: String, lp: Double) {
         if (wordCount == wordNode.size) wordNode = wordNode.copyOf(wordNode.size * 3 / 2 + 16)
         wordId[node] = wordCount
@@ -238,6 +261,36 @@ class Lexicon private constructor(capacity: Int) {
     }
 
     companion object {
+        private const val SNAPSHOT_MAGIC = 0x44474c31 // "DGL1"
+
+        /** Reads what [writeSnapshot] wrote, or null if [bytes] isn't such a snapshot. */
+        fun readSnapshot(bytes: ByteArray): Lexicon? = runCatching {
+            val b = java.nio.ByteBuffer.wrap(bytes)
+            if (b.int != SNAPSHOT_MAGIC) return null
+            val n = b.int
+            val words = b.int
+            val lex = Lexicon(n + 1024) // room for learned words
+            b.asCharBuffer().get(lex.key, 0, n); b.position(b.position() + 2 * n)
+            for (a in listOf(lex.firstChild, lex.nextSibling, lex.parent, lex.best, lex.wordId)) {
+                b.asIntBuffer().get(a, 0, n); b.position(b.position() + 4 * n)
+            }
+            b.asShortBuffer().get(lex.depth, 0, n); b.position(b.position() + 2 * n)
+            for (a in listOf(lex.logProb, lex.mass)) {
+                b.asFloatBuffer().get(a, 0, n); b.position(b.position() + 4 * n)
+            }
+            lex.wordNode = IntArray(words + 1024)
+            b.asIntBuffer().get(lex.wordNode, 0, words); b.position(b.position() + 4 * words)
+            lex.nodeCount = n
+            lex.wordCount = words
+            val d = java.io.DataInputStream(java.io.ByteArrayInputStream(bytes, b.position(), bytes.size - b.position()))
+            repeat(d.readInt()) { lex.surface[d.readInt()] = d.readUTF() }
+            repeat(d.readInt()) {
+                val node = d.readInt()
+                lex.casings[node] = List(d.readInt()) { d.readUTF() to d.readFloat() }
+            }
+            lex
+        }.getOrNull()
+
         const val FORMAT_HEADER = "#dogboard-lexicon 1"
         const val ROOT = 0
         const val NONE = -1

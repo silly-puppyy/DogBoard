@@ -100,12 +100,14 @@ object TypingEngine {
         openEmojiTones: (() -> BufferedReader)? = null,
         emojiUsageFile: File? = null,
         openNoSuggest: (() -> BufferedReader)? = null,
+        snapshotDir: File? = null,
+        snapshotKey: String = "",
     ) {
         if (loaded != null) return
         reload = {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
-                textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest,
+                textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -114,8 +116,21 @@ object TypingEngine {
         abbreviations = openAbbreviations?.let { open ->
             open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toList() }
         }.orEmpty().groupBy { it.removeSuffix(".").lowercase() }
-        val lexicon = openLexicon().use { Lexicon.parse(it) }
-        val bigrams = openBigrams?.let { open -> open().use { Bigrams.parse(it, lexicon) } }
+        // the parsed word data is kept as a binary snapshot (per app version), so later starts
+        // copy arrays instead of parsing text
+        fun snapshot(name: String) = snapshotDir?.let { File(it, "$name-$snapshotKey.bin") }
+        val lexiconSnapshot = snapshot("lexicon")
+        val bigramSnapshot = snapshot("bigrams")
+        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(it.readBytes()) }.getOrNull() }
+        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.also { lex ->
+            snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
+            lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
+        }
+        val bigrams = openBigrams?.let { open ->
+            bigramSnapshot?.takeIf { cachedLexicon != null && it.isFile }
+                ?.let { runCatching { Bigrams.readSnapshot(it.readBytes(), lexicon) }.getOrNull() }
+                ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
+        }
         val engine = Loaded(lexicon, bigrams)
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
@@ -164,6 +179,15 @@ object TypingEngine {
 
     @Volatile
     private var contactNames: Set<String> = emptySet()
+
+    private fun writeAtomically(file: File, write: (java.io.OutputStream) -> Unit) {
+        runCatching {
+            file.parentFile?.mkdirs()
+            val tmp = File(file.parentFile, file.name + ".tmp")
+            tmp.outputStream().use(write)
+            if (!tmp.renameTo(file)) tmp.delete()
+        }
+    }
 
     /** Loads again with what [load] was given (after a dictionary reset). */
     private var reload: (() -> Unit)? = null

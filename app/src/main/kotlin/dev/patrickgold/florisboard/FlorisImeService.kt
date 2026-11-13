@@ -300,6 +300,9 @@ class FlorisImeService : LifecycleInputMethodService() {
                     openEmojiIndex = { assets.open("dogboard/en.emoji.tsv").bufferedReader() },
                     openEmojiTones = { assets.open("dogboard/en.emoji-tones.tsv").bufferedReader() },
                     emojiUsageFile = java.io.File(filesDir, "dogboard/emoji_usage.tsv"),
+                    // parsed word data, rebuilt when the app (and so its assets) changes
+                    snapshotDir = java.io.File(noBackupFilesDir, "dogboard-data"),
+                    snapshotKey = packageManager.getPackageInfo(packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
                 )
             }
             // DogBoard: contact names, only when the user opted in and granted access

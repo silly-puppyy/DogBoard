@@ -77,7 +77,31 @@ class Bigrams private constructor(
         return letterCounts.mapValues { it.value.toDouble() / total }
     }
 
+    /** Writes the pairs for [readSnapshot] (see Lexicon.writeSnapshot). */
+    fun writeSnapshot(out: java.io.OutputStream) {
+        val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
+        d.writeInt(SNAPSHOT_MAGIC); d.writeInt(keys.size); d.writeInt(totals.size)
+        for (k in keys) d.writeLong(k)
+        for (c in counts) d.writeInt(c)
+        for (t in totals) d.writeLong(t)
+        d.flush()
+    }
+
     companion object {
+        private const val SNAPSHOT_MAGIC = 0x44474231 // "DGB1"
+
+        /** Reads what [writeSnapshot] wrote for the same [lexicon], or null if it isn't one. */
+        fun readSnapshot(bytes: ByteArray, lexicon: Lexicon): Bigrams? = runCatching {
+            val b = java.nio.ByteBuffer.wrap(bytes)
+            if (b.int != SNAPSHOT_MAGIC) return null
+            val n = b.int
+            val contexts = b.int
+            val keys = LongArray(n).also { b.asLongBuffer().get(it); b.position(b.position() + 8 * n) }
+            val counts = IntArray(n).also { b.asIntBuffer().get(it); b.position(b.position() + 4 * n) }
+            val totals = LongArray(contexts).also { b.asLongBuffer().get(it) }
+            Bigrams(lexicon, keys, counts, totals)
+        }.getOrNull()
+
         const val FORMAT_HEADER = "#dogboard-bigrams 1"
         const val START = "<s>"
 
