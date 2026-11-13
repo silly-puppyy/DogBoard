@@ -1,0 +1,96 @@
+package io.github.sillypuppyy.dogboard.engine
+
+/**
+ * How a suggestion or correction takes the capitals the user typed, following iOS.
+ *
+ * The typed word is classified from its letters and, per letter, whether shift was pressed by the
+ * user ([SHIFTED]) or set by the keyboard ([AUTOSHIFTED]); the class decides what happens to a
+ * candidate:
+ * - [Type.NONE] (nothing shifted): the candidate keeps the dictionary's casing ("paris" → "Paris").
+ * - [Type.AUTOSHIFT] (the keyboard capitalised the first letter): first letter capitalised, unless
+ *   the word must not be ("iPhone", "eBay").
+ * - [Type.AUTOSHIFT_ALL] (field asks for all capitals): all capitals.
+ * - [Type.EXPLICIT_SHIFT] (user shifted the first letter): capitalised when the candidate starts
+ *   with the typed letter and isn't more than one letter shorter, and is capitalised in the
+ *   dictionary or exists there capitalised; otherwise it has to pass the mixed-case test, then
+ *   gets its first letter capitalised.
+ * - [Type.ALL_CAPS] ("GOOGLE", or one letter in caps lock): all capitals.
+ * - [Type.MIXED] ("gOOgle"): accepted only when at most one letter was shifted by the user and the
+ *   input is all letters, or the candidate is the typed word in other capitals, or it keeps the
+ *   typed letters as a case-sensitive prefix; first letter capitalised if the user shifted it.
+ * Returns null when the candidate is not acceptable for this input (it is filtered out).
+ */
+object CaseAdapt {
+    /** Per-letter input flags. */
+    const val SHIFTED = 1
+    const val AUTOSHIFTED = 2
+
+    /** The shift state when the word started, together with the field's capitalisation. */
+    enum class Context { NONE, SHIFT, AUTOSHIFT, AUTOSHIFT_WORDS, AUTOSHIFT_ALL, CAPS_LOCK }
+
+    enum class Type { NONE, AUTOSHIFT, AUTOSHIFT_ALL, EXPLICIT_SHIFT, ALL_CAPS, MIXED }
+
+    /** What the dictionary knows about a word's capitals. */
+    interface Casing {
+        /** The dictionary has this word (ignoring case) in a form starting with a capital. */
+        fun hasCapitalisedForm(word: String): Boolean
+        /** The word must not get a capital first letter ("iPhone", "eBay"). */
+        fun keepsLowercaseStart(word: String): Boolean = word.length > 1 && word[0].isLowerCase() && word.drop(1).any { it.isUpperCase() }
+    }
+
+    fun classify(input: String, flags: List<Int>, context: Context): Type {
+        if (flags.isEmpty()) return Type.NONE
+        val hasLower = input.any { it.isLowerCase() }
+        val upper = input.count { it.isUpperCase() }
+        val shiftedAfterFirst = flags.drop(1).any { it and SHIFTED != 0 }
+        if (hasLower && (shiftedAfterFirst || upper > 1)) return Type.MIXED
+        if (!hasLower) {
+            if (context == Context.AUTOSHIFT_ALL && flags[0] and AUTOSHIFTED != 0) return Type.AUTOSHIFT_ALL
+            if (upper > 1) return Type.ALL_CAPS
+        }
+        if (shiftedAfterFirst && flags.size > 1) return Type.ALL_CAPS
+        val first = flags[0]
+        if (first and SHIFTED != 0 && context == Context.CAPS_LOCK && flags.size == 1) return Type.ALL_CAPS
+        if (first and AUTOSHIFTED != 0) return Type.AUTOSHIFT
+        return if (first and SHIFTED != 0) Type.EXPLICIT_SHIFT else Type.NONE
+    }
+
+    fun apply(candidate: String, input: String, flags: List<Int>, context: Context, casing: Casing): String? =
+        when (classify(input, flags, context)) {
+            Type.NONE -> candidate
+            Type.AUTOSHIFT -> if (casing.keepsLowercaseStart(candidate)) candidate else capitaliseFirst(candidate)
+            Type.AUTOSHIFT_ALL, Type.ALL_CAPS -> candidate.uppercase()
+            Type.EXPLICIT_SHIFT -> {
+                val capitalised = candidate.firstOrNull()?.isUpperCase() == true || casing.hasCapitalisedForm(candidate)
+                if (capitalised && candidate.length >= input.length - 1 && sameLetter(candidate.firstOrNull(), input.firstOrNull())) {
+                    capitaliseFirst(candidate)
+                } else if (acceptsForMixedCase(candidate, input, flags)) {
+                    // on iOS the fall-through reaches the capitalising step for this type;
+                    // the exact path in between was not recovered, so the mixed-case test gates it
+                    capitaliseFirst(candidate)
+                } else null
+            }
+            Type.MIXED -> if (!acceptsForMixedCase(candidate, input, flags)) null
+                else if (flags[0] and SHIFTED != 0 && !casing.keepsLowercaseStart(candidate)) capitaliseFirst(candidate)
+                else candidate
+        }
+
+    /** Mixed-case acceptance (should_accept_candidate_for_mixed_case_input). */
+    internal fun acceptsForMixedCase(candidate: String, input: String, flags: List<Int>): Boolean {
+        val explicitCapitals = flags.count { it and SHIFTED != 0 && it and AUTOSHIFTED == 0 }
+        if (explicitCapitals < 2 && input.all { it.isLetter() }) return true
+        if (candidate.equals(input, ignoreCase = true)) return true
+        return candidate.length >= input.length && candidate.startsWith(input)
+    }
+
+    private fun sameLetter(a: Char?, b: Char?): Boolean =
+        a != null && b != null && java.text.Normalizer.normalize(a.toString(), java.text.Normalizer.Form.NFD)[0]
+            .equals(java.text.Normalizer.normalize(b.toString(), java.text.Normalizer.Form.NFD)[0], ignoreCase = true)
+
+    /** Capitalises the first letter (the second when the word starts with an apostrophe: "'tis"); keeps other capitals. */
+    fun capitaliseFirst(word: String): String {
+        val i = word.indexOfFirst { it.isLetter() }
+        if (i < 0) return word
+        return word.substring(0, i) + word[i].uppercase() + word.substring(i + 1)
+    }
+}
