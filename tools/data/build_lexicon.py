@@ -324,6 +324,12 @@ def main():
         else:
             surface = max(proper or cands, key=lambda f: (cands[f], f))
         lexicon[surface] = max(cands.values())
+    # single letters are lowercase words ("g", "x"): a capital form would make autocorrect capitalise
+    # a typed letter; "I" is the exception
+    for c in "abcdefghjklmnopqrstuvwxyz":
+        if c.upper() in lexicon:
+            z = lexicon.pop(c.upper())
+            lexicon[c] = math.log10(10 ** lexicon.get(c, -9) + 10 ** z)
     lexicon["I"] = lexicon.pop("i", zipf.get("i", 7.0))
 
     # possessives: only frequent ones; the engine generates the rest
