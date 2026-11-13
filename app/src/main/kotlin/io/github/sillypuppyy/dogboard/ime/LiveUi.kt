@@ -16,15 +16,29 @@ object LiveUi {
     /** The panel shown in place of the keys: "" (none), "tools", "edit" or "clipboard". */
     val panel = MutableStateFlow("")
 
+    /** Selection mode in the text-editing panel: the arrows extend the selection. */
+    val selecting = MutableStateFlow(false)
+    private var selAnchor = 0
+    private var selEnd = 0
+
     fun closePanel() {
         panel.value = ""
         toolRow.value = false
+        selecting.value = false
     }
 
     /** Runs the tool [icon] (a bar tool, a tools-panel tile, or an editing-panel cell). */
     fun run(icon: String, controller: ImeController) {
         fun action(a: org.k3lp.lib.text.K3Descriptor) = controller.updateStateBlocking { emitDescriptor(a) }
-        fun key(code: Int) = controller.updateStateBlocking { state.editor.sendDownUpKeyEvent(code) }
+        fun key(code: Int, meta: Int = 0) = controller.updateStateBlocking { state.editor.sendDownUpKeyEvent(code, meta) }
+        // in selection mode left/right move the selection's far end from where Select was tapped
+        // (fields ignore shift+arrow sent by a keyboard, so the selection is set directly)
+        fun arrow(action: org.k3lp.lib.text.K3Descriptor, code: Int) {
+            val step = when (code) { KeyEvent.KEYCODE_DPAD_LEFT -> -1; KeyEvent.KEYCODE_DPAD_RIGHT -> 1; else -> 0 }
+            if (!selecting.value || step == 0) return action(action)
+            selEnd = (selEnd + step).coerceAtLeast(0)
+            controller.updateStateBlocking { state.editor.setSelection(minOf(selAnchor, selEnd), maxOf(selAnchor, selEnd)) }
+        }
         when (icon) {
             "undo" -> action(ImeActions.Undo)
             "redo" -> action(ImeActions.Redo)
@@ -39,10 +53,16 @@ object LiveUi {
             "palette" -> { closePanel(); action(ImeActions.Settings) }
             "more_horiz" -> panel.value = "tools"
             "text_select_start" -> panel.value = "edit"
-            "keyboard_arrow_up" -> action(ImeActions.ArrowUp)
-            "keyboard_arrow_down" -> action(ImeActions.ArrowDown)
-            "keyboard_arrow_left" -> action(ImeActions.ArrowLeft)
-            "keyboard_arrow_right" -> action(ImeActions.ArrowRight)
+            "keyboard_arrow_up" -> arrow(ImeActions.ArrowUp, KeyEvent.KEYCODE_DPAD_UP)
+            "keyboard_arrow_down" -> arrow(ImeActions.ArrowDown, KeyEvent.KEYCODE_DPAD_DOWN)
+            "keyboard_arrow_left" -> arrow(ImeActions.ArrowLeft, KeyEvent.KEYCODE_DPAD_LEFT)
+            "keyboard_arrow_right" -> arrow(ImeActions.ArrowRight, KeyEvent.KEYCODE_DPAD_RIGHT)
+            "Select" -> {
+                selecting.value = !selecting.value
+                val sel = controller.activeState.value.content.selection
+                selAnchor = sel.end
+                selEnd = sel.end
+            }
             "first_page" -> key(KeyEvent.KEYCODE_MOVE_HOME)
             "last_page" -> key(KeyEvent.KEYCODE_MOVE_END)
             "history_on" -> {
@@ -57,7 +77,7 @@ object LiveUi {
                 controller.updateStateBlocking { state = state.copy(flags = state.flags.withIncognitoMode(on)) }
                 closePanel()
             }
-            // not wired yet: Select (selection mode), Dev keys
+            // not wired yet: Dev keys
         }
     }
 }

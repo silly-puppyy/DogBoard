@@ -83,6 +83,12 @@ open class ImeEditor(
         ic.endBatchEdit()
     }
 
+    /** DogBoard: selects [start]..[end] in the field (the text-editing panel's selection mode). */
+    fun setSelection(start: Int, end: Int) {
+        val ic = ic.get() ?: return
+        ic.setSelection(start, end)
+    }
+
     fun deleteSurroundingText(charsBefore: Int, charsAfter: Int) {
         val ic = ic.get() ?: return
         ic.deleteSurroundingText(charsBefore, charsAfter)
