@@ -296,6 +296,9 @@ class FlorisImeService : LifecycleInputMethodService() {
                     openAbbreviations = { assets.open("dogboard/en.abbreviations.txt").bufferedReader() },
                     personalModel = java.io.File(filesDir, "dogboard/personal.tsv"),
                     textReplacements = java.io.File(filesDir, "dogboard/text_replacements.tsv"),
+                    openEmojiIndex = { assets.open("dogboard/en.emoji.tsv").bufferedReader() },
+                    openEmojiTones = { assets.open("dogboard/en.emoji-tones.tsv").bufferedReader() },
+                    emojiUsageFile = java.io.File(filesDir, "dogboard/emoji_usage.tsv"),
                 )
             }
             imeController.updateState { refreshSuggestions() }

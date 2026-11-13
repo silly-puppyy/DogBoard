@@ -386,6 +386,13 @@ class ImeController(
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             deletingWord = null
             val text = value.toText()
+            // emoji typed from the panel or search count as emoji use (iOS ranking and show rule)
+            if (text.isNotEmpty() && text.codePoints().anyMatch { Character.getType(it) == Character.OTHER_SYMBOL.toInt() && it >= 0x2190 } &&
+                !state.flags.isIncognitoMode
+            ) {
+                val app = state.editor.info.packageName
+                scope.launch { TypingEngine.emojiUsed(text, app) }
+            }
             val wordChar = text.singleOrNull()?.takeIf { isWordChar(it) }
             when {
                 wordChar != null -> {
@@ -516,6 +523,7 @@ class ImeController(
         /** Commits a suggestion-strip pick in place of the current word, followed by a space. */
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
             val typed = currentWord.text
+            if (suggestion.kind == Suggestion.Kind.EMOJI) return acceptEmojiSuggestion(typed, suggestion.word)
             if (typed.isEmpty() && suggestion.kind != Suggestion.Kind.PREDICTION) return false
             val previous = wordContext()
             if (!replaceBeforeCursor(typed, suggestion.word + " ")) return false
@@ -523,6 +531,25 @@ class ImeController(
             confirmKeptCorrection()
             confirmAcceptedWord()
             noteFinishedWord(previous, suggestion.word)
+            currentWord.clear()
+            lastCorrection = null
+            rejectedWord = null
+            lastSpaceUptime = SystemClock.uptimeMillis()
+            reevaluateInputShiftState()
+            publishSuggestions()
+            return true
+        }
+
+        /** The design's emoji slot: the emoji goes after the word ("dog 🐕 "), Panels:99. */
+        private fun acceptEmojiSuggestion(typed: String, emoji: String): Boolean {
+            val previous = wordContext()
+            val replacement = if (typed.isEmpty()) "$emoji " else "$typed $emoji "
+            if (!replaceBeforeCursor(typed, replacement)) return false
+            confirmKeptCorrection()
+            confirmAcceptedWord()
+            if (typed.isNotEmpty()) noteFinishedWord(previous, typed)
+            val app = state.editor.info.packageName
+            if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.emojiUsed(emoji, app) }
             currentWord.clear()
             lastCorrection = null
             rejectedWord = null
@@ -618,6 +645,10 @@ class ImeController(
             val word = currentWord.snapshot()
             val rejected = rejectedWord
             val withCorrection = prefs.correction.autocorrect.get()
+            val textBefore = state.content.surroundingText.textBefore.toString()
+            val app = state.editor.info.packageName
+            val emojiMode = if (state.flags.isIncognitoMode) io.github.sillypuppyy.dogboard.engine.EmojiSuggestionMode.OFF
+                else prefs.suggestion.emojiMode.get()
             suggestionJob = scope.launch {
                 val candidates = TypingEngine.candidates(word, context)
                 latestDecode = decodeKey(word.text, context) to candidates
@@ -625,7 +656,8 @@ class ImeController(
                 val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice) else null
                 latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
                 latestCorrection = word.text to correction
-                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word)))
+                val emoji = TypingEngine.emojiFor(textBefore, app, emojiMode, prefs.emoji.preferredSkinTone.get().id)
+                if (isActive) sink(SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word), emoji))
             }
         }
 

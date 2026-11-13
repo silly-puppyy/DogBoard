@@ -30,3 +30,8 @@ Fonts (res/font, subsets made by tools/fonts/subset_fonts.py)
 en.abbreviations.txt (built by tools/data/build_abbreviations.py)
   From Unicode CLDR (https://github.com/unicode-org/cldr, common/segments/en.xml), Copyright ©
   Unicode, Inc., Unicode License v3, included in licenses/Unicode-License.txt.
+
+en.emoji.tsv, en.emoji-tones.tsv (built by tools/data/build_emoji_keywords.py)
+  Emoji names and keywords, and skin-tone forms, from Unicode CLDR (common/annotations/en.xml,
+  common/annotationsDerived/en.xml), Unicode License v3 (licenses/Unicode-License.txt); ranked by
+  wordfreq 3.1.1 emoji frequencies (CC BY-SA 4.0), so en.emoji.tsv is CC BY-SA 4.0.

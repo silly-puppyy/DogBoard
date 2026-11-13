@@ -643,6 +643,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "suggestion__block_possibly_offensive",
             default = true,
         )
+        // DogBoard: when the bar offers emoji (iOS: only after the user has used emoji, also in this app)
+        val emojiMode = enum(
+            key = "suggestion__emoji_mode",
+            default = io.github.sillypuppyy.dogboard.engine.EmojiSuggestionMode.AFTER_USE,
+        )
         val incognitoMode = enum(
             key = "suggestion__incognito_mode",
             default = IncognitoMode.DYNAMIC_ON_OFF,

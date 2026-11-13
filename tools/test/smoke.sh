@@ -13,7 +13,7 @@ echo "== emulator"
 DOGBOARD_EMU_LOG=${DOGBOARD_EMU_LOG:-/tmp/dogboard-emulator.log} tools/test/emulator.sh "$SERIAL"
 
 echo "== clear learned and blocked words from earlier test runs"
-"$ADB" -s "$SERIAL" shell run-as io.github.sillypuppyy.dogboard.debug rm -f files/dogboard/user_words.txt files/dogboard/blocked_words.txt files/dogboard/rejected_corrections.txt files/dogboard/personal.tsv files/dogboard/text_replacements.tsv || true
+"$ADB" -s "$SERIAL" shell run-as io.github.sillypuppyy.dogboard.debug rm -f files/dogboard/user_words.txt files/dogboard/blocked_words.txt files/dogboard/rejected_corrections.txt files/dogboard/personal.tsv files/dogboard/text_replacements.tsv files/dogboard/emoji_usage.tsv || true
 
 echo "== unit tests"
 ./gradlew :app:testDebugUnitTest --max-workers=6 --console=plain -q

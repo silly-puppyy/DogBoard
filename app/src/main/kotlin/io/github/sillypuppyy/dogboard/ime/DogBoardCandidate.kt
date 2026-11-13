@@ -16,7 +16,8 @@ data class DogBoardCandidate(val suggestion: Suggestion) : SuggestionCandidate {
     // marks the slot space will commit; themes style it via smartbar-candidate-word[auto-commit=1]
     override val isEligibleForAutoCommit: Boolean = suggestion.kind == Suggestion.Kind.AUTOCORRECT
     // long-press removes a suggested word for good (not the typed word itself)
-    override val isEligibleForUserRemoval: Boolean = suggestion.kind != Suggestion.Kind.LITERAL
+    override val isEligibleForUserRemoval: Boolean =
+        suggestion.kind != Suggestion.Kind.LITERAL && suggestion.kind != Suggestion.Kind.EMOJI
     override val sourceProvider: SuggestionProvider? = null
     override val icon: ImageVector? = null
 }

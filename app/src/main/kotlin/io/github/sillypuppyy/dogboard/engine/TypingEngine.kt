@@ -23,6 +23,12 @@ object TypingEngine {
     @Volatile
     private var personal = PersonalModel()
 
+    /** Emoji suggestions and the user's emoji use ([EmojiSuggest], [EmojiUsage]). */
+    @Volatile
+    private var emoji: EmojiSuggest? = null
+    @Volatile
+    private var emojiUsage = EmojiUsage()
+
     /** The user's text replacements ([TextReplacements]). */
     @Volatile
     private var replacements = TextReplacements()
@@ -67,6 +73,9 @@ object TypingEngine {
         openAbbreviations: (() -> BufferedReader)? = null,
         personalModel: File? = null,
         textReplacements: File? = null,
+        openEmojiIndex: (() -> BufferedReader)? = null,
+        openEmojiTones: (() -> BufferedReader)? = null,
+        emojiUsageFile: File? = null,
     ) {
         if (loaded != null) return
         abbreviations = openAbbreviations?.let { open ->
@@ -83,6 +92,9 @@ object TypingEngine {
         rejections = Rejections(rejectedCorrections)
         personal = PersonalModel(personalModel)
         replacements = TextReplacements(textReplacements)
+        emojiUsage = EmojiUsage(emojiUsageFile)
+        val tones = openEmojiTones?.let { open -> open().use { EmojiSuggest.parseTones(it) } }.orEmpty()
+        emoji = openEmojiIndex?.let { open -> EmojiSuggest(open().use { EmojiSuggest.parse(it) }, emojiUsage, tones) }
         // words the user accepted that the lexicon lacks are decodable again
         for (w in personal.knownWords()) if (!lexicon.contains(w)) lexicon.addWord(w, engine.acceptedWordLogProb)
         lock.write {
@@ -239,6 +251,20 @@ object TypingEngine {
     }
 
 
+    /** The emoji to offer for the words at the end of [textBefore] in [app], or null ([mode] decides when). */
+    fun emojiFor(textBefore: CharSequence, app: String?, mode: EmojiSuggestionMode, tone: Int = 0): String? {
+        val e = emoji ?: return null
+        when (mode) {
+            EmojiSuggestionMode.OFF -> return null
+            EmojiSuggestionMode.AFTER_USE -> if (!emojiUsage.hasUsedEmoji(app)) return null
+            EmojiSuggestionMode.ALWAYS -> Unit
+        }
+        return e.suggest(textBefore, 1, tone).firstOrNull()
+    }
+
+    /** The user inserted [emoji] in [app] (panel, search or the bar). */
+    fun emojiUsed(emoji: String, app: String?) = emojiUsage.record(emoji, app)
+
     /** The phrase for the shortcut [typed], with the typed capitals ([CaseAdapt]), or null. */
     fun replacementFor(typed: String, flags: List<Int>, context: CaseAdapt.Context): String? {
         val phrase = replacements.phraseFor(typed) ?: return null
@@ -304,6 +330,8 @@ object TypingEngine {
         rejections = Rejections()
         personal = PersonalModel()
         replacements = TextReplacements()
+        emoji = null
+        emojiUsage = EmojiUsage()
         abbreviations = emptyMap()
     }
 }

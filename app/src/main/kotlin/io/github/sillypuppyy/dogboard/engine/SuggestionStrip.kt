@@ -14,6 +14,9 @@ data class Suggestion(val word: String, val kind: Kind) {
 
         /** A likely next word, shown before anything is typed. */
         PREDICTION,
+
+        /** An emoji for the word(s) before the cursor; picking it adds it after the word. */
+        EMOJI,
     }
 }
 
@@ -29,6 +32,7 @@ object SuggestionStrip {
         candidates: List<Candidate>,
         correction: String?,
         case: (String) -> String? = Autocorrect.inferredCase(typed),
+        emoji: String? = null,
     ): List<Suggestion> {
         if (typed.isEmpty()) return emptyList()
         val result = ArrayList<Suggestion>(SLOTS)
@@ -41,6 +45,11 @@ object SuggestionStrip {
             if (candidate.isTypedString) continue
             val word = case(candidate.word) ?: continue
             if (seen.add(word.lowercase())) result.add(Suggestion(word, Suggestion.Kind.WORD))
+        }
+        // the design's third slot offers an emoji for the word (Panels:99)
+        if (emoji != null) {
+            if (result.size >= SLOTS) result[SLOTS - 1] = Suggestion(emoji, Suggestion.Kind.EMOJI)
+            else result.add(Suggestion(emoji, Suggestion.Kind.EMOJI))
         }
         return result
     }
