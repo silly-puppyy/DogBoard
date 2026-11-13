@@ -96,6 +96,16 @@ def wait_ime_shown(serial, timeout=10.0):
     return False
 
 
+def wait_engine_loaded(serial, timeout=20.0):
+    """Waits for the keyboard's "lexicon load took" mark: until then nothing is corrected."""
+    end = time.time() + timeout
+    while time.time() < end:
+        if "lexicon load took" in adb(serial, "logcat", "-d", "-s", "DogBoardPerf:I"):
+            return True
+        time.sleep(0.2)
+    return False
+
+
 def key_center_units(ch):
     if ch == " ":
         return SPACE_CENTER_X, 3
@@ -153,6 +163,10 @@ def main():
             adb(args.serial, "logcat", "-c")
             adb(args.serial, *start)
             geom = settled_geometry(args.serial)
+            # a cold keyboard loads its word data in the background; typing before that is not corrected
+            if not wait_engine_loaded(args.serial):
+                print("FAIL: keyboard never finished loading its word data")
+                sys.exit(2)
         if not geom:
             print("FAIL: keyboard never reported its key area")
             sys.exit(2)
