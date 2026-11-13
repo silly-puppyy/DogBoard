@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard.ime.keyboard3.ui
 
+import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -96,9 +97,15 @@ fun ImeKeyboardBox(
     }
 
     val baseTouchModelOptions by imeController.activeTouchModelOptions.collectAsState()
-    // DogBoard: email and URL fields get their own bottom row
-    val touchModelOptions = remember(baseTouchModelOptions, imeState.flags.keyVariation) {
-        baseTouchModelOptions.copy(keyVariation = imeState.flags.keyVariation)
+    // DogBoard: email and URL fields get their own bottom row. Other variations map to NORMAL so
+    // that opening an ordinary field does not swap in a new touch model (a tap during the swap
+    // was lost).
+    val layoutVariation = when (val v = imeState.flags.keyVariation) {
+        KeyVariation.EMAIL_ADDRESS, KeyVariation.URI -> v
+        else -> KeyVariation.NORMAL
+    }
+    val touchModelOptions = remember(baseTouchModelOptions, layoutVariation) {
+        baseTouchModelOptions.copy(keyVariation = layoutVariation)
     }
     var activeTouchModel by remember {
         mutableStateOf(imeController.touchModelCache.getFor(model, touchModelOptions) ?: TouchModel.Empty)

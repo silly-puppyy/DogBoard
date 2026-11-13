@@ -146,6 +146,9 @@ class PointerTracker(
 
     context(scope: CoroutineScope)
     suspend fun handleDown(down: PointerInputChange, size: IntSize) {
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
+            android.util.Log.i("DogBoardTouch", "down id=${down.id.value} at ${down.position} tracker=${this@PointerTracker.hashCode()}")
+        }
         val lastUpKey = lastUpKeyState
 
         trackedPeekPointer.value?.let { trackedPointer ->
@@ -345,6 +348,12 @@ class PointerTracker(
 
     context(scope: CoroutineScope)
     suspend fun handleUp(up: PointerInputChange, size: IntSize) {
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
+            android.util.Log.i(
+                "DogBoardTouch",
+                "up id=${up.id.value} tracked=${trackedOutputPointer.value?.id?.value} peek=${trackedPeekPointer.value?.id?.value}",
+            )
+        }
         trackedPeekPointer.value?.takeIf { it.id == up.id }?.let { trackedPointer ->
             imeController.updateState {
                 trackedPointer.peekKey?.attrs?.output?.let { emit(it) }

@@ -74,6 +74,17 @@ def settled_geometry(serial, tries=80):
     return None
 
 
+def wait_ime_shown(serial, timeout=10.0):
+    """Waits for the test screen's "ime shown" mark (end of the keyboard's slide-in)."""
+    end = time.time() + timeout
+    while time.time() < end:
+        if "ime shown" in adb(serial, "logcat", "-d", "-s", "DogBoardPerf:I"):
+            time.sleep(0.2)
+            return True
+        time.sleep(0.2)
+    return False
+
+
 def key_center_units(ch):
     if ch == " ":
         return SPACE_CENTER_X, 3
@@ -93,6 +104,9 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--delay", type=float, default=0.25, help="seconds between taps")
     ap.add_argument("--ime", default=IME, help="keyboard under test (DogBoard debug or bench build)")
+    ap.add_argument("--case", help="only run cases whose typed text contains this")
+    ap.add_argument("--repeat", type=int, default=1, help="run each case this many times")
+    ap.add_argument("--history", action="store_true", help="print every text change on failure")
     args = ap.parse_args()
     ime = args.ime
     ime_package = ime.split("/")[0]
@@ -103,12 +117,15 @@ def main():
     density = int(adb(args.serial, "shell", "wm", "density").split(":")[-1].strip()) / 160.0
 
     failures = 0
-    for typed, expected in CASES:
+    cases = [c for c in CASES if args.case is None or args.case in c[0]] * args.repeat
+    for typed, expected in cases:
         adb(args.serial, "shell", "input", "keyevent", "KEYCODE_BACK")
         adb(args.serial, "shell", "input", "keyevent", "KEYCODE_BACK")
         time.sleep(1.0)
         adb(args.serial, "logcat", "-c")
         adb(args.serial, "shell", "am", "start", "-n", ACTIVITY)
+        # the key area is laid out before the window has slid in; taps during the slide are lost
+        wait_ime_shown(args.serial)
         geom = settled_geometry(args.serial)
         if not geom:
             # the key area may not have moved since the last run, so nothing new was logged
@@ -136,6 +153,13 @@ def main():
         ok = got == expected
         failures += 0 if ok else 1
         print(f"{'ok  ' if ok else 'FAIL'} typed {typed!r} -> {got!r} (expected {expected!r})")
+        if not ok and args.history:
+            for line in adb(args.serial, "logcat", "-d", "-s", "DogBoardText:I", "DogBoardTouch:I", "DogBoardGeom:I").splitlines():
+                m = re.search(r"text=\[(.*)\]", line)
+                if m:
+                    print(f"      {line[:18]} {m.group(1)!r}")
+                elif "DogBoardTouch" in line or "DogBoardGeom" in line:
+                    print(f"      {line[:18]} {line.split(': ', 1)[-1]}")
     adb(args.serial, "shell", "input", "keyevent", "KEYCODE_BACK")
     sys.exit(1 if failures else 0)
 

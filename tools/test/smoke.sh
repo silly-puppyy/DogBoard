@@ -9,6 +9,9 @@ ADB=/opt/android-sdk/platform-tools/adb
 cd "$ROOT"
 export PATH=$HOME/.cargo/bin:$PATH
 
+echo "== emulator"
+DOGBOARD_EMU_LOG=${DOGBOARD_EMU_LOG:-/tmp/dogboard-emulator.log} tools/test/emulator.sh "$SERIAL"
+
 echo "== unit tests"
 ./gradlew :app:testDebugUnitTest --max-workers=6 --console=plain -q
 
