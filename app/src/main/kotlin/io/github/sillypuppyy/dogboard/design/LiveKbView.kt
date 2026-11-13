@@ -36,7 +36,7 @@ fun LiveKbView(
     trackpadX: Float? = null,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
+    val dark = liveDark()
     BoxWithConstraints(modifier.fillMaxSize()) {
         // nothing to draw until the key area has a real size (the first measure can be empty)
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f || maxHeight.value < 100f) return@BoxWithConstraints
@@ -70,6 +70,18 @@ fun LiveKbView(
     }
 }
 
+/**
+ * Dark or light as the keyboard's theme setting decides (FlorisBoard's theme mode: always day,
+ * always night, follow the system, or follow the time of day).
+ */
+@Composable
+fun liveDark(): Boolean {
+    val system = isSystemInDarkTheme()
+    val mode by dev.patrickgold.florisboard.ime.theme.LocalThemeController.current.effectiveThemeMode
+        .collectAsState(if (system) dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.NIGHT else dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.DAY)
+    return mode == dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.NIGHT
+}
+
 private val RET_WORDS = setOf("send", "search", "go", "next", "done", "join", "route", "continue")
 
 /**
@@ -89,7 +101,7 @@ fun LiveKbBar(
     incognito: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
+    val dark = liveDark()
     BoxWithConstraints(modifier.fillMaxWidth().height(48.dp)) {
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f) return@BoxWithConstraints
         val slots = strip.map { s ->

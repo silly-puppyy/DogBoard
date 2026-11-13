@@ -86,7 +86,8 @@ class ThemeController(
         }
     }
 
-    private val effectiveThemeMode = combine(
+    // DogBoard: public so the ported design views follow the same day/night choice
+    val effectiveThemeMode = combine(
         prefs.theme.mode.asFlow(),
         activeSystemThemeMode,
         prefs.theme.sunriseTime.asFlow(),

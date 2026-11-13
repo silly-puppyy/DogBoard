@@ -56,7 +56,7 @@ fun LiveEmojiPanel(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dark = isSystemInDarkTheme()
+    val dark = liveDark()
     val r = remember(dark) { KbSpec.render(KbProps(dark = dark, panel = "emoji", only = "live")) }
     val t = r.t
     val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
