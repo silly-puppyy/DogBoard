@@ -12,6 +12,14 @@ import java.util.Random
  * context. Needs the private Tatoeba export (DOGBOARD_TATOEBA, default under keyboard/data/);
  * skipped without it.
  */
+/**
+ * Lexicon under test: DOGBOARD_LEXICON, or the path written in build/eval-lexicon-path.txt (the
+ * Gradle daemon does not see a new shell's environment), else the shipped one.
+ */
+private val LEXICON_PATH = System.getenv("DOGBOARD_LEXICON")
+    ?: File("build/eval-lexicon-path.txt").takeIf { it.exists() }?.readText()?.trim()
+    ?: "src/main/assets/dogboard/en.lexicon.tsv"
+
 class EngineContextEvalTest : FunSpec({
     val tatoeba = File(
         System.getenv("DOGBOARD_TATOEBA")
@@ -19,7 +27,7 @@ class EngineContextEvalTest : FunSpec({
     )
 
     test("context from the previous word makes more words come out right").config(enabled = tatoeba.exists()) {
-        val lexicon = File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
+        val lexicon = File(LEXICON_PATH).bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val keys = QwertyGeometry.letterKeys(375f, 216f)
         val keyList = keys.entries.toList()
@@ -43,6 +51,7 @@ class EngineContextEvalTest : FunSpec({
             var raw = 0
             var rightPlain = 0
             var rightContext = 0
+            var outOfLexicon = 0
             for (sentence in sentences) {
                 var previous = Bigrams.START
                 for (m in token.findAll(sentence)) {
@@ -66,6 +75,7 @@ class EngineContextEvalTest : FunSpec({
                         return autocorrect.correction(literal, candidates) ?: literal
                     }
                     words++
+                    if (!lexicon.contains(t)) outOfLexicon++
                     if (literal == letters) raw++
                     if (final(plain, -1).equals(t, ignoreCase = true)) rightPlain++
                     if (final(withContext, bigrams.contextId(previous)).equals(t, ignoreCase = true)) rightContext++
@@ -73,8 +83,9 @@ class EngineContextEvalTest : FunSpec({
                 }
             }
             println(
-                "CONTEXT sigma %.1fx%.1f mm, %d words: raw %.1f%%, unigram %.1f%%, bigram %.1f%%".format(
-                    sx, sy, words, raw * 100.0 / words, rightPlain * 100.0 / words, rightContext * 100.0 / words,
+                "CONTEXT sigma %.1fx%.1f mm, %d words (%.1f%% not in lexicon): raw %.1f%%, unigram %.1f%%, bigram %.1f%%".format(
+                    sx, sy, words, outOfLexicon * 100.0 / words, raw * 100.0 / words, rightPlain * 100.0 / words,
+                    rightContext * 100.0 / words,
                 )
             )
             if (sx == 1.5) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)

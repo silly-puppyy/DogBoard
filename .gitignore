@@ -67,3 +67,4 @@ debug/
 target/
 **/*.rs.bk
 *.pdb
+__pycache__/
