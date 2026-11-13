@@ -12,6 +12,9 @@ export PATH=$HOME/.cargo/bin:$PATH
 echo "== emulator"
 DOGBOARD_EMU_LOG=${DOGBOARD_EMU_LOG:-/tmp/dogboard-emulator.log} tools/test/emulator.sh "$SERIAL"
 
+echo "== clear learned and blocked words from earlier test runs"
+"$ADB" -s "$SERIAL" shell run-as io.github.sillypuppyy.dogboard.debug rm -f files/dogboard/user_words.txt files/dogboard/blocked_words.txt || true
+
 echo "== unit tests"
 ./gradlew :app:testDebugUnitTest --max-workers=6 --console=plain -q
 
