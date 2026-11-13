@@ -19,9 +19,9 @@ object TypingEngine {
     private val lock = ReentrantReadWriteLock()
     private var userWordsFile: File? = null
     private var blockedWordsFile: File? = null
-    private var rejectionsFile: File? = null
-    /** (typed, correction) pairs the user undid; never auto-applied again (iOS rejections). */
-    private val rejections = HashSet<Pair<String, String>>()
+    /** Undone and deleted autocorrections, iOS rules ([Rejections]). */
+    @Volatile
+    private var rejections = Rejections()
     /** How often each unknown word was typed and kept in this session. */
     private val keptUnknown = HashMap<String, Int>()
 
@@ -68,14 +68,7 @@ object TypingEngine {
         }
         userWordsFile = userWords
         blockedWordsFile = blockedWords
-        rejectionsFile = rejectedCorrections
-        synchronized(rejections) {
-            rejections.clear()
-            rejectedCorrections?.takeIf { it.exists() }?.forEachLine { line ->
-                val tab = line.indexOf('\t')
-                if (tab > 0) rejections.add(line.substring(0, tab) to line.substring(tab + 1))
-            }
-        }
+        rejections = Rejections(rejectedCorrections)
         lock.write {
             blocked.clear()
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
@@ -133,8 +126,7 @@ object TypingEngine {
         val engine = loaded ?: return null
         if (candidates.isEmpty()) return null
         val result = engine.autocorrect.correction(word.text, candidates, previousCorrection, caseFor(word)) ?: return null
-        val rejected = synchronized(rejections) { (word.text.lowercase() to result.lowercase()) in rejections }
-        return if (rejected) null else result
+        return if (rejections.isBlocked(word.text, result)) null else result
     }
 
     /**
@@ -152,18 +144,17 @@ object TypingEngine {
         return { candidate -> CaseAdapt.apply(candidate, typed, flags, word.caseContext, casing) }
     }
 
-    /** The user undid the correction [typed] -> [correction]: it is not auto-applied again. */
-    fun reject(typed: String, correction: String) {
-        val pair = typed.lowercase() to correction.lowercase()
-        val isNew = synchronized(rejections) { rejections.add(pair) }
-        if (!isNew) return
-        runCatching {
-            rejectionsFile?.let { file ->
-                file.parentFile?.mkdirs()
-                file.appendText("${pair.first}\t${pair.second}\n")
-            }
-        }
-    }
+    /** The user undid [typed] -> [correction] (or kept their word while it was offered): a hard rejection. */
+    fun reject(typed: String, correction: String) = rejections.recordHard(typed, correction)
+
+    /** Autocorrection just turned [typed] into [correction]. */
+    fun noteCorrected(typed: String, correction: String) = rejections.noteCorrected(typed, correction)
+
+    /** [typed] -> [correction] was made and the user typed on: earlier undos of it are forgiven. */
+    fun correctionKept(typed: String, correction: String) = rejections.recordKept(typed, correction)
+
+    /** The user deleted the whole word [word] (a soft rejection if it was just autocorrected). */
+    fun noteDeleted(word: String) = rejections.noteDeleted(word)
 
     /** The [n] most likely next words after [previous] (stored casing), for the empty strip. */
     fun predictions(previous: String?, n: Int = SuggestionStrip.SLOTS): List<String> {
@@ -266,8 +257,7 @@ object TypingEngine {
         userWordsFile = null
         blockedWordsFile = null
         blocked.clear()
-        rejectionsFile = null
-        synchronized(rejections) { rejections.clear() }
+        rejections = Rejections()
         synchronized(keptUnknown) { keptUnknown.clear() }
         abbreviations = emptyMap()
     }

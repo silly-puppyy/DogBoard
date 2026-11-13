@@ -118,6 +118,11 @@ class ImeController(
     private var currentWord = CurrentWord()
     private var pendingTap: PendingTap? = null
     private var lastCorrection: LastCorrection? = null
+
+    // DogBoard: an autocorrection that was made, until the next word shows it was kept (iOS
+    // acceptance: forgives earlier undos), and the word being deleted into (iOS soft rejections)
+    private var unconfirmedCorrection: Pair<String, String>? = null
+    private var deletingWord: String? = null
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
     @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
@@ -375,6 +380,7 @@ class ImeController(
 
         override fun emitText(value: K3String) {
             // DogBoard: track the word being typed; finishing it may autocorrect it first
+            deletingWord = null
             val text = value.toText()
             val wordChar = text.singleOrNull()?.takeIf { isWordChar(it) }
             when {
@@ -461,6 +467,7 @@ class ImeController(
         /** Called before a word separator is typed: autocorrects the finished word. */
         private fun finishWord(separator: String) {
             lastCorrection = null
+            confirmKeptCorrection()
             val word = currentWord
             // a reverted autocorrection that is finished unchanged is a word the user wants
             if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
@@ -473,6 +480,10 @@ class ImeController(
                 val corrected = TypingEngine.correction(word, candidates, previousChoice)
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
+                    if (!state.flags.isIncognitoMode) {
+                        unconfirmedCorrection = typed to corrected
+                        scope.launch { TypingEngine.noteCorrected(typed, corrected) }
+                    }
                 } else {
                     noteKeptWord(typed)
                 }
@@ -485,6 +496,7 @@ class ImeController(
         private fun revertLastCorrection(): Boolean {
             val correction = lastCorrection ?: return false
             lastCorrection = null
+            unconfirmedCorrection = null
             if (!replaceBeforeCursor(correction.corrected + correction.separator, correction.word.text)) return false
             currentWord = correction.word
             rejectedWord = correction.word.text
@@ -507,6 +519,13 @@ class ImeController(
             reevaluateInputShiftState()
             publishSuggestions()
             return true
+        }
+
+        /** The autocorrection before this word was not undone: record it as kept. */
+        private fun confirmKeptCorrection() {
+            val (typed, corrected) = unconfirmedCorrection ?: return
+            unconfirmedCorrection = null
+            scope.launch { TypingEngine.correctionKept(typed, corrected) }
         }
 
         /** [word] was finished as typed; unknown words kept a few times get learned. */
@@ -708,8 +727,15 @@ class ImeController(
                 publishSuggestions()
                 return
             }
+            // DogBoard: remember the word being deleted into; report it once it is gone (iOS soft rejections)
+            val wordBeforeDelete = trailingWord(state.content.surroundingText.textBefore)
+            if (deletingWord == null && wordBeforeDelete.isNotEmpty()) deletingWord = wordBeforeDelete
             super.emitBackspace()
             expectedContentQueue.push(state.content)
+            if (trailingWord(state.content.surroundingText.textBefore).isEmpty()) {
+                deletingWord?.let { gone -> if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.noteDeleted(gone) } }
+                deletingWord = null
+            }
             // DogBoard: keep the current word in step with the text
             val textBefore = state.content.surroundingText.textBefore
             currentWord.removeLast()
