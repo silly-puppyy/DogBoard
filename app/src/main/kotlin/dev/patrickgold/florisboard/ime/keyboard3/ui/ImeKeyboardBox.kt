@@ -238,6 +238,19 @@ fun ImeKeyboardBox(
                     }
                 }
         ) {
+            // DogBoard: stage 2 of the design port: the ported Kb.dc.html view draws the keys
+            val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
+            if (dogboardDesign) {
+                val output = trackedOutputPointer
+                io.github.sillypuppyy.dogboard.design.LiveKbView(
+                    layerId = touchLayerId.toString(),
+                    shiftState = inputShiftState,
+                    enterAction = enterAction,
+                    pressedKey = output?.downKey ?: trackedPeekPointer?.peekKey,
+                    longPress = output?.longPress,
+                )
+                return@Box
+            }
             for (touchKey in activeTouchLayer.keys) {
                 if (touchKey.attrs.gap) {
                     continue

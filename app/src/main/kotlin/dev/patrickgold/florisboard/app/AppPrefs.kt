@@ -490,6 +490,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__long_press_timeout",
             default = InteractionTimingOptions.Default.longPressTimeout.inWholeMilliseconds.toInt(),
         )
+        // DogBoard: draw the keys with the ported design (stage 2); off = FlorisBoard's drawing
+        val dogboardDesign = boolean(
+            key = "keyboard__dogboard_design",
+            default = true,
+        )
         val longPressKeyHintEnabled = boolean(
             key = "keyboard__long_press_key_hint_enabled",
             default = false, // DogBoard: clean caps like the design (and iOS); the hints stay a setting

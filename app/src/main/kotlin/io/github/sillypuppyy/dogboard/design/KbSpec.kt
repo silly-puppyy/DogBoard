@@ -45,7 +45,7 @@ data class KbProps(
     val pressed: String = "",
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
-    val only: String = "", // "", keys, bar
+    val only: String = "", // "", keys, bar, live (the live keyboard's key area: no bar, no nav area)
     // DogBoard options (user, 2026-11-13; notes/research/suggestion-overflow.md), not in the design:
     /**
      * A word too long for its slot, one setting with two choices:
@@ -301,7 +301,7 @@ object KbSpec {
 
         // Kb:514-518
         val hFloat = if (floating) 24f else 0f
-        val showBar = !barless && only != "keys"
+        val showBar = !barless && only != "keys" && only != "live"
         val barH = if (showBar) 48f else 0f
         val devH = if (dev) 44f else 0f
         val keyTop0 = hFloat + barH + devH
@@ -410,7 +410,7 @@ object KbSpec {
         val showPanel = panel.isNotEmpty() && !barless
         val showKeys = !showPanel && only != "bar"
         val navH = if (floating) 8f else if (landscape) 20f else 32f
-        val showNav = only != "bar" && !floating
+        val showNav = only != "bar" && only != "live" && !floating
         val H = hFloat + barH + devH + (if (only == "bar") 0f else keyAreaH) + (if (showNav) navH else 0f) + (if (floating) 8f else 0f)
 
         return KbRender(

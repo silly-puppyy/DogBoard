@@ -263,8 +263,8 @@ fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
 fun Modifier.placeAt(rect: Rect): Modifier = layout { measurable, _ ->
     val l = (rect.left * density).roundToInt()
     val t = (rect.top * density).roundToInt()
-    val w = (rect.right * density).roundToInt() - l
-    val h = (rect.bottom * density).roundToInt() - t
+    val w = ((rect.right * density).roundToInt() - l).coerceAtLeast(0) // a size too small for the margins draws nothing
+    val h = ((rect.bottom * density).roundToInt() - t).coerceAtLeast(0)
     val p = measurable.measure(Constraints.fixed(w, h))
     layout(w, h) { p.place(l, t) }
 }
