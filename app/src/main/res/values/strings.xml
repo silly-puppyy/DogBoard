@@ -497,6 +497,20 @@
     <string name="pref__correction__auto_space_punctuation__summary" comment="Preference summary">Automatically insert a space after a punctuation</string>
     <string name="pref__correction__autocorrect__label" comment="Preference title">Autocorrect</string>
     <string name="pref__correction__autocorrect__summary" comment="Preference summary">Fixes mistyped words when you type a space or punctuation. Backspace right after undoes it.</string>
+    <string name="pref__correction__autocorrect_level__label" comment="Preference title">How readily</string>
+    <string name="enum__autocorrect_level__gentle">Gentle</string>
+    <string name="enum__autocorrect_level__standard">Standard</string>
+    <string name="enum__autocorrect_level__strong">Strong</string>
+    <string name="pref__typing__smart_quotes__label" comment="Preference title">Smart quotes</string>
+    <string name="pref__typing__smart_quotes__summary" comment="Preference summary">Turns straight quotes into curly ones and apostrophes into ’</string>
+    <string name="pref__typing__smart_dashes__label" comment="Preference title">Smart dashes</string>
+    <string name="pref__typing__smart_dashes__summary" comment="Preference summary">Two hyphens become a dash, three dots become …</string>
+    <string name="pref__typing__caps_lock_enabled__label" comment="Preference title">Caps lock</string>
+    <string name="pref__typing__caps_lock_enabled__summary" comment="Preference summary">Double-tap shift to type in capitals</string>
+    <string name="pref__suggestion__emoji_mode__label" comment="Preference title">Emoji suggestions</string>
+    <string name="enum__emoji_suggestion_mode__off">Off</string>
+    <string name="enum__emoji_suggestion_mode__after_use">After you use emoji</string>
+    <string name="enum__emoji_suggestion_mode__always">Always</string>
     <string name="pref__correction__double_space_period__label" comment="Preference title">Double-space period</string>
     <string name="pref__correction__double_space_period__summary" comment="Preference summary">Tapping twice on spacebar inserts a period followed by a space</string>
     <string name="pref__spelling__title" comment="Preference group title">Spelling</string>
