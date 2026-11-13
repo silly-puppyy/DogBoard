@@ -51,6 +51,15 @@ class CurrentWord {
     fun tapsOrNull(): List<Tap>? =
         if (decodable && taps.size == letters.length && letters.isNotEmpty() && params != null) taps.toList() else null
 
+    /**
+     * Starts tracking the word the cursor is touching in [textBefore] (typing or deleting at the
+     * end of an existing word), with key centres standing in for the unknown taps.
+     */
+    fun seedFrom(textBefore: CharSequence, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
+        clear()
+        for (c in trailingWord(textBefore)) addLetter(c, null, keys, params)
+    }
+
     fun snapshot(): CurrentWord = CurrentWord().also {
         it.letters.append(letters)
         it.taps.addAll(taps)
@@ -58,4 +67,15 @@ class CurrentWord {
         it.keys = keys
         it.params = params
     }
+}
+
+/** True for characters that belong to a word: letters and apostrophes. */
+fun isWordChar(c: Char): Boolean = c.isLetter() || c == '\'' || c == '’'
+
+/** The word chars at the end of [textBefore], at most [maxLength] of them ("" if it ends otherwise). */
+fun trailingWord(textBefore: CharSequence, maxLength: Int = 48): String {
+    var i = textBefore.length
+    while (i > 0 && textBefore.length - i < maxLength && isWordChar(textBefore[i - 1])) i--
+    if (i > 0 && isWordChar(textBefore[i - 1])) return "" // longer than maxLength: not a word we track
+    return textBefore.substring(i)
 }

@@ -48,6 +48,28 @@ class WordTrackingTest : FunSpec({
         }
     }
 
+    context("trailingWord") {
+        test("the word the cursor is touching, including apostrophes") {
+            trailingWord("Hello wor") shouldBe "wor"
+            trailingWord("I don't") shouldBe "don't"
+            trailingWord("Teh") shouldBe "Teh"
+        }
+        test("nothing after a space, punctuation or in an empty field") {
+            trailingWord("Hello ") shouldBe ""
+            trailingWord("Hello.") shouldBe ""
+            trailingWord("") shouldBe ""
+        }
+        test("very long runs are not tracked") {
+            trailingWord("a".repeat(60)) shouldBe ""
+        }
+        test("seeding uses key centres, so the word can be decoded") {
+            val word = CurrentWord()
+            word.seedFrom("so teh", KEYS, PARAMS)
+            word.text shouldBe "teh"
+            word.tapsOrNull()!!.size shouldBe 3
+        }
+    }
+
     context("SuggestionStrip") {
         test("typed word in quotes, then the correction, then the next best word") {
             val strip = SuggestionStrip.build(

@@ -80,6 +80,7 @@ import io.github.sillypuppyy.dogboard.engine.Suggestion
 import io.github.sillypuppyy.dogboard.engine.SuggestionStrip
 import io.github.sillypuppyy.dogboard.engine.Tap
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
+import io.github.sillypuppyy.dogboard.engine.isWordChar
 import io.github.sillypuppyy.dogboard.feel.DoubleSpace
 import io.github.sillypuppyy.dogboard.ime.DogBoardCandidate
 import io.github.sillypuppyy.dogboard.touch.GaussianTouch
@@ -355,10 +356,14 @@ class ImeController(
         override fun emitText(value: K3String) {
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             val text = value.toText()
-            val wordChar = text.singleOrNull()?.takeIf { it.isLetter() || it == '\'' || it == '’' }
+            val wordChar = text.singleOrNull()?.takeIf { isWordChar(it) }
             when {
                 wordChar != null -> {
                     val tap = pendingTap
+                    if (currentWord.isEmpty && !state.content.selection.isNotCollapsed()) {
+                        // typing on at the end of an existing word continues that word
+                        currentWord.seedFrom(state.content.surroundingText.textBefore, tap?.keys ?: emptyMap(), tap?.params)
+                    }
                     currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params)
                     lastCorrection = null
                 }
@@ -606,8 +611,12 @@ class ImeController(
             super.emitBackspace()
             expectedContentQueue.push(state.content)
             // DogBoard: keep the current word in step with the text
+            val textBefore = state.content.surroundingText.textBefore
             currentWord.removeLast()
-            if (!state.content.surroundingText.textBefore.endsWith(currentWord.text)) currentWord.clear()
+            if (currentWord.isEmpty || !textBefore.endsWith(currentWord.text)) {
+                // deleted back into (or within) a word: track that word
+                currentWord.seedFrom(textBefore, currentWord.keys, currentWord.params)
+            }
             publishSuggestions()
         }
 
