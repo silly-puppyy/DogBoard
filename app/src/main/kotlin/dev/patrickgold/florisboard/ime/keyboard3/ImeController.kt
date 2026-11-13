@@ -392,6 +392,7 @@ class ImeController(
             )
             resetContent(initialSelection, initialSurrounding)
             expectedContentQueue.clear()
+            resetFieldState()
             resetWordTracking() // after the new field's text is known, so predictions fit it
             io.github.sillypuppyy.dogboard.ime.LiveUi.closePanel() // a new field starts on the keys
         }
@@ -738,6 +739,25 @@ class ImeController(
         private fun learnWord(word: String) {
             if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
             scope.launch { TypingEngine.learn(word) }
+        }
+
+        /**
+         * DogBoard: forgets everything tied to the previous field, so nothing carries over: the
+         * user's shift choice (an empty new field must auto-capitalise), the automatic space, the
+         * double-space timer, and the word or correction waiting to be accepted (it is dropped,
+         * not accepted: the previous field may have been incognito, or the text discarded).
+         */
+        private fun resetFieldState() {
+            shiftChosenAt = null
+            autoSpace = false
+            lastSpaceUptime = null
+            unconfirmedWord = null
+            unconfirmedCorrection = null
+            deletingWord = null
+            wordAroundCursor = null
+            latestDecode = null
+            previousKeystrokeCorrection = null
+            latestCorrection = null
         }
 
         private fun resetWordTracking() {
