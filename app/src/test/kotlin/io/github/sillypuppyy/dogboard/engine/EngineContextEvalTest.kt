@@ -81,4 +81,56 @@ class EngineContextEvalTest : FunSpec({
             if (sx == 1.5) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
         }
     }
+
+    test("key prior: raw letters with no prior, the word prior, and the word + previous-word prior").config(enabled = tatoeba.exists()) {
+        val lexicon = File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
+        val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
+        val keys = QwertyGeometry.letterKeys(375f, 216f)
+        val letters = keys.keys.toList()
+        val targets = letters.map { keys.getValue(it) }
+        val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
+        val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
+        val sentences = tatoeba.bufferedReader().lineSequence()
+            .map { it.split('\t') }
+            .filter { it.size >= 3 && it[0].endsWith("0") }
+            .map { it[2].replace('’', '\'') }
+            .filter { s -> token.findAll(s).none { it.value.lowercase() in setOf("tom", "mary") } }
+            .take(800).toList()
+        val rng = Random(4)
+        var words = 0
+        val right = IntArray(3)
+        for (sentence in sentences) {
+            var previous = Bigrams.START
+            for (m in token.findAll(sentence)) {
+                val t = m.value
+                if (t in setOf(".", "!", "?")) { previous = Bigrams.START; continue }
+                val w = t.lowercase().filter { it in keys }
+                if (w.isEmpty()) continue
+                val taps = w.map { c ->
+                    val k = keys.getValue(c)
+                    Tap((k.centerX + rng.nextGaussian() * 1.5 * 6.3).toFloat(), (k.centerY + rng.nextGaussian() * 2.0 * 6.3).toFloat())
+                }
+                for (mode in 0..2) {
+                    val sb = StringBuilder()
+                    for (tap in taps) {
+                        val prior = when (mode) {
+                            0 -> null
+                            1 -> TypingEngine.keyPrior(lexicon, null, sb, -1)
+                            else -> TypingEngine.keyPrior(lexicon, bigrams, sb, bigrams.contextId(previous))
+                        }
+                        val i = GaussianTouch.pick(targets, tap.x, tap.y, params) { idx -> prior?.invoke(letters[idx]) ?: 0.0 } ?: 0
+                        sb.append(letters[i])
+                    }
+                    if (sb.toString() == w) right[mode]++
+                }
+                words++
+                previous = t.lowercase()
+            }
+        }
+        println(
+            "KEYPRIOR 1.5x2.0 mm, %d words: raw letters right: no prior %.1f%%, word prior %.1f%%, + previous word %.1f%%".format(
+                words, right[0] * 100.0 / words, right[1] * 100.0 / words, right[2] * 100.0 / words,
+            )
+        )
+    }
 })

@@ -55,6 +55,28 @@ class Bigrams private constructor(
         return best
     }
 
+    /**
+     * P(next letter | [prefix], [previous]) from the words seen after [previous] that start with
+     * [prefix] (lowercase); null if there are none.
+     */
+    fun nextLetterProbs(previous: Int, prefix: String): Map<Char, Double>? {
+        if (previous < 0 || previous >= totals.size) return null
+        var i = keys.binarySearch(key(previous, 0)).let { if (it < 0) -it - 1 else it }
+        val letterCounts = HashMap<Char, Long>()
+        var total = 0L
+        while (i < keys.size && (keys[i] ushr 32).toInt() == previous) {
+            val word = lexicon.node((keys[i] and 0xffffffffL).toInt()).word!!
+            if (word.length > prefix.length && word.startsWith(prefix, ignoreCase = true)) {
+                val c = word[prefix.length].lowercaseChar()
+                letterCounts[c] = (letterCounts[c] ?: 0L) + counts[i]
+                total += counts[i]
+            }
+            i++
+        }
+        if (total == 0L) return null
+        return letterCounts.mapValues { it.value.toDouble() / total }
+    }
+
     companion object {
         const val FORMAT_HEADER = "#dogboard-bigrams 1"
         const val START = "<s>"

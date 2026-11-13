@@ -5,6 +5,8 @@ import java.io.File
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlin.math.exp
+import kotlin.math.ln
 
 /**
  * The app-wide typing engine: one lexicon, bigram model, decoder and autocorrect, shared by every
@@ -122,11 +124,25 @@ object TypingEngine {
      * likely next letters get slightly larger keys. Null when not loaded or no known word starts
      * with [prefix]. Weight and floor from TouchPriorSweepTest.
      */
-    fun keyPrior(prefix: CharSequence): ((Char) -> Double)? {
+    fun keyPrior(prefix: CharSequence, previous: String? = null): ((Char) -> Double)? {
         val engine = loaded ?: return null
-        val logProbs = lock.read { engine.lexicon.nextLetterLogProbs(prefix) } ?: return null
+        return lock.read { keyPrior(engine.lexicon, engine.bigrams, prefix, engine.contextId(previous)) }
+    }
+
+    /**
+     * Key prior from the lexicon, mixed with the letters of words seen after the previous word
+     * ([BIGRAM_PRIOR_SHARE]) when there are any. Shared with the evals.
+     */
+    internal fun keyPrior(lexicon: Lexicon, bigrams: Bigrams?, prefix: CharSequence, previous: Int): ((Char) -> Double)? {
+        val unigram = lexicon.nextLetterLogProbs(prefix) ?: return null
+        val context = bigrams?.nextLetterProbs(previous, prefix.toString())
+        val logProbs = if (context == null) unigram else unigram.mapValues { (c, lp) ->
+            ln(BIGRAM_PRIOR_SHARE * (context[c] ?: 0.0) + (1 - BIGRAM_PRIOR_SHARE) * exp(lp))
+        }
         return { c -> KEY_PRIOR_WEIGHT * maxOf(KEY_PRIOR_FLOOR, logProbs[c.lowercaseChar()] ?: KEY_PRIOR_FLOOR) }
     }
+
+    private const val BIGRAM_PRIOR_SHARE = 0.6
 
     private const val KEY_PRIOR_WEIGHT = 0.10
     private const val KEY_PRIOR_FLOOR = -6.0

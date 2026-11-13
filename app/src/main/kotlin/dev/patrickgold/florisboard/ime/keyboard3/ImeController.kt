@@ -136,7 +136,9 @@ class ImeController(
         if (attrs.type != InputAttributes.Type.TEXT || attrs.variation in NO_DOUBLE_SPACE_VARIATIONS ||
             attrs.flagTextNoSuggestions || state.content.selection.isNotCollapsed()
         ) return null
-        return TypingEngine.keyPrior(trailingWord(state.content.surroundingText.textBefore))
+        val textBefore = state.content.surroundingText.textBefore
+        val prefix = trailingWord(textBefore)
+        return TypingEngine.keyPrior(prefix, previousContext(textBefore.substring(0, textBefore.length - prefix.length)))
     }
 
     /** DogBoard: where the next letter key was tapped (set on touch down, used when it emits). */
