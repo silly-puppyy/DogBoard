@@ -319,7 +319,15 @@ fun EmojiPaletteView(
                     val data = prefs.emoji.historyData.get()
                     EmojiMappingForView(
                         pinned = data.pinned.map { EmojiSet(listOf(it)) },
-                        recent = data.recent.map { EmojiSet(listOf(it)) },
+                        // DogBoard: automatic recents are ranked as iOS does (uses, weighted by how
+                        // recent they are: EmojiUsage), most recent first among equals
+                        recent = data.recent
+                            .let { r ->
+                                if (prefs.emoji.historyRecentUpdateStrategy.get().isAutomatic) {
+                                    r.sortedByDescending { io.github.sillypuppyy.dogboard.engine.TypingEngine.emojiScore(it.value) }
+                                } else r
+                            }
+                            .map { EmojiSet(listOf(it)) },
                         simple = emptyList(),
                     )
                 }

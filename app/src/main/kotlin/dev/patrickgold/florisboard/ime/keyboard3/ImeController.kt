@@ -596,7 +596,7 @@ class ImeController(
             val back = lookBack ?: return null
             lookBack = null
             val word = currentWord
-            if (word.isEmpty || !correctionAllowed() || cursorInsideWord() || state.flags.isIncognitoMode) return null
+            if (word.isEmpty || !correctionAllowed() || cursorInsideWord()) return null
             val typed = word.text
             if (!state.content.surroundingText.textBefore.endsWith("${back.committed} $typed")) return null
             val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes())

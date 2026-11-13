@@ -189,6 +189,9 @@ object TypingEngine {
         }
     }
 
+    /** How much the user uses [emoji], by the iOS recents score (EmojiUsage), for ordering recents. */
+    fun emojiScore(emoji: String): Double = emojiUsage.score(emoji)
+
     /** Loads again with what [load] was given (after a dictionary reset). */
     private var reload: (() -> Unit)? = null
 
