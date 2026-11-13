@@ -1,6 +1,8 @@
 package io.github.sillypuppyy.dogboard.engine
 
+import java.text.Normalizer
 import kotlin.math.exp
+import kotlin.math.ln
 
 /**
  * Decides whether the word typed so far is replaced when the user ends it (space, punctuation),
@@ -17,6 +19,15 @@ class Autocorrect(private val lexicon: Lexicon) {
         private const val MIN_STEM_ONE_LETTER = 8
         private const val MIN_STEM_TWO_LETTERS = 6
         private const val MIN_STEM_MORE_LETTERS = 4
+
+        /**
+         * Rule 3: words run together are only split when the words are at least this likely in
+         * context compared with on their own (iOS "insufficient linguistic support").
+         */
+        private val MIN_CONTEXT_SUPPORT = ln(0.1)
+
+        /** iOS BoostMinimumVariation: a plainer spelling this close to the top goes first. */
+        private val MIN_VARIATION_RATIO = ln(1.1)
 
         /** Characters that make a completion a "special edit" (contractions and the like). */
         private val SPECIAL_EDIT_CHARS = setOf('\'', '’', '&')
@@ -45,7 +56,10 @@ class Autocorrect(private val lexicon: Lexicon) {
     ): String? {
         // iOS apply_case_changes: each candidate takes the typed capitals; ones the case rules
         // don't accept for this input are filtered out
-        val cased = candidates.mapNotNull { c -> case(c.word)?.let { c to it } }
+        val cased = candidates
+            .filter { it.words == 1 || it.contextSupport >= MIN_CONTEXT_SUPPORT } // Rule 3
+            .mapNotNull { c -> case(c.word)?.let { c to it } }
+            .let(::boostPlainer)
         val (top, t) = cased.firstOrNull() ?: return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
@@ -69,4 +83,38 @@ class Autocorrect(private val lexicon: Lexicon) {
         if (s.equals(t, ignoreCase = true) || s.startsWith(t, ignoreCase = true)) return t
         return if (MIN_DOMINANCE_RATIO * exp(second.score) < exp(top.score)) t else null
     }
+
+    /**
+     * iOS BoostMinimumVariation (ratio 1.1): when a spelling of the same letters with fewer
+     * apostrophes, hyphens or accents scores within 10% of the top ("were" vs "we're"), it goes
+     * first. Only spellings without capitals after the first letter qualify.
+     */
+    private fun boostPlainer(cased: List<Pair<Candidate, String>>): List<Pair<Candidate, String>> {
+        if (cased.size < 2) return cased
+        val (top, t) = cased[0]
+        val key = sortKey(t)
+        var best = variation(t)
+        var pick = -1
+        for (j in 1 until cased.size) {
+            val (c, w) = cased[j]
+            if (c.score + MIN_VARIATION_RATIO < top.score) break
+            val v = variation(w)
+            if (v < best && w.drop(1).none { it.isUpperCase() } && sortKey(w) == key) {
+                best = v
+                pick = j
+            }
+        }
+        if (pick < 0) return cased
+        return listOf(cased[pick]) + cased.filterIndexed { i, _ -> i != pick }
+    }
+
+    /** Marks inside words (apostrophes, hyphens, dots) plus accented letters. */
+    private fun variation(word: String): Int {
+        val medial = (1 until word.length - 1).count { i -> !word[i].isLetterOrDigit() && word[i] != ' ' }
+        return medial + word.count { Normalizer.normalize(it.toString(), Normalizer.Form.NFD).length > 1 }
+    }
+
+    /** The letters only, without case or accents ("We're" and "were" share one). */
+    private fun sortKey(word: String): String =
+        Normalizer.normalize(word, Normalizer.Form.NFD).filter { it.isLetterOrDigit() }.lowercase()
 }

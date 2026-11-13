@@ -46,6 +46,10 @@ class Lexicon private constructor(capacity: Int) {
     val size: Int get() = wordCount
     val nodes: Int get() = nodeCount
 
+    /** Changes whenever a word is added or raised (searches over the trie start again). */
+    var version = 0
+        private set
+
     fun firstChild(node: Int): Int = firstChild[node]
     fun nextSibling(node: Int): Int = nextSibling[node]
     fun key(node: Int): Char = key[node]
@@ -152,6 +156,7 @@ class Lexicon private constructor(capacity: Int) {
      * Used for words the user taught the keyboard. Not thread-safe: callers must lock.
      */
     fun addWord(word: String, logProb: Double): Int {
+        version++
         var node = ROOT
         for (c in word) {
             val lc = c.lowercaseChar()

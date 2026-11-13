@@ -42,8 +42,10 @@ class CurrentWord {
         shiftFlag: Int = if (letter.isUpperCase()) CaseAdapt.SHIFTED else 0,
         context: CaseAdapt.Context? = null,
     ) {
-        if (keys.isNotEmpty()) this.keys = keys
-        if (params != null) this.params = params
+        // one set of targets and touch parameters per word (the first tap's), kept as the same
+        // objects, so the decoder can continue its search from the previous keystroke
+        if (keys.isNotEmpty() && keys != this.keys) this.keys = keys
+        if (params != null && this.params == null) this.params = params
         if (letters.isEmpty()) caseContext = context ?: if (shiftFlag != 0) CaseAdapt.Context.SHIFT else CaseAdapt.Context.NONE
         letters.append(letter)
         shiftFlags.add(shiftFlag)
@@ -65,6 +67,7 @@ class CurrentWord {
         shiftFlags.clear()
         caseContext = CaseAdapt.Context.NONE
         decodable = true
+        params = null // the next word takes its own first tap's
     }
 
     /** Taps for the decoder, or null if this word cannot be decoded. */

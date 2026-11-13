@@ -40,6 +40,15 @@ object TypingEngine {
     /** Words the user removed from suggestions (lowercase); never suggested or corrected to. */
     private val blocked = HashSet<String>()
 
+    /**
+     * Words never offered (vulgar or sensitive, en.nosuggest.txt), as iOS never introduces a
+     * not-suggestible word through correction, completion or prediction; typing one still works.
+     */
+    private var noSuggest: Set<String> = emptySet()
+
+    /** Words the user taught the keyboard (not in the shipped lexicon), lowercase. */
+    private val learnedWords = HashSet<String>()
+
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?) {
         val decoder = Decoder(
             lexicon,
@@ -76,8 +85,12 @@ object TypingEngine {
         openEmojiIndex: (() -> BufferedReader)? = null,
         openEmojiTones: (() -> BufferedReader)? = null,
         emojiUsageFile: File? = null,
+        openNoSuggest: (() -> BufferedReader)? = null,
     ) {
         if (loaded != null) return
+        noSuggest = openNoSuggest?.let { open ->
+            open().useLines { lines -> lines.map { it.trim().lowercase() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toHashSet() }
+        }.orEmpty()
         abbreviations = openAbbreviations?.let { open ->
             open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toList() }
         }.orEmpty().groupBy { it.removeSuffix(".").lowercase() }
@@ -85,7 +98,10 @@ object TypingEngine {
         val bigrams = openBigrams?.let { open -> open().use { Bigrams.parse(it, lexicon) } }
         val engine = Loaded(lexicon, bigrams)
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
-            if (line.isNotBlank()) lexicon.addWord(line.trim(), engine.userWordLogProb)
+            if (line.isNotBlank()) {
+                if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
+                lexicon.addWord(line.trim(), engine.userWordLogProb)
+            }
         }
         userWordsFile = userWords
         blockedWordsFile = blockedWords
@@ -96,7 +112,10 @@ object TypingEngine {
         val tones = openEmojiTones?.let { open -> open().use { EmojiSuggest.parseTones(it) } }.orEmpty()
         emoji = openEmojiIndex?.let { open -> EmojiSuggest(open().use { EmojiSuggest.parse(it) }, emojiUsage, tones) }
         // words the user accepted that the lexicon lacks are decodable again
-        for (w in personal.knownWords()) if (!lexicon.contains(w)) lexicon.addWord(w, engine.acceptedWordLogProb)
+        for (w in personal.knownWords()) if (!lexicon.contains(w)) {
+            learnedWords.add(w.lowercase())
+            lexicon.addWord(w, engine.acceptedWordLogProb)
+        }
         lock.write {
             blocked.clear()
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
@@ -113,6 +132,7 @@ object TypingEngine {
         if (word.isBlank() || word.length > 48 || !word.all { isWordChar(it) }) return
         val isNew = lock.write {
             val wasKnown = engine.lexicon.contains(word)
+            if (!wasKnown) learnedWords.add(word.lowercase())
             engine.lexicon.addWord(word, engine.userWordLogProb)
             !wasKnown
         }
@@ -138,11 +158,11 @@ object TypingEngine {
         val taps = word.tapsOrNull() ?: return emptyList()
         return lock.read {
             engine.decoder.decode(
-                taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4),
+                taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
                 previous = engine.contextId(previous), typed = word.text,
                 personal = personalMix(engine, previous),
             )
-                .filter { !isBlocked(it.word) }
+                .filter { !isBlocked(it.word) && (it.isTypedString || it.word.equals(word.text, ignoreCase = true) || !isNotSuggestible(it.word)) }
                 .take(maxResults)
         }
     }
@@ -158,7 +178,8 @@ object TypingEngine {
             if (!rejections.isBlocked(word.text, phrase)) return phrase
         }
         if (candidates.isEmpty()) return null
-        val result = engine.autocorrect.correction(word.text, candidates, previousCorrection, caseFor(word, curly)) ?: return null
+        val result = engine.autocorrect.correction(word.text, withoutLearnedTypo(word.text, candidates), previousCorrection, caseFor(word, curly))
+            ?: return null
         return if (rejections.isBlocked(word.text, result)) null else result
     }
 
@@ -195,9 +216,9 @@ object TypingEngine {
         val engine = loaded ?: return emptyList()
         val bigrams = engine.bigrams ?: return emptyList()
         return lock.read {
-            bigrams.followers(engine.contextId(previous), n + blocked.size.coerceAtMost(4))
+            bigrams.followers(engine.contextId(previous), n + blocked.size.coerceAtMost(4) + 4)
                 .map { (id, _) -> engine.lexicon.word(engine.lexicon.nodeOfWord(id))!! }
-                .filter { !isBlocked(it) }
+                .filter { !isBlocked(it) && !isNotSuggestible(it) }
                 .take(n)
         }
     }
@@ -274,9 +295,18 @@ object TypingEngine {
     }
 
     /** The decoder's hook for the personal model, or null while it has nothing to add. */
+    /** The last mix handed out, reused while nothing it depends on changes (the decoder then continues its search). */
+    private var lastMix: Triple<Any?, Int, ((Int, Double) -> Double)?>? = null
+
     private fun personalMix(engine: Loaded, previous: String?): ((Int, Double) -> Double)? {
         val p = personal
-        if (p.weight(previous != null) <= 0.0) return null
+        val version = p.version
+        lastMix?.let { (prev, v, mix) -> if (prev == (engine to previous) && v == version) return mix }
+        if (p.weight(previous != null) <= 0.0) return null.also { lastMix = Triple(engine to previous, version, null) }
+        return makeMix(engine, p, previous).also { lastMix = Triple(engine to previous, version, it) }
+    }
+
+    private fun makeMix(engine: Loaded, p: PersonalModel, previous: String?): (Int, Double) -> Double {
         return { node, logProb ->
             val word = engine.lexicon.word(node)
             if (word == null) logProb else ln(p.mix(exp(logProb), previous, word).coerceAtLeast(1e-300))
@@ -294,7 +324,10 @@ object TypingEngine {
         personal.accept(previous, word)
         val isNew = lock.write {
             val known = engine.lexicon.contains(word)
-            if (!known) engine.lexicon.addWord(word, engine.acceptedWordLogProb)
+            if (!known) {
+                learnedWords.add(word.lowercase())
+                engine.lexicon.addWord(word, engine.acceptedWordLogProb)
+            }
             !known
         }
         if (isNew) userWordsFile?.let { f -> runCatching { f.parentFile?.mkdirs(); f.appendText(word + "\n") } }
@@ -320,6 +353,21 @@ object TypingEngine {
 
     private fun isBlocked(word: String): Boolean = word.lowercase() in blocked
 
+    /**
+     * iOS FilterLearnedTypo: a word learned from a slip ("ofthe", accepted fewer than 2 times)
+     * gives way when the same letters split into words ("of the").
+     */
+    private fun withoutLearnedTypo(typed: String, candidates: List<Candidate>): List<Candidate> {
+        val t = typed.lowercase()
+        if (lock.read { t !in learnedWords } || personal.uses(t) >= 2) return candidates
+        val split = candidates.any { it.words > 1 && it.word.replace(" ", "").equals(typed, ignoreCase = true) }
+        return if (split) candidates.filter { !it.word.equals(typed, ignoreCase = true) } else candidates
+    }
+
+    /** True if any word of [candidate] (one word, or several when words were split) is never offered. */
+    private fun isNotSuggestible(candidate: String): Boolean =
+        noSuggest.isNotEmpty() && candidate.split(' ').any { it.lowercase() in noSuggest }
+
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
 
     /** Forgets everything loaded (tests only). */
@@ -334,5 +382,8 @@ object TypingEngine {
         emoji = null
         emojiUsage = EmojiUsage()
         abbreviations = emptyMap()
+        noSuggest = emptySet()
+        learnedWords.clear()
+        lastMix = null
     }
 }

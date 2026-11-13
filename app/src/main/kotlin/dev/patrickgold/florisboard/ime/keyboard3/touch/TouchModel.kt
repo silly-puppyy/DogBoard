@@ -110,10 +110,11 @@ class TouchKeyboard(
         if (rectKey != null && !rectKey.attrs.gap && !rectKey.isTextKey()) {
             return rectKey
         }
-        val textKeys = textKeysOf(layerId)
+        val t = targetsFor(layerId, keyboardWidthDp, keyboardHeightDp)
+        val textKeys = t.textKeys
         if (textKeys.isEmpty()) return rectKey
-        val targets = textKeys.map { it.target(keyboardWidthDp, keyboardHeightDp) }
-        val params = GaussianTouch.params(medianHalfWidth(targets), typingInterval)
+        val targets = t.targets
+        val params = GaussianTouch.params(t.medianHalfWidth, typingInterval)
         val prior: (Int) -> Double = if (letterPrior == null) {
             { 0.0 }
         } else {
@@ -127,6 +128,39 @@ class TouchKeyboard(
             prior,
         )
         return index?.let { textKeys[it] } ?: rectKey?.takeIf { !it.attrs.gap }
+    }
+
+    /** A layer's text keys at one keyboard size, with their touch targets (DogBoard). */
+    private class Targets(
+        val textKeys: List<TouchKey>,
+        val targets: List<KeyTarget>,
+        val medianHalfWidth: Double,
+        /** Lowercase letter -> target, for the word decoder (the same map object for every tap). */
+        val letters: Map<Char, KeyTarget>,
+        val letterMedianHalfWidth: Double,
+    )
+
+    // DogBoard: built once per layer and size, not on every tap (the layout doesn't change between taps)
+    private val targetsCache = HashMap<Triple<K3LayerId, Float, Float>, Targets>()
+
+    private fun targetsFor(layerId: K3LayerId, widthDp: Float, heightDp: Float): Targets = synchronized(targetsCache) {
+        targetsCache.getOrPut(Triple(layerId, widthDp, heightDp)) {
+            val textKeys = textKeysOf(layerId)
+            val targets = textKeys.map { it.target(widthDp, heightDp) }
+            val letters = buildMap {
+                for ((key, target) in textKeys.zip(targets)) {
+                    val text = (key.attrs.output as K3String).toText()
+                    if (text.length == 1 && text[0].isLetter()) put(text[0].lowercaseChar(), target)
+                }
+            }
+            if (targetsCache.size > 16) targetsCache.clear() // sizes change rarely (rotation, resizing)
+            Targets(
+                textKeys, targets,
+                if (targets.isEmpty()) 0.0 else medianHalfWidth(targets),
+                letters,
+                if (letters.isEmpty()) 0.0 else medianHalfWidth(letters.values.toList()),
+            )
+        }
     }
 
     private fun textKeysOf(layerId: K3LayerId): List<TouchKey> {
@@ -148,16 +182,9 @@ class TouchKeyboard(
         keyboardHeightDp: Float,
         typingInterval: Double,
     ): Pair<Map<Char, KeyTarget>, GaussianTouch.Params?> {
-        val keys = buildMap {
-            for (key in textKeysOf(layerId)) {
-                val text = (key.attrs.output as K3String).toText()
-                if (text.length == 1 && text[0].isLetter()) {
-                    put(text[0].lowercaseChar(), key.target(keyboardWidthDp, keyboardHeightDp))
-                }
-            }
-        }
-        if (keys.isEmpty()) return keys to null
-        return keys to GaussianTouch.params(medianHalfWidth(keys.values.toList()), typingInterval)
+        val t = targetsFor(layerId, keyboardWidthDp, keyboardHeightDp)
+        if (t.letters.isEmpty()) return t.letters to null
+        return t.letters to GaussianTouch.params(t.letterMedianHalfWidth, typingInterval)
     }
 
     companion object {

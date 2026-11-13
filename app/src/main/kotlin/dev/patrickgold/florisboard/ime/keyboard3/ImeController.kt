@@ -5,7 +5,6 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
-import dev.patrickgold.florisboard.ime.text.key.KeyCode
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -18,6 +17,7 @@ import dev.patrickgold.florisboard.ime.text.key.KeyCode
 package dev.patrickgold.florisboard.ime.keyboard3
 
 import android.icu.text.BreakIterator
+import dev.patrickgold.florisboard.BuildConfig
 import android.os.SystemClock
 import android.text.TextUtils
 import android.view.KeyEvent
@@ -502,6 +502,10 @@ class ImeController(
                     ?: TypingEngine.candidates(word, context)
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
                 val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes())
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context)} " +
+                        candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
+                }
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
                     if (!state.flags.isIncognitoMode) {

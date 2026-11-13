@@ -23,8 +23,12 @@ private fun centreTaps(letters: String) =
 private fun topWord(typed: String) =
     DECODER.decode(centreTaps(typed), KEYS, PARAMS, typed = typed).first { !it.isCompletion }.word
 
-private fun corrected(typed: String): String {
-    val candidates = DECODER.decode(centreTaps(typed), KEYS, PARAMS, typed = typed)
+private val SPLITTING by lazy {
+    Decoder(LEXICON, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM, splitWords = true))
+}
+
+private fun corrected(typed: String, decoder: Decoder = DECODER): String {
+    val candidates = decoder.decode(centreTaps(typed), KEYS, PARAMS, typed = typed)
     return AUTOCORRECT.correction(typed, candidates) ?: typed
 }
 
@@ -78,6 +82,20 @@ class EngineTest : FunSpec({
             topWord("tomorow") shouldBe "tomorrow"
         }
         test("extra tap: thhe -> the") { topWord("thhe") shouldBe "the" }
+        test("words run together are split, up to three (iOS word restart)") {
+            corrected("helloeveryone", SPLITTING) shouldBe "hello everyone"
+            corrected("hellowvryone", SPLITTING) shouldBe "hello everyone"
+            corrected("goodmorning", SPLITTING) shouldBe "good morning"
+            corrected("thankyou", SPLITTING) shouldBe "thank you"
+            corrected("seeyousoon", SPLITTING) shouldBe "see you soon"
+        }
+        test("real words are not split") {
+            corrected("together", SPLITTING) shouldBe "together"
+            corrected("into", SPLITTING) shouldBe "into"
+            corrected("nowhere", SPLITTING) shouldBe "nowhere"
+            corrected("therefore", SPLITTING) shouldBe "therefore"
+            corrected("abound", SPLITTING) shouldBe "abound"
+        }
         test("missing apostrophe: dont -> don't") { topWord("dont") shouldBe "don't" }
         test("short inputs get no completions that need a typing error") {
             DECODER.decode(centreTaps("eh"), KEYS, PARAMS).filter { it.isCompletion }.all { it.edits == 0 } shouldBe true

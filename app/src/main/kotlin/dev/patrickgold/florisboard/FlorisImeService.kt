@@ -294,6 +294,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                     blockedWords = java.io.File(filesDir, "dogboard/blocked_words.txt"),
                     rejectedCorrections = java.io.File(filesDir, "dogboard/rejected_corrections.txt"),
                     openAbbreviations = { assets.open("dogboard/en.abbreviations.txt").bufferedReader() },
+                    openNoSuggest = { assets.open("dogboard/en.nosuggest.txt").bufferedReader() },
                     personalModel = java.io.File(filesDir, "dogboard/personal.tsv"),
                     textReplacements = java.io.File(filesDir, "dogboard/text_replacements.tsv"),
                     openEmojiIndex = { assets.open("dogboard/en.emoji.tsv").bufferedReader() },

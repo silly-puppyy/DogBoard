@@ -25,6 +25,11 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     private var typed = 0L
     private var dirty = 0
 
+    /** Changes with every accept, forget or clear (callers cache what they derive from the model). */
+    @Volatile
+    var version = 0
+        private set
+
     // decayed totals, per day, rebuilt after any change (the decoder asks ~100 times per keystroke)
     private var cacheDay = -1L
     private var totalCache = 0.0
@@ -53,6 +58,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     /** [word] (as written) was accepted after [previous] (null at the start of a text). */
     @Synchronized
     fun accept(previous: String?, word: String) {
+        version++
         val day = today()
         val w = word.lowercase()
         words[w] = bump(words[w], day)
@@ -66,6 +72,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     /** Negative evidence for [word]: removed if used fewer than [FORGET_BELOW] times, else halved. */
     @Synchronized
     fun forget(word: String) {
+        version++
         val w = word.lowercase()
         if ((uses[w] ?: 0) < FORGET_BELOW) {
             words.remove(w); uses.remove(w)
@@ -80,6 +87,10 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     /** Whether the user has accepted [word] (any casing). */
     @Synchronized
     fun knows(word: String): Boolean = word.lowercase() in words
+
+    /** How many times [word] was accepted (not decayed). */
+    @Synchronized
+    fun uses(word: String): Int = uses[word.lowercase()] ?: 0
 
     /** Words the user has accepted, most used first (for learning into the lexicon). */
     @Synchronized
@@ -115,6 +126,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
 
     @Synchronized
     fun clear() {
+        version++
         words.clear(); pairs.clear(); uses.clear(); typed = 0; cacheDay = -1
         save()
     }
