@@ -40,7 +40,9 @@ CASES = [
     # swapped pair grow with the time between taps, so timing-dependent typos are unit-tested instead
     ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
     ("i dont know", "I don't know"),
-    ("thw <dog", "Thwdog"),  # "<" is backspace: right after an autocorrection it restores the typed word
+    # "<" is backspace: right after an autocorrection it restores the typed word. Undoing also
+    # rejects that correction for good (as on iOS), so this typo must not appear in other cases.
+    ("hrllo <x", "Hrllox"),
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),
