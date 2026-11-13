@@ -93,6 +93,7 @@ class Decoder(
         includeCompletions: Boolean = true,
         previous: Int = -1,
         typed: String? = null,
+        personal: ((node: Int, logProb: Double) -> Double)? = null,
     ): List<Candidate> {
         val n = taps.size
         if (n == 0) return emptyList()
@@ -171,7 +172,11 @@ class Decoder(
             }
         }
 
-        fun lm(node: Int): Double = bigrams?.logProb(previous, lexicon.wordId(node), lexicon.logProb(node)) ?: lexicon.logProb(node)
+        fun lm(node: Int): Double {
+            val base = bigrams?.logProb(previous, lexicon.wordId(node), lexicon.logProb(node)) ?: lexicon.logProb(node)
+            // the personal model mixed in (PersonalModel: iOS dynamic model weights)
+            return personal?.invoke(node, base) ?: base
+        }
         val results = HashMap<String, Candidate>()
         fun add(candidate: Candidate) {
             val old = results[candidate.word]

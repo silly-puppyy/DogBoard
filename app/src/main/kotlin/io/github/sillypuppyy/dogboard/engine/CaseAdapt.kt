@@ -38,6 +38,9 @@ object CaseAdapt {
         fun keepsLowercaseStart(word: String): Boolean = word.length > 1 && word[0].isLowerCase() && word.drop(1).any { it.isUpperCase() }
     }
 
+    /** Shift flags guessed from the letters when the real ones are unknown: a capital was shifted by the user. */
+    fun inferredFlags(typed: String): List<Int> = typed.map { if (it.isUpperCase()) SHIFTED else 0 }
+
     /** For callers without a dictionary: only the candidate's own capitals are known. */
     object NoDictionary : Casing {
         override fun hasCapitalisedForm(word: String) = false

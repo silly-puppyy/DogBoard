@@ -41,8 +41,10 @@ CASES = [
     ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
     ("i dont know", "I don't know"),
     # "<" is backspace: right after an autocorrection it restores the typed word. Undoing also
-    # rejects that correction for good (as on iOS), so this typo must not appear in other cases.
+    # rejects a correction (iOS rule: blocked for under a day after one undo, see Rejections.kt),
+    # so smoke.sh clears the learned files before each run.
     ("hrllo <x", "Hrllox"),
+    ("omw x", "On my way! X"),  # text replacement (iOS sample shortcut) beats autocorrect; "!" + space starts a sentence
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),

@@ -110,10 +110,15 @@ class LearningTest : FunSpec({
                 userWords = File(dir, "user_words.txt"),
             )
             TypingEngine.isKnownWord("zorbit") shouldBe false
-            TypingEngine.noteKept("zorbit")
-            TypingEngine.noteKept("zorbit")
-            TypingEngine.isKnownWord("zorbit") shouldBe false
-            TypingEngine.noteKept("zorbit")
+            // iOS: one accept learns an unknown word (its strength then comes from use)
+            TypingEngine.accepted("a", "zorbit")
+            TypingEngine.isKnownWord("zorbit") shouldBe true
+            // and it is still known after a restart
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+                userWords = File(dir, "user_words.txt"),
+            )
             TypingEngine.isKnownWord("zorbit") shouldBe true
         } finally {
             TypingEngine.unloadForTest()

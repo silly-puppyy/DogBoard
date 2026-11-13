@@ -122,6 +122,10 @@ class ImeController(
     // DogBoard: an autocorrection that was made, until the next word shows it was kept (iOS
     // acceptance: forgives earlier undos), and the word being deleted into (iOS soft rejections)
     private var unconfirmedCorrection: Pair<String, String>? = null
+
+    // DogBoard: the last finished word and the word before it, accepted into the personal model
+    // once the next word is finished or a suggestion picked without an undo (iOS token acceptance)
+    private var unconfirmedWord: Pair<String?, String>? = null
     private var deletingWord: String? = null
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
@@ -468,6 +472,7 @@ class ImeController(
         private fun finishWord(separator: String) {
             lastCorrection = null
             confirmKeptCorrection()
+            confirmAcceptedWord()
             val word = currentWord
             // a reverted autocorrection that is finished unchanged is a word the user wants
             if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
@@ -484,8 +489,9 @@ class ImeController(
                         unconfirmedCorrection = typed to corrected
                         scope.launch { TypingEngine.noteCorrected(typed, corrected) }
                     }
+                    noteFinishedWord(context, corrected)
                 } else {
-                    noteKeptWord(typed)
+                    noteFinishedWord(context, typed)
                 }
             }
             currentWord.clear()
@@ -497,6 +503,7 @@ class ImeController(
             val correction = lastCorrection ?: return false
             lastCorrection = null
             unconfirmedCorrection = null
+            unconfirmedWord = null // the typed word is accepted when it is finished again
             if (!replaceBeforeCursor(correction.corrected + correction.separator, correction.word.text)) return false
             currentWord = correction.word
             rejectedWord = correction.word.text
@@ -510,8 +517,12 @@ class ImeController(
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
             val typed = currentWord.text
             if (typed.isEmpty() && suggestion.kind != Suggestion.Kind.PREDICTION) return false
+            val previous = wordContext()
             if (!replaceBeforeCursor(typed, suggestion.word + " ")) return false
             if (suggestion.kind == Suggestion.Kind.LITERAL) learnWord(suggestion.word)
+            confirmKeptCorrection()
+            confirmAcceptedWord()
+            noteFinishedWord(previous, suggestion.word)
             currentWord.clear()
             lastCorrection = null
             rejectedWord = null
@@ -521,6 +532,19 @@ class ImeController(
             return true
         }
 
+        /** [word] (after [previous]) was finished; it is accepted when the next word confirms it. */
+        private fun noteFinishedWord(previous: String?, word: String) {
+            if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
+            unconfirmedWord = previous to word
+        }
+
+        /** The word finished before this one was not undone: accept it (personal model, learning). */
+        private fun confirmAcceptedWord() {
+            val (previous, word) = unconfirmedWord ?: return
+            unconfirmedWord = null
+            scope.launch { TypingEngine.accepted(previous, word) }
+        }
+
         /** The autocorrection before this word was not undone: record it as kept. */
         private fun confirmKeptCorrection() {
             val (typed, corrected) = unconfirmedCorrection ?: return
@@ -528,11 +552,6 @@ class ImeController(
             scope.launch { TypingEngine.correctionKept(typed, corrected) }
         }
 
-        /** [word] was finished as typed; unknown words kept a few times get learned. */
-        private fun noteKeptWord(word: String) {
-            if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
-            scope.launch { TypingEngine.noteKept(word) }
-        }
 
         /** The user kept [word] against autocorrect: remember it, except in incognito mode. */
         private fun learnWord(word: String) {

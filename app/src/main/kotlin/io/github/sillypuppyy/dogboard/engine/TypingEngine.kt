@@ -19,11 +19,17 @@ object TypingEngine {
     private val lock = ReentrantReadWriteLock()
     private var userWordsFile: File? = null
     private var blockedWordsFile: File? = null
+    /** The words and pairs the user accepted, mixed into the language model ([PersonalModel]). */
+    @Volatile
+    private var personal = PersonalModel()
+
+    /** The user's text replacements ([TextReplacements]). */
+    @Volatile
+    private var replacements = TextReplacements()
+
     /** Undone and deleted autocorrections, iOS rules ([Rejections]). */
     @Volatile
     private var rejections = Rejections()
-    /** How often each unknown word was typed and kept in this session. */
-    private val keptUnknown = HashMap<String, Int>()
 
     /** Words the user removed from suggestions (lowercase); never suggested or corrected to. */
     private val blocked = HashSet<String>()
@@ -37,9 +43,13 @@ object TypingEngine {
         val autocorrect = Autocorrect(lexicon)
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
+
+        /** A word learned by being accepted once starts rare; its use in the personal model lifts it. */
+        val acceptedWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(ACCEPTED_WORD_RANK, lexicon.size - 1)))
     }
 
     private const val USER_WORD_RANK = 3000
+    private const val ACCEPTED_WORD_RANK = 30000
 
     val isReady: Boolean get() = loaded != null
 
@@ -55,6 +65,8 @@ object TypingEngine {
         blockedWords: File? = null,
         rejectedCorrections: File? = null,
         openAbbreviations: (() -> BufferedReader)? = null,
+        personalModel: File? = null,
+        textReplacements: File? = null,
     ) {
         if (loaded != null) return
         abbreviations = openAbbreviations?.let { open ->
@@ -69,6 +81,10 @@ object TypingEngine {
         userWordsFile = userWords
         blockedWordsFile = blockedWords
         rejections = Rejections(rejectedCorrections)
+        personal = PersonalModel(personalModel)
+        replacements = TextReplacements(textReplacements)
+        // words the user accepted that the lexicon lacks are decodable again
+        for (w in personal.knownWords()) if (!lexicon.contains(w)) lexicon.addWord(w, engine.acceptedWordLogProb)
         lock.write {
             blocked.clear()
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
@@ -112,6 +128,7 @@ object TypingEngine {
             engine.decoder.decode(
                 taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4),
                 previous = engine.contextId(previous), typed = word.text,
+                personal = personalMix(engine, previous),
             )
                 .filter { !isBlocked(it.word) }
                 .take(maxResults)
@@ -124,6 +141,10 @@ object TypingEngine {
      */
     fun correction(word: CurrentWord, candidates: List<Candidate>, previousCorrection: String? = null): String? {
         val engine = loaded ?: return null
+        // iOS: text replacements are tried before the engine, so a shortcut beats autocorrection
+        replacementFor(word.text, word.flags, word.caseContext)?.let { phrase ->
+            if (!rejections.isBlocked(word.text, phrase)) return phrase
+        }
         if (candidates.isEmpty()) return null
         val result = engine.autocorrect.correction(word.text, candidates, previousCorrection, caseFor(word)) ?: return null
         return if (rejections.isBlocked(word.text, result)) null else result
@@ -203,6 +224,7 @@ object TypingEngine {
     fun block(word: String) {
         val key = word.lowercase()
         val isNew = lock.write { blocked.add(key) }
+        personal.forget(word)
         if (!isNew) return
         runCatching {
             blockedWordsFile?.let { file ->
@@ -216,18 +238,40 @@ object TypingEngine {
         }
     }
 
-    /**
-     * [word] was finished as typed (not corrected). An unknown word kept [LEARN_AFTER_KEPT] times
-     * in a session is learned.
-     */
-    fun noteKept(word: String) {
-        val engine = loaded ?: return
-        if (lock.read { engine.lexicon.contains(word) }) return
-        val n = synchronized(keptUnknown) { ((keptUnknown[word] ?: 0) + 1).also { keptUnknown[word] = it } }
-        if (n >= LEARN_AFTER_KEPT) learn(word)
+
+    /** The phrase for the shortcut [typed], with the typed capitals ([CaseAdapt]), or null. */
+    fun replacementFor(typed: String, flags: List<Int>, context: CaseAdapt.Context): String? {
+        val phrase = replacements.phraseFor(typed) ?: return null
+        val f = flags.takeIf { it.size == typed.length } ?: CaseAdapt.inferredFlags(typed)
+        return CaseAdapt.apply(phrase, typed, f, context, CaseAdapt.NoDictionary) ?: phrase
     }
 
-    private const val LEARN_AFTER_KEPT = 3
+    /** The decoder's hook for the personal model, or null while it has nothing to add. */
+    private fun personalMix(engine: Loaded, previous: String?): ((Int, Double) -> Double)? {
+        val p = personal
+        if (p.weight(previous != null) <= 0.0) return null
+        return { node, logProb ->
+            val word = engine.lexicon.word(node)
+            if (word == null) logProb else ln(p.mix(exp(logProb), previous, word).coerceAtLeast(1e-300))
+        }
+    }
+
+    /**
+     * The user accepted [word] after [previous] (finished and not undone, a correction kept, or a
+     * suggestion picked): counted in the personal model; an unknown word is learned (iOS: one
+     * accept, strength from use).
+     */
+    fun accepted(previous: String?, word: String) {
+        val engine = loaded ?: return
+        if (word.isBlank() || word.length > 48 || !word.all { isWordChar(it) } || !word.any { it.isLetter() }) return
+        personal.accept(previous, word)
+        val isNew = lock.write {
+            val known = engine.lexicon.contains(word)
+            if (!known) engine.lexicon.addWord(word, engine.acceptedWordLogProb)
+            !known
+        }
+        if (isNew) userWordsFile?.let { f -> runCatching { f.parentFile?.mkdirs(); f.appendText(word + "\n") } }
+    }
 
     /** Words that keep their period ("e.g.", "U.S."), by lowercase form without the final period. */
     @Volatile
@@ -258,7 +302,8 @@ object TypingEngine {
         blockedWordsFile = null
         blocked.clear()
         rejections = Rejections()
-        synchronized(keptUnknown) { keptUnknown.clear() }
+        personal = PersonalModel()
+        replacements = TextReplacements()
         abbreviations = emptyMap()
     }
 }
