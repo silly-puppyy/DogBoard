@@ -29,8 +29,8 @@ echo "== startup (cold, until keys drawn)"
 python3 -I tools/perf/ime_startup.py --serial "$SERIAL" --mode cold --until keys --runs 2 --timeout 15 | tail -1
 
 echo "== typing"
-python3 -I tools/test/type_test.py --serial "$SERIAL"
-python3 -I tools/test/type_test.py --serial "$SERIAL" --noise-mm 1.0 --seed 11
+python3 -I tools/test/type_test.py --serial "$SERIAL" --history
+python3 -I tools/test/type_test.py --serial "$SERIAL" --noise-mm 1.0 --seed 11 --history
 
 echo "== crash check"
 if "$ADB" -s "$SERIAL" logcat -d | grep -E "FATAL EXCEPTION|CrashDialogActivity" | grep -q dogboard; then
