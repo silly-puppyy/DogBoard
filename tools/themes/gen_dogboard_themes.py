@@ -11,7 +11,7 @@ states; Example themes). Colours are Material You roles, so the keyboard follows
     keyboard ground   surfaceContainer          (dark: surfaceContainerLow)
     letter keys       surfaceContainerLowest    (dark: surfaceContainerHighest), labels onSurface
     function keys     secondaryContainer, labels onSecondaryContainer
-    return (action)   primary, label onPrimary
+    return (action)   primary, label onPrimary; plain return (new line) uses the function tone
     autocorrect chip  primaryContainer, label onPrimaryContainer, 16 sp semibold
     popups            surfaceContainerLowest + elevation (dark: surfaceBright)
     hints             onSurfaceVariant, dividers outlineVariant
@@ -31,6 +31,7 @@ OUT = "app/src/main/assets/extensions/io.github.sillypuppyy.dogboard.themes"
 ENTER = "key[output=`@k3:action/enter`]"
 DELETE = "key[output=`@k3:action/backspace`]"
 SPACE = "key[output=` `]"
+ENTER_ACTIONS = ["done", "go", "next", "previous", "search", "send"]  # enteraction values other than "return"
 FN_KEY = "key[output=`@fl:action/switch_to_next_subtype`]"
 MODE_KEYS = ["key[targetlayer=`symbol-1`]", "key[targetlayer=`symbol-2`]", "key[targetlayer=`numeric`]"]
 SHIFT_OFF = "key[targetlayer=`shift`]"
@@ -114,8 +115,9 @@ def stylesheet(base: dict, roles: dict) -> dict:
                 "shape": "var(--shape)", "shadow-elevation": "1dp", "text-max-lines": "1"},
         "key:pressed": {"background": "var(--key-pressed)", "foreground": "var(--key-label)"},
         SPACE: {"foreground": "var(--hint)", "font-size": "14sp", "text-overflow": "ellipsis"},
-        ENTER: {"background": "var(--action)", "foreground": "var(--action-label)", "font-size": "15sp", "font-weight": "600"},
-        ENTER + ":pressed": {"background": "var(--action-pressed)", "foreground": "var(--action-label)"},
+        # plain return (new line) is a function key; field actions (send, search, ...) are primary
+        ENTER: dict(fn, **{"font-size": "15sp", "font-weight": "600"}),
+        ENTER + ":pressed": fn_pressed,
         DELETE: fn, DELETE + ":pressed": fn_pressed,
         FN_KEY: fn, FN_KEY + ":pressed": fn_pressed,
         SHIFT_OFF: fn, SHIFT_OFF + ":pressed": fn_pressed,
@@ -134,6 +136,9 @@ def stylesheet(base: dict, roles: dict) -> dict:
         "smartbar-candidate-word:pressed": {"background": "var(--key-pressed)", "foreground": "var(--key-label)"},
         "smartbar-candidate-word-secondary-text": {"font-size": "8sp", "margin": "0dp 2dp 0dp 0dp"},
     }
+    for action in ENTER_ACTIONS:
+        rules[f"{ENTER}[enteraction=`{action}`]"] = {"background": "var(--action)", "foreground": "var(--action-label)"}
+        rules[f"{ENTER}[enteraction=`{action}`]:pressed"] = {"background": "var(--action-pressed)", "foreground": "var(--action-label)"}
     for mode in MODE_KEYS:
         rules[mode] = dict(fn, **{"font-size": "15sp", "font-weight": "500"})
         rules[mode + ":pressed"] = fn_pressed

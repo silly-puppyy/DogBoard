@@ -253,6 +253,7 @@ private fun EditAttributesColumn(
                 is ImeUiAttrs.TargetLayer -> EditLayerAttrBox(attrSpec, attributes, updateAttributes)
                 is ImeUiAttrs.Layer -> EditLayerAttrBox(attrSpec, attributes, updateAttributes)
                 is ImeUiAttrs.ShiftState -> EditEnumAttrBox(attrSpec, attributes, updateAttributes)
+                is ImeUiAttrs.EnterAction -> EditEnumAttrBox(attrSpec, attributes, updateAttributes)
                 is ImeUiAttrs.WindowMode -> EditEnumAttrBox(attrSpec, attributes, updateAttributes)
                 is ImeUiAttrs.ClipboardDialogAction -> EditEnumAttrBox(attrSpec, attributes, updateAttributes)
                 is ImeUiAttrs.ClipboardItemType -> EditEnumAttrBox(attrSpec, attributes, updateAttributes)

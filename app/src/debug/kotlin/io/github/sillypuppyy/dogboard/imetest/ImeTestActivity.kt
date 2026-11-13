@@ -7,6 +7,7 @@ import android.text.InputType
 import android.view.WindowInsets
 import android.view.WindowInsetsAnimation
 import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import io.github.sillypuppyy.dogboard.perf.Perf
@@ -38,6 +39,14 @@ class ImeTestActivity : Activity() {
                     InputType.TYPE_TEXT_FLAG_CAP_WORDS
                 "caps" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
                 else -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            }
+            // optional extra "action": send, search, go, next or multiline, for the return key's look
+            when (intent.getStringExtra("action")) {
+                "send" -> imeOptions = EditorInfo.IME_ACTION_SEND
+                "search" -> imeOptions = EditorInfo.IME_ACTION_SEARCH
+                "go" -> imeOptions = EditorInfo.IME_ACTION_GO
+                "next" -> imeOptions = EditorInfo.IME_ACTION_NEXT
+                "multiline" -> inputType = inputType or InputType.TYPE_TEXT_FLAG_MULTI_LINE
             }
         }
         setContentView(field)

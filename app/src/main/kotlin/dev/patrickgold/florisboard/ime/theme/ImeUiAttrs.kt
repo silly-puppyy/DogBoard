@@ -17,6 +17,8 @@
 package dev.patrickgold.florisboard.ime.theme
 
 import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
+import dev.patrickgold.florisboard.ime.editor.ImeOptions
+import dev.patrickgold.florisboard.ime.editor.InputAttributes
 import dev.patrickgold.florisboard.ime.keyboard3.touch.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard3.ui.asAttrValue
 import dev.patrickgold.florisboard.ime.window.ImeWindowMode
@@ -56,6 +58,28 @@ sealed interface ImeUiAttrs {
     ), ImeUiAttrs {
         override fun encode(value: InputShiftState): String {
             return value.toString()
+        }
+    }
+
+    /**
+     * DogBoard: what the return key does in the current field, so themes can colour an action
+     * (send, search, ...) differently from a plain new line ([RETURN]).
+     */
+    data object EnterAction : ImeUiAttr.Enumeration<String>(
+        name = "enteraction",
+        allowedValues = listOf(EnterAction.RETURN, "done", "go", "next", "previous", "search", "send"),
+    ), ImeUiAttrs {
+        const val RETURN = "return"
+
+        override fun encode(value: String): String = value
+
+        /** The [EnterAction] value for a field: [RETURN] when the key inserts a new line. */
+        fun of(imeOptions: ImeOptions, inputAttributes: InputAttributes): String {
+            if (imeOptions.flagNoEnterAction || inputAttributes.flagTextMultiLine) return RETURN
+            return when (imeOptions.action) {
+                ImeOptions.Action.NONE, ImeOptions.Action.UNSPECIFIED -> RETURN
+                else -> imeOptions.action.name.lowercase()
+            }
         }
     }
 

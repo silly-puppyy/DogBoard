@@ -50,6 +50,9 @@ import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.ime.keyboard.SpaceBarMode
 import dev.patrickgold.florisboard.ime.keyboard3.ImeIcons
 import dev.patrickgold.florisboard.ime.keyboard3.ImeLayerIds
+import androidx.compose.ui.platform.LocalContext
+import dev.patrickgold.florisboard.R
+import dev.patrickgold.florisboard.ime.keyboard3.ImeActions
 import dev.patrickgold.florisboard.ime.keyboard3.LocalImeController
 import dev.patrickgold.florisboard.ime.keyboard3.interaction.LongPress
 import dev.patrickgold.florisboard.ime.keyboard3.interaction.rememberPointerTracker
@@ -87,6 +90,9 @@ fun ImeKeyboardBox(
     val model by remember { derivedStateOf { imeState.model } }
     val touchLayerId by remember { derivedStateOf { imeState.touchLayerId } }
     val inputShiftState by remember { derivedStateOf { imeState.flags.inputShiftState } }
+    val enterAction by remember {
+        derivedStateOf { ImeUiAttrs.EnterAction.of(imeState.editor.info.imeOptions, imeState.editor.info.inputAttributes) }
+    }
 
     val windowSpec by windowController.activeWindowSpec.collectAsState()
     val keyMarginHPx by remember {
@@ -137,6 +143,23 @@ fun ImeKeyboardBox(
             }
             SpaceBarMode.SPACE_BAR_KEY -> ImeIcons.SpaceBar
         }
+    }
+
+    // DogBoard: the return key shows a word for field actions (the app's own label if it has one)
+    val context = LocalContext.current
+    val actionLabel by remember { derivedStateOf { imeState.editor.info.extractedActionLabel } }
+    val enterDisplayOverride = remember(enterAction, actionLabel) {
+        val word = actionLabel?.takeIf { enterAction != ImeUiAttrs.EnterAction.RETURN && it.isNotBlank() }
+            ?: when (enterAction) {
+                "done" -> context.getString(R.string.dogboard__enter_done)
+                "go" -> context.getString(R.string.dogboard__enter_go)
+                "next" -> context.getString(R.string.dogboard__enter_next)
+                "previous" -> context.getString(R.string.dogboard__enter_previous)
+                "search" -> context.getString(R.string.dogboard__enter_search)
+                "send" -> context.getString(R.string.dogboard__enter_send)
+                else -> null
+            }
+        word?.asK3String()
     }
 
     val devtoolsEnabled by prefs.devtools.enabled.collectAsState()
@@ -242,6 +265,7 @@ fun ImeKeyboardBox(
                     touchKey = touchKey,
                     displayOverride = when {
                         touchKey.isSuitableForSpaceBarDisplayOverride -> spaceBarDisplayOverride
+                        touchKey.attrs.output == ImeActions.Enter -> enterDisplayOverride
                         else -> null
                     },
                     isPressed = isPressed,
@@ -261,6 +285,7 @@ fun ImeKeyboardBox(
                             layout(placeable.width, placeable.height) { placeable.place(offset) }
                         },
                     inputShiftState = inputShiftState,
+                    enterAction = if (touchKey.attrs.output == ImeActions.Enter) enterAction else null,
                 )
                 if (devtoolsEnabled && debugShowTouchBoundaries) {
                     Box(
@@ -288,12 +313,13 @@ private fun ImeKeyboardKeyBox(
     longPress: LongPress,
     multiTapIndex: Int,
     inputShiftState: InputShiftState,
+    enterAction: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val display = displayOverride ?: touchKey.display
     val output = touchKey.attrs.output
     val layerId = touchKey.attrs.layerId
-    val attributes: SnyggQueryAttributes = remember(output, layerId, inputShiftState) {
+    val attributes: SnyggQueryAttributes = remember(output, layerId, inputShiftState, enterAction) {
         buildMap {
             if (output != null) {
                 putAttr(ImeUiAttrs.Output, output)
@@ -302,6 +328,9 @@ private fun ImeKeyboardKeyBox(
                 putAttr(ImeUiAttrs.TargetLayer, layerId)
             }
             putAttr(ImeUiAttrs.ShiftState, inputShiftState)
+            if (enterAction != null) {
+                putAttr(ImeUiAttrs.EnterAction, enterAction)
+            }
         }
     }
     // TODO some keys an be disabled (copy cut etc)

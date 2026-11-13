@@ -79,6 +79,7 @@ enum class FlorisImeUi(
             ImeUiAttrs.Output,
             ImeUiAttrs.ShiftState,
             ImeUiAttrs.TargetLayer,
+            ImeUiAttrs.EnterAction,
         ),
     ),
     KeyHint(

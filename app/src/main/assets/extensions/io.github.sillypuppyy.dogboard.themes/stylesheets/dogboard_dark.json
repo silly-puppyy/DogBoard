@@ -459,14 +459,14 @@
     "text-overflow": "ellipsis"
   },
   "key[output=`@k3:action/enter`]": {
-    "background": "var(--action)",
-    "foreground": "var(--action-label)",
+    "background": "var(--fn)",
+    "foreground": "var(--fn-label)",
     "font-size": "15sp",
     "font-weight": "600"
   },
   "key[output=`@k3:action/enter`]:pressed": {
-    "background": "var(--action-pressed)",
-    "foreground": "var(--action-label)"
+    "background": "var(--fn-pressed)",
+    "foreground": "var(--fn-label)"
   },
   "key[output=`@k3:action/backspace`]": {
     "background": "var(--fn)",
@@ -515,6 +515,54 @@
   "smartbar-candidate-word-secondary-text": {
     "font-size": "8sp",
     "margin": "0dp 2dp 0dp 0dp"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`done`]": {
+    "background": "var(--action)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`done`]:pressed": {
+    "background": "var(--action-pressed)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`go`]": {
+    "background": "var(--action)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`go`]:pressed": {
+    "background": "var(--action-pressed)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`next`]": {
+    "background": "var(--action)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`next`]:pressed": {
+    "background": "var(--action-pressed)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`previous`]": {
+    "background": "var(--action)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`previous`]:pressed": {
+    "background": "var(--action-pressed)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`search`]": {
+    "background": "var(--action)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`search`]:pressed": {
+    "background": "var(--action-pressed)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`send`]": {
+    "background": "var(--action)",
+    "foreground": "var(--action-label)"
+  },
+  "key[output=`@k3:action/enter`][enteraction=`send`]:pressed": {
+    "background": "var(--action-pressed)",
+    "foreground": "var(--action-label)"
   },
   "key[targetlayer=`symbol-1`]": {
     "background": "var(--fn)",

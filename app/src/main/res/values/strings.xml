@@ -1145,4 +1145,11 @@
         <item quantity="other">{v} candidates</item>
     </plurals>
 
+    <!-- DogBoard: return key words for field actions -->
+    <string name="dogboard__enter_done">Done</string>
+    <string name="dogboard__enter_go">Go</string>
+    <string name="dogboard__enter_next">Next</string>
+    <string name="dogboard__enter_previous">Back</string>
+    <string name="dogboard__enter_search">Search</string>
+    <string name="dogboard__enter_send">Send</string>
 </resources>
