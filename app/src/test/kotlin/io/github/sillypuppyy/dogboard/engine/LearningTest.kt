@@ -99,4 +99,24 @@ class LearningTest : FunSpec({
             dir.deleteRecursively()
         }
     }
+
+    test("an unknown word kept three times is learned") {
+        val dir = Files.createTempDirectory("dogboard-kept").toFile()
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+                userWords = File(dir, "user_words.txt"),
+            )
+            TypingEngine.isKnownWord("zorbit") shouldBe false
+            TypingEngine.noteKept("zorbit")
+            TypingEngine.noteKept("zorbit")
+            TypingEngine.isKnownWord("zorbit") shouldBe false
+            TypingEngine.noteKept("zorbit")
+            TypingEngine.isKnownWord("zorbit") shouldBe true
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
 })

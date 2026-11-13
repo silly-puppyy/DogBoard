@@ -449,6 +449,8 @@ class ImeController(
                 val corrected = TypingEngine.correction(word, candidates)
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
+                } else {
+                    noteKeptWord(typed)
                 }
             }
             currentWord.clear()
@@ -478,6 +480,12 @@ class ImeController(
             reevaluateInputShiftState()
             publishSuggestions()
             return true
+        }
+
+        /** [word] was finished as typed; unknown words kept a few times get learned. */
+        private fun noteKeptWord(word: String) {
+            if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
+            scope.launch { TypingEngine.noteKept(word) }
         }
 
         /** The user kept [word] against autocorrect: remember it, except in incognito mode. */

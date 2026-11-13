@@ -19,6 +19,9 @@ object TypingEngine {
     private val lock = ReentrantReadWriteLock()
     private var userWordsFile: File? = null
     private var blockedWordsFile: File? = null
+    /** How often each unknown word was typed and kept in this session. */
+    private val keptUnknown = HashMap<String, Int>()
+
     /** Words the user removed from suggestions (lowercase); never suggested or corrected to. */
     private val blocked = HashSet<String>()
 
@@ -167,6 +170,19 @@ object TypingEngine {
         }
     }
 
+    /**
+     * [word] was finished as typed (not corrected). An unknown word kept [LEARN_AFTER_KEPT] times
+     * in a session is learned.
+     */
+    fun noteKept(word: String) {
+        val engine = loaded ?: return
+        if (lock.read { engine.lexicon.contains(word) }) return
+        val n = synchronized(keptUnknown) { ((keptUnknown[word] ?: 0) + 1).also { keptUnknown[word] = it } }
+        if (n >= LEARN_AFTER_KEPT) learn(word)
+    }
+
+    private const val LEARN_AFTER_KEPT = 3
+
     private fun isBlocked(word: String): Boolean = word.lowercase() in blocked
 
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
@@ -177,5 +193,6 @@ object TypingEngine {
         userWordsFile = null
         blockedWordsFile = null
         blocked.clear()
+        synchronized(keptUnknown) { keptUnknown.clear() }
     }
 }
