@@ -48,6 +48,10 @@ class Decoder(
         val beamWidth: Int = 100, // accuracy unchanged down to 80 in the eval, ~35% faster than 300
     )
 
+    private companion object {
+        const val SHORT_INPUT = 3
+    }
+
     private class State(val node: Lexicon.Node, val cost: Double, val edits: Int)
 
     /**
@@ -142,7 +146,8 @@ class Decoder(
             if (s.node.isWord) {
                 add(Candidate(s.node.word!!, s.cost - config.lmWeight * lm(s.node), s.cost, s.edits, false))
             }
-            if (includeCompletions) {
+            // short inputs: only complete what was typed, not a guess at a mistyped prefix
+            if (includeCompletions && (s.edits == 0 || n > SHORT_INPUT)) {
                 val best = s.node.bestWord ?: continue
                 if (best === s.node) continue
                 add(Candidate(best.word!!, s.cost + config.completionCost - config.lmWeight * lm(best), s.cost, s.edits, true))

@@ -65,6 +65,9 @@ class EngineTest : FunSpec({
         }
         test("extra tap: thhe -> the") { topWord("thhe") shouldBe "the" }
         test("missing apostrophe: dont -> don't") { topWord("dont") shouldBe "don't" }
+        test("short inputs get no completions that need a typing error") {
+            DECODER.decode(centreTaps("eh"), KEYS, PARAMS).filter { it.isCompletion }.all { it.edits == 0 } shouldBe true
+        }
         test("completions are offered for a prefix") {
             val words = DECODER.decode(centreTaps("keyb"), KEYS, PARAMS).filter { it.isCompletion }.map { it.word }
             words.contains("keyboard") shouldBe true
