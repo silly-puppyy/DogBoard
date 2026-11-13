@@ -439,7 +439,7 @@ class ImeController(
             val word = currentWord
             // a reverted autocorrection that is finished unchanged is a word the user wants
             if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
-            if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord) {
+            if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord()) {
                 val typed = word.text
                 val context = wordContext()
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
@@ -492,6 +492,10 @@ class ImeController(
             publishSuggestions()
         }
 
+        /** True when a letter follows the cursor: only part of the word is before it. */
+        private fun cursorInsideWord(): Boolean =
+            state.content.surroundingText.textAfter.firstOrNull()?.let { isWordChar(it) } == true
+
         private fun correctionAllowed(): Boolean = prefs.correction.autocorrect.get() && wordEngineAllowed()
 
         private fun wordEngineAllowed(): Boolean {
@@ -517,7 +521,7 @@ class ImeController(
         private fun publishSuggestions() {
             val sink = suggestionSink ?: return
             suggestionJob?.cancel()
-            if (!wordEngineAllowed() || state.content.selection.isNotCollapsed()) {
+            if (!wordEngineAllowed() || state.content.selection.isNotCollapsed() || cursorInsideWord()) {
                 sink(emptyList())
                 return
             }
