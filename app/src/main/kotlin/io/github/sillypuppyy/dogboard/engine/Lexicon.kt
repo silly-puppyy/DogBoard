@@ -128,7 +128,7 @@ class Lexicon private constructor(capacity: Int) {
     fun find(prefix: CharSequence): Int {
         var node = ROOT
         for (c in prefix) {
-            node = child(node, c.lowercaseChar())
+            node = child(node, fold(c))
             if (node == NONE) return NONE
         }
         return node
@@ -159,7 +159,7 @@ class Lexicon private constructor(capacity: Int) {
         version++
         var node = ROOT
         for (c in word) {
-            val lc = c.lowercaseChar()
+            val lc = fold(c)
             node = child(node, lc).takeIf { it != NONE } ?: newNode(node, lc)
         }
         val added = when {
@@ -212,7 +212,7 @@ class Lexicon private constructor(capacity: Int) {
         wordId[node] = wordCount
         wordNode[wordCount++] = node
         logProb[node] = lp.toFloat()
-        if (word != word.lowercase()) surface[node] = word
+        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() }) surface[node] = word
     }
 
     private fun newNode(parentNode: Int, c: Char): Int {
@@ -261,7 +261,7 @@ class Lexicon private constructor(capacity: Int) {
     }
 
     companion object {
-        private const val SNAPSHOT_MAGIC = 0x44474c31 // "DGL1"
+        private const val SNAPSHOT_MAGIC = 0x44474c32 // "DGL2": trie letters fold accents
 
         /** Reads what [writeSnapshot] wrote, or null if [bytes] isn't such a snapshot. */
         fun readSnapshot(bytes: ByteArray): Lexicon? = runCatching {
@@ -295,6 +295,16 @@ class Lexicon private constructor(capacity: Int) {
         const val ROOT = 0
         const val NONE = -1
 
+        /**
+         * The trie letter for [c]: lowercase without accents, so "café" is typed on the e key
+         * and keeps its accent as the stored form (iOS matches accent variants the same way).
+         */
+        fun fold(c: Char): Char {
+            val lc = c.lowercaseChar()
+            if (lc.code < 0xC0) return lc
+            return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
+        }
+
         fun of(counts: Map<String, Long>): Lexicon {
             val total = counts.values.sum().toDouble()
             val lexicon = Lexicon(counts.size * 3 + 16)
@@ -303,7 +313,7 @@ class Lexicon private constructor(capacity: Int) {
                 if (word.isEmpty() || count <= 0) continue
                 var node = ROOT
                 for (c in word) {
-                    val lc = c.lowercaseChar()
+                    val lc = fold(c)
                     node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
                 }
                 byNode.getOrPut(node) { ArrayList(1) }.add(word to ln(count / total))

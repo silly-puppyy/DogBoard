@@ -55,7 +55,12 @@ EXTRA_ZIPF_FLOOR = 1.5
 LOWERCASE_RARE_LEVEL = 35
 # drop a plain spelling when its contraction is this much more frequent ("dont" vs "don't")
 CONTRACTION_GAP = 0.8
-WORD_RE = re.compile(r"^[A-Za-z][A-Za-z'’.-]*$")
+# letters include Latin-1 accented ones (café, naïve); the keyboard types them on the plain key
+WORD_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*$")
+# SCOWL's other-region lists (and their variants); plain variant_N lists are American variants
+FOREIGN_REGIONS = ("british", "british_z", "canadian", "australian")
+# American variant spellings (theatre, cancelled, judgement) need at least this Zipf
+MIN_ZIPF_US_VARIANT = 2.0
 
 
 def zipf_floor(level: int) -> float:
@@ -101,7 +106,7 @@ def load_other_region_spellings(final_dir: str, us_words) -> set:
     other = set()
     for fn in os.listdir(final_dir):
         m = re.match(r"(.+?)-(.+)\.(\d+)$", fn)
-        if not m or m.group(1) in SCOWL_REGIONS:
+        if not m or m.group(1).split("_variant_")[0] not in FOREIGN_REGIONS:
             continue
         with open(os.path.join(final_dir, fn), encoding="latin-1") as f:
             other.update(w.lower() for w in f.read().split("\n") if w)
@@ -197,6 +202,20 @@ def load_places(data_dir: str):
     return places
 
 
+def load_us_variants(final_dir: str, max_level: int) -> dict:
+    """word -> level from SCOWL's American variant lists (variant_1..3)."""
+    out = {}
+    for fn in os.listdir(final_dir):
+        m = re.match(r"variant_\d-(words|upper|contractions)\.(\d+)$", fn)
+        if not m or int(m.group(2)) > max_level:
+            continue
+        with open(os.path.join(final_dir, fn), encoding="latin-1") as f:
+            for w in f.read().split("\n"):
+                if w and (w not in out or int(m.group(2)) < out[w]):
+                    out[w] = int(m.group(2))
+    return out
+
+
 def load_misspellings(path: str):
     bad = set()
     if not os.path.exists(path):
@@ -231,9 +250,13 @@ def main():
     forms = defaultdict(dict)
     sources = defaultdict(int)
 
-    def add(form: str, z: float, source: str):
+    def add(form: str, z: float, source: str, level: int = 99):
         key = form.lower()
-        if key in misspelled or (source != "scowl" and key in other_regions):
+        # the misspelling list never removes common SCOWL words (thru) or names (Holliday)
+        if key in misspelled and level > 50 and source not in ("census", "wikidata", "geonames"):
+            return
+        # other-region spellings are kept out of the web-only words, not out of names
+        if source in ("wordfreq", "extra") and key in other_regions:
             return
         if forms[key].get(form, -1) < z:
             forms[key][form] = z
@@ -242,7 +265,7 @@ def main():
     for w, (level, kind) in scowl.items():
         if not WORD_RE.match(w):
             continue
-        add(w, zipf.get(w.lower(), zipf_floor(level)), "scowl")
+        add(w, zipf.get(w.lower(), zipf_floor(level)), "scowl", level)
     for label, sitelinks in wikidata.items():
         floor = min(1.2, 0.5 + 0.3 * math.log10(max(sitelinks, 1)))
         add(label, zipf.get(label.lower(), floor), "wikidata")
@@ -258,6 +281,11 @@ def main():
         if z < MIN_ZIPF_WEB_ONLY or w in forms or w in other_regions or not WORD_RE.match(w) or "." in w:
             continue
         add(w, z, "wordfreq")
+    # American variant spellings fill gaps only: a name with the same letters wins (Bonnie, not bonnie)
+    for w, level in load_us_variants(final_dir, 95).items():
+        z = zipf.get(w.lower())
+        if z is not None and z >= MIN_ZIPF_US_VARIANT and WORD_RE.match(w) and w.lower() not in forms:
+            add(w, z, "us-variant", level)
     for w in load_extra_words():
         if w not in forms:
             add(w, zipf.get(w, EXTRA_ZIPF_FLOOR), "extra")
@@ -307,12 +335,16 @@ def main():
     by_plain = {w.replace("'", "").lower(): w for w in lexicon if "'" in w}
     for w in list(lexicon):
         c = by_plain.get(w.lower())
-        if c is not None and c != w and lexicon[c] - lexicon[w] >= CONTRACTION_GAP:
+        # all-caps words stay (ID vs I'd, IM vs I'm)
+        if c is not None and c != w and not w.isupper() and lexicon[c] - lexicon[w] >= CONTRACTION_GAP:
             del lexicon[w]
 
     ranked = sorted(lexicon.items(), key=lambda kv: (-kv[1], kv[0]))
-    if args.max_words:
-        ranked = ranked[: args.max_words]
+    if args.max_words and len(ranked) > args.max_words:
+        # a cut inside a tie (thousands of rare words at the same floor) drops the whole tie
+        # instead of keeping an arbitrary part of it
+        edge = ranked[args.max_words][1]
+        ranked = [kv for kv in ranked[: args.max_words] if kv[1] > edge]
     with open(args.out, "w", encoding="utf-8") as out:
         out.write("#dogboard-lexicon 1\n#lang en_US\n")
         out.write(f"#source SCOWL 2020.12.07 (level <= {args.max_level}), wordfreq 3.1.1 (CC BY-SA 4.0), "

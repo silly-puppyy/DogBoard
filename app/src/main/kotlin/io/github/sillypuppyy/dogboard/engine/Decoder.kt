@@ -392,7 +392,7 @@ class Decoder(
         var node = Lexicon.ROOT
         var score = 0.0
         for (c in typed) {
-            val child = if (node == Lexicon.NONE) Lexicon.NONE else lexicon.child(node, c.lowercaseChar())
+            val child = if (node == Lexicon.NONE) Lexicon.NONE else lexicon.child(node, Lexicon.fold(c))
             score += if (child != Lexicon.NONE && lexicon.mass(node) > 0.0) ln(lexicon.mass(child) / lexicon.mass(node)) else UNKNOWN_LETTER
             node = child
         }
