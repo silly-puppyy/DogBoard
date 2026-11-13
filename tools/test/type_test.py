@@ -36,9 +36,11 @@ CASES = [
     ("the quick brown fox", "The quick brown fox"),
     ("jumps over the lazy dog", "Jumps over the lazy dog"),
     ("see you  soon", "See you. Soon"),  # double-space period, then auto-shift
-    ("teh dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
+    # neighbouring-key typos: adb taps are slow (0.4+ s apart), and iOS-rule edit costs such as a
+    # swapped pair grow with the time between taps, so timing-dependent typos are unit-tested instead
+    ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
     ("i dont know", "I don't know"),
-    ("teh <dog", "Tehdog"),  # "<" is backspace: right after an autocorrection it restores the typed word
+    ("thw <dog", "Thwdog"),  # "<" is backspace: right after an autocorrection it restores the typed word
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),
