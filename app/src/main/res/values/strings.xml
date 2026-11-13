@@ -477,8 +477,10 @@
     <string name="settings__typing__title" comment="Title of Typing screen">Typing</string>
 
     <string name="pref__typing_caps_group__title" comment="Title of Typing > Caps group">Capitalization</string>
-    <string name="pref__correction__auto_capitalization__label" comment="Preference title">Auto-capitalization</string>
-    <string name="pref__correction__auto_capitalization__summary" comment="Preference summary">Capitalize words based on the current input context</string>
+    <string name="pref__correction__auto_capitalization__label" comment="Preference title">Capitalise sentence starts</string>
+    <string name="pref__correction__auto_capitalization__summary" comment="Preference summary">Shift turns on after . ? ! and at the start of a field</string>
+    <string name="pref__typing__dictionary_capitals__label" comment="Preference title">Capitalise names and “I”</string>
+    <string name="pref__typing__dictionary_capitals__summary" comment="Preference summary">john becomes John, i becomes I. Off keeps them as you typed</string>
     <string name="pref__correction__remember_caps_lock_state__label" comment="Preference title">Remember caps lock state</string>
     <string name="pref__correction__remember_caps_lock_state__summary" comment="Preference summary">Caps lock will stay on when moving to another text field</string>
     <string name="pref__typing__shift_key_behavior__label" comment="Preference title">Shift key behavior</string>
@@ -504,6 +506,7 @@
     <string name="pref__input_feedback__haptic_style__label" comment="Preference title">Vibration style</string>
     <string name="enum__haptic_style__phone">Your phone’s key click</string>
     <string name="enum__haptic_style__soft">Soft tap</string>
+    <string name="pref__typing__punctuation_group__title" comment="Preference group title">Punctuation</string>
     <string name="pref__typing__smart_quotes__label" comment="Preference title">Smart quotes</string>
     <string name="pref__typing__smart_quotes__summary" comment="Preference summary">Turns straight quotes into curly ones and apostrophes into ’</string>
     <string name="pref__typing__smart_dashes__label" comment="Preference title">Smart dashes</string>

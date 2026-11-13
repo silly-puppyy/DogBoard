@@ -55,29 +55,36 @@ fun TypingScreen() {
     ) { contentPadding ->
         ScrollableScreenColumn(contentPadding) {
             SegmentedListColumn(title = stringRes(R.string.pref__typing_caps_group__title)) {
-                val count = 4
+                val count = 5
                 SwitchPreference(
                     prefs.typing.autoCapitalization,
                     shapes = ListItemDefaults.segmentedShapes(0, count),
                     title = stringRes(R.string.pref__correction__auto_capitalization__label),
                     summary = stringRes(R.string.pref__correction__auto_capitalization__summary),
                 )
+                // DogBoard: names and "I", separate from sentence starts
+                SwitchPreference(
+                    prefs.typing.dictionaryCapitals,
+                    shapes = ListItemDefaults.segmentedShapes(1, count),
+                    title = stringRes(R.string.pref__typing__dictionary_capitals__label),
+                    summary = stringRes(R.string.pref__typing__dictionary_capitals__summary),
+                )
                 SwitchPreference(
                     prefs.typing.rememberCapsLockState,
-                    shapes = ListItemDefaults.segmentedShapes(1, count),
+                    shapes = ListItemDefaults.segmentedShapes(2, count),
                     title = stringRes(R.string.pref__correction__remember_caps_lock_state__label),
                     summary = stringRes(R.string.pref__correction__remember_caps_lock_state__summary),
                 )
                 // DogBoard: iOS "Enable Caps Lock"
                 SwitchPreference(
                     prefs.typing.capsLockEnabled,
-                    shapes = ListItemDefaults.segmentedShapes(2, count),
+                    shapes = ListItemDefaults.segmentedShapes(3, count),
                     title = stringRes(R.string.pref__typing__caps_lock_enabled__label),
                     summary = stringRes(R.string.pref__typing__caps_lock_enabled__summary),
                 )
                 ListPreference(
                     prefs.typing.shiftKeyBehavior,
-                    shapes = ListItemDefaults.segmentedShapes(3, count),
+                    shapes = ListItemDefaults.segmentedShapes(4, count),
                     title = stringRes(R.string.pref__typing__shift_key_behavior__label),
                     entries = enumDisplayEntriesOf(ShiftKeyBehavior::class),
                     enabledIf = { prefs.typing.capsLockEnabled isEqualTo true },
@@ -130,7 +137,7 @@ fun TypingScreen() {
             }
 
             SegmentedListColumn(title = stringRes(R.string.pref__correction__title)) {
-                val count = 5
+                val count = 2
                 // DogBoard
                 SwitchPreference(
                     prefs.correction.autocorrect,
@@ -149,22 +156,27 @@ fun TypingScreen() {
                     },
                     enabledIf = { prefs.correction.autocorrect isEqualTo true },
                 )
+            }
+
+            // DogBoard: punctuation helpers in one place (user, 2026-11-14)
+            SegmentedListColumn(title = stringRes(R.string.pref__typing__punctuation_group__title)) {
+                val count = 3
                 SwitchPreference(
                     prefs.correction.doubleSpacePeriod,
-                    shapes = ListItemDefaults.segmentedShapes(2, count),
+                    shapes = ListItemDefaults.segmentedShapes(0, count),
                     title = stringRes(R.string.pref__correction__double_space_period__label),
                     summary = stringRes(R.string.pref__correction__double_space_period__summary),
                 )
                 // DogBoard: iOS Smart Punctuation, two switches
                 SwitchPreference(
                     prefs.typing.smartQuotes,
-                    shapes = ListItemDefaults.segmentedShapes(3, count),
+                    shapes = ListItemDefaults.segmentedShapes(1, count),
                     title = stringRes(R.string.pref__typing__smart_quotes__label),
                     summary = stringRes(R.string.pref__typing__smart_quotes__summary),
                 )
                 SwitchPreference(
                     prefs.typing.smartDashes,
-                    shapes = ListItemDefaults.segmentedShapes(4, count),
+                    shapes = ListItemDefaults.segmentedShapes(2, count),
                     title = stringRes(R.string.pref__typing__smart_dashes__label),
                     summary = stringRes(R.string.pref__typing__smart_dashes__summary),
                 )

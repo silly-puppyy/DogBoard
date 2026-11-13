@@ -16,6 +16,13 @@ import kotlin.math.ln
 object TypingEngine {
     @Volatile
     private var loaded: Loaded? = null
+
+    /**
+     * Whether words take the dictionary's capitals when typed without any ("john" → "John",
+     * "i" → "I"); off keeps them as typed. Sentence starts are a separate setting.
+     */
+    @Volatile
+    var dictionaryCapitals: () -> Boolean = { true }
     private val lock = ReentrantReadWriteLock()
     private var userWordsFile: File? = null
     private var blockedWordsFile: File? = null
@@ -418,7 +425,11 @@ object TypingEngine {
         val typed = word.text
         val flags = word.flags.takeIf { it.size == typed.length } ?: typed.map { if (it.isUpperCase()) CaseAdapt.SHIFTED else 0 }
         // with smart quotes on, apostrophes are curly, as the user's own are (iOS treats ' and ’ alike)
-        return { candidate -> CaseAdapt.apply(candidate, typed, flags, word.caseContext, casing)?.let { if (curly) it.replace('\'', '’') else it } }
+        val keepLowercase = !dictionaryCapitals() && flags.none { it and CaseAdapt.SHIFTED != 0 }
+        return { candidate ->
+            val c = if (keepLowercase) candidate.lowercase() else candidate
+            CaseAdapt.apply(c, typed, flags, word.caseContext, casing)?.let { if (curly) it.replace('\'', '’') else it }
+        }
     }
 
     /** The user undid [typed] -> [correction] (or kept their word while it was offered): a hard rejection. */
@@ -442,6 +453,7 @@ object TypingEngine {
                 .map { (id, _) -> engine.lexicon.word(engine.lexicon.nodeOfWord(id))!! }
                 .filter { !isBlocked(it) && !isNotSuggestible(it) }
                 .take(n)
+                .map { if (dictionaryCapitals()) it else it.lowercase() }
         }
     }
 

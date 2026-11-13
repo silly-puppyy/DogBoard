@@ -216,6 +216,7 @@ class ImeController(
     val activeSmartbarVisibleDynamicActionsCount = MutableStateFlow(0)
 
     init {
+        io.github.sillypuppyy.dogboard.engine.TypingEngine.dictionaryCapitals = { prefs.typing.dictionaryCapitals.get() }
         combine(
             prefs.devtools.enabled.asFlow(),
             prefs.devtools.showDragAndDropHelpers.asFlow(),
@@ -825,7 +826,8 @@ class ImeController(
                 }
                 suggestionJob = scope.launch {
                     val words = TypingEngine.predictions(context)
-                    val cased = if (context == Bigrams.START) words.map { w -> w.replaceFirstChar { it.uppercaseChar() } } else words
+                    // iOS: predictions are capitalised after a sentence end only with auto-capitalisation on
+                    val cased = if (context == Bigrams.START && prefs.typing.autoCapitalization.get()) words.map { w -> w.replaceFirstChar { it.uppercaseChar() } } else words
                     if (isActive) sink(cased.map { Suggestion(it, Suggestion.Kind.PREDICTION) })
                 }
                 return

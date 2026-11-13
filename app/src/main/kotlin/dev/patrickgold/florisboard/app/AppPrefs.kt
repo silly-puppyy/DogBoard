@@ -751,6 +751,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "typing__smart_dashes",
             default = true,
         )
+        // DogBoard: names and "I" take the dictionary's capitals (user, 2026-11-14: separate from sentence starts)
+        val dictionaryCapitals = boolean(
+            key = "typing__dictionary_capitals",
+            default = true,
+        )
         // DogBoard: iOS "Enable Caps Lock" (KeyboardCapsLock); off = a second shift tap just toggles
         val capsLockEnabled = boolean(
             key = "typing__caps_lock_enabled",
