@@ -490,6 +490,15 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__long_press_timeout",
             default = InteractionTimingOptions.Default.longPressTimeout.inWholeMilliseconds.toInt(),
         )
+        // DogBoard: the Glass theme: a photo behind the keys (design Kb:18-23, Themes.dc.html);
+        // dim, blur and key opacity as in the design (percent; blur in dp), the photo's measured
+        // luminance (per mille) for the label contrast, and a stamp that changes with the photo
+        val glassEnabled = boolean(key = "keyboard__glass_enabled", default = false)
+        val glassDim = int(key = "keyboard__glass_dim", default = 35)
+        val glassBlur = int(key = "keyboard__glass_blur", default = 12)
+        val glassKeyOpacity = int(key = "keyboard__glass_key_opacity", default = 30)
+        val glassPhotoLuminance = int(key = "keyboard__glass_photo_luminance", default = 300)
+        val glassPhotoStamp = long(key = "keyboard__glass_photo_stamp", default = 0L)
         // DogBoard: draw the keys with the ported design (stage 2); off = FlorisBoard's drawing
         val dogboardDesign = boolean(
             key = "keyboard__dogboard_design",

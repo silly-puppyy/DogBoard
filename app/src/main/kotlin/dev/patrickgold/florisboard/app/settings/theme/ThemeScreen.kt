@@ -16,6 +16,10 @@
 
 package dev.patrickgold.florisboard.app.settings.theme
 
+import dev.patrickgold.jetpref.datastore.ui.SwitchPreference
+import dev.patrickgold.jetpref.datastore.ui.DialogSliderPreference
+import androidx.compose.material.icons.filled.Image
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Input
 import androidx.compose.material.icons.filled.Add
@@ -92,6 +96,65 @@ fun ThemeScreen() {
         previewFieldVisible = true,
     ) { contentPadding ->
         ScrollableScreenColumn(contentPadding) {
+            // DogBoard: the Glass theme: a photo behind the keys (design Kb:18-23, Themes.dc.html)
+            val glassStamp by prefs.keyboard.glassPhotoStamp.collectAsState()
+            val glassScope = androidx.compose.runtime.rememberCoroutineScope()
+            val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia(),
+            ) { uri ->
+                if (uri != null) glassScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    val lum = io.github.sillypuppyy.dogboard.design.GlassPhoto.save(context, uri) ?: return@launch
+                    prefs.keyboard.glassPhotoLuminance.set((lum * 1000).toInt())
+                    prefs.keyboard.glassPhotoStamp.set(System.currentTimeMillis())
+                    prefs.keyboard.glassEnabled.set(true)
+                }
+            }
+            SegmentedListColumn(title = "Photo background (Glass)") {
+                val count = 5
+                Preference(
+                    shapes = ListItemDefaults.segmentedShapes(0, count),
+                    icon = Icons.Default.Image,
+                    title = if (glassStamp == 0L) "Choose a photo" else "Change the photo",
+                    summary = "Shown blurred and dimmed behind the keys; labels stay readable",
+                    onClick = {
+                        pickPhoto.launch(
+                            androidx.activity.result.PickVisualMediaRequest(
+                                androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly,
+                            ),
+                        )
+                    },
+                )
+                SwitchPreference(
+                    prefs.keyboard.glassEnabled,
+                    shapes = ListItemDefaults.segmentedShapes(1, count),
+                    title = "Use the photo",
+                    enabledIf = { prefs.keyboard.glassPhotoStamp isNotEqualTo 0L },
+                )
+                DialogSliderPreference(
+                    prefs.keyboard.glassDim,
+                    shapes = ListItemDefaults.segmentedShapes(2, count),
+                    title = "Dim",
+                    valueLabel = { "$it %" },
+                    min = 0, max = 90, stepIncrement = 5,
+                    enabledIf = { prefs.keyboard.glassEnabled isEqualTo true },
+                )
+                DialogSliderPreference(
+                    prefs.keyboard.glassBlur,
+                    shapes = ListItemDefaults.segmentedShapes(3, count),
+                    title = "Blur",
+                    valueLabel = { "$it" },
+                    min = 0, max = 40, stepIncrement = 1,
+                    enabledIf = { prefs.keyboard.glassEnabled isEqualTo true },
+                )
+                DialogSliderPreference(
+                    prefs.keyboard.glassKeyOpacity,
+                    shapes = ListItemDefaults.segmentedShapes(4, count),
+                    title = "Key opacity",
+                    valueLabel = { "$it %" },
+                    min = 0, max = 100, stepIncrement = 5,
+                    enabledIf = { prefs.keyboard.glassEnabled isEqualTo true },
+                )
+            }
             SegmentedListColumn {
                 val countOffset = if (mode == PreferredThemeMode.FOLLOW_TIME) 2 else 0
                 val count = 4 + countOffset

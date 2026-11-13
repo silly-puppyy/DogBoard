@@ -71,8 +71,8 @@ object KbThemes {
      * Kb:399-412: the theme's light or dark set (falling back to the one it has), merged over
      * DEF; `linkFg` defaults to `act`, or `actFg` when `act` is transparent. Glass: [glass].
      */
-    fun tokens(themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f): KbTokens {
-        val raw = if (themeId == "glass") glass(dim, keyOpacity) else {
+    fun tokens(themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f): KbTokens {
+        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance) else {
             val th = T[themeId] ?: T.getValue("dogboard")
             (if (dark) th["dark"] else th["light"]) ?: th["light"] ?: th.getValue("dark")
         }
@@ -94,9 +94,13 @@ object KbThemes {
         )
     }
 
-    /** Kb:400-406: glass keys over a blurred image; labels pick white or ink by contrast. */
-    private fun glass(dim: Float, kop: Float): Map<String, String> {
-        val under = 0.3 * (1 - dim)
+    /**
+     * Kb:400-406: glass keys over a blurred image; labels pick white or ink by contrast. The design
+     * models the image under the keys as luminance 0.3 (Themes.dc.html:87-93); DogBoard passes the
+     * chosen photo's measured luminance instead, so readability follows the real picture.
+     */
+    private fun glass(dim: Float, kop: Float, photoLuminance: Float = 0.3f): Map<String, String> {
+        val under = photoLuminance * (1 - dim)
         val capL = kop * 1 + (1 - kop) * under
         val cW = 1.05 / (capL + 0.05)
         val cB = (capL + 0.05) / (lumHex("#1b1c1e") + 0.05)

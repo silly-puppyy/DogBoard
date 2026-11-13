@@ -43,6 +43,10 @@ data class KbProps(
     val dim: Float = 0.35f,
     val blur: Float = 12f,
     val keyOpacity: Float = 0.3f,
+    /** Glass: the photo's measured luminance (the design models it as 0.3). */
+    val photoLuminance: Float = 0.3f,
+    /** Glass: draw the design's gradient stand-in; off when the live keyboard draws the real photo behind. */
+    val backdrop: Boolean = true,
     val preview: String = "",
     val longpress: String = "",
     val lpSel: Int = 0,
@@ -198,7 +202,7 @@ object KbSpec {
     private fun up(c: String) = if (c == "ß") "ẞ" else c.uppercase()
 
     fun render(P: KbProps): KbRender {
-        val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity)
+        val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance)
 
         // Kb:414-415
         val radius = when (P.keyShape) { "pill" -> 999f; "square" -> 4f; else -> t.radius }
@@ -433,7 +437,7 @@ object KbSpec {
             trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowH / 2 - 28,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
             x = KbExtrasSpec.extras(P, t, W),
-            slotOverflow = P.slotOverflow, glass = P.theme == "glass", blurPx = P.blur, dimA = P.dim,
+            slotOverflow = P.slotOverflow, glass = P.theme == "glass" && P.backdrop, blurPx = P.blur, dimA = P.dim,
             rootShadow = if (floating) CssShadow.parse("0 2px 6px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.18)") else emptyList(),
         )
     }

@@ -65,7 +65,8 @@ fun LiveKbView(
             trackpad = trackpadX != null,
             trackpadX = trackpadX,
         )
-        val render = remember(props) { KbSpec.render(props) }
+        val themed = liveTheme().apply(props)
+        val render = remember(themed) { KbSpec.render(themed) }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
     }
 }
@@ -121,7 +122,8 @@ fun LiveKbBar(
             dark = dark, slots = if (toolRow || incognitoNote) null else slots, bar = if (toolRow) "tools" else "empty",
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
         )
-        val render = remember(props) { KbSpec.render(props) }
+        val themed = liveTheme().apply(props)
+        val render = remember(themed) { KbSpec.render(themed) }
         val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic) {
             KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic)
         }

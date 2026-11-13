@@ -57,7 +57,8 @@ fun LiveEmojiPanel(
     modifier: Modifier = Modifier,
 ) {
     val dark = liveDark()
-    val r = remember(dark) { KbSpec.render(KbProps(dark = dark, panel = "emoji", only = "live")) }
+    val theme = liveTheme()
+    val r = remember(dark, theme) { KbSpec.render(theme.apply(KbProps(dark = dark, panel = "emoji", only = "live"))) }
     val t = r.t
     val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
     val grid = rememberLazyGridState()

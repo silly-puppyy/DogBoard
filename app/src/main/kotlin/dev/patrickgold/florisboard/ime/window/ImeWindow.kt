@@ -179,6 +179,12 @@ fun BoxScope.ImeWindow() {
         supportsBackgroundImage = true,
         allowClip = false,
     ) {
+        // DogBoard: the Glass theme's photo behind the whole keyboard (bar, keys, panels and the
+        // navigation area below them)
+        io.github.sillypuppyy.dogboard.design.LiveGlassBackdrop(
+            io.github.sillypuppyy.dogboard.design.liveTheme(),
+            Modifier.matchParentSize(),
+        )
         OneHandedPanel()
         ProvideKeyboardRowBaseHeight {
             ImeInnerWindow()
@@ -228,13 +234,15 @@ private fun ImeInnerWindow() {
             },
         allowClip = false,
     ) {
-        Column {
-            when (activeImeUiMode) {
-                ImeUiMode.TEXT -> TextInputLayout()
-                ImeUiMode.MEDIA -> ProvideActualLayoutDirection { MediaInputLayout() }
-                ImeUiMode.CLIPBOARD -> ProvideActualLayoutDirection { ClipboardInputLayout() }
+        androidx.compose.foundation.layout.Box {
+            Column {
+                when (activeImeUiMode) {
+                    ImeUiMode.TEXT -> TextInputLayout()
+                    ImeUiMode.MEDIA -> ProvideActualLayoutDirection { MediaInputLayout() }
+                    ImeUiMode.CLIPBOARD -> ProvideActualLayoutDirection { ClipboardInputLayout() }
+                }
+                ImeSystemUiFloating()
             }
-            ImeSystemUiFloating()
         }
         ImeWindowResizeHandlesFixed()
     }
