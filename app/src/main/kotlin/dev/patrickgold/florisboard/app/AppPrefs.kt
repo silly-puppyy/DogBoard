@@ -487,7 +487,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         )
         val longPressKeyHintEnabled = boolean(
             key = "keyboard__long_press_key_hint_enabled",
-            default = TouchModelOptions.Default.longPressKeyHintEnabled,
+            default = false, // DogBoard: clean caps like the design (and iOS); the hints stay a setting
         )
         val longPressKeyHintPlacement = enum(
             key = "keyboard__long_press_key_hint_placement",
