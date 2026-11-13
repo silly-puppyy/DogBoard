@@ -477,9 +477,9 @@
     <string name="settings__typing__title" comment="Title of Typing screen">Typing</string>
 
     <string name="pref__typing_caps_group__title" comment="Title of Typing > Caps group">Capitalization</string>
-    <string name="pref__correction__auto_capitalization__label" comment="Preference title">Capitalise sentence starts</string>
+    <string name="pref__correction__auto_capitalization__label" comment="Preference title">Capitalize sentence starts</string>
     <string name="pref__correction__auto_capitalization__summary" comment="Preference summary">Shift turns on after . ? ! and at the start of a field</string>
-    <string name="pref__typing__dictionary_capitals__label" comment="Preference title">Capitalise names and “I”</string>
+    <string name="pref__typing__dictionary_capitals__label" comment="Preference title">Capitalize names and “I”</string>
     <string name="pref__typing__dictionary_capitals__summary" comment="Preference summary">john becomes John, i becomes I. Off keeps them as you typed</string>
     <string name="pref__correction__remember_caps_lock_state__label" comment="Preference title">Remember caps lock state</string>
     <string name="pref__correction__remember_caps_lock_state__summary" comment="Preference summary">Caps lock will stay on when moving to another text field</string>

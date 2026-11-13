@@ -126,8 +126,9 @@ fun FlorisErrorCard(
 ) {
     FlorisSimpleCard(
         modifier = modifier,
-        backgroundColor = Color.Red,
-        contentColor = Color.White,
+        // DogBoard: Material 3 error roles (dynamic colour) instead of pure red
+        backgroundColor = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
         onClick = onClick,
         icon = if (showIcon) ({ Icon(
             modifier = Modifier
@@ -151,8 +152,9 @@ fun FlorisWarningCard(
 ) {
     FlorisSimpleCard(
         modifier = modifier,
-        backgroundColor = Color.Yellow,
-        contentColor = Color.Black,
+        // DogBoard: M3 has no warning role; the tertiary container is the contrasting accent
+        backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
         onClick = onClick,
         icon = if (showIcon) ({ Icon(
             modifier = Modifier

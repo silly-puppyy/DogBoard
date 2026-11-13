@@ -58,6 +58,10 @@ fun HomeScreen() {
     val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
     val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
     if (dogboardDesign) {
+        // the design's home has its own "Try it here" dock: hide FlorisBoard's preview bar, which
+        // otherwise stays as the previous screen left it
+        val previewField = dev.patrickgold.florisboard.app.components.LocalPreviewFieldController.current
+        androidx.compose.runtime.SideEffect { previewField.isVisible = false }
         val autocorrectOn by prefs.correction.autocorrect.collectAsState()
         val level by prefs.correction.autocorrectLevel.collectAsState()
         val scope = androidx.compose.runtime.rememberCoroutineScope()

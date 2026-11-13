@@ -52,7 +52,7 @@ object SetHomeSpec {
         s("widgets", "Toolbar and tools", "Tools, clipboard, emoji", P),
         s("shield_person", "Privacy", "Incognito, what’s stored, delete your data", T),
         s("tune", "Advanced", "Developer options, backup, reset", S),
-        s("info", "About", "Version, licences, credits", P),
+        s("info", "About", "Version, licenses, credits", P),
     )
 }
 
@@ -133,7 +133,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         BasicText(
                             buildAnnotatedString {
                                 append("Most people never need to change this. ")
-                                withStyle(SpanStyle(color = SetColors.primary, fontWeight = FontWeight(500))) { append("Customise…") }
+                                withStyle(SpanStyle(color = SetColors.primary, fontWeight = FontWeight(500))) { append("Customize…") }
                             },
                             style = setText(13f, color = SetColors.onSurfaceVariant),
                             modifier = actions?.let { a -> Modifier.clickable { a.onSection("Typing and correction") } } ?: Modifier,

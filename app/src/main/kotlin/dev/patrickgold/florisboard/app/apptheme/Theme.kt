@@ -49,7 +49,8 @@ fun getColorScheme(
         isDark = isDark,
         isAmoled = theme.isAmoled,
         style = PaletteStyle.TonalSpot,
-        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+        // DogBoard: the design canvas uses the 2021 tonal palettes (errorContainer #ffdad6, primaryContainer #d8e2ff)
+        specVersion = ColorSpec.SpecVersion.SPEC_2021,
         modifyColorScheme = { scheme ->
             scheme.copy(
                 surfaceContainer = when {
