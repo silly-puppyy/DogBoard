@@ -37,6 +37,8 @@ CASES = [
     ("teh dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
     ("i dont know", "I don't know"),
     ("teh <dog", "Tehdog"),  # "<" is backspace: right after an autocorrection it restores the typed word
+    ("john smith", "John Smith", "name"),  # name field: every word capitalised
+    ("abc", "ABC", "caps"),  # all-caps field
 ]
 
 
@@ -118,12 +120,16 @@ def main():
 
     failures = 0
     cases = [c for c in CASES if args.case is None or args.case in c[0]] * args.repeat
-    for typed, expected in cases:
+    for case in cases:
+        typed, expected = case[0], case[1]
+        field = case[2] if len(case) > 2 else None
         adb(args.serial, "shell", "input", "keyevent", "KEYCODE_BACK")
         adb(args.serial, "shell", "input", "keyevent", "KEYCODE_BACK")
         time.sleep(1.0)
         adb(args.serial, "logcat", "-c")
-        adb(args.serial, "shell", "am", "start", "-n", ACTIVITY)
+        # NEW_TASK | CLEAR_TASK: always a fresh test screen, so the field type extra applies
+        start = ["shell", "am", "start", "-f", "0x10008000", "-n", ACTIVITY, *(["--es", "field", field] if field else [])]
+        adb(args.serial, *start)
         # the key area is laid out before the window has slid in; taps during the slide are lost
         wait_ime_shown(args.serial)
         geom = settled_geometry(args.serial)
@@ -132,7 +138,7 @@ def main():
             adb(args.serial, "shell", "am", "force-stop", ime_package)
             adb(args.serial, "shell", "ime", "set", ime)
             adb(args.serial, "logcat", "-c")
-            adb(args.serial, "shell", "am", "start", "-n", ACTIVITY)
+            adb(args.serial, *start)
             geom = settled_geometry(args.serial)
         if not geom:
             print("FAIL: keyboard never reported its key area")
