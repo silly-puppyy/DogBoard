@@ -155,6 +155,9 @@ class ImeController(
     // DogBoard: the last finished word and the word before it, accepted into the personal model
     // once the next word is finished or a suggestion picked without an undo (iOS token acceptance)
     private var unconfirmedWord: Pair<String?, String>? = null
+    // DogBoard: a word changed by retrocorrection, accepted only once the word after the one that
+    // triggered it is finished (a backspace right after can still undo it)
+    private var pendingRetroAccept: Pair<String?, String>? = null
     private var deletingWord: String? = null
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
@@ -550,9 +553,16 @@ class ImeController(
         /** Called before a word separator is typed: autocorrects the finished word. */
         private fun finishWord(separator: String) {
             lastCorrection = null
+            confirmPendingRetro() // the retrocorrection before the last word wasn't undone
             val retro = retrocorrect()
             confirmKeptCorrection()
-            confirmAcceptedWord()
+            if (retro != null) {
+                // not yet: the backspace that undoes this retrocorrection must also undo learning it
+                pendingRetroAccept = unconfirmedWord
+                unconfirmedWord = null
+            } else {
+                confirmAcceptedWord()
+            }
             val word = currentWord
             var committed = word.text // what this word ends up as
             // a reverted autocorrection that is finished unchanged is a word the user wants
@@ -621,6 +631,7 @@ class ImeController(
         private fun revertLastRetro(): Boolean {
             val retro = lastRetro ?: return false
             lastRetro = null
+            pendingRetroAccept = null
             if (!replaceBeforeCursor(retro.new + retro.tail, retro.old + retro.tail)) return false
             if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.reject(retro.typedOld, retro.new) }
             return true
@@ -690,6 +701,7 @@ class ImeController(
             if (!replaceBeforeCursor(typed, suggestion.word + " ")) return false
             if (suggestion.kind == Suggestion.Kind.LITERAL) learnWord(suggestion.word)
             confirmKeptCorrection()
+            confirmPendingRetro()
             confirmAcceptedWord()
             noteFinishedWord(previous, suggestion.word)
             currentWord.clear()
@@ -708,6 +720,7 @@ class ImeController(
             val replacement = if (typed.isEmpty()) "$emoji " else "$typed $emoji "
             if (!replaceBeforeCursor(typed, replacement)) return false
             confirmKeptCorrection()
+            confirmPendingRetro()
             confirmAcceptedWord()
             if (typed.isNotEmpty()) noteFinishedWord(previous, typed)
             val app = state.editor.info.packageName
@@ -729,6 +742,12 @@ class ImeController(
         }
 
         /** The word finished before this one was not undone: accept it (personal model, learning). */
+        private fun confirmPendingRetro() {
+            val (previous, word) = pendingRetroAccept ?: return
+            pendingRetroAccept = null
+            if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.accepted(previous, word) }
+        }
+
         private fun confirmAcceptedWord() {
             val (previous, word) = unconfirmedWord ?: return
             unconfirmedWord = null
@@ -760,6 +779,7 @@ class ImeController(
             autoSpace = false
             lastSpaceUptime = null
             unconfirmedWord = null
+            pendingRetroAccept = null
             unconfirmedCorrection = null
             deletingWord = null
             wordAroundCursor = null
