@@ -300,6 +300,22 @@ class PointerTracker(
                     }
                 } else null,
             )
+            // DogBoard: iOS turns a held space into the trackpad after the hold time even if the
+            // finger hasn't moved (the keys go blank at once); moves then continue from here
+            if (downKey.attrs.output == SPACE) {
+                val downId = down.id
+                val downXDp = down.position.x / density
+                scope.launch {
+                    delay(Trackpad.HOLD_MS)
+                    mutateLocked {
+                        val tp = trackedOutputPointer.value ?: return@mutateLocked
+                        if (tp.id != downId || tp.cursorAnchorDp != null || tp.trackpadCancelled) return@mutateLocked
+                        tp.repeatJob?.cancel()
+                        tp.longPress.extendedJob?.cancel()
+                        trackedOutputPointer.value = tp.copy(cursorAnchorDp = 0f, trackpadLastXDp = downXDp)
+                    }
+                }
+            }
             trackedMultiTapSeq.value.let { multiTapSeq ->
                 if (multiTapSeq != null) {
                     if (multiTapSeq.touchKey !== downKey) {
