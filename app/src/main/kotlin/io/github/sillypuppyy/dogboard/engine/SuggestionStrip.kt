@@ -5,6 +5,9 @@ data class Suggestion(val word: String, val kind: Kind) {
     /** The typed word the strip was built for (null: next-word predictions); not part of equality. */
     var forTyped: String? = null
 
+    /** Set on the original of a recent autocorrection: picking it undoes that correction. */
+    var revertOf: String? = null
+
     enum class Kind {
         /** Exactly what was typed, shown in quotes; picking it keeps the word as typed. */
         LITERAL,
