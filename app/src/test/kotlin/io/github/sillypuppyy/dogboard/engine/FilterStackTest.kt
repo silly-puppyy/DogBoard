@@ -39,6 +39,9 @@ class FilterStackTest : FunSpec({
         // contractions are not possessives, near-ties keep the score order
         ac.correction("iys", listOf(c("it's", -5.0), c("its", -5.6))) shouldBe "it's"
         ac.correction("saturdsys", listOf(c("saturday's", -5.0), c("saturdays", -5.6))) shouldBe "saturday's"
+        // the typed letters are not a twin: "chicagos" typed, "Chicago's" stays the correction
+        val typed = Candidate("chicagos", -5.6, -5.6, -5.6, 0, isCompletion = false, isTypedString = true)
+        ac.correction("chicagos", listOf(c("Chicago's", -5.0), typed)) shouldBe "Chicago's"
     }
 
     test("FilterCommonLearnedTypos: i never becomes o, can never can't, and never abs") {
