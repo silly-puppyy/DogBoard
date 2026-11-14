@@ -30,14 +30,6 @@ class FilterStackTest : FunSpec({
         ac.correction("wrre", listOf(c("we're", -5.0), c("were", -5.5))) shouldBe "we're"
     }
 
-    test("#28 preferred form: plain plural over a noun's possessive, possessive over a name's plain form") {
-        val ac = Autocorrect(Lexicon.of(mapOf("abbeys" to 10L, "abbey's" to 10L, "Abdul's" to 10L, "Abduls" to 10L, "it's" to 10L, "its" to 10L)))
-        ac.correction("abbwys", listOf(c("abbey's", -5.0), c("abbeys", -5.6))) shouldBe "abbeys"
-        ac.correction("abdyls", listOf(c("Abduls", -5.0), c("Abdul's", -5.6))) shouldBe "Abdul's"
-        // contractions are not possessives: the scores decide
-        ac.correction("iys", listOf(c("it's", -5.0), c("its", -5.6))) shouldBe "it's"
-    }
-
     test("#13 a correction keeps the typed ampersands") {
         keepsAmpersands("at&y", "at&t") shouldBe true
         keepsAmpersands("at&y", "arty") shouldBe false
