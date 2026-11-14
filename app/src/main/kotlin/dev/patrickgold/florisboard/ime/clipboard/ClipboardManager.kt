@@ -159,6 +159,12 @@ class ClipboardManager(
     }
 
     /**
+     * DogBoard: picks up a clip copied while another keyboard was active (no change callback
+     * reached us then), so Paste and the panel show the system's current clip (upstream #2024).
+     */
+    fun syncFromSystem() = onPrimaryClipChanged()
+
+    /**
      * Called by system clipboard when the system primary clip has changed.
      */
     override fun onPrimaryClipChanged() {

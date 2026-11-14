@@ -432,6 +432,8 @@ class FlorisImeService : LifecycleInputMethodService() {
     override fun onWindowShown() {
         super.onWindowShown()
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onWindowShown") // DogBoard: startup timing
+        // DogBoard: the system clip may have changed while another keyboard was in use
+        runCatching { clipboardManager().value.syncFromSystem() }
         if (windowController.onWindowShown()) {
             flogInfo(LogTopic.IMS_EVENTS)
         } else {
