@@ -2,7 +2,8 @@
 # Makes sure the test emulator is running: boots the AVD headless if adb does not see it.
 # Usage: tools/test/emulator.sh [serial]   (AVD and images live on the external SSD, see notes/setup.md)
 # GPU: the headless emulator segfaults now and then in its GL display code: after ~1 h with
-# swiftshader_indirect, ~2.3 h with guest, ~15 min with swangle_indirect. Default guest;
+# swiftshader_indirect, ~2.3 h with guest, ~15 min with swangle_indirect, ~1 min with host
+# (2026-11-14: null GL context headless). Default guest (falls back to lavapipe on this image);
 # override with DOGBOARD_EMU_GPU.
 set -euo pipefail
 SERIAL=${1:-emulator-5554}

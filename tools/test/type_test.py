@@ -142,6 +142,9 @@ def main():
     ime_package = ime.split("/")[0]
     rng = random.Random(args.seed)
 
+    if args.serial.startswith("emulator-"):
+        # the emulator segfaults now and then in its own GL code (emulator.sh): boot it if gone
+        subprocess.run([str(Path(__file__).with_name("emulator.sh")), args.serial], check=True)
     adb(args.serial, "shell", "ime", "enable", ime)
     adb(args.serial, "shell", "ime", "set", ime)
     density = int(adb(args.serial, "shell", "wm", "density").split(":")[-1].strip()) / 160.0
