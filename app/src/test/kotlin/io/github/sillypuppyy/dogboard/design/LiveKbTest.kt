@@ -20,4 +20,8 @@ class LiveKbTest : FunSpec({
     test("every pad plane renders four rows") {
         for (p in listOf("numpad", "telpad", "telpad2")) KbSpec.render(KbProps(plane = p, only = "live")).rows.size shouldBe 4
     }
+    test("the number row adds a fifth row to the letters, as the touch model does") {
+        KbSpec.render(KbProps(plane = "base", only = "live", numberRow = true)).rows.size shouldBe 5
+        KbSpec.render(KbProps(plane = "base", only = "live")).rows.size shouldBe 4
+    }
 })

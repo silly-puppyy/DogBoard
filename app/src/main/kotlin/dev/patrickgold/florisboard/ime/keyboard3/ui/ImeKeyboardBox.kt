@@ -263,6 +263,7 @@ fun ImeKeyboardBox(
                     layerId = touchLayerId.toString(),
                     shiftState = inputShiftState,
                     enterAction = enterAction,
+                    numberRow = prefs.keyboard.numberRow.collectAsState().value,
                     // the touch model swaps the email/URL bottom row into "base"/"shift" itself
                     field = when (layoutVariation) {
                         KeyVariation.EMAIL_ADDRESS -> "email"

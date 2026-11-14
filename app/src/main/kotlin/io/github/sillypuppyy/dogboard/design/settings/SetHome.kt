@@ -42,16 +42,18 @@ object SetHomeSpec {
     private fun s(icon: String, title: String, sub: String, c: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>, target: String = "") =
         Section(icon, title, sub, c.first, c.second, target)
 
+    // settings layout v2 (approved by the user 2026-11-14, notes/design/settings-layout-proposal.md):
+    // sections in order of how often people need them; titles and subs from that proposal
     val sections = listOf(
         s("translate", "Languages and layouts", "English (US) · QWERTY · Simple layout", P),
-        s("palette", "Look", "Theme, key height, key shape", T, "SetLook"),
-        s("spellcheck", "Typing and correction", "Autocorrect, suggestions, text replacements", S),
-        s("menu_book", "Dictionaries and models", "Your words, blocked words, language models", P, "SetDict"),
-        s("vibration", "Feel", "Vibration, sound, timing", T, "SetFeel"),
-        s("swipe", "Gestures", "Space-bar trackpad, swipe to delete", S),
-        s("widgets", "Toolbar and tools", "Tools, clipboard, emoji", P),
+        s("palette", "Look", "Theme, photo background, key height", T, "SetLook"),
+        s("spellcheck", "Typing and correction", "Autocorrect, capitals, punctuation", S),
+        s("vibration", "Sound and vibration", "Volume, vibration style, feedback per key", P, "SetFeel"),
+        s("swipe", "Gestures", "Space-bar trackpad, swipe to delete", T),
+        s("widgets", "Clipboard and toolbar", "Clipboard history, how long clips are kept", S),
+        s("menu_book", "Your words", "Learned, added and blocked words", P, "SetDict"),
         s("shield_person", "Privacy", "Incognito, what’s stored, delete your data", T),
-        s("tune", "Advanced", "Developer options, backup, reset", S),
+        s("tune", "Advanced", "Fine-tuning, developer options, backup", S),
         s("info", "About", "Version, licenses, credits", P),
     )
 }
@@ -68,6 +70,13 @@ class SetHomeActions(
     val onLook: () -> Unit,
     /** A section row, by its title (SetHomeSpec.sections). */
     val onSection: (String) -> Unit,
+    // settings layout v2: the first-week choices as plain switches
+    val sound: Boolean = true,
+    val onSound: (Boolean) -> Unit = {},
+    val vibration: Boolean = true,
+    val onVibration: (Boolean) -> Unit = {},
+    val numberRow: Boolean = false,
+    val onNumberRow: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -143,9 +152,11 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     if (actions == null) SetBlockRow("main:feel") {
                         TitleSub("Feel", "Vibration and sound on each key")
                         Segmented("seg:feel", listOf("Quiet", "Default", "Crisp", "Custom"), 1, listOf(1f, 1.3f, 1f, 1f), checkGap = 4)
-                    } else SetLinkRow("main:feel", { actions.onSection("Feel") }) {
-                        TitleSub("Feel", "Vibration and sound on each key", Modifier.weight(1f))
-                        Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
+                    } else {
+                        // settings layout v2: plain switches; the full page is under All settings
+                        SetSwitchRow("main:sound", "Sound", "A click on each key", actions.sound, actions.onSound)
+                        SetSwitchRow("main:vibration", "Vibration", "A tap on each key", actions.vibration, actions.onVibration)
+                        SetSwitchRow("main:numrow", "Number row", "Digits above the letters", actions.numberRow, actions.onNumberRow)
                     }
                 }
                 // SetHome:83-93 all settings

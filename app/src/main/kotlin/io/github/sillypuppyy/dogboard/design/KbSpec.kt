@@ -52,6 +52,12 @@ data class KbProps(
     val lpSel: Int = 0,
     /** The live keyboard's long-press list (FlorisBoard's extended keys, in order); empty: the [KbSpec.LP] sample. */
     val lpItems: List<String> = emptyList(),
+    /**
+     * The number row above the letters (letter planes only), drawn as FlorisBoard's touch model
+     * lays it out: one more equal-height row. Design (Main:233): 44 dp with the key area growing
+     * instead; follow-up once the touch model supports a fixed row height.
+     */
+    val numberRow: Boolean = false,
     val pressed: String = "",
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
@@ -330,7 +336,7 @@ object KbSpec {
                     ),
                 )
             }
-            else -> listOf(
+            else -> (if (P.numberRow) listOf("1234567890".map { ch(it.toString()) }) else emptyList()) + listOf(
                 letters("qwertyuiop"),
                 listOf(gap(0.5f)) + letters("asdfghjkl") + listOf(gap(0.5f)),
                 listOf(shiftK, gap(0.2133f)) + letters("zxcvbnm") + listOf(gap(0.2267f), bksp()),

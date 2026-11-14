@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -102,6 +103,42 @@ fun SetBlockRow(id: String, content: @Composable ColumnScope.() -> Unit) {
         Modifier.fillMaxWidth().background(SetColors.row).lint(id).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) { LintParent(id) { content() } }
+}
+
+/**
+ * SetFeel:63-66: a switch row: title 16, sub 14 onSurfaceVariant, min height 72, padding
+ * 12/8/12/16, and the M3 switch (52 x 32 track; on: primary track, 24 dp white thumb at 4/24; off:
+ * surfaceContainerHighest track with a 2 dp outline ring, 16 dp outline thumb at 8/8).
+ */
+@Composable
+fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onChange: ((Boolean) -> Unit)? = null) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row)
+            .then(if (onChange != null) Modifier.clickable { onChange(!checked) } else Modifier).lint(id)
+            .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LintParent(id) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                DText(title, style = setText(16f))
+                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant))
+            }
+            val track = if (checked) SetColors.primary else SetColors.surfaceContainerHighest
+            Box(
+                Modifier.size(52.dp, 32.dp)
+                    .then(if (checked) Modifier else Modifier.cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 2f, SetColors.outline)), RoundedCornerShape(16.dp)))
+                    .background(track, RoundedCornerShape(16.dp)),
+            ) {
+                val size = if (checked) 24 else 16
+                val left = if (checked) 24 else 8
+                val top = if (checked) 4 else 8
+                Box(
+                    Modifier.padding(start = left.dp, top = top.dp).size(size.dp)
+                        .background(if (checked) Color.White else SetColors.outline, CircleShape),
+                )
+            }
+        }
+    }
 }
 
 /** SetHome:44-57: a link row (title/sub with something before and after). */

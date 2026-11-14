@@ -350,7 +350,8 @@ private fun computeTouchKeyboard(
                 ?.let { layers[K3LayerId(layer.id.value + it)] }
                 ?: layer
             val rows = buildList {
-                if (numberRow != null && (layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift)) {
+                // DogBoard: also on caps lock, so the row doesn't vanish when caps lock is on
+                if (numberRow != null && (layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift || layer.id == ImeLayerIds.Caps)) {
                     add(numberRow)
                 }
                 sourceLayer.rows.forEach { row ->

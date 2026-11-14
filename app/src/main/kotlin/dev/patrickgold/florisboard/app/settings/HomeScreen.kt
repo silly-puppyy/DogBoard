@@ -64,6 +64,9 @@ fun HomeScreen() {
         androidx.compose.runtime.SideEffect { previewField.isVisible = false }
         val autocorrectOn by prefs.correction.autocorrect.collectAsState()
         val level by prefs.correction.autocorrectLevel.collectAsState()
+        val sound by prefs.inputFeedback.audioEnabled.collectAsState()
+        val vibration by prefs.inputFeedback.hapticEnabled.collectAsState()
+        val numberRow by prefs.keyboard.numberRow.collectAsState()
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
         io.github.sillypuppyy.dogboard.design.settings.SetHome(
@@ -78,16 +81,22 @@ fun HomeScreen() {
                 },
                 onLanguages = { navController.navigate(Routes.Settings.Localization) },
                 onLook = { navController.navigate(Routes.Settings.Theme) },
+                sound = sound,
+                onSound = { on -> scope.launch { prefs.inputFeedback.audioEnabled.set(on) } },
+                vibration = vibration,
+                onVibration = { on -> scope.launch { prefs.inputFeedback.hapticEnabled.set(on) } },
+                numberRow = numberRow,
+                onNumberRow = { on -> scope.launch { prefs.keyboard.numberRow.set(on) } },
                 onSection = { title ->
                     navController.navigate(
                         when (title) {
                             "Languages and layouts" -> Routes.Settings.Localization
                             "Look" -> Routes.Settings.Theme
                             "Typing and correction", "Privacy" -> Routes.Settings.Typing
-                            "Dictionaries and models" -> Routes.Settings.Dictionary
-                            "Feel" -> Routes.Settings.Keyboard.InputFeedback
+                            "Your words" -> Routes.Settings.Dictionary
+                            "Sound and vibration" -> Routes.Settings.Keyboard.InputFeedback
                             "Gestures" -> Routes.Settings.Gestures
-                            "Toolbar and tools" -> Routes.Settings.Smartbar
+                            "Clipboard and toolbar" -> Routes.Settings.Clipboard
                             "Advanced" -> Routes.Settings.Other
                             else -> Routes.Settings.About
                         }

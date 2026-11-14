@@ -24,6 +24,8 @@ fun LiveKbView(
     layerId: String,
     /** The field variant ("text", "email", "url"): the touch model keeps the layer id "base". */
     field: String,
+    /** FlorisBoard's number row setting: the touch model adds the row to the letter planes. */
+    numberRow: Boolean,
     shiftState: InputShiftState,
     enterAction: String,
     pressedKey: TouchKey?,
@@ -50,6 +52,7 @@ fun LiveKbView(
             dark = dark,
             plane = plane,
             field = field,
+            numberRow = numberRow && plane == "base",
             shift = LiveKb.shift(shiftState),
             ret = if (enterAction in RET_WORDS) enterAction else "return",
             pressed = pressed,
