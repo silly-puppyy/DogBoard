@@ -489,7 +489,8 @@ object TypingEngine {
         val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates))
             .filter {
                 keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) &&
-                    keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word)
+                    keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
+                    !isCommonLearnedTypo(word.text, it.word)
             }
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
@@ -803,6 +804,17 @@ object TypingEngine {
         contactNames = emptySet()
     }
 }
+
+/**
+ * iOS FilterCommonLearnedTypos: for these typed words (exact case), corrections people tend to undo
+ * are never made (iOS's English adaptation-overrides list, 4 entries).
+ */
+private val COMMON_LEARNED_TYPOS = mapOf(
+    "i" to setOf("o", "O"), "I" to setOf("O", "o"), "can" to setOf("can't"), "and" to setOf("abs"),
+)
+
+internal fun isCommonLearnedTypo(typed: String, candidate: String): Boolean =
+    COMMON_LEARNED_TYPOS[typed]?.let { bad -> candidate.split(' ').any { it.replace('’', '\'') in bad } } == true
 
 /** iOS FilterCharacterCount (#13): a correction keeps at least as many "&" as were typed ("AT&T"). */
 internal fun keepsAmpersands(typed: String, candidate: String): Boolean =

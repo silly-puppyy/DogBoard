@@ -41,6 +41,15 @@ class FilterStackTest : FunSpec({
         ac.correction("saturdsys", listOf(c("saturday's", -5.0), c("saturdays", -5.6))) shouldBe "saturday's"
     }
 
+    test("FilterCommonLearnedTypos: i never becomes o, can never can't, and never abs") {
+        isCommonLearnedTypo("i", "o") shouldBe true
+        isCommonLearnedTypo("I", "O") shouldBe true
+        isCommonLearnedTypo("can", "can’t") shouldBe true
+        isCommonLearnedTypo("and", "abs") shouldBe true
+        isCommonLearnedTypo("and", "an") shouldBe false
+        isCommonLearnedTypo("Can", "can't") shouldBe false // exact case, as iOS
+    }
+
     test("#13 a correction keeps the typed ampersands") {
         keepsAmpersands("at&y", "at&t") shouldBe true
         keepsAmpersands("at&y", "arty") shouldBe false
