@@ -151,3 +151,13 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
 internal fun sortKey(word: String): String =
     Normalizer.normalize(word, Normalizer.Form.NFD).filter { it.isLetterOrDigit() }.lowercase()
 
+/**
+ * iOS exact-typed-string veto: the typed string (a candidate when
+ * the lexicon lacks it) is at least as likely, by the language-model terms alone, as the top
+ * candidate: no autocorrection.
+ */
+internal fun typedStringVeto(candidates: List<Candidate>): Boolean {
+    val typed = candidates.firstOrNull { it.isTypedString } ?: return false
+    val top = candidates.maxByOrNull { it.score } ?: return false
+    return top !== typed && typed.languageModel >= top.languageModel
+}

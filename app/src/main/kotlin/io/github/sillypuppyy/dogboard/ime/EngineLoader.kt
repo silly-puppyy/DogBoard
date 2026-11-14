@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.ime
 
 import android.content.Context
+import io.github.sillypuppyy.dogboard.engine.CharModel
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
 import java.io.File
 
@@ -53,5 +54,9 @@ object EngineLoader {
         // startup isn't slowed: memory-mapped from the package, which stores it uncompressed
         // (build.gradle.kts noCompress), so nothing is copied to the heap
         TypingEngine.attachNgrams(loadNgrams(app))
+        // the unknown-word letter model, also after: parsing it takes ~1.7 s on the emulator
+        val t1 = android.os.SystemClock.uptimeMillis()
+        TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.tsv").bufferedReader().use { CharModel.parse(it) } }.getOrNull())
+        android.util.Log.i("DogBoardPerf", "letter model attached after ${android.os.SystemClock.uptimeMillis() - t1} ms")
     }
 }

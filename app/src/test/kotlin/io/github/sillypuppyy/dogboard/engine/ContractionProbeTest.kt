@@ -111,4 +111,29 @@ class ContractionProbeTest : FunSpec({
             TypingEngine.unloadForTest()
         }
     }
+
+    test("unknown words typed exactly: kept, or split into known words?").config(enabled = System.getenv("DOGBOARD_PROBE") == "1") {
+        val keys = QwertyGeometry.letterKeys(375f, 216f)
+        val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
+        fun word(w: String) = CurrentWord().apply { for (c in w) addLetter(c, keys[c.lowercaseChar()]?.let { Tap(it.centerX, it.centerY) }, keys, params) }
+        TypingEngine.unloadForTest()
+        TypingEngine.load(
+            openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+            openBigrams = { File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader() },
+            openCharModel = System.getenv("DOGBOARD_CHARLM")?.let { path -> { File(path).bufferedReader() } },
+        )
+        System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.let { f ->
+            java.io.RandomAccessFile(f, "r").channel.use { ch -> NgramModel.fromBuffer(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size())) }
+        }?.let { TypingEngine.attachNgrams(it) }
+        try {
+            for ((before, w) in listOf("teh" to "thw", "I" to "wnat", "the" to "becuase", "my" to "Zorblax", "that" to "skibidi", "with" to "Kaito", "and" to "Zendaya", "on" to "Brightspace",
+                "a" to "tiktoker", "the" to "Kubernetes", "my" to "Aoife", "use" to "Figma", "on" to "Gumroad", "the" to "flavortown", "hi" to "Kenji")) {
+                val cw = word(w)
+                val c = TypingEngine.candidates(cw, before)
+                println("PROBE-UNK %-12s -> %-14s top: %s".format(w, TypingEngine.correction(cw, c) ?: w, c.take(3).joinToString { "%s %.2f".format(it.word, it.score) }))
+            }
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
 })

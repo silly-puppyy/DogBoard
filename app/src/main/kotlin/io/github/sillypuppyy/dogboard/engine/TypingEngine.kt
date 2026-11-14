@@ -114,13 +114,17 @@ object TypingEngine {
         snapshotDir: File? = null,
         snapshotKey: String = "",
         addedWords: File? = null,
+        /** The unknown-word letter model (en.charlm.tsv, [CharModel]); parsed once. */
+        openCharModel: (() -> BufferedReader)? = null,
     ) {
         if (loaded != null) return
         addedWordsFile = addedWords
+        if (charModel == null) charModel = openCharModel?.let { open -> runCatching { open().use { CharModel.parse(it) } }.getOrNull() }
         reload = {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
+                openCharModel,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -145,6 +149,8 @@ object TypingEngine {
                 ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
         }
         val engine = Loaded(lexicon, bigrams)
+        engine.decoder.unknownWords = charModel
+        engine.retroDecoder.unknownWords = charModel
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
@@ -176,6 +182,14 @@ object TypingEngine {
      * Attaches the trigram model to the loaded engine (call after [load], off the main thread):
      * kept apart so the keyboard is ready with the bigram model first and upgrades a moment later.
      */
+    /** The unknown-word letter model ([CharModel]), attached after loading so startup isn't slowed; kept across reloads. */
+    fun attachCharModel(model: CharModel?) {
+        if (model != null) charModel = model
+        val engine = loaded ?: return
+        engine.decoder.unknownWords = charModel
+        engine.retroDecoder.unknownWords = charModel
+    }
+
     fun attachNgrams(model: NgramModel?) {
         if (model != null) ngramModel = model
         val engine = loaded ?: return
@@ -203,6 +217,9 @@ object TypingEngine {
         lock.write { for (n in fresh) if (!engine.lexicon.contains(n)) engine.lexicon.addWord(n, engine.userWordLogProb) }
         contactNames = fresh
     }
+
+    @Volatile
+    private var charModel: CharModel? = null
 
     @Volatile
     private var contactNames: Set<String> = emptySet()
@@ -459,6 +476,9 @@ object TypingEngine {
         }
         if (candidates.isEmpty()) return null
         val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates)).filter { keepsPopupLetters(word.text, it.word) }
+        // iOS exact-typed-string veto: a typed word the lexicon
+        // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
+        if (vetoesCorrection(kept)) return null
         val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), level.level)
             ?: return null
         return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
@@ -698,6 +718,16 @@ object TypingEngine {
     private val SPELL_KEYS = QwertyGeometry.letterKeys(375f, 216f)
     private val SPELL_PARAMS = io.github.sillypuppyy.dogboard.touch.GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
 
+    /**
+     * iOS compares only the language-model terms: the typed string's (here: the unknown-word letter
+     * model, [CharModel]) against the top candidate's. Only with that model loaded: iOS's own
+     * fallback score for an unknown string (1e-4 per letter) would never pass.
+     */
+    private fun vetoesCorrection(candidates: List<Candidate>): Boolean {
+        if (charModel == null) return false
+        return typedStringVeto(candidates)
+    }
+
     /** True if any word of [candidate] (one word, or several when words were split) is never offered. */
     private fun isNotSuggestible(candidate: String): Boolean =
         blockNotSuggestible && noSuggest.isNotEmpty() && candidate.split(' ').any { it.lowercase() in noSuggest }
@@ -707,6 +737,7 @@ object TypingEngine {
     /** Forgets everything loaded (tests only). */
     internal fun unloadForTest() {
         loaded = null
+        charModel = null
         ngramModel = null
         userWordsFile = null
         blockedWordsFile = null

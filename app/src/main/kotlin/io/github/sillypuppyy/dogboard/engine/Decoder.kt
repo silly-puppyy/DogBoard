@@ -63,6 +63,10 @@ class Decoder(
         return c.copy(score = c.geometry + config.languagePower * l, languageModel = l)
     }
 
+    /** How plausible a word our lexicon lacks is ([CharModel]); null: iOS's dead-trie fallback alone. */
+    @Volatile
+    var unknownWords: CharModel? = null
+
     /** Can be attached after loading (TypingEngine.attachNgrams), so startup isn't slowed. */
     @Volatile
     var context: ContextScorer? = context
@@ -434,6 +438,8 @@ class Decoder(
      * and for the missing word end.
      */
     fun typedStringLogProb(typed: String): Double {
+        // a word the lexicon lacks, scored by how much it looks like one (names, slang, brands)
+        unknownWords?.let { m -> m.logProb(typed)?.let { return m.unknownLogProb + it } }
         var node = Lexicon.ROOT
         var score = 0.0
         for (c in typed) {

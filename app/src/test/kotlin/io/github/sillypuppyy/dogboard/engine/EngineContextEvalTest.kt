@@ -29,7 +29,7 @@ class EngineContextEvalTest : FunSpec({
             ?: "${System.getProperty("user.home")}/Documents/Code/AI/keyboard/data/tatoeba/eng_sentences.tsv"
     )
 
-    test("context from the previous word makes more words come out right").config(enabled = EVAL && tatoeba.exists()) {
+    test("context from the previous word makes more words come out right").config(enabled = EVAL && tatoeba.exists(), timeout = kotlin.time.Duration.parse("2h")) {
         val lexicon = File(LEXICON_PATH).bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val keys = QwertyGeometry.letterKeys(375f, 216f)
@@ -42,6 +42,9 @@ class EngineContextEvalTest : FunSpec({
         val withTrigram = ngrams?.let { Decoder(lexicon, bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
         val autocorrect = Autocorrect(lexicon)
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
+        // optional: the unknown-word letter model (DOGBOARD_CHARLM=path, tools/data/build_charlm.py) and its veto
+        val charModel = System.getenv("DOGBOARD_CHARLM")?.let { File(it) }?.takeIf { it.isFile }?.bufferedReader()?.use { CharModel.parse(it) }
+        for (d in listOfNotNull(plain, withContext, withTrigram)) d.unknownWords = charModel
 
         // DOGBOARD_EVAL_TEXT=file: one sentence per line (held-out sets from tools/data/build_eval_sets.py)
         val evalText = System.getenv("DOGBOARD_EVAL_TEXT")?.let { File(it) }?.takeIf { it.isFile }
@@ -85,6 +88,7 @@ class EngineContextEvalTest : FunSpec({
                     val literal = String(taps.map { tap -> keyList.maxBy { GaussianTouch.logLikelihood(it.value, tap.x, tap.y, params) }.key }.toCharArray())
                     fun final(decoder: Decoder, context: Int, context2: Int = -1): String {
                         val candidates = decoder.decode(taps, keys, params, previous = context, typed = literal, previous2 = context2)
+                        if (charModel != null && typedStringVeto(candidates)) return literal
                         return autocorrect.correction(literal, candidates) ?: literal
                     }
                     words++
