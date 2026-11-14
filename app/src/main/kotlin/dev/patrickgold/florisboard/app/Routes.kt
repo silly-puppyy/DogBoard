@@ -180,6 +180,11 @@ object Routes {
         @Deeplink("settings/other")
         object Other
 
+        // DogBoard: Advanced › Fine-tuning (settings layout v2)
+        @Serializable
+        @Deeplink("settings/other/fine-tuning")
+        object FineTuning
+
         @Serializable
         @Deeplink("settings/other/physical-keyboard")
         object PhysicalKeyboard
@@ -326,6 +331,7 @@ object Routes {
             composableWithDeepLink(Settings.Media::class) { MediaScreen() }
 
             composableWithDeepLink(Settings.Other::class) { OtherScreen() }
+            composableWithDeepLink(Settings.FineTuning::class) { io.github.sillypuppyy.dogboard.settings.FineTuningScreen() }
             composableWithDeepLink(Settings.PhysicalKeyboard::class) { PhysicalKeyboardScreen() }
             composableWithDeepLink(Settings.Backup::class) { BackupScreen() }
             composableWithDeepLink(Settings.Restore::class) { navBackStack ->

@@ -18,6 +18,7 @@ package dev.patrickgold.florisboard.app.settings.advanced
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Adb
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.FormatColorFill
 import androidx.compose.material.icons.filled.Language
@@ -64,6 +65,16 @@ fun OtherScreen() {
         previewFieldVisible = true,
     ) { contentPadding ->
         ScrollableScreenColumn(contentPadding) {
+            // DogBoard: Advanced › Fine-tuning (settings layout v2): timings from the design's Feel page
+            SegmentedListColumn {
+                Preference(
+                    shapes = ListItemDefaults.segmentedShapes(0, 1),
+                    icon = Icons.Default.Tune,
+                    title = "Fine-tuning",
+                    summary = "Hold times and other timings",
+                    onClick = { navController.navigate(Routes.Settings.FineTuning) },
+                )
+            }
             SegmentedListColumn {
                 val count = 6
                 ListPreference(

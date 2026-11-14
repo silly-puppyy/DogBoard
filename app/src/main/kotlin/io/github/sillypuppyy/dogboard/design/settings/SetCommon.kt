@@ -141,6 +141,49 @@ fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onCha
     }
 }
 
+/**
+ * SetFeel:33-41: a slider row: title 16 and the value 16/600 (onPrimaryContainer #2a4678 when
+ * changed, else onSurfaceVariant), a 44 dp reset button (secondaryContainer, restart_alt 20)
+ * when changed, the explanation 14 / 1.4, then the slider. The canvas's HTML range input is a web
+ * stand-in: the app uses the Material 3 slider in the design's primary colour.
+ */
+@Composable
+fun SetSliderRow(
+    id: String, title: String, explain: String, value: Float, default: Float, range: ClosedFloatingPointRange<Float>, step: Float,
+    format: (Float) -> String, onChange: (Float) -> Unit,
+) {
+    val changed = value != default
+    Column(
+        Modifier.fillMaxWidth().background(SetColors.row).lint(id).padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        LintParent(id) {
+            Row(Modifier.heightIn(min = 44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                DText(title, Modifier.weight(1f), style = setText(16f))
+                DText(format(value), style = setText(16f, 600, if (changed) css("#2a4678") else SetColors.onSurfaceVariant))
+                if (changed) {
+                    Box(
+                        Modifier.size(44.dp).background(SetColors.secondaryContainer, CircleShape).clickable { onChange(default) },
+                        contentAlignment = Alignment.Center,
+                    ) { Symbol("restart_alt", 20.sp, SetColors.primary) }
+                } else Box(Modifier.size(44.dp))
+            }
+            DText(explain, Modifier.padding(end = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = (14 * 1.4).sp))
+            val steps = ((range.endInclusive - range.start) / step).toInt() - 1
+            androidx.compose.material3.Slider(
+                value = value, onValueChange = { v -> onChange((Math.round((v - range.start) / step) * step + range.start)) },
+                valueRange = range, steps = steps.coerceAtLeast(0),
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp).height(36.dp),
+                colors = androidx.compose.material3.SliderDefaults.colors(
+                    thumbColor = SetColors.primary, activeTrackColor = SetColors.primary,
+                    inactiveTrackColor = SetColors.secondaryContainer,
+                    activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent,
+                ),
+            )
+        }
+    }
+}
+
 /** SetHome:44-57: a link row (title/sub with something before and after). */
 @Composable
 fun SetLinkRow(id: String, onClick: (() -> Unit)? = null, content: @Composable RowScope.() -> Unit) {
