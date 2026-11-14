@@ -363,7 +363,7 @@ object TypingEngine {
         val bigrams = engine.bigrams ?: return null // the look back needs a context model
         val prevTaps = previous.tapsOrNull() ?: return null
         val curTaps = current.tapsOrNull() ?: return null
-        if (previousCommitted.any { it.isDigit() } || isBlocked(previousCommitted)) return null
+        if (previousCommitted.any { it.isDigit() } || lock.read { isBlocked(previousCommitted) }) return null
         if (rejections.isBlocked(previous.text, previousCommitted)) return null
         return lock.read {
             val d = engine.retroDecoder
