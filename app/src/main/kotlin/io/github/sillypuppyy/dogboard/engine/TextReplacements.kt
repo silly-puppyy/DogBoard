@@ -53,7 +53,7 @@ class TextReplacements(private val file: File? = null) {
         val f = file ?: return
         runCatching {
             f.parentFile?.mkdirs()
-            f.writeText(entries.values.joinToString("") { (s, p) -> "$s\t$p\n" })
+            f.writeTextAtomically(entries.values.joinToString("") { (s, p) -> "$s\t$p\n" })
         }
     }
 

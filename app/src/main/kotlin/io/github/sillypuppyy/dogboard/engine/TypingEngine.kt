@@ -189,14 +189,7 @@ object TypingEngine {
     @Volatile
     private var contactNames: Set<String> = emptySet()
 
-    private fun writeAtomically(file: File, write: (java.io.OutputStream) -> Unit) {
-        runCatching {
-            file.parentFile?.mkdirs()
-            val tmp = File(file.parentFile, file.name + ".tmp")
-            tmp.outputStream().use(write)
-            if (!tmp.renameTo(file)) tmp.delete()
-        }
-    }
+    private fun writeAtomically(file: File, write: (java.io.OutputStream) -> Unit) = file.writeAtomically(write)
 
     /** How much the user uses [emoji], by the iOS recents score (EmojiUsage), for ordering recents. */
     fun emojiScore(emoji: String): Double = emojiUsage.score(emoji)
@@ -246,7 +239,7 @@ object TypingEngine {
         loaded ?: return
         val key = word.lowercase()
         for (f in listOfNotNull(userWordsFile, addedWordsFile)) {
-            runCatching { if (f.exists()) f.writeText(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
+            runCatching { if (f.exists()) f.writeTextAtomically(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
         }
         personal.remove(word)
         lock.write { learnedWords.remove(key) }
@@ -263,7 +256,7 @@ object TypingEngine {
         val key = word.lowercase()
         if (!lock.write { blocked.remove(key) }) return
         blockedWordsFile?.let { f ->
-            runCatching { if (f.exists()) f.writeText(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
+            runCatching { if (f.exists()) f.writeTextAtomically(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
         }
     }
 
@@ -507,7 +500,7 @@ object TypingEngine {
             }
             userWordsFile?.takeIf { it.exists() }?.let { file ->
                 val kept = file.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }
-                file.writeText(kept.joinToString("") { it + "\n" })
+                file.writeTextAtomically(kept.joinToString("") { it + "\n" })
             }
         }
     }

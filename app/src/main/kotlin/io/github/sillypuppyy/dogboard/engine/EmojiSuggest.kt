@@ -104,10 +104,12 @@ class EmojiUsage(private val file: File? = null) {
         val f = file ?: return
         runCatching {
             f.parentFile?.mkdirs()
-            f.bufferedWriter().use { w ->
+            f.writeAtomically { out ->
+                val w = out.bufferedWriter()
                 w.write("#dogboard-emoji-usage 1\t$sequence\n")
                 for ((e, seq) in uses) w.write("u\t$e\t$seq\n")
                 for ((a, n) in apps) w.write("a\t$a\t$n\n")
+                w.flush()
             }
         }
     }
