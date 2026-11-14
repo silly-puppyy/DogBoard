@@ -169,7 +169,8 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 // SetHome:83-93 all settings
                 SetGroup("All settings") {
                     for (s in SetHomeSpec.sections) {
-                        SetSectionRow(s.icon, s.title, s.sub, s.bg, s.fg, actions?.let { a -> { a.onSection(s.title) } })
+                        val (bg, fg) = SetColors.container(s.bg, s.fg)
+                        SetSectionRow(s.icon, s.title, s.sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
                     }
                 }
             }

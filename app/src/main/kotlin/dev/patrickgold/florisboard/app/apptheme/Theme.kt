@@ -83,6 +83,9 @@ fun FlorisAppTheme(
         }
     }
 
+    // DogBoard: the redesigned settings pages take the dark roles from this scheme
+    io.github.sillypuppyy.dogboard.design.settings.SetColors.darkScheme = if (darkTheme) colorScheme else null
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,

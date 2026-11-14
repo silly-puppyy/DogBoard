@@ -57,19 +57,55 @@ import io.github.sillypuppyy.dogboard.design.lint
  * the canvas); each comment names the Material role the value belongs to.
  */
 object SetColors {
-    val screen = css("#f3f3fa") // page background
-    val onSurface = css("#1a1b20")
-    val onSurfaceVariant = css("#44474f")
-    val primary = css("#435e91")
-    val outline = css("#74777f")
-    val outlineVariant = css("#c4c6d0")
-    val surfaceContainerHighest = css("#e2e2e9")
-    val row = css("#ffffff")
-    val secondaryContainer = css("#dbe2f9")
-    val onSecondaryContainer = css("#3f4759")
-    val errorContainer = css("#ffdad6") // SetDict:67
-    val onErrorContainer = css("#93000a")
-    // Brand.dc.html: Fur and Ink
+    /**
+     * The app's Material scheme while it is dark (set by FlorisAppTheme), else null: the canvas
+     * defines the light colours only, and dark uses the Material palette's own dark roles (user,
+     * 2026-11-14: "isn't there already a factory default dark? why not just use it").
+     */
+    var darkScheme: androidx.compose.material3.ColorScheme? by androidx.compose.runtime.mutableStateOf(null)
+
+    private inline fun role(light: Color, dark: (androidx.compose.material3.ColorScheme) -> Color): Color =
+        darkScheme?.let(dark) ?: light
+
+    private val lScreen = css("#f3f3fa")
+    private val lOnSurface = css("#1a1b20")
+    private val lOnSurfaceVariant = css("#44474f")
+    private val lPrimary = css("#435e91")
+    private val lOutline = css("#74777f")
+    private val lOutlineVariant = css("#c4c6d0")
+    private val lSurfaceContainerHighest = css("#e2e2e9")
+    private val lRow = css("#ffffff")
+    private val lSecondaryContainer = css("#dbe2f9")
+    private val lOnSecondaryContainer = css("#3f4759")
+    private val lErrorContainer = css("#ffdad6")
+    private val lOnErrorContainer = css("#93000a")
+
+    val screen get() = role(lScreen) { it.surface } // page background
+    val onSurface get() = role(lOnSurface) { it.onSurface }
+    val onSurfaceVariant get() = role(lOnSurfaceVariant) { it.onSurfaceVariant }
+    val primary get() = role(lPrimary) { it.primary }
+    val outline get() = role(lOutline) { it.outline }
+    val outlineVariant get() = role(lOutlineVariant) { it.outlineVariant }
+    val surfaceContainerHighest get() = role(lSurfaceContainerHighest) { it.surfaceContainerHighest }
+    val row get() = role(lRow) { it.surfaceContainer } // rows sit a step above the page
+    val secondaryContainer get() = role(lSecondaryContainer) { it.secondaryContainer }
+    val onSecondaryContainer get() = role(lOnSecondaryContainer) { it.onSecondaryContainer }
+    val errorContainer get() = role(lErrorContainer) { it.errorContainer } // SetDict:67
+    val onErrorContainer get() = role(lOnErrorContainer) { it.onErrorContainer }
+    /**
+     * A tonal container pair (SetHome's section icons): the canvas's light pair as given, in dark
+     * the scheme's primary / secondary / tertiary container roles.
+     */
+    fun container(lightBg: Color, lightFg: Color): Pair<Color, Color> {
+        val s = darkScheme ?: return lightBg to lightFg
+        return when (lightBg) {
+            css("#d8e2ff") -> s.primaryContainer to s.onPrimaryContainer
+            css("#fbd7fc") -> s.tertiaryContainer to s.onTertiaryContainer
+            else -> s.secondaryContainer to s.onSecondaryContainer
+        }
+    }
+
+    // Brand.dc.html: Fur and Ink (brand colours, the same in light and dark)
     val brandFur = css("#d9893d")
     val brandInk = css("#221a14")
 }

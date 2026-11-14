@@ -58,6 +58,8 @@ class EngineContextEvalTest : FunSpec({
             .take(800)
             .toList()
 
+        // optional: every trigram miss at 1.5x2.0 mm (DOGBOARD_EVAL_ERRORS=file): expected, raw letters, result, previous word
+        val errorsOut = System.getenv("DOGBOARD_EVAL_ERRORS")?.let { File(it).printWriter() }
         for ((sx, sy) in listOf(1.0 to 1.5, 1.5 to 2.0, 2.2 to 3.2)) {
             val rng = Random(3)
             var words = 0
@@ -96,8 +98,11 @@ class EngineContextEvalTest : FunSpec({
                     if (literal == letters) raw++
                     if (final(plain, -1).equals(t, ignoreCase = true)) rightPlain++
                     if (final(withContext, bigrams.contextId(previous)).equals(t, ignoreCase = true)) rightContext++
-                    if (withTrigram != null && final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1)
-                            .equals(t, ignoreCase = true)) rightTrigram++
+                    if (withTrigram != null) {
+                        val got = final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1)
+                        if (got.equals(t, ignoreCase = true)) rightTrigram++
+                        else if (sx == 1.5) errorsOut?.println("$t\t$literal\t$got\t$previous")
+                    }
                     previous2 = previous
                     previous = t.lowercase()
                 }
@@ -110,6 +115,7 @@ class EngineContextEvalTest : FunSpec({
             )
             if (sx == 1.5) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
         }
+        errorsOut?.close()
     }
 
     test("key prior: raw letters with no prior, the word prior, and the word + previous-word prior").config(enabled = EVAL && tatoeba.exists()) {
