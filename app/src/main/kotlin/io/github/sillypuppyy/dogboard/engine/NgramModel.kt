@@ -81,8 +81,39 @@ class NgramModel private constructor(
         return scores.entries.sortedByDescending { it.value }.take(n).map { it.key to it.value }
     }
 
+    /**
+     * The binary form shipped in the app (tools/data/arpa_to_dogboard.py writes the same layout):
+     * magic, counts, vocabulary (UTF), then the arrays as written here, big-endian.
+     */
+    fun writeBinary(out: java.io.OutputStream) {
+        val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
+        d.writeInt(BINARY_MAGIC); d.writeInt(vocab.size); d.writeInt(biKeys.size); d.writeInt(triKeys.size)
+        for (w in vocab) d.writeUTF(w)
+        for (x in uniLogP) d.writeFloat(x)
+        for (x in uniBackoff) d.writeFloat(x)
+        for (x in biKeys) d.writeLong(x)
+        for (x in biLogP) d.writeFloat(x)
+        for (x in biBackoff) d.writeFloat(x)
+        for (x in triKeys) d.writeLong(x)
+        for (x in triLogP) d.writeFloat(x)
+        d.flush()
+    }
+
     companion object {
         const val START = "<s>"
+        private const val BINARY_MAGIC = 0x44474e31 // "DGN1"
+
+        /** Reads [writeBinary]'s layout; null if it isn't one. */
+        fun readBinary(input: java.io.InputStream): NgramModel? = runCatching {
+            val d = java.io.DataInputStream(java.io.BufferedInputStream(input, 1 shl 16))
+            if (d.readInt() != BINARY_MAGIC) return null
+            val nv = d.readInt(); val nb = d.readInt(); val nt = d.readInt()
+            val vocab = Array(nv) { d.readUTF() }
+            val up = FloatArray(nv) { d.readFloat() }; val ub = FloatArray(nv) { d.readFloat() }
+            val bk = LongArray(nb) { d.readLong() }; val bp = FloatArray(nb) { d.readFloat() }; val bb = FloatArray(nb) { d.readFloat() }
+            val tk = LongArray(nt) { d.readLong() }; val tp = FloatArray(nt) { d.readFloat() }
+            NgramModel(vocab, up, ub, bk, bp, bb, tk, tp)
+        }.getOrNull()
         private const val MASK21 = (1L shl 21) - 1
         private val LN10 = ln(10.0)
 

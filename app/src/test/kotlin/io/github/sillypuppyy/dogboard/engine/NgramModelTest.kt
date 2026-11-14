@@ -54,4 +54,12 @@ class NgramModelTest : FunSpec({
         m.logProb(-1, id("i"), m.idOf("zebra")) shouldBe null
         m.followers(id("i"), id("love"), 2).first().first shouldBe id("you")
     }
+    test("the binary form reads back the same model") {
+        val bytes = java.io.ByteArrayOutputStream().also { m.writeBinary(it) }.toByteArray()
+        val r = NgramModel.readBinary(bytes.inputStream())!!
+        r.size shouldBe m.size
+        r.logProb(r.idOf("i"), r.idOf("love"), r.idOf("you")) shouldBe m.logProb(id("i"), id("love"), id("you"))
+        r.logProb(r.idOf("<s>"), r.idOf("i"), r.idOf("love")) shouldBe m.logProb(id("<s>"), id("i"), id("love"))
+        NgramModel.readBinary("junk".byteInputStream()) shouldBe null
+    }
 })
