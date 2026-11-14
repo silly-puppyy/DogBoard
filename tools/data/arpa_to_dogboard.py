@@ -121,6 +121,7 @@ def write_compact(out, vocab, uni_p, uni_b, pairs, triples):
         for w in vocab:
             b = w.encode("utf-8")
             o.write(struct.pack(">H", len(b))); o.write(b)
+        o.write(b"\0" * (-o.tell() % 8))  # tables 8-byte aligned (memory-mapped in the app)
         o.write(struct.pack(f">{len(vocab)}f", *uni_p))
         o.write(struct.pack(f">{len(vocab)}f", *uni_b))
         o.write(struct.pack(">256f", *pc)); o.write(struct.pack(">256f", *bc))
@@ -128,6 +129,7 @@ def write_compact(out, vocab, uni_p, uni_b, pairs, triples):
         o.write(struct.pack(f">{len(pairs)}i", *[k & 0xFFFFFFFF for k, _, _ in pairs]))
         o.write(bytes(pcode)); o.write(bytes(bcode))
         o.write(struct.pack(">256f", *tc))
+        o.write(b"\0" * (-o.tell() % 8))
         o.write(struct.pack(f">{len(triples)}q", *[k for k, _ in triples]))
         o.write(bytes(tcode))
     print(f"wrote {out} (compact): vocab {len(vocab)}, pairs {len(pairs)}, triples {len(triples)}", file=sys.stderr)

@@ -17,25 +17,27 @@ import kotlin.math.ln
  */
 class NgramModel private constructor(
     private val vocab: Array<String>,
-    private val uniLogP: FloatArray,
-    private val uniBackoff: FloatArray,
-    private val biOffsets: IntArray,
-    private val biWords: IntArray,
-    private val biP: ByteArray,
-    private val biB: ByteArray,
+    private val uniLogP: java.nio.FloatBuffer,
+    private val uniBackoff: java.nio.FloatBuffer,
+    private val biOffsets: java.nio.IntBuffer,
+    private val biWords: java.nio.IntBuffer,
+    private val biP: java.nio.ByteBuffer,
+    private val biB: java.nio.ByteBuffer,
     private val biPBook: FloatArray,
     private val biBBook: FloatArray,
-    private val triKeys: LongArray,
-    private val triP: ByteArray,
+    private val triKeys: java.nio.LongBuffer,
+    private val triP: java.nio.ByteBuffer,
     private val triPBook: FloatArray,
 ) {
+    // The large tables are buffers, so the shipped file can be memory-mapped: nothing is copied
+    // onto the heap and loading is near-instant ([fromBuffer]).
     private val index: HashMap<String, Int> = HashMap<String, Int>(vocab.size * 2).also { m ->
         vocab.forEachIndexed { i, w -> m[w] = i }
     }
 
     val size: Int get() = vocab.size
-    val pairCount: Int get() = biWords.size
-    val tripleCount: Int get() = triKeys.size
+    val pairCount: Int get() = biWords.limit()
+    val tripleCount: Int get() = triKeys.limit()
 
     /** The model's id for [word] (lowercase), or -1. */
     fun idOf(word: String): Int = index[word] ?: -1
@@ -44,9 +46,25 @@ class NgramModel private constructor(
 
     /** Index of the pair ([a], [b]), or -1. */
     private fun pairIndex(a: Int, b: Int): Int {
-        if (a < 0 || a + 1 >= biOffsets.size) return -1
-        val i = java.util.Arrays.binarySearch(biWords, biOffsets[a], biOffsets[a + 1], b)
-        return if (i >= 0) i else -1
+        if (a < 0 || a + 1 >= biOffsets.limit()) return -1
+        var lo = biOffsets[a]; var hi = biOffsets[a + 1] - 1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            val v = biWords[mid]
+            if (v < b) lo = mid + 1 else if (v > b) hi = mid - 1 else return mid
+        }
+        return -1
+    }
+
+    /** Index of [key] in the sorted triple keys, or -(insertion point) - 1. */
+    private fun triSearch(key: Long): Int {
+        var lo = 0; var hi = triKeys.limit() - 1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            val v = triKeys[mid]
+            if (v < key) lo = mid + 1 else if (v > key) hi = mid - 1 else return mid
+        }
+        return -(lo + 1)
     }
 
     /**
@@ -56,10 +74,10 @@ class NgramModel private constructor(
     fun logProb(a: Int, b: Int, w: Int): Double? {
         if (w < 0 || w >= vocab.size) return null
         if (a >= 0 && b >= 0) {
-            val t = triKeys.binarySearch(tri(a, b, w))
-            if (t >= 0) return triPBook[triP[t].toInt() and 0xff].toDouble()
+            val t = triSearch(tri(a, b, w))
+            if (t >= 0) return triPBook[triP.get(t).toInt() and 0xff].toDouble()
             val p = pairIndex(a, b)
-            val bo = if (p >= 0) biBBook[biB[p].toInt() and 0xff].toDouble() else 0.0
+            val bo = if (p >= 0) biBBook[biB.get(p).toInt() and 0xff].toDouble() else 0.0
             return bo + bigram(b, w)
         }
         if (b >= 0) return bigram(b, w)
@@ -68,21 +86,21 @@ class NgramModel private constructor(
 
     private fun bigram(b: Int, w: Int): Double {
         val p = pairIndex(b, w)
-        if (p >= 0) return biPBook[biP[p].toInt() and 0xff].toDouble()
+        if (p >= 0) return biPBook[biP.get(p).toInt() and 0xff].toDouble()
         return uniBackoff[b].toDouble() + uniLogP[w]
     }
 
     /** The [n] most likely next words after [a] [b] by the trigram and bigram entries, most likely first. */
     fun followers(a: Int, b: Int, n: Int): List<Pair<Int, Double>> {
         val scores = HashMap<Int, Double>()
-        if (b >= 0 && b + 1 < biOffsets.size) {
+        if (b >= 0 && b + 1 < biOffsets.limit()) {
             for (i in biOffsets[b] until biOffsets[b + 1]) scores[biWords[i]] = logProb(a, b, biWords[i]) ?: Double.NEGATIVE_INFINITY
         }
         if (a >= 0 && b >= 0) {
             val prefix = tri(a, b, 0)
-            var i = triKeys.binarySearch(prefix).let { if (it < 0) -it - 1 else it }
-            while (i < triKeys.size && (triKeys[i] and MASK21.inv()) == prefix) {
-                scores[(triKeys[i] and MASK21).toInt()] = triPBook[triP[i].toInt() and 0xff].toDouble()
+            var i = triSearch(prefix).let { if (it < 0) -it - 1 else it }
+            while (i < triKeys.limit() && (triKeys[i] and MASK21.inv()) == prefix) {
+                scores[(triKeys[i] and MASK21).toInt()] = triPBook[triP.get(i).toInt() and 0xff].toDouble()
                 i++
             }
         }
@@ -92,18 +110,22 @@ class NgramModel private constructor(
     /** The compact binary form ([readBinary]); the converter writes the same layout. */
     fun writeBinary(out: java.io.OutputStream) {
         val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
-        d.writeInt(MAGIC); d.writeInt(vocab.size); d.writeInt(biWords.size); d.writeInt(triKeys.size)
-        for (w in vocab) d.writeUTF(w)
-        for (x in uniLogP) d.writeFloat(x)
-        for (x in uniBackoff) d.writeFloat(x)
+        d.writeInt(MAGIC); d.writeInt(vocab.size); d.writeInt(pairCount); d.writeInt(tripleCount)
+        for (w in vocab) { val b = w.toByteArray(); d.writeShort(b.size); d.write(b) }
+        // the tables start 8-byte aligned, so they can be viewed in place (d.size() counts bytes written)
+        while (d.size() % 8 != 0) d.writeByte(0)
+        for (i in 0 until vocab.size) d.writeFloat(uniLogP[i])
+        for (i in 0 until vocab.size) d.writeFloat(uniBackoff[i])
         for (x in biPBook) d.writeFloat(x)
         for (x in biBBook) d.writeFloat(x)
-        for (x in biOffsets) d.writeInt(x)
-        for (x in biWords) d.writeInt(x)
-        d.write(biP); d.write(biB)
+        for (i in 0 until biOffsets.limit()) d.writeInt(biOffsets[i])
+        for (i in 0 until pairCount) d.writeInt(biWords[i])
+        for (i in 0 until pairCount) d.writeByte(biP[i].toInt())
+        for (i in 0 until pairCount) d.writeByte(biB[i].toInt())
         for (x in triPBook) d.writeFloat(x)
-        for (x in triKeys) d.writeLong(x)
-        d.write(triP)
+        while (d.size() % 8 != 0) d.writeByte(0)
+        for (i in 0 until tripleCount) d.writeLong(triKeys[i])
+        for (i in 0 until tripleCount) d.writeByte(triP[i].toInt())
         d.flush()
     }
 
@@ -115,20 +137,34 @@ class NgramModel private constructor(
 
         private fun tri(a: Int, b: Int, c: Int): Long = (a.toLong() shl 42) or (b.toLong() shl 21) or c.toLong()
 
-        /** Reads [writeBinary]'s layout; null if it isn't one. */
-        fun readBinary(input: java.io.InputStream): NgramModel? = runCatching {
-            val d = java.io.DataInputStream(java.io.BufferedInputStream(input, 1 shl 16))
-            if (d.readInt() != MAGIC) return null
-            val nv = d.readInt(); val nb = d.readInt(); val nt = d.readInt()
-            val vocab = Array(nv) { d.readUTF() }
-            val up = FloatArray(nv) { d.readFloat() }; val ub = FloatArray(nv) { d.readFloat() }
-            val pb = FloatArray(256) { d.readFloat() }; val bb = FloatArray(256) { d.readFloat() }
-            val off = IntArray(nv + 1) { d.readInt() }
-            val bw = IntArray(nb) { d.readInt() }
-            val bp = ByteArray(nb).also { d.readFully(it) }; val bbo = ByteArray(nb).also { d.readFully(it) }
-            val tb = FloatArray(256) { d.readFloat() }
-            val tk = LongArray(nt) { d.readLong() }
-            val tp = ByteArray(nt).also { d.readFully(it) }
+        /** Reads [writeBinary]'s layout from a stream (copies it into memory); null if it isn't one. */
+        fun readBinary(input: java.io.InputStream): NgramModel? =
+            runCatching { fromBuffer(java.nio.ByteBuffer.wrap(input.readBytes())) }.getOrNull()
+
+        /**
+         * Views [writeBinary]'s layout in [buf] (big-endian) without copying the tables: pass a
+         * memory-mapped file to keep them off the heap. Null if it isn't one.
+         */
+        fun fromBuffer(buf: java.nio.ByteBuffer): NgramModel? = runCatching {
+            val b = buf.duplicate().order(java.nio.ByteOrder.BIG_ENDIAN)
+            if (b.int != MAGIC) return null
+            val nv = b.int; val nb = b.int; val nt = b.int
+            val vocab = Array(nv) {
+                val bytes = ByteArray(b.short.toInt() and 0xffff); b.get(bytes); String(bytes, Charsets.UTF_8)
+            }
+            while (b.position() % 8 != 0) b.get()
+            fun floats(n: Int) = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asFloatBuffer().limit(n) as java.nio.FloatBuffer).also { b.position(b.position() + 4 * n) }
+            fun ints(n: Int) = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asIntBuffer().limit(n) as java.nio.IntBuffer).also { b.position(b.position() + 4 * n) }
+            fun bytes(n: Int) = (b.slice().limit(n) as java.nio.ByteBuffer).also { b.position(b.position() + n) }
+            fun book() = FloatArray(256) { b.float }
+            val up = floats(nv); val ub = floats(nv)
+            val pb = book(); val bb = book()
+            val off = ints(nv + 1); val bw = ints(nb)
+            val bp = bytes(nb); val bbo = bytes(nb)
+            val tb = book()
+            while (b.position() % 8 != 0) b.get()
+            val tk = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asLongBuffer().limit(nt) as java.nio.LongBuffer).also { b.position(b.position() + 8 * nt) }
+            val tp = bytes(nt)
             NgramModel(vocab, up, ub, off, bw, bp, bbo, pb, bb, tk, tp, tb)
         }.getOrNull()
 
@@ -190,9 +226,10 @@ class NgramModel private constructor(
             val (bBook, bCodes) = quantise(FloatArray(bi.size) { bi[it].third })
             val (tBook, tCodes) = quantise(FloatArray(tri.size) { tri[it].second })
             return NgramModel(
-                vocab.toTypedArray(), uniP.toFloatArray(), uniB.toFloatArray(),
-                offsets, IntArray(bi.size) { (bi[it].first and 0xffffffffL).toInt() }, pCodes, bCodes, pBook, bBook,
-                LongArray(tri.size) { tri[it].first }, tCodes, tBook,
+                vocab.toTypedArray(), java.nio.FloatBuffer.wrap(uniP.toFloatArray()), java.nio.FloatBuffer.wrap(uniB.toFloatArray()),
+                java.nio.IntBuffer.wrap(offsets), java.nio.IntBuffer.wrap(IntArray(bi.size) { (bi[it].first and 0xffffffffL).toInt() }),
+                java.nio.ByteBuffer.wrap(pCodes), java.nio.ByteBuffer.wrap(bCodes), pBook, bBook,
+                java.nio.LongBuffer.wrap(LongArray(tri.size) { tri[it].first }), java.nio.ByteBuffer.wrap(tCodes), tBook,
             )
         }
     }
