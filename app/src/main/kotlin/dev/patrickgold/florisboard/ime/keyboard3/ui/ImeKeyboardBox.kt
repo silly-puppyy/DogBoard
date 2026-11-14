@@ -111,8 +111,11 @@ fun ImeKeyboardBox(
         KeyVariation.EMAIL_ADDRESS, KeyVariation.URI -> v
         else -> KeyVariation.NORMAL
     }
-    val touchModelOptions = remember(baseTouchModelOptions, layoutVariation) {
-        baseTouchModelOptions.copy(keyVariation = layoutVariation)
+    // DogBoard: password fields always get the number row (Gboard's default; digits are common
+    // there and nothing corrects a slip)
+    val passwordField = imeState.flags.keyVariation == KeyVariation.PASSWORD
+    val touchModelOptions = remember(baseTouchModelOptions, layoutVariation, passwordField) {
+        baseTouchModelOptions.copy(keyVariation = layoutVariation, showNumberRow = baseTouchModelOptions.showNumberRow || passwordField)
     }
     var activeTouchModel by remember {
         mutableStateOf(imeController.touchModelCache.getFor(model, touchModelOptions) ?: TouchModel.Empty)
@@ -263,7 +266,7 @@ fun ImeKeyboardBox(
                     layerId = touchLayerId.toString(),
                     shiftState = inputShiftState,
                     enterAction = enterAction,
-                    numberRow = prefs.keyboard.numberRow.collectAsState().value,
+                    numberRow = prefs.keyboard.numberRow.collectAsState().value || passwordField,
                     actionWords = prefs.keyboard.actionKeyWords.collectAsState().value,
                     actionLabel = actionLabel,
                     // the touch model swaps the email/URL bottom row into "base"/"shift" itself
