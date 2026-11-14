@@ -235,6 +235,7 @@ def main():
     ap.add_argument("--max-surnames", type=int, default=20000, help="most common Census surnames to include")
     ap.add_argument("--out", default="app/src/main/assets/dogboard/en.lexicon.tsv")
     ap.add_argument("--casing", default="", help="casing_counts.py output; keeps SCOWL's casings of a word with a measured split")
+    ap.add_argument("--seen-counts", default="", help="count_unigrams.py output (FineWeb): plain lowercase SCOWL words it never saw are dropped")
     args = ap.parse_args()
 
     final_dir = os.path.join(args.data, "scowl/scowl-2020.12.07/final")
@@ -262,8 +263,21 @@ def main():
             forms[key][form] = z
         sources[source] += 1
 
+    # words never seen in billions of words of text only give autocorrect wrong targets
+    # ("abamperes", "abnub"); only plain lowercase words: names and forms our tokenizer splits stay
+    seen = None
+    if args.seen_counts:
+        seen = set()
+        with open(args.seen_counts, encoding="utf-8") as f:
+            for line in f:
+                if not line.startswith("#"):
+                    seen.add(line.split("\t", 1)[0].lower())
+    unseen_dropped = 0
     for w, (level, kind) in scowl.items():
         if not WORD_RE.match(w):
+            continue
+        if seen is not None and w.isalpha() and w.islower() and w not in seen:
+            unseen_dropped += 1
             continue
         add(w, zipf.get(w.lower(), zipf_floor(level)), "scowl", level)
     for label, sitelinks in wikidata.items():
@@ -282,6 +296,8 @@ def main():
             continue
         add(w, z, "wordfreq")
     # American variant spellings fill gaps only: a name with the same letters wins (Bonnie, not bonnie)
+    if seen is not None:
+        print(f"dropped {unseen_dropped} SCOWL words never seen in --seen-counts")
     for w, level in load_us_variants(final_dir, 95).items():
         z = zipf.get(w.lower())
         if z is not None and z >= MIN_ZIPF_US_VARIANT and WORD_RE.match(w) and w.lower() not in forms:
