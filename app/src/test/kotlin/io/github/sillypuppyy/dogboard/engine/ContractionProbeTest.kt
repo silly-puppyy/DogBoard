@@ -22,7 +22,7 @@ class ContractionProbeTest : FunSpec({
             "ill be there", "i feel ill", "hell yes", "go to hell", "he said hell be late", "a sea shell", "shell be fine",
             "its raining", "the dog wagged its tail", "lets go", "she lets him", "well see", "very well",
             "were here", "we were", "wont happen", "wed better go", "they wed in june", "id like that", "my id card",
-            "wed love to", "wed be happy", "i wish wed known", "i wont go", "he wont stop", "the couple will wed", "wed like to", "if wed known", "cant wait", "dont know", "im here", "youre right", "theyre gone", "whats up", "thats it", "hes here",
+            "wed love to", "wed be happy", "i wish wed known", "i wont go", "he wont stop", "the couple will wed", "wed like to", "if wed known", "love u", "see u soon", "are u ok", "thank u", "u there", "o well", "o my god", "i owe u", "cant wait", "dont know", "im here", "youre right", "theyre gone", "whats up", "thats it", "hes here",
         )
         for (phrase in phrases) {
             var previous = Bigrams.START
@@ -37,6 +37,24 @@ class ContractionProbeTest : FunSpec({
                 result
             }
             println("PROBE %-24s -> %s".format(phrase, out.joinToString(" ")))
+        }
+        // accents typed from a long-press popup: the tap is the base key's (as the keyboard records it)
+        for (typed in listOf("cafè", "café", "naïve", "naive", "résumé", "resumé", "señor", "jalapeño", "fiancé", "über")) {
+            val taps = typed.map { c -> keys.getValue(Lexicon.fold(c)).let { Tap(it.centerX, it.centerY) } }
+            val candidates = decoder.decode(taps, keys, params, previous = bigrams.contextId(Bigrams.START), typed = typed)
+            val result = autocorrect.correction(typed, candidates.filter { keepsPopupLetters(typed, it.word) }) ?: typed
+            println("PROBE-ACCENT %s -> %s   top: %s".format(typed, result, candidates.take(3).joinToString { "%s %.2f".format(it.word, it.score) }))
+        }
+        // a sloppy "u": the tap 40 % of the way toward a neighbouring key, after a context word
+        val u = keys.getValue('u')
+        for (toward in listOf('y', 'i', 'j')) {
+            val k = keys.getValue(toward)
+            val tap = Tap(u.centerX + 0.4f * (k.centerX - u.centerX), u.centerY + 0.4f * (k.centerY - u.centerY))
+            for (before in listOf("love", "are", "thank", "see", "owe", "miss")) {
+                val candidates = decoder.decode(listOf(tap), keys, params, previous = bigrams.contextId(before), typed = "u")
+                val result = autocorrect.correction("u", candidates) ?: "u"
+                println("PROBE-U %s u(→%s) -> %s   top: %s".format(before, toward, result, candidates.take(3).joinToString { "%s %.2f".format(it.word, it.score) }))
+            }
         }
     }
 })

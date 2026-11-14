@@ -390,7 +390,7 @@ object TypingEngine {
             val prevCandidates = d.decode(
                 prevTaps, previous.keys, previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
-            ).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) }
+            ).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
             fun joint(prevWord: String, prevScore: Double): Double {
                 val cur = d.decode(curTaps, current.keys, current.params!!, 1, includeCompletions = false,
                     previous = bigrams.contextId(prevWord.lowercase()), typed = current.text)
@@ -423,7 +423,8 @@ object TypingEngine {
             if (!rejections.isBlocked(word.text, phrase, consume = commit)) return phrase
         }
         if (candidates.isEmpty()) return null
-        val result = engine.autocorrect.correction(word.text, withoutLearnedTypo(word.text, candidates), previousCorrection, caseFor(word, curly), level.level)
+        val kept = withoutLearnedTypo(word.text, candidates).filter { keepsPopupLetters(word.text, it.word) }
+        val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), level.level)
             ?: return null
         return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
     }
@@ -642,4 +643,17 @@ object TypingEngine {
         reload = null
         contactNames = emptySet()
     }
+}
+
+/**
+ * iOS FilterPopupVariantMismatch: a letter typed from a long-press popup stays in a correction, at
+ * the same place ("café" typed with é is not corrected to "cafe"). The letter keys are plain a-z,
+ * so an accented letter in [typed] came from a popup.
+ */
+internal fun keepsPopupLetters(typed: String, candidate: String): Boolean {
+    for ((i, c) in typed.withIndex()) {
+        if (Lexicon.fold(c) == c.lowercaseChar()) continue
+        if (candidate.getOrNull(i)?.lowercaseChar() != c.lowercaseChar()) return false
+    }
+    return true
 }

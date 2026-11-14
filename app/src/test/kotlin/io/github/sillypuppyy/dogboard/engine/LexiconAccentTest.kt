@@ -19,4 +19,15 @@ class LexiconAccentTest : FunSpec({
         Lexicon.fold('Ö') shouldBe 'o'
         Lexicon.fold('\'') shouldBe '\''
     }
+
+    test("a letter typed from a popup stays in the correction (iOS FilterPopupVariantMismatch)") {
+        keepsPopupLetters("café", "cafe") shouldBe false
+        keepsPopupLetters("café", "café") shouldBe true
+        keepsPopupLetters("cafè", "café") shouldBe false
+        keepsPopupLetters("Über", "Uber") shouldBe false
+        keepsPopupLetters("über", "Über") shouldBe true // case may change, the accent may not
+        keepsPopupLetters("cafe", "café") shouldBe true // plain letters typed: the accent may be added
+        keepsPopupLetters("don’t", "don't") shouldBe true // a curly apostrophe is not a popup letter
+        keepsPopupLetters("thw", "the") shouldBe true
+    }
 })
