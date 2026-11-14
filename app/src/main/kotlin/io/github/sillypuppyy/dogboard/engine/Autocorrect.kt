@@ -11,6 +11,10 @@ import kotlin.math.ln
  * and a clear lead over the runner-up.
  */
 class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level = Level.STANDARD) {
+    /** Which of "Xs" / "X's" is the usual spelling ([PreferredForms]); null: no preference (#28 off). */
+    @Volatile
+    var preferredForms: PreferredForms? = null
+
     /**
      * How readily words are changed (design: Gentle / Standard / Strong; Off is not calling this).
      * Standard is iOS; the others were measured on the eval words (settings-model.md §4).
@@ -85,6 +89,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             .filter { it.words == 1 || it.contextSupport >= MIN_CONTEXT_SUPPORT } // Rule 3
             .mapNotNull { c -> case(c.word)?.let { c to it } }
             .let(::boostPlainer)
+            .let(::boostPreferredForm)
         val (top, t) = cased.firstOrNull() ?: return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
@@ -137,6 +142,21 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         }
         if (pick < 0) return cased
         return listOf(cased[pick]) + cased.filterIndexed { i, _ -> i != pick }
+    }
+
+    /**
+     * iOS BoostPreferedFormForSortkey (#28): when the top word has a twin spelled with the same letters
+     * but for an apostrophe ("abbey's" / "abbeys", "Johns" / "John's"), the usual spelling of the two
+     * goes first. iOS marks it in its lexicon; ours comes from word counts ([PreferredForms]).
+     */
+    private fun boostPreferredForm(cased: List<Pair<Candidate, String>>): List<Pair<Candidate, String>> {
+        val forms = preferredForms ?: return cased
+        if (cased.size < 2) return cased
+        val top = cased[0].first.word
+        val j = cased.indexOfFirst { (c, _) -> c.word != top && forms.twins(top, c.word) }
+        if (j < 0) return cased
+        val preferred = forms.preferred(top, cased[j].first.word) ?: return cased
+        return if (preferred == top) cased else listOf(cased[j]) + cased.filterIndexed { i, _ -> i != j }
     }
 
     /** Marks inside words (apostrophes, hyphens, dots) plus accented letters. */

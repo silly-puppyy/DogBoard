@@ -37,7 +37,10 @@ class EngineContextEvalTest : FunSpec({
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // optional: a trigram model binary (DOGBOARD_NGRAMS=path, tools/data/arpa_to_dogboard.py)
         val ngrams = System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
-        val autocorrect = Autocorrect(lexicon)
+        // the usual spelling of plural / possessive twins (#28; DOGBOARD_PREFERRED=0 turns it off)
+        val autocorrect = Autocorrect(lexicon).apply {
+            if (System.getenv("DOGBOARD_PREFERRED") != "0") preferredForms = File("src/main/assets/dogboard/en.preferred.txt").bufferedReader().use { PreferredForms.parse(it) }
+        }
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
         // optional: the unknown-word letter model (DOGBOARD_CHARLM=path, tools/data/build_charlm.py) and its veto
         val charModel = System.getenv("DOGBOARD_CHARLM")?.let { File(it) }?.takeIf { it.isFile }?.bufferedReader()?.use { CharModel.parse(it) }
