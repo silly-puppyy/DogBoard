@@ -51,7 +51,14 @@ class HapticPlayer(context: Context) {
         // haptics must never take the keyboard down: on any failure, fall back to the system haptic
         return try {
             val effect = effectFor(tap) ?: return false
-            vibrator?.vibrate(effect) ?: return false
+            val v = vibrator ?: return false
+            // tagged as touch feedback, so the system's touch-vibration setting and intensity apply
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                v.vibrate(effect, android.os.VibrationAttributes.createForUsage(android.os.VibrationAttributes.USAGE_TOUCH))
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(effect, android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).build())
+            }
             true
         } catch (e: RuntimeException) {
             android.util.Log.w("DogBoardPerf", "haptic effect failed, falling back: $e")
