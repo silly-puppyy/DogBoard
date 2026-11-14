@@ -1071,7 +1071,13 @@ class ImeController(
                 emitEnterKey()
             } else {
                 when (val action = info.imeOptions.action) {
-                    ImeOptions.Action.UNSPECIFIED,
+                    // DogBoard: no action given: a new line where lines exist, else a real Enter key
+                    // (custom editors and games ignore editor action 0; FlorisBoard upstream #3262)
+                    ImeOptions.Action.UNSPECIFIED -> if (info.inputAttributes.flagTextMultiLine) {
+                        emitEnterKey()
+                    } else {
+                        state.editor.sendDownUpKeyEvent(KeyEvent.KEYCODE_ENTER)
+                    }
                     ImeOptions.Action.DONE,
                     ImeOptions.Action.GO,
                     ImeOptions.Action.NEXT,
