@@ -352,9 +352,9 @@ object KbSpec {
         // Kb:509-512
         val pressed = P.pressed.ifEmpty { P.preview }
         val scale = t.fsScale
-        // the design is drawn 375 dp wide; on wider phones the key area grows with the width
-        // (feel/Geometry.kt), so labels and icons grow with it to keep the design's proportions
-        val sizeScale = if (landscape) 1f else (W / 375f).coerceIn(1f, 1.2f)
+        // labels and icons keep their size on every phone width (designer, 2026-11-14: only the
+        // key widths stretch; the key area height is fixed per height setting)
+        val sizeScale = 1f
         val labelOp = if (trackpad) 0f else 1f
         val capOp = if (trackpad) 0.55f else 1f
 
@@ -375,13 +375,15 @@ object KbSpec {
                 val kx = x
                 x += w
                 if (k.kind == "gap") return@map KbKey(gap = true, x = kx, w = w)
-                var bg = t.key; var fg = t.keyFg; var shadow = t.keyShadow; var fs = 23 * scale; var fw = t.fw
-                var icon = ""; var fill = 0; var label = k.label; val iconSize = 22f; var hint = ""
+                var bg = t.key; var fg = t.keyFg; var shadow = t.keyShadow; var fs = 25 * scale; var fw = t.fw
+                // designer 2026-11-14: letters 25 sp, numbers and symbols 24 sp; every function icon a
+                // 24 dp Material Symbols glyph (at 22 it drew ~16 dp)
+                var icon = ""; var fill = 0; var label = k.label; val iconSize = 24f; var hint = ""
                 var aria = k.label.ifEmpty { k.id }; val sub = k.sub
                 val isFnTone = k.kind in listOf("shift", "bksp", "mode", "fn", "fnchar", "spaceicon")
                 if (isFnTone) { bg = t.fn; fg = t.fnFg; shadow = t.fnShadow }
                 if (k.kind == "char") {
-                    fs = (if (letterRe.matches(label.take(1)) && label.length == 1) 23 else 22) * scale
+                    fs = (if (letterRe.matches(label.take(1)) && label.length == 1) 25 else 24) * scale
                     if (label == ".com") { fs = 16f; fw = 500 }
                     val base = k.base.ifEmpty { k.id }
                     if (plane == "base" && hints) {

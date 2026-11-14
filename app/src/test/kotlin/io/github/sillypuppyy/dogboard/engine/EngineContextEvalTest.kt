@@ -60,7 +60,12 @@ class EngineContextEvalTest : FunSpec({
 
         // optional: every trigram miss at 1.5x2.0 mm (DOGBOARD_EVAL_ERRORS=file): expected, raw letters, result, previous word
         val errorsOut = System.getenv("DOGBOARD_EVAL_ERRORS")?.let { File(it).printWriter() }
-        for ((sx, sy) in listOf(1.0 to 1.5, 1.5 to 2.0, 2.2 to 3.2)) {
+        // DOGBOARD_EVAL_SIGMAS="3.0x4.4,5.0x7.0": other noise levels (mm across x down); the misses
+        // are dumped at DOGBOARD_EVAL_ERRORS_AT (default 1.5x2.0)
+        val sigmas = System.getenv("DOGBOARD_EVAL_SIGMAS")?.split(',')?.map { it.split('x').let { (a, b) -> a.toDouble() to b.toDouble() } }
+            ?: listOf(1.0 to 1.5, 1.5 to 2.0, 2.2 to 3.2)
+        val dumpAt = System.getenv("DOGBOARD_EVAL_ERRORS_AT")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (1.5 to 2.0)
+        for ((sx, sy) in sigmas) {
             val rng = Random(3)
             var words = 0
             var raw = 0
@@ -101,7 +106,7 @@ class EngineContextEvalTest : FunSpec({
                     if (withTrigram != null) {
                         val got = final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1)
                         if (got.equals(t, ignoreCase = true)) rightTrigram++
-                        else if (sx == 1.5) errorsOut?.println("$t\t$literal\t$got\t$previous")
+                        else if (sx == dumpAt.first && sy == dumpAt.second) errorsOut?.println("$t\t$literal\t$got\t$previous")
                     }
                     previous2 = previous
                     previous = t.lowercase()
@@ -113,7 +118,7 @@ class EngineContextEvalTest : FunSpec({
                     rightContext * 100.0 / words, if (withTrigram != null) "%.1f%%".format(rightTrigram * 100.0 / words) else "-",
                 )
             )
-            if (sx == 1.5) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
+            if (sx == 1.5 && sy == 2.0) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
         }
         errorsOut?.close()
     }
