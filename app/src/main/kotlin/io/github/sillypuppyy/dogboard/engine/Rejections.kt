@@ -54,8 +54,11 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
     /** [correction] was made for [typed] and the user typed on without undoing it. */
     @Synchronized
     fun recordKept(typed: String, correction: String) {
-        val row = rows.getOrPut(typed to correction) { Row() }
+        // only pairs the user once rejected have a row: the rest have nothing to reset, and a row
+        // (and a file write) per kept correction would grow forever
+        val row = rows[typed to correction] ?: return
         row.performed++
+        if (row.hard == 0) return
         row.hard = 0
         save()
     }
@@ -143,10 +146,20 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
                 )
             }
         }
+        prune()
+    }
+
+    /** Rows that can no longer block anything: no hard rejection in force and no recent soft one. */
+    private fun prune() {
+        val t = now()
+        rows.values.removeAll { r ->
+            !r.permanent && (r.hard == 0 || (t - r.lastHard) / MS_PER_DAY > HARD_MAX_DAYS) && t - r.lastSoft > SOFT_WINDOW_MS
+        }
     }
 
     private fun save() {
         val f = file ?: return
+        prune()
         runCatching {
             f.parentFile?.mkdirs()
             val tmp = File(f.path + ".tmp")

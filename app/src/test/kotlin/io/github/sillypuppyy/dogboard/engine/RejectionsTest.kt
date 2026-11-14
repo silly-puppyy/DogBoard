@@ -80,6 +80,16 @@ class RejectionsTest : FunSpec({
         f.writeText("hrllo\thello\n")
         fresh(f).hardCount("hrllo", "hello") shouldBe 1
     }
+    test("kept corrections and expired undos leave no rows behind") {
+        val f = File.createTempFile("rejections", ".tsv").apply { deleteOnExit() }
+        val r = Rejections(f) { t }
+        repeat(500) { r.recordKept("w$it", "word$it") }
+        r.recordHard("teh", "the")
+        f.readLines().size shouldBe 1
+        t += 200 * day
+        r.recordHard("hte", "the") // saves: the expired "teh" row is dropped
+        f.readLines().map { it.substringBefore('\t') } shouldBe listOf("hte")
+    }
     test("a rule added in settings never expires, survives a reload, and can be removed") {
         val f = File.createTempFile("rejections", ".tsv")
         val r = Rejections(f) { t }
