@@ -55,6 +55,10 @@ EXTRA_ZIPF_FLOOR = 1.5
 LOWERCASE_RARE_LEVEL = 35
 # drop a plain spelling when its contraction is this much more frequent ("dont" vs "don't")
 CONTRACTION_GAP = 0.8
+# ...unless the plain spelling is a SCOWL word up to this level
+CONTRACTION_KEEP_LEVEL = 20
+# ...except these, rarely meant as typed (iOS leaves them out too): "cant" is can't, "hes" he's
+ALWAYS_CONTRACTION = {"cant", "hes"}
 # letters include Latin-1 accented ones (café, naïve); the keyboard types them on the plain key
 WORD_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*$")
 # SCOWL's other-region lists (and their variants); plain variant_N lists are American variants
@@ -357,8 +361,11 @@ def main():
     by_plain = {w.replace("'", "").lower(): w for w in lexicon if "'" in w}
     for w in list(lexicon):
         c = by_plain.get(w.lower())
-        # all-caps words stay (ID vs I'd, IM vs I'm)
-        if c is not None and c != w and not w.isupper() and lexicon[c] - lexicon[w] >= CONTRACTION_GAP:
+        # all-caps words stay (ID vs I'd, IM vs I'm), and so do core dictionary words (wed vs we'd,
+        # wont vs won't): context tells them apart ("they wed in June", "we'd better go"), and iOS keeps
+        # them too
+        core = w.islower() and w not in ALWAYS_CONTRACTION and scowl.get(w, (99, ""))[0] <= CONTRACTION_KEEP_LEVEL
+        if c is not None and c != w and not w.isupper() and not core and lexicon[c] - lexicon[w] >= CONTRACTION_GAP:
             del lexicon[w]
 
     ranked = sorted(lexicon.items(), key=lambda kv: (-kv[1], kv[0]))
