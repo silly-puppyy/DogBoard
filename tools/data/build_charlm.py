@@ -39,6 +39,7 @@ def main():
     ap.add_argument("--misspellings", default="")
     ap.add_argument("--min-count", type=int, default=100)
     ap.add_argument("--min-context", type=int, default=5, help="drop contexts seen fewer times")
+    ap.add_argument("--binary", default="", help="also write the app's binary form (CharModel.read)")
     args = ap.parse_args()
 
     lexicon = set()
@@ -116,6 +117,37 @@ def main():
         for (ctx, ch) in sorted(probs):
             out.write(f"p\t{ctx}\t{ch}\t{math.log(probs[(ctx, ch)]):.4f}\n")
     print(f"{len(lam_out)} contexts, {len(probs)} entries -> {args.out}", file=sys.stderr)
+    if args.binary:
+        write_binary(args.binary, math.log(unknown_tokens / total), lam_out, probs)
+
+
+# the app's keys (CharModel.kt): letters a-z = 1..26, apostrophe 27, word start 28, end 29;
+# context letters 5 bits each, most recent lowest; length in bits 20..22; next letter in 23..27
+# (31 for a context's own back-off entry)
+def code(ch):
+    if "a" <= ch <= "z":
+        return ord(ch) - ord("a") + 1
+    return {"'": 27, "^": 28, "$": 29}[ch]
+
+
+def ctx_bits(ctx):
+    v = 0
+    for k, ch in enumerate(reversed(ctx)):
+        v |= code(ch) << (5 * k)
+    return v
+
+
+def write_binary(path, unknown, lam_out, probs):
+    import struct
+    entries = [(ctx_bits(c) | (len(c) << 20) | (31 << 23), math.log(1 - lam)) for c, lam in lam_out.items()]
+    entries += [(ctx_bits(c) | (len(c) << 20) | (code(ch) << 23), math.log(pr)) for (c, ch), pr in probs.items()]
+    entries.sort()
+    with open(path, "wb") as f:
+        f.write(b"DGC1")
+        f.write(struct.pack(">di", unknown, len(entries)))
+        f.write(struct.pack(f">{len(entries)}q", *[k for k, _ in entries]))
+        f.write(struct.pack(f">{len(entries)}f", *[v for _, v in entries]))
+    print(f"{len(entries)} entries -> {path} (binary)", file=sys.stderr)
 
 
 if __name__ == "__main__":

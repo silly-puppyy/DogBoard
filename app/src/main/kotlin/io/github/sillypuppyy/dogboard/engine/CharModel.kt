@@ -75,7 +75,27 @@ class CharModel private constructor(
         private fun pairKey(ctx: Long, len: Int, next: Int): Long = ctx or (len.toLong() shl 20) or (next.toLong() shl 23)
         private fun contextKey(ctx: Long, len: Int): Long = pairKey(ctx, len, 31)
 
-        /** Reads build_charlm.py's output; null if it isn't one. */
+        /**
+         * Reads the binary form (build_charlm.py --binary: "DGC1", ln P(unknown), the entry count,
+         * the sorted keys, then the values; big-endian): one bulk read, no parsing. Null if it isn't one.
+         */
+        fun read(input: java.io.InputStream): CharModel? {
+            val bytes = input.readBytes()
+            val buf = java.nio.ByteBuffer.wrap(bytes)
+            if (bytes.size < 16 || bytes[0] != 'D'.code.toByte() || bytes[1] != 'G'.code.toByte() ||
+                bytes[2] != 'C'.code.toByte() || bytes[3] != '1'.code.toByte()
+            ) return null
+            buf.position(4)
+            val unknown = buf.double
+            val n = buf.int
+            if (n <= 0 || bytes.size != 16 + n * 12) return null
+            val keys = LongArray(n).also { buf.asLongBuffer().get(it) }
+            buf.position(16 + n * 8)
+            val values = FloatArray(n).also { buf.asFloatBuffer().get(it) }
+            return CharModel(unknown, keys, values)
+        }
+
+        /** Reads build_charlm.py's text output; null if it isn't one. */
         fun parse(reader: BufferedReader): CharModel? {
             var unknown = Double.NaN
             val entries = ArrayList<Pair<Long, Float>>(400_000)

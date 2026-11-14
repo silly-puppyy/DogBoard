@@ -16,10 +16,11 @@ private fun typed(w: String) = CurrentWord().apply {
 
 /** The unknown-word letter model (en.charlm.tsv) and the typed-string veto it enables. */
 class CharModelTest : FunSpec({
-    val asset = File("src/main/assets/dogboard/en.charlm.tsv")
+    val asset = File("src/main/assets/dogboard/en.charlm.bin")
+    fun model() = asset.inputStream().use { CharModel.read(it) }!!
 
     test("word-like strings score better per letter than typos and mashing") {
-        val m = asset.bufferedReader().use { CharModel.parse(it) }!!
+        val m = model()
         fun perLetter(w: String) = m.logProb(w)!! / (w.length + 1)
         m.unknownLogProb shouldBeLessThan -2.0
         for (good in listOf("kaito", "kubernetes", "zendaya")) for (bad in listOf("thw", "wnat", "xqzt")) {
@@ -33,8 +34,8 @@ class CharModelTest : FunSpec({
         TypingEngine.load(
             openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
             openBigrams = { File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader() },
-            openCharModel = { asset.bufferedReader() },
         )
+        TypingEngine.attachCharModel(model())
         try {
             fun finished(w: String, before: String) = typed(w).let { TypingEngine.correction(it, TypingEngine.candidates(it, before)) ?: w }
             finished("Kaito", "with") shouldBe "Kaito"
@@ -44,6 +45,19 @@ class CharModelTest : FunSpec({
             finished("becuase", "just") shouldBe "because"
         } finally {
             TypingEngine.unloadForTest()
+        }
+    }
+
+    test("the binary form scores exactly like the text form") {
+        val tsv = File("/home/syn/.claude/jobs/eb2fb8fd/tmp/en.charlm-c20b.tsv")
+        if (tsv.isFile) {
+            val a = tsv.bufferedReader().use { CharModel.parse(it) }!!
+            val b = model()
+            kotlin.math.abs(a.unknownLogProb - b.unknownLogProb) shouldBeLessThan 1e-4 // the text keeps 5 decimals
+            for (w in listOf("kaito", "skibidi", "thw", "xqzt", "o'brien", "zz")) {
+                (a.logProb(w)!! - b.logProb(w)!!) shouldBeLessThan 1e-3
+                (b.logProb(w)!! - a.logProb(w)!!) shouldBeLessThan 1e-3
+            }
         }
     }
 })
