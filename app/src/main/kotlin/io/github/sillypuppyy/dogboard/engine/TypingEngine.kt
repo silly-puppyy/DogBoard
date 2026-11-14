@@ -151,7 +151,6 @@ object TypingEngine {
         val engine = Loaded(lexicon, bigrams)
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
-        engine.autocorrect.preferredForms = preferredForms
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
@@ -190,15 +189,6 @@ object TypingEngine {
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
     }
-
-    /** The usual spelling of plural / possessive twins ([PreferredForms], iOS #28); kept across reloads. */
-    fun attachPreferredForms(forms: PreferredForms?) {
-        if (forms != null) preferredForms = forms
-        loaded?.autocorrect?.preferredForms = preferredForms
-    }
-
-    @Volatile
-    private var preferredForms: PreferredForms? = null
 
     fun attachNgrams(model: NgramModel?) {
         if (model != null) ngramModel = model
@@ -786,7 +776,6 @@ object TypingEngine {
     internal fun unloadForTest() {
         loaded = null
         charModel = null
-        preferredForms = null
         ngramModel = null
         userWordsFile = null
         blockedWordsFile = null

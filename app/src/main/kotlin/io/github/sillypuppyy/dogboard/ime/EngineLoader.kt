@@ -2,7 +2,6 @@ package io.github.sillypuppyy.dogboard.ime
 
 import android.content.Context
 import io.github.sillypuppyy.dogboard.engine.CharModel
-import io.github.sillypuppyy.dogboard.engine.PreferredForms
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
 import java.io.File
 
@@ -58,7 +57,6 @@ object EngineLoader {
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
         TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.bin").use { CharModel.read(it) } }.getOrNull())
-        TypingEngine.attachPreferredForms(runCatching { assets.open("dogboard/en.preferred.txt").bufferedReader().use { PreferredForms.parse(it) } }.getOrNull())
         android.util.Log.i("DogBoardPerf", "letter model attached after ${android.os.SystemClock.uptimeMillis() - t1} ms")
     }
 }

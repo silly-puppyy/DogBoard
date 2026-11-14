@@ -21,8 +21,7 @@ en.bigrams.tsv
   licensed under CC BY 2.0 FR (https://creativecommons.org/licenses/by/2.0/fr/), by
   tools/data/bigrams_from_tatoeba.py. Only counts are included, not sentences.
 
-en.preferred.txt (tools/data/build_preferred_forms.py: which of "Xs" / "X's" is the usual spelling, from
-  word counts), en.charlm.tsv (tools/data/build_charlm.py) and en.ngrams.bin (built by tools/data/fineweb_sentences.py, KenLM lmplz and
+en.charlm.tsv (tools/data/build_charlm.py) and en.ngrams.bin (built by tools/data/fineweb_sentences.py, KenLM lmplz and
   tools/data/arpa_to_dogboard.py)
   A letter model of words our dictionary lacks (en.charlm.tsv: probabilities only, no word list) and
   a word trigram language model (probabilities only, no text), both estimated from FineWeb

@@ -30,17 +30,6 @@ class FilterStackTest : FunSpec({
         ac.correction("wrre", listOf(c("we're", -5.0), c("were", -5.5))) shouldBe "we're"
     }
 
-    test("#28 preferred form from word counts: plural for nouns, possessive for listed names, near-ties left to the scores") {
-        val ac = Autocorrect(Lexicon.of(mapOf("abbeys" to 10L, "abbey's" to 10L, "Johns" to 10L, "John's" to 10L, "As" to 10L, "A's" to 10L, "it's" to 10L, "its" to 10L, "saturdays" to 10L, "saturday's" to 10L)))
-        ac.preferredForms = PreferredForms.parse("# test\njohn\n=saturday\n".reader().buffered())
-        ac.correction("abbwys", listOf(c("abbey's", -5.0), c("abbeys", -5.6))) shouldBe "abbeys"
-        ac.correction("jphns", listOf(c("Johns", -5.0), c("John's", -5.6))) shouldBe "John's"
-        ac.correction("ad", listOf(c("as", -5.0), c("A's", -5.6))) shouldBe "as"
-        // contractions are not possessives, near-ties keep the score order
-        ac.correction("iys", listOf(c("it's", -5.0), c("its", -5.6))) shouldBe "it's"
-        ac.correction("saturdsys", listOf(c("saturday's", -5.0), c("saturdays", -5.6))) shouldBe "saturday's"
-    }
-
     test("FilterCommonLearnedTypos: i never becomes o, can never can't, and never abs") {
         isCommonLearnedTypo("i", "o") shouldBe true
         isCommonLearnedTypo("I", "O") shouldBe true
