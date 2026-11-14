@@ -73,9 +73,14 @@ sealed interface ImeUiAttrs {
 
         override fun encode(value: String): String = value
 
-        /** The [EnterAction] value for a field: [RETURN] when the key inserts a new line. */
-        fun of(imeOptions: ImeOptions, inputAttributes: InputAttributes): String {
-            if (imeOptions.flagNoEnterAction || inputAttributes.flagTextMultiLine) return RETURN
+        /**
+         * The [EnterAction] value for a field: [RETURN] when the key inserts a new line. DogBoard: the
+         * same rule as the key's press (ImeController.emitEnter): a multi-line field that names an
+         * action shows it (Google's search box is multi-line + Search; plain multi-line fields get
+         * IME_FLAG_NO_ENTER_ACTION from TextView and show return).
+         */
+        fun of(imeOptions: ImeOptions, @Suppress("UNUSED_PARAMETER") inputAttributes: InputAttributes): String {
+            if (imeOptions.flagNoEnterAction) return RETURN
             return when (imeOptions.action) {
                 ImeOptions.Action.NONE, ImeOptions.Action.UNSPECIFIED -> RETURN
                 else -> imeOptions.action.name.lowercase()

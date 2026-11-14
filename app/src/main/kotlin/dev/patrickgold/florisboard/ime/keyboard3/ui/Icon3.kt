@@ -96,7 +96,8 @@ fun Icon3(
                 if (debugShowDragAndDropHelpers) Icons.Rounded.Close else null
             }
             ImeIcons.Enter -> {
-                if (imeOptions.flagNoEnterAction || inputAttributes.flagTextMultiLine) {
+                // DogBoard: as the key's press (ImeController.emitEnter): a named action shows in multi-line fields too
+                if (imeOptions.flagNoEnterAction) {
                     Icons.AutoMirrored.Rounded.KeyboardReturn
                 } else {
                     when (imeOptions.action) {
