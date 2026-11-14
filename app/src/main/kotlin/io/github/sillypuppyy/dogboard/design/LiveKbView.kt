@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.patrickgold.florisboard.ime.keyboard3.interaction.LongPress
 import dev.patrickgold.florisboard.ime.keyboard3.touch.InputShiftState
@@ -48,6 +51,21 @@ fun LiveKbView(
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f || maxHeight.value < 100f) return@BoxWithConstraints
         val plane = LiveKb.plane(layerId)
         val pressed = pressedKey?.let { LiveKb.keyId(it, plane) }.orEmpty()
+        // the key preview stays 40 ms after the finger lifts, then fades out in 70 ms (designer
+        // answers 2026-11-14); a new press shows its own at once
+        val livePreview = if (longPress?.shouldShowSimplePopup() == true && longPress.shouldShowExtendedPopup() != true) pressed else ""
+        var lingering by remember { mutableStateOf("") }
+        val fade = remember { androidx.compose.animation.core.Animatable(1f) }
+        LaunchedEffect(livePreview) {
+            if (livePreview.isNotEmpty()) {
+                lingering = livePreview
+                fade.snapTo(1f)
+            } else if (lingering.isNotEmpty()) {
+                kotlinx.coroutines.delay(PREVIEW_HOLD_MS)
+                fade.animateTo(0f, androidx.compose.animation.core.tween(PREVIEW_FADE_MS))
+                lingering = ""
+            }
+        }
         // the bar is out only once the long-press delay has passed (extendedKeys is filled at touch-down)
         val extended = longPress?.shouldShowExtendedPopup() == true
         val props = KbProps(
@@ -62,7 +80,8 @@ fun LiveKbView(
             pressed = pressed,
             // the key preview while a character key is held (FlorisBoard's simple popup), the
             // long-press bar once its extended keys are out
-            preview = if (longPress?.shouldShowSimplePopup() == true && !extended) pressed else "",
+            preview = livePreview.ifEmpty { lingering },
+            previewFade = if (livePreview.isEmpty() && lingering.isNotEmpty()) fade.value else null,
             longpress = if (extended) pressed else "",
             lpSel = longPress?.extendedFocusedIndex ?: 0,
             // what FlorisBoard will commit, in its order (the static design table differs for
@@ -97,6 +116,9 @@ fun liveDark(): Boolean {
         .collectAsState(if (system) dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.NIGHT else dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.DAY)
     return mode == dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.NIGHT
 }
+
+private const val PREVIEW_HOLD_MS = 40L
+private const val PREVIEW_FADE_MS = 70
 
 private val RET_WORDS = setOf("send", "search", "go", "next", "previous", "done", "join", "route", "continue")
 

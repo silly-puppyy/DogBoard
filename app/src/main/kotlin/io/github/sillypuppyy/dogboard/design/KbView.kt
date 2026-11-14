@@ -241,7 +241,7 @@ private fun KbPopups(r: KbRender) {
     val popShape = RoundedCornerShape(16.dp)
     r.pv?.let { pv ->
         Box(
-            Modifier.offset(pv.x.dp, pv.y.dp).size(pv.w.dp, 58.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape)
+            Modifier.offset(pv.x.dp, pv.y.dp).size(pv.w.dp, 58.dp).graphicsLayer { alpha = pv.alpha }.cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape)
                 .lint("preview", DesignLint.Kind.FLOATING),
             contentAlignment = Alignment.Center,
         ) { LintParent("preview") { DText(pv.label, style = designTextStyle(30.sp, pv.fw, t.popFg), overflow = TextOverflow.Visible) } }

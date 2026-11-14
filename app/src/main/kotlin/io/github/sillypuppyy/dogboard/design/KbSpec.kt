@@ -54,6 +54,8 @@ data class KbProps(
     /** Glass: draw the design's gradient stand-in; off when the live keyboard draws the real photo behind. */
     val backdrop: Boolean = true,
     val preview: String = "",
+    /** The preview after the finger has lifted: drawn at this opacity, the key no longer pressed (Panels: fade). */
+    val previewFade: Float? = null,
     val longpress: String = "",
     val lpSel: Int = 0,
     /** The live keyboard's long-press list (FlorisBoard's extended keys, in order); empty: the [KbSpec.LP] sample. */
@@ -112,7 +114,7 @@ data class KbRow(val keys: List<KbKey>)
 /** Kb:559: where a key's cap sits, for popups. */
 data class KbCapPos(val capX: Float, val capW: Float, val capTop: Float, val label: String, val base: String)
 
-data class KbPreview(val x: Float, val y: Float, val w: Float, val label: String, val fw: Int)
+data class KbPreview(val x: Float, val y: Float, val w: Float, val label: String, val fw: Int, val alpha: Float = 1f)
 data class KbLongPress(val x: Float, val y: Float, val items: List<Triple<String, Color, Color>>)
 data class KbLangItem(val label: String, val sub: String, val icon: String, val bg: Color)
 data class KbLangMenu(val x: Float, val y: Float, val items: List<KbLangItem>)
@@ -368,7 +370,7 @@ object KbSpec {
         val rowH = keyAreaH / spec.size
 
         // Kb:509-512
-        val pressed = P.pressed.ifEmpty { P.preview }
+        val pressed = P.pressed.ifEmpty { if (P.previewFade != null) "" else P.preview }
         val scale = t.fsScale
         // labels and icons keep their size on every phone width (designer, 2026-11-14: only the
         // key widths stretch; the key area height is fixed per height setting)
@@ -447,7 +449,7 @@ object KbSpec {
         // Kb:571-576 key preview
         val pv = P.preview.takeIf { it.isNotEmpty() && it in pos && !trackpad }?.let { id ->
             val p = pos.getValue(id); val w = p.capW + 18
-            KbPreview(x = max(2f, min(W - w - 2, p.capX + p.capW / 2 - w / 2)), y = p.capTop - 6 - 58, w = w, label = p.label, fw = t.fw)
+            KbPreview(x = max(2f, min(W - w - 2, p.capX + p.capW / 2 - w / 2)), y = p.capTop - 6 - 58, w = w, label = p.label, fw = t.fw, alpha = P.previewFade ?: 1f)
         }
         // Kb:577-590 long-press bar
         val lp = P.longpress.takeIf { it.isNotEmpty() && it in pos }?.let { id ->

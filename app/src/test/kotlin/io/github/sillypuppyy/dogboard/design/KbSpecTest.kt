@@ -37,6 +37,13 @@ class KbSpecTest : FunSpec({
         key(KbProps(), "ret").let { it.icon shouldBe "keyboard_return"; it.bg shouldBe css("#dbe2f9") }
         key(KbProps(theme = "dog"), "ret").let { it.icon shouldBe "pets"; it.fill shouldBe 1 }
     }
+    test("key preview: held, then fading after release without the key looking pressed") {
+        val held = KbSpec.render(KbProps(preview = "g"))
+        held.pv!!.alpha shouldBe 1f
+        val fading = KbSpec.render(KbProps(preview = "g", previewFade = 0.4f))
+        fading.pv!!.alpha shouldBe 0.4f
+        fading.pv!!.label shouldBe held.pv!!.label
+    }
     test("action key: icon mode, and a word too wide for the cap shows the icon (Panels:56, 160-168)") {
         key(KbProps(ret = "done", actionStyle = "icon"), "ret").let { it.icon shouldBe "check"; it.label shouldBe ""; it.bg shouldBe css("#435e91") }
         key(KbProps(ret = "next", actionStyle = "icon"), "ret").icon shouldBe "keyboard_tab"
