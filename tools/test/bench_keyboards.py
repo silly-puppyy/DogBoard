@@ -81,7 +81,7 @@ class Device:
     def texts(self):
         """Field text changes since the last clear: [(monotonic time s, text)]."""
         out = subprocess.run([ADB, "-s", self.serial, "logcat", "-d", "-v", "monotonic", "-s", "DogBoardText:I"],
-                             capture_output=True, text=True).stdout
+                             capture_output=True, text=True, timeout=60).stdout
         found = []
         for line in out.splitlines():
             m = re.match(r"\s*(\d+\.\d+)\s.*text=\[(.*)\]$", line)
@@ -94,7 +94,7 @@ class Device:
         return t[-1][1] if t else ""
 
     def fresh_field(self):
-        subprocess.run([ADB, "-s", self.serial, "logcat", "-c"])
+        subprocess.run([ADB, "-s", self.serial, "logcat", "-c"], timeout=60)
         self.sh(f"am start -W -f 0x10008000 -n {ACTIVITY}")  # -W: returns once the screen is up
         time.sleep(0.6)  # the keyboard's slide-in
 
@@ -287,7 +287,7 @@ def ensure_taptype(dev):
         target = {"x86_64": "x86_64", "arm64-v8a": "aarch64"}[abi]
         clang = ndk / f"toolchains/llvm/prebuilt/linux-x86_64/bin/{target}-linux-android30-clang"
         subprocess.run([str(clang), "-O2", "-static", "-o", str(binary), str(TAPTYPE_SRC)], check=True)
-    subprocess.run([ADB, "-s", dev.serial, "push", str(binary), TAPTYPE], check=True, capture_output=True)
+    subprocess.run([ADB, "-s", dev.serial, "push", str(binary), TAPTYPE], check=True, capture_output=True, timeout=120)
     dev.sh(f"chmod 755 {TAPTYPE}")
 
 
@@ -303,7 +303,7 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--out", default="build/bench_keyboards.json")
     args = ap.parse_args()
-    if "uid=0" not in subprocess.run([ADB, "-s", args.serial, "shell", "id"], capture_output=True, text=True).stdout:
+    if "uid=0" not in subprocess.run([ADB, "-s", args.serial, "shell", "id"], capture_output=True, text=True, timeout=60).stdout:
         sys.exit("needs a root shell (emulator)")
     sentences = []
     for line in TATOEBA.open(encoding="utf-8"):
