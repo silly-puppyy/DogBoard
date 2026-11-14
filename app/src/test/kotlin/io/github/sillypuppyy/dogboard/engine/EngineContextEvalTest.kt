@@ -43,10 +43,14 @@ class EngineContextEvalTest : FunSpec({
         val autocorrect = Autocorrect(lexicon)
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
 
-        val sentences = tatoeba.bufferedReader().lineSequence()
-            .map { it.split('\t') }
-            .filter { it.size >= 3 && it[0].endsWith("0") }
-            .map { it[2].replace('’', '\'') }
+        // DOGBOARD_EVAL_TEXT=file: one sentence per line (held-out sets from tools/data/build_eval_sets.py)
+        val evalText = System.getenv("DOGBOARD_EVAL_TEXT")?.let { File(it) }?.takeIf { it.isFile }
+        val source = evalText?.bufferedReader()?.lineSequence()?.map { it.replace('’', '\'') }
+            ?: tatoeba.bufferedReader().lineSequence()
+                .map { it.split('\t') }
+                .filter { it.size >= 3 && it[0].endsWith("0") }
+                .map { it[2].replace('’', '\'') }
+        val sentences = source
             .filter { s -> token.findAll(s).none { it.value.lowercase() in setOf("tom", "mary") } }
             .take(800)
             .toList()
