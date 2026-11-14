@@ -485,6 +485,10 @@ class FlorisImeService : LifecycleInputMethodService() {
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreateInlineSuggestionsRequest(uiExtras: Bundle): InlineSuggestionsRequest? {
+        // DogBoard: the design's bar doesn't show inline autofill yet (Kb "autofill" bar state, to
+        // build); declining lets Android show autofill as its own dropdown instead of nowhere, and
+        // avoids the inflate crash (FlorisBoard upstream #3231/#3244/#3294)
+        if (prefs.keyboard.dogboardDesign.get()) return null
         if (!prefs.smartbar.enabled.get() || !prefs.suggestion.api30InlineSuggestionsEnabled.get()) {
             flogInfo(LogTopic.IMS_EVENTS) {
                 "Ignoring inline suggestions request because Smartbar and/or inline suggestions are disabled."

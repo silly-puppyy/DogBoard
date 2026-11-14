@@ -64,14 +64,20 @@ object NlpInlineAutofill {
         }
 
         scope.launch {
-            val size = Size(ViewGroup.LayoutParams.WRAP_CONTENT, suggestionsChipHeightPx)
+            // a non-positive height makes inflate throw (FlorisBoard upstream #3294)
+            val size = Size(ViewGroup.LayoutParams.WRAP_CONTENT, suggestionsChipHeightPx.coerceAtLeast(1))
             val latch = CountDownLatch(rawSuggestions.size)
             val suggestionsArray = Array<NlpInlineAutofillSuggestion?>(rawSuggestions.size) { null }
 
             flogInfo { "showInlineSuggestions: [${sequenceId}] start inflating suggestions" }
             for ((index, rawSuggestion) in rawSuggestions.withIndex()) {
-                rawSuggestion.inflate(context, size, context.mainExecutor) { view ->
-                    suggestionsArray[index] = NlpInlineAutofillSuggestion(rawSuggestion.info, view)
+                try {
+                    rawSuggestion.inflate(context, size, context.mainExecutor) { view ->
+                        suggestionsArray[index] = NlpInlineAutofillSuggestion(rawSuggestion.info, view)
+                        latch.countDown()
+                    }
+                } catch (e: IllegalArgumentException) {
+                    flogWarning { "showInlineSuggestions: [${sequenceId}] inflate failed: $e" }
                     latch.countDown()
                 }
             }
