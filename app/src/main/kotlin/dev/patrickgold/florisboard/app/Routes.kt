@@ -185,6 +185,11 @@ object Routes {
         @Deeplink("settings/other/fine-tuning")
         object FineTuning
 
+        // DogBoard: About › Data licenses (the attribution of the shipped word data)
+        @Serializable
+        @Deeplink("settings/about/data-licenses")
+        object DataLicenses
+
         // DogBoard: settings search (settings layout v2)
         @Serializable
         @Deeplink("settings/search")
@@ -337,6 +342,7 @@ object Routes {
 
             composableWithDeepLink(Settings.Other::class) { OtherScreen() }
             composableWithDeepLink(Settings.FineTuning::class) { io.github.sillypuppyy.dogboard.settings.FineTuningScreen() }
+            composableWithDeepLink(Settings.DataLicenses::class) { io.github.sillypuppyy.dogboard.settings.DataLicensesScreen() }
             composableWithDeepLink(Settings.Search::class) {
                 val nav = LocalNavController.current
                 io.github.sillypuppyy.dogboard.settings.SettingsSearchScreen { route ->

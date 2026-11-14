@@ -85,7 +85,7 @@ fun AboutScreen() {
                 )
             }
             SegmentedListColumn {
-                val count = 6
+                val count = 8
                 Preference(
                     onClick = {
                         try {
@@ -150,6 +150,22 @@ fun AboutScreen() {
                     icon = Icons.Outlined.Description,
                     title = stringRes(id = R.string.about__third_party_licenses__title),
                     summary = stringRes(id = R.string.about__third_party_licenses__summary),
+                )
+                // DogBoard (Brand.dc.html): credits for the project DogBoard is built on, and the
+                // licences of the word data it ships
+                Preference(
+                    onClick = { uriHandler.openUri("https://github.com/florisboard/florisboard") },
+                    shapes = ListItemDefaults.segmentedShapes(6, count),
+                    icon = Icons.Outlined.Description,
+                    title = "Credits",
+                    summary = "Built on FlorisBoard",
+                )
+                Preference(
+                    onClick = { navController.navigate(Routes.Settings.DataLicenses) },
+                    shapes = ListItemDefaults.segmentedShapes(7, count),
+                    icon = Icons.Outlined.Description,
+                    title = "Data licenses",
+                    summary = "Word lists and other data, and their licenses",
                 )
             }
         }
