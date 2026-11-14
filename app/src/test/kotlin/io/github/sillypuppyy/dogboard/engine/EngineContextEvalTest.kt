@@ -45,6 +45,9 @@ class EngineContextEvalTest : FunSpec({
         // optional: the unknown-word letter model (DOGBOARD_CHARLM=path, tools/data/build_charlm.py) and its veto
         val charModel = System.getenv("DOGBOARD_CHARLM")?.let { File(it) }?.takeIf { it.isFile }?.bufferedReader()?.use { CharModel.parse(it) }
         for (d in listOfNotNull(plain, withContext, withTrigram)) d.unknownWords = charModel
+        // optional: the neural tap net (DOGBOARD_TAPNET=tapnet.bin, tools/ml/mltt_export.py) read through the lexicon
+        val tapNet = System.getenv("DOGBOARD_TAPNET")?.let { File(it) }?.takeIf { it.isFile }?.let { TapNet.read(it.readBytes()) }
+        val tapNetDecoder = tapNet?.let { TapNetDecoder(lexicon) }
 
         // DOGBOARD_EVAL_TEXT=file: one sentence per line (held-out sets from tools/data/build_eval_sets.py)
         val evalText = System.getenv("DOGBOARD_EVAL_TEXT")?.let { File(it) }?.takeIf { it.isFile }
@@ -64,15 +67,24 @@ class EngineContextEvalTest : FunSpec({
         // are dumped at DOGBOARD_EVAL_ERRORS_AT (default 1.5x2.0)
         val sigmas = System.getenv("DOGBOARD_EVAL_SIGMAS")?.split(',')?.map { it.split('x').let { (a, b) -> a.toDouble() to b.toDouble() } }
             ?: listOf(1.0 to 1.5, 1.5 to 2.0, 2.2 to 3.2)
+        // DOGBOARD_EVAL_OUTLIERS="0.02,0.05": also run with that share of taps replaced by a far-off tap
+        // drawn from DOGBOARD_EVAL_TAIL (IMK taps >1.5 key pitches off, "dx<TAB>dy" in pitches)
+        val tail = System.getenv("DOGBOARD_EVAL_TAIL")?.let { File(it) }?.takeIf { it.isFile }?.readLines()
+            ?.filter { !it.startsWith("#") && it.isNotBlank() }?.map { l -> l.split('\t').let { it[0].toDouble() to it[1].toDouble() } }
+        val outlierRates = listOf(0.0) + (System.getenv("DOGBOARD_EVAL_OUTLIERS")?.split(',')?.map { it.toDouble() }.orEmpty().takeIf { tail != null }.orEmpty())
+        val pitch = keys.getValue('s').centerX - keys.getValue('a').centerX
         val dumpAt = System.getenv("DOGBOARD_EVAL_ERRORS_AT")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (1.5 to 2.0)
-        for ((sx, sy) in sigmas) {
+        for ((sx, sy) in sigmas) for (outliers in outlierRates) {
             val rng = Random(3)
+            val tailRng = Random(5)
             var words = 0
             var raw = 0
             var rightPlain = 0
             var rightContext = 0
             var rightTrigram = 0
             var outOfLexicon = 0
+            var rightNet = 0
+            var rightEither = 0
             for (sentence in sentences) {
                 var previous = Bigrams.START
                 var previous2: String? = null
@@ -87,9 +99,15 @@ class EngineContextEvalTest : FunSpec({
                     if (letters.isEmpty()) continue
                     val taps = letters.map { c ->
                         val k = keys.getValue(c)
+                        val gx = rng.nextGaussian()
+                        val gy = rng.nextGaussian()
+                        if (outliers > 0 && tailRng.nextDouble() < outliers) {
+                            val (dx, dy) = tail!![tailRng.nextInt(tail.size)]
+                            return@map Tap((k.centerX + dx * pitch).toFloat(), (k.centerY + dy * pitch).toFloat())
+                        }
                         Tap(
-                            (k.centerX + rng.nextGaussian() * sx * GaussianTouch.POINTS_PER_MM).toFloat(),
-                            (k.centerY + rng.nextGaussian() * sy * GaussianTouch.POINTS_PER_MM).toFloat(),
+                            (k.centerX + gx * sx * GaussianTouch.POINTS_PER_MM).toFloat(),
+                            (k.centerY + gy * sy * GaussianTouch.POINTS_PER_MM).toFloat(),
                         )
                     }
                     val literal = String(taps.map { tap -> keyList.maxBy { GaussianTouch.logLikelihood(it.value, tap.x, tap.y, params) }.key }.toCharArray())
@@ -103,22 +121,32 @@ class EngineContextEvalTest : FunSpec({
                     if (literal == letters) raw++
                     if (final(plain, -1).equals(t, ignoreCase = true)) rightPlain++
                     if (final(withContext, bigrams.contextId(previous)).equals(t, ignoreCase = true)) rightContext++
+                    var trigramRight = false
                     if (withTrigram != null) {
                         val got = final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1)
-                        if (got.equals(t, ignoreCase = true)) rightTrigram++
-                        else if (sx == dumpAt.first && sy == dumpAt.second) errorsOut?.println("$t\t$literal\t$got\t$previous")
+                        trigramRight = got.equals(t, ignoreCase = true)
+                        if (trigramRight) rightTrigram++
+                        else if (sx == dumpAt.first && sy == dumpAt.second && outliers == 0.0) errorsOut?.println("$t\t$literal\t$got\t$previous")
                     }
+                    if (tapNet != null && tapNetDecoder != null && literal.length >= 3) {
+                        val net = tapNetDecoder.decode(tapNet.forward(IntArray(literal.length) { literal[it] - 'a' + 1 }), max = 1).firstOrNull()?.word ?: literal
+                        val netRight = net.equals(t, ignoreCase = true)
+                        if (netRight) rightNet++
+                        if (netRight || trigramRight) rightEither++
+                    } else if (trigramRight) { rightNet++; rightEither++ } // short words: the net doesn't run (iOS: >= 3 letters)
                     previous2 = previous
                     previous = t.lowercase()
                 }
             }
+            if (tapNet != null) println("TAPNET %.1fx%.1f%s: net + lexicon (unigram) %.1f%%, right in trigram or net %.1f%%".format(
+                sx, sy, if (outliers > 0) " + %.0f%% far".format(outliers * 100) else "", rightNet * 100.0 / words, rightEither * 100.0 / words))
             println(
-                "CONTEXT sigma %.1fx%.1f mm, %d words (%.1f%% not in lexicon): raw %.1f%%, unigram %.1f%%, bigram %.1f%%, trigram %s".format(
-                    sx, sy, words, outOfLexicon * 100.0 / words, raw * 100.0 / words, rightPlain * 100.0 / words,
+                "CONTEXT sigma %.1fx%.1f mm%s, %d words (%.1f%% not in lexicon): raw %.1f%%, unigram %.1f%%, bigram %.1f%%, trigram %s".format(
+                    sx, sy, if (outliers > 0) " + %.0f%% far taps".format(outliers * 100) else "", words, outOfLexicon * 100.0 / words, raw * 100.0 / words, rightPlain * 100.0 / words,
                     rightContext * 100.0 / words, if (withTrigram != null) "%.1f%%".format(rightTrigram * 100.0 / words) else "-",
                 )
             )
-            if (sx == 1.5 && sy == 2.0) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
+            if (sx == 1.5 && sy == 2.0 && outliers == 0.0) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
         }
         errorsOut?.close()
     }

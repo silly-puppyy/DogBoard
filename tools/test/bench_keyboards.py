@@ -190,13 +190,22 @@ def words_of(s):
     return [w.strip(".,!?").replace("’", "'").lower() for w in s.split()]
 
 
-def type_text(dev, keys, text, rng, noise_mm, gap_s):
-    sigma = noise_mm * dev.px_per_mm
+def type_text(dev, keys, text, rng, noise_mm, gap_s, noise_y_mm=None, far=0.0, tail=None):
+    """Taps with Gaussian error (noise_mm across, noise_y_mm down); with share `far`, a tap is instead
+    moved by an offset drawn from `tail` (key pitches, IMK taps >1.5 pitches off: imk-tail.tsv)."""
+    sx = noise_mm * dev.px_per_mm
+    sy = (noise_mm if noise_y_mm is None else noise_y_mm) * dev.px_per_mm
+    pitch = keys["s"][0] - keys["a"][0]
     points = []
     for ch in text.lower():
         x, y = keys[ch]
         if ch != " ":
-            x, y = x + rng.gauss(0, sigma), y + rng.gauss(0, sigma)
+            gx, gy, u = rng.gauss(0, sx), rng.gauss(0, sy), rng.random()
+            if tail and u < far:
+                dx, dy = tail[rng.randrange(len(tail))]
+                x, y = x + dx * pitch, y + dy * pitch
+            else:
+                x, y = x + gx, y + gy
         points.append((x, y))
     dev.tap(points, gap_s, rng)
     time.sleep(0.8)
@@ -239,7 +248,7 @@ def run(dev, name, ime, sentences, args):
         typed = re.sub(r"[^a-z ]", "", s.lower().replace("'", "").replace("’", ""))
         dev.fresh_field()
         clock.start()
-        type_text(dev, keys, typed + " ", rng, args.noise_mm, args.gap)
+        type_text(dev, keys, typed + " ", rng, args.noise_mm, args.gap, args.noise_y_mm, args.far_taps, args.tail_offsets)
         lifts = clock.stop()
         changes = dev.texts()
         got = changes[-1][1] if changes else ""
@@ -297,6 +306,9 @@ def main():
     ap.add_argument("--keyboards", default="dogboard,gboard,futo,heliboard")
     ap.add_argument("--sentences", type=int, default=40)
     ap.add_argument("--noise-mm", type=float, default=1.2, help="std-dev of tap error")
+    ap.add_argument("--noise-y-mm", type=float, default=None, help="vertical std-dev (default: --noise-mm)")
+    ap.add_argument("--far-taps", type=float, default=0.0, help="share of taps replaced by a far-off tap from --tail")
+    ap.add_argument("--tail", default="", help="far-off tap offsets in key pitches (data/eval/imk-tail.tsv)")
     ap.add_argument("--gap", type=float, default=0.14, help="seconds between taps (after the 40 ms press)")
     ap.add_argument("--keys-cache", default="build/bench_keys.json", help="key positions found by probing")
     ap.add_argument("--recalibrate", action="store_true", help="probe the keys again")
@@ -312,6 +324,8 @@ def main():
                 re.fullmatch(r"[A-Za-z',.!? ’]+", p[2]) and not re.search(r"\b(Tom|Mary)\b", p[2]):
             sentences.append(p[2])
     sentences = random.Random(7).sample(sentences, args.sentences)
+    args.tail_offsets = [tuple(map(float, l.split("\t"))) for l in open(args.tail, encoding="utf-8")
+                         if l.strip() and not l.startswith("#")] if args.tail else None
     dev = Device(args.serial)
     ensure_taptype(dev)
     results = [run(dev, k, KEYBOARDS[k], sentences, args) for k in args.keyboards.split(",")]
