@@ -82,4 +82,33 @@ class ContractionProbeTest : FunSpec({
             TypingEngine.unloadForTest()
         }
     }
+
+    test("retrocorrection cost at the end of a word (it runs on the main thread)").config(enabled = System.getenv("DOGBOARD_PROBE") == "1") {
+        val keys = QwertyGeometry.letterKeys(375f, 216f)
+        val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
+        fun word(w: String) = CurrentWord().apply { for (c in w) addLetter(c, keys[c]?.let { Tap(it.centerX, it.centerY) }, keys, params) }
+        TypingEngine.unloadForTest()
+        TypingEngine.load(
+            openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+            openBigrams = { File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader() },
+        )
+        System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.let { f ->
+            java.io.RandomAccessFile(f, "r").channel.use { ch -> NgramModel.fromBuffer(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size())) }
+        }?.let { TypingEngine.attachNgrams(it) }
+        try {
+            for ((prev, cur, before) in listOf(Triple("clips", "anyways", "it"), Triple("write", "everything", "to"), Triple("the", "remove", "to"))) {
+                repeat(2) { TypingEngine.retrocorrection(word(prev), prev, before, word(cur)) } // warm-up
+                val t0 = System.nanoTime()
+                repeat(5) { TypingEngine.retrocorrection(word(prev), prev, before, word(cur)) }
+                println("PROBE-RETRO %s %s: %.1f ms per call (desktop JVM)".format(prev, cur, (System.nanoTime() - t0) / 5e6))
+                val pc = TypingEngine.candidates(word(prev), before)
+                val cc = TypingEngine.candidates(word(cur), prev)
+                val t1 = System.nanoTime()
+                repeat(50) { TypingEngine.retrocorrection(word(prev), prev, before, word(cur), previousCandidates = pc, currentCandidates = cc) }
+                println("PROBE-RETRO fast %s %s: %.2f ms per call".format(prev, cur, (System.nanoTime() - t1) / 50e6))
+            }
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
 })

@@ -115,8 +115,9 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
                     for ((ri, row) in r.rows.withIndex()) {
                         for (k in row.keys) if (!k.gap) KbKeyCap(r, k, ri)
                     }
-                    // Kb:193-195 trackpad puck
-                    if (r.trackpad) {
+                    // Kb:193-195 trackpad puck: drawn in the design gallery only; on the live keyboard the
+                    // user asked for it to go (2026-11-14: "remove the blue circle, it clips")
+                    if (r.trackpad && r.only != "live") {
                         Box(
                             Modifier.offset(r.tpX.dp, r.tpY.dp).size(56.dp).alpha(0.85f)
                                 .cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 2f, t.linkFg)), RoundedCornerShape(50))

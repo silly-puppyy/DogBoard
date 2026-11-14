@@ -48,7 +48,8 @@ CASES = [
     ("omw x", "On my way! X"),  # text replacement (iOS sample shortcut) beats autocorrect; "!" + space starts a sentence
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
     ("on the {123}1{123}st x", "On the 1st x"),
-    ("the {123}1{123}sr x", "The 1st x"),  # one slipped key in a number's suffix is fixed (DigitWords)  # {123} again = back to letters; letters after a digit are not a word: "st" stays
+    ("the {123}1{123}sr x", "The 1st x"),  # one slipped key in a number's suffix is fixed (DigitWords)
+    ("the {123}5{123}th x", "The 5th x"),  # a right suffix stays as typed  # {123} again = back to letters; letters after a digit are not a word: "st" stays
     ("thw dog", "Thw Dog", "name"),  # name/address fields: no autocorrect (no learning either)
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),

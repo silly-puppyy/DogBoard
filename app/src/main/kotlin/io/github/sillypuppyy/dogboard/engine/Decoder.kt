@@ -48,6 +48,21 @@ class Decoder(
     /** A two-word-context model ([NgramScorer]); when set it scores words instead of [bigrams]. */
     context: ContextScorer? = null,
 ) {
+    /**
+     * [c] (one word) as if it followed [previous] (and [previous2]): its geometry kept, its language
+     * model redone; a cheap stand-in for decoding the same taps again in another context.
+     */
+    fun rescored(c: Candidate, previous: Int, previous2: Int = -1): Candidate {
+        if (c.words != 1 || c.isTypedString) return c
+        val node = lexicon.find(c.word).takeIf { it != Lexicon.NONE && lexicon.isWord(it) } ?: return c
+        val nodeLp = lexicon.logProb(node)
+        val base = context?.logProb(previous2, previous, lexicon.wordId(node), nodeLp)
+            ?: bigrams?.logProb(previous, lexicon.wordId(node), nodeLp) ?: nodeLp
+        val formLp = lexicon.forms(node).firstOrNull { it.first == c.word }?.second ?: nodeLp
+        val l = base + (formLp - nodeLp)
+        return c.copy(score = c.geometry + config.languagePower * l, languageModel = l)
+    }
+
     /** Can be attached after loading (TypingEngine.attachNgrams), so startup isn't slowed. */
     @Volatile
     var context: ContextScorer? = context

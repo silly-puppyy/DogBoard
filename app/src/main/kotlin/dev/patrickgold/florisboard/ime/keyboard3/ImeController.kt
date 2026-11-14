@@ -137,7 +137,13 @@ class ImeController(
      * DogBoard: the last finished word, kept while only a plain space follows it, so the next word
      * can still change it (iOS retrocorrection reaches back across spaces, not punctuation).
      */
-    private class LookBack(val word: io.github.sillypuppyy.dogboard.engine.CurrentWord, val committed: String, val context: String?)
+    private class LookBack(
+        val word: io.github.sillypuppyy.dogboard.engine.CurrentWord,
+        val committed: String,
+        val context: String?,
+        /** The word's candidates as decoded when it was finished (retrocorrection reuses them). */
+        val candidates: List<io.github.sillypuppyy.dogboard.engine.Candidate>? = null,
+    )
     private var lookBack: LookBack? = null
 
     /** DogBoard: the last retrocorrection ([old] -> [new], followed by [tail]), undone by a backspace right after. */
@@ -619,10 +625,10 @@ class ImeController(
                         scope.launch { TypingEngine.noteCorrected(typed, corrected) }
                     }
                     noteFinishedWord(context, corrected, context2)
-                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context, candidates)
                 } else {
                     noteFinishedWord(context, typed, context2)
-                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context, candidates)
                 }
             } else if (!word.isEmpty && separator == " " && word.text != rejectedWord) {
                 lookBack = null // autocorrect off or the user insisted on this word: nothing to look back at
@@ -650,8 +656,11 @@ class ImeController(
             if (word.isEmpty || !correctionAllowed() || cursorInsideWord()) return null
             val typed = word.text
             if (!state.content.surroundingText.textBefore.endsWith("${back.committed} $typed")) return null
-            val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes())
-                ?: return null
+            // only from what is already decoded: this runs on the main thread as the word ends; when
+            // the background decode of the current word hasn't caught up, there is no look back
+            val current = latestDecode?.takeIf { it.first == decodeKey(typed, wordContext(), wordContext2()) }?.second ?: return null
+            val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes(),
+                previousCandidates = back.candidates ?: return null, currentCandidates = current) ?: return null
             if (!replaceBeforeCursor("${back.committed} $typed", "$newPrevious $typed")) return null
             state.content.selection.start.let { end ->
                 val offset = end - typed.length - 1 - newPrevious.length
@@ -955,6 +964,12 @@ class ImeController(
                 }
             }
             if (cursorInsideWord()) {
+                sink(emptyList())
+                return
+            }
+            // letters right after a digit or a dot belong to a token ("5th", "www.site"): no word
+            // to offer for them alone ("Th" for the "th" of "5th" would replace half the token)
+            if (!currentWord.isEmpty && followsDot(currentWord.text)) {
                 sink(emptyList())
                 return
             }

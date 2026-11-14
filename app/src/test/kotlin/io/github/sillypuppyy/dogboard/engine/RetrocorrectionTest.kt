@@ -37,4 +37,15 @@ class RetrocorrectionTest : FunSpec({
     test("words with digits are never changed") {
         TypingEngine.retrocorrection(typed("lobe"), "lobe2", "i", typed("you")).shouldBeNull()
     }
+
+    test("from the candidates already decoded, the look back decides the same (no decoding at word end)") {
+        fun fast(prev: String, committed: String, before: String, cur: String) = TypingEngine.retrocorrection(
+            typed(prev), committed, before, typed(cur),
+            previousCandidates = TypingEngine.candidates(typed(prev), before),
+            currentCandidates = TypingEngine.candidates(typed(cur), committed),
+        )
+        fast("lobe", "lobe", "i", "you") shouldBe "love"
+        fast("love", "love", "i", "you").shouldBeNull()
+        fast("think", "think", "i", "so").shouldBeNull()
+    }
 })

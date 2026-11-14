@@ -398,6 +398,13 @@ object TypingEngine {
         beforeContext: String?,
         current: CurrentWord,
         curly: Boolean = false,
+        /**
+         * The candidates already decoded for the previous word (when it was finished) and for the
+         * current one (while typing): given both, nothing is decoded again, only rescored (it runs
+         * as a word is finished, on the main thread: full decodes took ~0.5 s on a phone).
+         */
+        previousCandidates: List<Candidate>? = null,
+        currentCandidates: List<Candidate>? = null,
     ): String? {
         val engine = loaded ?: return null
         val bigrams = engine.bigrams ?: return null // the look back needs a context model
@@ -408,15 +415,21 @@ object TypingEngine {
         if (rejections.isBlocked(previous.text, previousCommitted)) return null
         return lock.read {
             val d = engine.retroDecoder
-            val prevCandidates = d.decode(
+            val prevCandidates = (previousCandidates?.filter { !it.isCompletion }?.take(4) ?: d.decode(
                 prevTaps, previous.keys, previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
-            ).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
+            )).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
                 .let { respectingContactNames(previous.text, it) }
+            val curReadings = currentCandidates?.filter { !it.isCompletion && it.words == 1 }
             fun joint(prevWord: String, prevScore: Double): Double {
-                val cur = d.decode(curTaps, current.keys, current.params!!, 1, includeCompletions = false,
-                    previous = bigrams.contextId(prevWord.lowercase()), typed = current.text)
-                return prevScore + (cur.firstOrNull()?.score ?: return Double.NEGATIVE_INFINITY)
+                val context = bigrams.contextId(prevWord.lowercase())
+                val best = if (curReadings != null) {
+                    curReadings.maxOfOrNull { d.rescored(it, context).score }
+                } else {
+                    d.decode(curTaps, current.keys, current.params!!, 1, includeCompletions = false,
+                        previous = context, typed = current.text).firstOrNull()?.score
+                }
+                return prevScore + (best ?: return Double.NEGATIVE_INFINITY)
             }
             val committed = prevCandidates.firstOrNull { it.word.equals(previousCommitted, ignoreCase = true) }
                 ?: return@read null // the committed word isn't even a candidate: nothing to compare with
