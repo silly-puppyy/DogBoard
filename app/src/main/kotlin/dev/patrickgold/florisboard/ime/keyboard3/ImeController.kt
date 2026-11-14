@@ -663,7 +663,11 @@ class ImeController(
         /** Corrections for the word the cursor rests in ([before] + [after] the cursor), decoded from key centres. */
         private fun publishWordAroundCursor(sink: (List<Suggestion>) -> Unit, before: String, after: String) {
             val whole = before + after
-            val word = CurrentWord().apply { seedFrom(whole, lastLetterKeys, lastLetterParams) }
+            // before the first letter tap there is no live key geometry: the standard QWERTY one
+            // decodes key-centre taps the same way
+            val keys = lastLetterKeys.ifEmpty { io.github.sillypuppyy.dogboard.engine.QwertyGeometry.letterKeys(375f, 216f) }
+            val params = lastLetterParams ?: io.github.sillypuppyy.dogboard.touch.GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
+            val word = CurrentWord().apply { seedFrom(whole, keys, params) }
             if (word.tapsOrNull() == null || whole.none { it.isLetter() }) {
                 sink(emptyList())
                 return
