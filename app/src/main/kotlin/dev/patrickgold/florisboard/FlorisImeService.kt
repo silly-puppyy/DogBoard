@@ -66,6 +66,7 @@ import dev.patrickgold.florisboard.lib.util.debugSummarize
 import dev.patrickgold.florisboard.lib.util.launchActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import org.florisboard.lib.android.AndroidInternalR
 import org.florisboard.lib.android.AndroidVersion
@@ -290,12 +291,14 @@ class FlorisImeService : LifecycleInputMethodService() {
             io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService)
             }
-            // DogBoard: contact names, only when the user opted in and granted access
-            if (prefs.spelling.useContacts.get()) {
-                val names = io.github.sillypuppyy.dogboard.contacts.ContactNames.read(this@FlorisImeService)
-                if (names.isNotEmpty()) io.github.sillypuppyy.dogboard.engine.TypingEngine.setContactNames(names)
-            }
             imeController.updateState { refreshSuggestions() }
+            // DogBoard: contact names, only while the user opts in and grants access; switching the
+            // setting off takes them out again without a restart
+            prefs.spelling.useContacts.asFlow().collectLatest { on ->
+                val names = if (on) io.github.sillypuppyy.dogboard.contacts.ContactNames.read(this@FlorisImeService) else emptySet()
+                io.github.sillypuppyy.dogboard.engine.TypingEngine.setContactNames(names)
+                imeController.updateState { refreshSuggestions() }
+            }
         }
 
         WindowCompat.setDecorFitsSystemWindows(window.window!!, false)
