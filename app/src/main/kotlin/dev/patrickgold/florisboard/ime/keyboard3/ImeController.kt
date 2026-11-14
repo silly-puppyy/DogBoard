@@ -784,7 +784,7 @@ class ImeController(
 
         /** [word] (after [previous]) was finished; it is accepted when the next word confirms it. */
         private fun noteFinishedWord(previous: String?, word: String) {
-            if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
+            if (!learningAllowed()) return
             unconfirmedWord = previous to word
         }
 
@@ -811,7 +811,7 @@ class ImeController(
 
         /** The user kept [word] against autocorrect: remember it, except in incognito mode. */
         private fun learnWord(word: String) {
-            if (state.flags.isIncognitoMode || !wordEngineAllowed()) return
+            if (!learningAllowed()) return
             scope.launch { TypingEngine.learn(word) }
         }
 
@@ -868,7 +868,16 @@ class ImeController(
         /** Smart quotes are on here, so apostrophes in corrections are curly like the typed ones. */
         private fun curlyApostrophes(): Boolean = wordEngineAllowed() && prefs.typing.smartQuotes.get()
 
-        private fun correctionAllowed(): Boolean = prefs.correction.autocorrect.get() && wordEngineAllowed()
+        private fun correctionAllowed(): Boolean =
+            prefs.correction.autocorrect.get() && wordEngineAllowed() && !formField()
+
+        /**
+         * Name, address and phonetic fields hold proper nouns the lexicon mostly lacks (and other
+         * people's details): suggestions stay, but nothing is autocorrected or learned there.
+         */
+        private fun formField(): Boolean = state.editor.info.inputAttributes.variation in FORM_VARIATIONS
+
+        private fun learningAllowed(): Boolean = !state.flags.isIncognitoMode && wordEngineAllowed() && !formField()
 
         private fun wordEngineAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
@@ -1101,7 +1110,7 @@ class ImeController(
             super.emitBackspace()
             expectedContentQueue.push(state.content)
             if (trailingWord(state.content.surroundingText.textBefore).isEmpty()) {
-                deletingWord?.let { gone -> if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.noteDeleted(gone) } }
+                deletingWord?.let { gone -> if (learningAllowed()) scope.launch { TypingEngine.noteDeleted(gone) } }
                 deletingWord = null
             }
             // DogBoard: keep the current word in step with the text
@@ -1386,6 +1395,11 @@ private val SPACE = " ".asK3String()
 private val WORD_SEPARATORS = setOf(" ", ".", ",", "!", "?", ";", ":")
 private val SYMBOL_LAYERS = setOf(K3LayerId("symbol-1"), K3LayerId("symbol-2"))
 private val PERIOD_SPACE = ". ".asK3String()
+private val FORM_VARIATIONS = setOf(
+    InputAttributes.Variation.PERSON_NAME,
+    InputAttributes.Variation.POSTAL_ADDRESS,
+    InputAttributes.Variation.PHONETIC,
+)
 private val NO_DOUBLE_SPACE_VARIATIONS = setOf(
     InputAttributes.Variation.EMAIL_ADDRESS,
     InputAttributes.Variation.WEB_EMAIL_ADDRESS,

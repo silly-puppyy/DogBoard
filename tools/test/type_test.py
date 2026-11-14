@@ -47,6 +47,7 @@ CASES = [
     ("hrllo <x", "Hrllox"),
     ("omw x", "On my way! X"),  # text replacement (iOS sample shortcut) beats autocorrect; "!" + space starts a sentence
     ("john smith", "John Smith", "name"),  # name field: every word capitalised
+    ("thw dog", "Thw Dog", "name"),  # name/address fields: no autocorrect (no learning either)
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),
     ("hello{S-28}x", "Hexllo"),  # {S-28}: hold space, slide 28 dp left = 3 cursor steps (8 dp each), no space typed
