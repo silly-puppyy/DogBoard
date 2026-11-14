@@ -7,7 +7,7 @@ Each sample is a word typed with simulated finger error, read as the nearest key
 net's input, as iOS feeds its MLTT), with the word itself as the target:
 - words: lexicon words (a-z and apostrophe) drawn by FineWeb frequency ** 0.5 (flattened, so
   rarer words are seen too);
-- typing speed: a time between taps drawn per word (0.12-0.5 s); faster widens the spread as
+- [superseded 2026-11-14 by the IMK-measured noise in type_word] typing speed: a time between taps drawn per word (0.12-0.5 s); faster widens the spread as
   GaussianTouch does (2.2 → 3.3 mm across, 3.2 → 4.5 mm down from slow to fast, times a per-word
   hand factor 0.2-0.8: real taps scatter less than the likelihood spread) and makes slips likelier;
 - velocity: a fast tap falls a little short of its key along the move from the previous key
@@ -78,18 +78,23 @@ NEIGH = {c: neighbours(c) for c in LETTERS}
 
 
 def type_word(word, rng):
+    """Taps for [word] under the noise measured on the IMK data (tools/data/imk_touch_stats.py; notes
+    research/frequency-data-plan.md "IMK analysis"): a Gaussian core of 1.8 x 2.0 mm, a per-word drift
+    of 0.6 x 1.5 mm, a slight overshoot along the move (+0.5 mm median), ~7 % wider when typing fast,
+    and a heavy tail (up to 8 % of taps at 4x the core). The IMK keyboard was invisible (the worst
+    case), so a per-word typist factor 0.3-1.0 scales it all: 1.0 = that worst case."""
     letters = [c for c in word if c in KEYS]
     if not letters:
         return None
-    interval = rng.uniform(0.12, 0.5)
-    fast = min(1.0, max(0.0, (0.35 - interval) / 0.2))  # GaussianTouch's speed factor
-    hand = rng.uniform(0.2, 0.8)
-    sx = (2.2 + 1.1 * fast) * hand * PPMM
-    sy = (3.2 + 1.3 * fast) * hand * PPMM
-    undershoot = rng.uniform(0.0, 0.1) + 0.1 * fast
-    slip = 1.0 + fast
+    typist = rng.uniform(0.3, 1.0)
+    fast = rng.random() < 0.3
+    speed = 1.07 if fast else 1.0
+    sx, sy = 1.8 * PPMM * typist * speed, 2.0 * PPMM * typist * speed
+    dx, dy = rng.gauss(0, 0.6 * PPMM * typist), rng.gauss(0, 1.5 * PPMM * typist)
+    tail = 0.08 * typist
     seq = list(letters)
     r = rng.random()
+    slip = 1.5 if fast else 1.0
     if r < 0.03 * slip:  # an extra tap next to a letter
         i = rng.randrange(len(seq))
         seq.insert(i + rng.randint(0, 1), rng.choice(NEIGH[seq[i]]))
@@ -101,11 +106,15 @@ def type_word(word, rng):
     out = []
     prev = None
     for c in seq:
-        x, y = KEYS[c]
-        if prev is not None:  # falls short along the move from the previous key
-            x -= undershoot * (x - prev[0])
-            y -= undershoot * (y - prev[1])
-        out.append(nearest(x + rng.gauss(0, sx), y + rng.gauss(0, sy)))
+        x, y = KEYS[c][0] + dx, KEYS[c][1] + dy
+        if prev is not None:  # a slight overshoot along the move from the previous key
+            mx, my = KEYS[c][0] - prev[0], KEYS[c][1] - prev[1]
+            n = math.hypot(mx, my)
+            if n > 1:
+                x += 0.5 * PPMM * typist * mx / n
+                y += 0.5 * PPMM * typist * my / n
+        k = 4.0 if rng.random() < tail else 1.0
+        out.append(nearest(x + rng.gauss(0, sx * k), y + rng.gauss(0, sy * k)))
         prev = KEYS[c]
     return out
 
