@@ -61,7 +61,10 @@ fun HomeScreen() {
         // the design's home has its own "Try it here" dock: hide FlorisBoard's preview bar, which
         // otherwise stays as the previous screen left it
         val previewField = dev.patrickgold.florisboard.app.components.LocalPreviewFieldController.current
-        androidx.compose.runtime.SideEffect { previewField.isVisible = false }
+        androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { // on resume: upstream #3277
+            previewField.isVisible = false
+            onPauseOrDispose { }
+        }
         val autocorrectOn by prefs.correction.autocorrect.collectAsState()
         val level by prefs.correction.autocorrectLevel.collectAsState()
         val sound by prefs.inputFeedback.audioEnabled.collectAsState()

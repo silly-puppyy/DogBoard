@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -72,8 +73,11 @@ fun FlorisScreenNg(
     val previewFieldController = LocalPreviewFieldController.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    SideEffect {
+    // DogBoard: on resume, not in a SideEffect: during a quick back navigation the leaving screen
+    // recomposes after the new one and its value stuck (upstream #3277)
+    LifecycleResumeEffect(previewFieldVisible) {
         previewFieldController.isVisible = previewFieldVisible
+        onPauseOrDispose { }
     }
 
     Scaffold(
@@ -208,9 +212,12 @@ private class FlorisScreenScopeImpl : FlorisScreenScope {
         val previewFieldController = LocalPreviewFieldController.current
         val colorScheme = MaterialTheme.colorScheme
 
+        LifecycleResumeEffect(previewFieldVisible) { // DogBoard: see FlorisScreenNg (#3277)
+            previewFieldController?.isVisible = previewFieldVisible
+            onPauseOrDispose { }
+        }
         SideEffect {
             val window = (context as Activity).window
-            previewFieldController?.isVisible = previewFieldVisible
             window.statusBarColor = Color.Transparent.toArgb()
             if (AndroidVersion.ATLEAST_API29_Q) {
                 window.navigationBarColor = Color.Transparent.toArgb()
