@@ -455,6 +455,14 @@ class PointerTracker(
         trackedOutputPointer.value?.takeIf { it.id == up.id }?.let { trackedPointer ->
             trackedPointer.longPress.extendedJob?.cancel()
             trackedPointer.repeatJob?.cancel()
+            // DogBoard: as Gboard (measured on the emulator's vibration log, 2026-11-14): a held
+            // delete vibrates on the press and once when released after repeating, not per repeat
+            if (trackedPointer.downKey.attrs.output == ImeActions.Backspace &&
+                up.uptimeMillis - trackedPointer.down.uptimeMillis >=
+                interactionController.activeTimingOptions.value.getKeyRepeatTimeout(ImeActions.Backspace).inWholeMilliseconds
+            ) {
+                interactionController.performFeedback(InteractionKind.KeyPress, ImeActions.Backspace)
+            }
             imeController.updateState {
                 val output = when {
                     trackedPointer.isTrackpad(up.uptimeMillis) -> null // the space bar was used as a trackpad
