@@ -92,4 +92,20 @@ class FilterStackTest : FunSpec({
         lex.addWord("Zorblax", -12.0) // a new word keeps the casing it was learned with
         lex.formsOf("zorblax") shouldBe listOf("Zorblax")
     }
+
+    test("#17: a typed one-letter word isn't swapped for another; #22: no clean alternatives under a typed vulgar top") {
+        TypingEngine.unloadForTest()
+        TypingEngine.load(
+            openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+            openNoSuggest = { "duck\n".reader().buffered() },
+        )
+        try {
+            val a = typed("a")
+            TypingEngine.correction(a, TypingEngine.candidates(a, "is")).let { it == null || it.length != 1 || it == "a" } shouldBe true
+            val d = typed("duck")
+            TypingEngine.candidates(d, null).map { it.word } shouldBe listOf("duck")
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
 })

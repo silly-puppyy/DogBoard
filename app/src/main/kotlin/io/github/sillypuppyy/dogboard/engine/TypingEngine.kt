@@ -393,6 +393,7 @@ object TypingEngine {
             )
                 .let { withTypedApostrophes(word, it) }
                 .filter { !isBlocked(it.word) && (it.isTypedString || it.word.equals(word.text, ignoreCase = true) || !isNotSuggestible(it.word)) }
+                .let { onlyTypedUnderVulgarTop(word.text, it) }
                 .take(maxResults)
         }
     }
@@ -475,7 +476,8 @@ object TypingEngine {
             if (!rejections.isBlocked(word.text, phrase, consume = commit)) return phrase
         }
         if (candidates.isEmpty()) return null
-        val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates)).filter { keepsPopupLetters(word.text, it.word) }
+        val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates))
+            .filter { keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) }
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
         if (vetoesCorrection(kept)) return null
@@ -726,6 +728,25 @@ object TypingEngine {
     private fun vetoesCorrection(candidates: List<Candidate>): Boolean {
         if (charModel == null) return false
         return typedStringVeto(candidates)
+    }
+
+    /**
+     * iOS FilterMissingOneLetterWordFromInput (#17): a valid one-letter word typed ("a", "I") is not
+     * swapped for a different one-letter word; longer words ("as") are still allowed.
+     */
+    private fun keepsOneLetterWord(typed: String, candidate: String, engine: Loaded): Boolean {
+        if (typed.length != 1 || !engine.lexicon.contains(typed)) return true
+        return candidate.length != 1 || candidate.equals(typed, ignoreCase = true)
+    }
+
+    /**
+     * iOS FilterNonVulgarIfTopCandidateVulgar (#22) with #30/#31: when the word typed is a
+     * never-suggest word and ranks first, no clean alternative is offered for it (the bar keeps
+     * just the typed word).
+     */
+    private fun onlyTypedUnderVulgarTop(typed: String, candidates: List<Candidate>): List<Candidate> {
+        val top = candidates.maxByOrNull { it.score } ?: return candidates
+        return if (top.word.equals(typed, ignoreCase = true) && isNotSuggestible(top.word)) listOf(top) else candidates
     }
 
     /** True if any word of [candidate] (one word, or several when words were split) is never offered. */

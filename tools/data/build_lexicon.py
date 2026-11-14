@@ -239,6 +239,7 @@ def main():
     ap.add_argument("--max-surnames", type=int, default=20000, help="most common Census surnames to include")
     ap.add_argument("--out", default="app/src/main/assets/dogboard/en.lexicon.tsv")
     ap.add_argument("--casing", default="", help="casing_counts.py output; keeps SCOWL's casings of a word with a measured split")
+    ap.add_argument("--min-zipf-possessive", type=float, default=MIN_ZIPF_POSSESSIVE, help="possessives ('s, s') kept from this Zipf up")
     ap.add_argument("--seen-counts", default="", help="count_unigrams.py output (FineWeb): plain lowercase SCOWL words it never saw are dropped")
     args = ap.parse_args()
 
@@ -354,7 +355,7 @@ def main():
 
     # possessives: only frequent ones; the engine generates the rest
     for w in [w for w in lexicon if w.lower().endswith(("'s", "s'"))]:
-        if lexicon[w] < MIN_ZIPF_POSSESSIVE and w.lower() not in ("it's", "he's", "she's", "that's", "what's",
+        if lexicon[w] < args.min_zipf_possessive and w.lower() not in ("it's", "he's", "she's", "that's", "what's",
                                                                     "there's", "here's", "who's", "let's"):
             del lexicon[w]
     # apostrophe-less contraction spellings ("dont", "im") so autocorrect restores the apostrophe
@@ -368,12 +369,20 @@ def main():
         if c is not None and c != w and not w.isupper() and not core and lexicon[c] - lexicon[w] >= CONTRACTION_GAP:
             del lexicon[w]
 
-    ranked = sorted(lexicon.items(), key=lambda kv: (-kv[1], kv[0]))
+    # possessives ride on top of the word cap (iOS stores them beside its words): the cap is for
+    # the base words, and a possessive stays if its base word does
+    is_poss = lambda w: w.lower().endswith(("'s", "s'"))
+    ranked = sorted(((w, z) for w, z in lexicon.items() if not is_poss(w)), key=lambda kv: (-kv[1], kv[0]))
     if args.max_words and len(ranked) > args.max_words:
         # a cut inside a tie (thousands of rare words at the same floor) drops the whole tie
         # instead of keeping an arbitrary part of it
         edge = ranked[args.max_words][1]
         ranked = [kv for kv in ranked[: args.max_words] if kv[1] > edge]
+    kept = {w.lower() for w, _ in ranked}
+    # ...or if it is a common word on its own (names that are possessives: "Sainsbury's")
+    poss = [(w, z) for w, z in lexicon.items()
+            if is_poss(w) and ((w[:-2] if w.endswith("'s") else w[:-1]).lower() in kept or z >= MIN_ZIPF_POSSESSIVE)]
+    ranked = sorted(ranked + poss, key=lambda kv: (-kv[1], kv[0]))
     with open(args.out, "w", encoding="utf-8") as out:
         out.write("#dogboard-lexicon 1\n#lang en_US\n")
         out.write(f"#source SCOWL 2020.12.07 (level <= {args.max_level}), wordfreq 3.1.1 (CC BY-SA 4.0), "
