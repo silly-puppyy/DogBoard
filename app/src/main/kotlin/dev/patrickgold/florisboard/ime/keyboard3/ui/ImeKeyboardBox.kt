@@ -255,6 +255,10 @@ fun ImeKeyboardBox(
                 val history by clipboardManager.historyFlow.collectAsState()
                 val historyEnabled by prefs.clipboard.historyEnabled.collectAsState()
                 val clipItems = history.all
+                // asked when a panel opens, not on every redraw (a cross-process call per keystroke)
+                val phoneLocked = remember(livePanel) {
+                    context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true
+                }
                 io.github.sillypuppyy.dogboard.design.LiveKbView(
                     layerId = touchLayerId.toString(),
                     shiftState = inputShiftState,
@@ -297,7 +301,7 @@ fun ImeKeyboardBox(
                     } },
                     // the design's messages: "locked" = phone locked (clips hidden), "empty" = history off
                     panelVariant = when {
-                        context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true -> "locked"
+                        phoneLocked -> "locked"
                         !historyEnabled -> "empty"
                         else -> "default"
                     },
