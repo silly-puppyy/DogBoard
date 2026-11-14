@@ -115,7 +115,12 @@ data class KbRow(val keys: List<KbKey>)
 data class KbCapPos(val capX: Float, val capW: Float, val capTop: Float, val label: String, val base: String)
 
 data class KbPreview(val x: Float, val y: Float, val w: Float, val label: String, val fw: Int, val alpha: Float = 1f)
-data class KbLongPress(val x: Float, val y: Float, val items: List<Triple<String, Color, Color>>)
+data class KbLongPress(
+    val x: Float, val y: Float, val items: List<Triple<String, Color, Color>>,
+    /** Each item's cell, in keyboard dp: [KbSpec.longPressCells]. */
+    val cells: List<KbSpec.LpCell> = emptyList(),
+    val w: Float = 0f, val h: Float = 0f,
+)
 data class KbLangItem(val label: String, val sub: String, val icon: String, val bg: Color)
 data class KbLangMenu(val x: Float, val y: Float, val items: List<KbLangItem>)
 
@@ -192,6 +197,44 @@ object KbSpec {
      * keyboard [w] wide with [n] items (cell i spans x + 4 + i·[LP_CELL]); shared with the touch
      * targets (LongPress.kt) so the drawn cells are the ones that select.
      */
+    /** One long-press cell: left edge, row (0 = the row next to the key, 1 = the row above), width (dp). */
+    data class LpCell(val x: Float, val row: Int, val w: Float)
+
+    /** Long-press cell height and the bar's padding (Kb:577-581). */
+    const val LP_CELL_H = 46f
+    const val LP_PAD = 4f
+    /** Designer answers 2026-11-14 §6: at most this many variants per row; the rest go in a row above. */
+    const val LP_PER_ROW = 8
+
+    /**
+     * A variant's cell width (designer answers §6): 34 dp, or its text plus 8 dp a side when longer
+     * (multi-character variants at 20 sp, about 11 dp a character).
+     */
+    fun longPressCellWidth(label: String): Float {
+        val n = label.codePointCount(0, label.length)
+        return if (n <= 1) LP_CELL else max(LP_CELL, n * 11f + 16f)
+    }
+
+    /**
+     * Where each variant sits (shared with the touch targets in LongPress.kt, so the drawn cells are
+     * the ones that select): rows of [LP_PER_ROW] in list order, the first row next to the key with
+     * item 0 over it, the bar shifted to stay on a keyboard [w] wide.
+     */
+    fun longPressCells(capX: Float, capW: Float, w: Float, labels: List<String>): List<LpCell> {
+        val rows = labels.chunked(LP_PER_ROW)
+        val out = ArrayList<LpCell>(labels.size)
+        for ((r, row) in rows.withIndex()) {
+            val widths = row.map(::longPressCellWidth)
+            val rowW = widths.sum() + 2 * LP_PAD
+            var x = capX + capW / 2 - widths.first() / 2 - LP_PAD
+            if (x + rowW > w - 2) x = capX + capW / 2 + widths.first() / 2 + LP_PAD - rowW
+            x = max(2f, min(w - rowW - 2, x))
+            var cx = x + LP_PAD
+            for (cw in widths) { out.add(LpCell(cx, r, cw)); cx += cw }
+        }
+        return out
+    }
+
     fun longPressBarX(capX: Float, capW: Float, w: Float, n: Int): Float {
         val cw = LP_CELL; val pw = n * cw + 8
         var x = capX + capW / 2 - cw / 2 - 4
@@ -457,8 +500,15 @@ object KbSpec {
             var vars = P.lpItems.ifEmpty { LP[p.base] ?: emptyList() }
             if (P.lpItems.isEmpty() && upper && plane == "base") vars = vars.map(::up)
             val sel = P.lpSel
-            val x = longPressBarX(p.capX, p.capW, W, vars.size)
-            KbLongPress(x, p.capTop - 8 - 54, vars.mapIndexed { i, c -> Triple(c, if (i == sel) t.sel else Color.Transparent, if (i == sel) t.selFg else t.popFg) })
+            val cells = longPressCells(p.capX, p.capW, W, vars)
+            val rows = (cells.maxOfOrNull { it.row } ?: 0) + 1
+            val x = (cells.minOfOrNull { it.x } ?: p.capX) - LP_PAD
+            val right = (cells.maxOfOrNull { it.x + it.w } ?: p.capX) + LP_PAD
+            val h = rows * LP_CELL_H + 2 * LP_PAD
+            KbLongPress(
+                x, p.capTop - 8 - h, vars.mapIndexed { i, c -> Triple(c, if (i == sel) t.sel else Color.Transparent, if (i == sel) t.selFg else t.popFg) },
+                cells, right - x, h,
+            )
         }?.takeIf { it.items.isNotEmpty() }
         // Kb:591-599 language menu
         val lm = if (P.langMenu) pos["fn"]?.let { p ->

@@ -51,9 +51,16 @@ data class LongPress(
      */
     fun getNearestKeyIndex(position: Offset): Int {
         if (extendedKeys.isEmpty()) return extendedFocusedIndex
+        // two rows (more than 8 variants): the finger's height picks the row, then x picks the cell
+        val rowTops = extendedKeys.map { it.bounds.top }.distinct()
+        val rowTop = if (rowTops.size < 2) null else rowTops.minBy { top ->
+            val k = extendedKeys.first { it.bounds.top == top }.bounds
+            if (position.y < k.top) k.top - position.y else if (position.y > k.bottom) position.y - k.bottom else 0f
+        }
         var best = extendedFocusedIndex
         var bestDistance = Float.MAX_VALUE
         extendedKeys.fastForEachIndexed { index, extendedKey ->
+            if (rowTop != null && extendedKey.bounds.top != rowTop) return@fastForEachIndexed
             val b = extendedKey.bounds
             val d = if (position.x < b.left) b.left - position.x else if (position.x > b.right) position.x - b.right else 0f
             if (d < bestDistance) { bestDistance = d; best = index }
@@ -71,15 +78,22 @@ data class LongPress(
  * its long-press bar ([io.github.sillypuppyy.dogboard.design.KbSpec.longPressBarX]): item 0 over
  * the key, the bar shifted to stay on screen. FlorisBoard's grid layout (below) is not used.
  */
+/** DogBoard: what a long-press cell shows: the layout's display label ("New line"), else the text it types. */
+fun TouchPopupKey.barLabel(): String =
+    (display as? K3String)?.toText()?.takeIf { it.isNotBlank() } ?: (data.output as? K3String)?.toText().orEmpty()
+
 fun layoutLongPressBarRow(extendedKeys: List<TouchPopupKey>, keyBounds: Rect, anchorBounds: Rect, keyboardWidthDp: Float): List<TouchPopupKey> {
     val spec = io.github.sillypuppyy.dogboard.design.KbSpec
     val w = keyboardWidthDp
     val capX = keyBounds.left * w + spec.KEY_MH
     val capW = keyBounds.width * w - 2 * spec.KEY_MH
-    val x0 = spec.longPressBarX(capX, capW, w, extendedKeys.size)
+    val cells = spec.longPressCells(capX, capW, w, extendedKeys.map { it.barLabel() })
+    val rowH = anchorBounds.height
     return extendedKeys.mapIndexed { i, key ->
-        val left = (x0 + 4 + i * spec.LP_CELL) / w
-        key.withNewBounds(Rect(left, anchorBounds.top, left + spec.LP_CELL / w, anchorBounds.bottom))
+        val c = cells[i]
+        val left = c.x / w
+        val top = anchorBounds.top - c.row * rowH
+        key.withNewBounds(Rect(left, top, left + c.w / w, top + rowH))
     }
 }
 

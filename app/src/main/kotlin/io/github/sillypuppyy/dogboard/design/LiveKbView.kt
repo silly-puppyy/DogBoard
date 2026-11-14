@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.patrickgold.florisboard.ime.keyboard3.interaction.LongPress
+import dev.patrickgold.florisboard.ime.keyboard3.interaction.barLabel
 import dev.patrickgold.florisboard.ime.keyboard3.touch.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKey
 
@@ -86,9 +87,7 @@ fun LiveKbView(
             lpSel = longPress?.extendedFocusedIndex ?: 0,
             // what FlorisBoard will commit, in its order (the static design table differs for
             // shifted S and I, and for keys the design has no list for)
-            lpItems = if (extended) longPress!!.extendedKeys.map { k ->
-                (k.data.output as? org.k3lp.lib.text.K3String)?.toText() ?: ""
-            } else emptyList(),
+            lpItems = if (extended) longPress!!.extendedKeys.map { k -> k.barLabel() } else emptyList(),
             width = maxWidth.value,
             keyH = maxHeight.value,
             only = "live",

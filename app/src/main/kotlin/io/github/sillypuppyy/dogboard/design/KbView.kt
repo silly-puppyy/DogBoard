@@ -247,11 +247,20 @@ private fun KbPopups(r: KbRender) {
         ) { LintParent("preview") { DText(pv.label, style = designTextStyle(30.sp, pv.fw, t.popFg), overflow = TextOverflow.Visible) } }
     }
     r.lp?.let { lp ->
-        Row(Modifier.offset(lp.x.dp, lp.y.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape).lint("longpress", DesignLint.Kind.FLOATING).padding(4.dp)) { LintParent("longpress") {
-            for ((c, bg, fg) in lp.items) {
-                Box(Modifier.size(34.dp, 46.dp).background(bg, RoundedCornerShape(12.dp)).lint("longpress:$c"), contentAlignment = Alignment.Center) { LintParent("longpress:$c") {
-                    // CSS lets a long variant (".org") overflow its 34 dp cell on one line
-                    DText(c, Modifier.wrapContentWidth(unbounded = true), style = designTextStyle(24.sp, 400, fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+        // cells sized to their text, rows of 8, the second row above (designer answers §6); the
+        // cells come from KbSpec.longPressCells, the same geometry the finger selects with
+        val rows = (lp.cells.maxOfOrNull { it.row } ?: 0) + 1
+        Box(Modifier.offset(lp.x.dp, lp.y.dp).size(lp.w.dp, lp.h.dp).cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape).lint("longpress", DesignLint.Kind.FLOATING)) { LintParent("longpress") {
+            for ((i, item) in lp.items.withIndex()) {
+                val (c, bg, fg) = item
+                val cell = lp.cells.getOrNull(i) ?: continue
+                val top = KbSpec.LP_PAD + (rows - 1 - cell.row) * KbSpec.LP_CELL_H
+                Box(
+                    Modifier.offset((cell.x - lp.x).dp, top.dp).size(cell.w.dp, KbSpec.LP_CELL_H.dp).background(bg, RoundedCornerShape(12.dp)).lint("longpress:$c"),
+                    contentAlignment = Alignment.Center,
+                ) { LintParent("longpress:$c") {
+                    val single = c.codePointCount(0, c.length) <= 1
+                    DText(c, style = designTextStyle(if (single) 24.sp else 20.sp, 400, fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
                 } }
             }
         } }
