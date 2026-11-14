@@ -911,6 +911,16 @@ class ImeController(
 
         private fun learningAllowed(): Boolean = !state.flags.isIncognitoMode && wordEngineAllowed() && !formField()
 
+        /**
+         * Suggestions in the bar: any text field except emails, URLs and passwords, also one that asks
+         * for no suggestions (Google's search box does), as Gboard shows its bar there (checked on the
+         * emulator, 2026-11-14); such fields still get no autocorrection and no learning.
+         */
+        private fun suggestionsAllowed(): Boolean {
+            val attrs = state.editor.info.inputAttributes
+            return attrs.type == InputAttributes.Type.TEXT && attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS
+        }
+
         private fun wordEngineAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
             return attrs.type == InputAttributes.Type.TEXT &&
@@ -943,7 +953,7 @@ class ImeController(
             val sink = suggestionSink ?: return
             suggestionJob?.cancel()
             wordAroundCursor = null
-            if (!wordEngineAllowed() || state.content.selection.isNotCollapsed()) {
+            if (!suggestionsAllowed() || state.content.selection.isNotCollapsed()) {
                 sink(emptyList())
                 return
             }
@@ -999,7 +1009,8 @@ class ImeController(
             }
             val word = currentWord.snapshot()
             val rejected = rejectedWord
-            val withCorrection = prefs.correction.autocorrect.get()
+            // the strip marks an autocorrection only where one is made (not in no-suggestion or form fields)
+            val withCorrection = correctionAllowed()
             val level = prefs.correction.autocorrectLevel.get()
             TypingEngine.blockNotSuggestible = prefs.suggestion.blockPossiblyOffensive.get()
             val textBefore = state.content.surroundingText.textBefore.toString()
