@@ -37,6 +37,9 @@ class EngineContextEvalTest : FunSpec({
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         val plain = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
         val withContext = Decoder(lexicon, bigrams = bigrams)
+        // optional: a trigram model binary (DOGBOARD_NGRAMS=path, tools/data/arpa_to_dogboard.py)
+        val ngrams = System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
+        val withTrigram = ngrams?.let { Decoder(lexicon, bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
         val autocorrect = Autocorrect(lexicon)
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
 
@@ -54,13 +57,16 @@ class EngineContextEvalTest : FunSpec({
             var raw = 0
             var rightPlain = 0
             var rightContext = 0
+            var rightTrigram = 0
             var outOfLexicon = 0
             for (sentence in sentences) {
                 var previous = Bigrams.START
+                var previous2: String? = null
                 for (m in token.findAll(sentence)) {
                     val t = m.value
                     if (t in setOf(".", "!", "?")) {
                         previous = Bigrams.START
+                        previous2 = null
                         continue
                     }
                     val letters = t.lowercase().filter { it in keys }
@@ -73,8 +79,8 @@ class EngineContextEvalTest : FunSpec({
                         )
                     }
                     val literal = String(taps.map { tap -> keyList.maxBy { GaussianTouch.logLikelihood(it.value, tap.x, tap.y, params) }.key }.toCharArray())
-                    fun final(decoder: Decoder, context: Int): String {
-                        val candidates = decoder.decode(taps, keys, params, previous = context, typed = literal)
+                    fun final(decoder: Decoder, context: Int, context2: Int = -1): String {
+                        val candidates = decoder.decode(taps, keys, params, previous = context, typed = literal, previous2 = context2)
                         return autocorrect.correction(literal, candidates) ?: literal
                     }
                     words++
@@ -82,13 +88,16 @@ class EngineContextEvalTest : FunSpec({
                     if (literal == letters) raw++
                     if (final(plain, -1).equals(t, ignoreCase = true)) rightPlain++
                     if (final(withContext, bigrams.contextId(previous)).equals(t, ignoreCase = true)) rightContext++
+                    if (withTrigram != null && final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1)
+                            .equals(t, ignoreCase = true)) rightTrigram++
+                    previous2 = previous
                     previous = t.lowercase()
                 }
             }
             println(
-                "CONTEXT sigma %.1fx%.1f mm, %d words (%.1f%% not in lexicon): raw %.1f%%, unigram %.1f%%, bigram %.1f%%".format(
+                "CONTEXT sigma %.1fx%.1f mm, %d words (%.1f%% not in lexicon): raw %.1f%%, unigram %.1f%%, bigram %.1f%%, trigram %s".format(
                     sx, sy, words, outOfLexicon * 100.0 / words, raw * 100.0 / words, rightPlain * 100.0 / words,
-                    rightContext * 100.0 / words,
+                    rightContext * 100.0 / words, if (withTrigram != null) "%.1f%%".format(rightTrigram * 100.0 / words) else "-",
                 )
             )
             if (sx == 1.5) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
