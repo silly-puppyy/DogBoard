@@ -3,13 +3,19 @@ package io.github.sillypuppyy.dogboard.ime
 import android.view.KeyEvent
 import dev.patrickgold.florisboard.ime.keyboard3.ImeActions
 import dev.patrickgold.florisboard.ime.keyboard3.ImeController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * The design's bar and panel state for the live keyboard (stage 2), and what each tool does.
  * Tools are named by their icon in Kb.dc.html (Kb:663-674).
  */
 object LiveUi {
+    /** Settings written from bar buttons: off the main thread, so a tap never waits on the disk. */
+    private val prefsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     /** The bar shows the tool row instead of suggestions (its left button, Kb:668). */
     val toolRow = MutableStateFlow(false)
 
@@ -70,13 +76,13 @@ object LiveUi {
             "last_page" -> key(KeyEvent.KEYCODE_MOVE_END)
             "history_on" -> {
                 val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
-                kotlinx.coroutines.runBlocking { prefs.clipboard.historyEnabled.set(true) }
+                prefsScope.launch { prefs.clipboard.historyEnabled.set(true) }
             }
             "domino_mask" -> {
                 // incognito: FlorisBoard's "force incognito" setting, and this field at once
                 val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
                 val on = !controller.activeState.value.flags.isIncognitoMode
-                kotlinx.coroutines.runBlocking { prefs.suggestion.forceIncognitoModeFromDynamic.set(on) }
+                prefsScope.launch { prefs.suggestion.forceIncognitoModeFromDynamic.set(on) }
                 controller.updateStateBlocking { state = state.copy(flags = state.flags.withIncognitoMode(on)) }
                 closePanel()
             }
