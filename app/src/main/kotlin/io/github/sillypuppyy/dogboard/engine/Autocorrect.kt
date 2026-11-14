@@ -152,11 +152,8 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     private fun boostPreferredForm(cased: List<Pair<Candidate, String>>): List<Pair<Candidate, String>> {
         val forms = preferredForms ?: return cased
         if (cased.size < 2) return cased
-        val (topCandidate, _) = cased[0]
-        if (topCandidate.isTypedString) return cased
-        val top = topCandidate.word
-        // both spellings must be words: the typed letters themselves ("chicagos") are no twin
-        val j = cased.indexOfFirst { (c, _) -> c.word != top && !c.isTypedString && lexicon.contains(c.word) && forms.twins(top, c.word) }
+        val top = cased[0].first.word
+        val j = cased.indexOfFirst { (c, _) -> c.word != top && forms.twins(top, c.word) }
         if (j < 0) return cased
         val preferred = forms.preferred(top, cased[j].first.word) ?: return cased
         return if (preferred == top) cased else listOf(cased[j]) + cased.filterIndexed { i, _ -> i != j }
