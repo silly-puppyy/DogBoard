@@ -196,13 +196,21 @@ def type_text(dev, keys, text, rng, noise_mm, gap_s, noise_y_mm=None, far=0.0, t
     sx = noise_mm * dev.px_per_mm
     sy = (noise_mm if noise_y_mm is None else noise_y_mm) * dev.px_per_mm
     pitch = keys["s"][0] - keys["a"][0]
+    letters = [keys[c] for c in "abcdefghijklmnopqrstuvwxyz" if c in keys]
+    left, right = min(p[0] for p in letters) - pitch / 2, max(p[0] for p in letters) + pitch / 2
+    top, bottom = min(p[1] for p in letters) - pitch / 2, max(p[1] for p in letters) + pitch / 2
     points = []
     for ch in text.lower():
         x, y = keys[ch]
         if ch != " ":
             gx, gy, u = rng.gauss(0, sx), rng.gauss(0, sy), rng.random()
             if tail and u < far:
-                dx, dy = tail[rng.randrange(len(tail))]
+                # redrawn until it lands on the letter area: off the keyboard, a tap would move the cursor or
+                # pick a suggestion (the IMK typists had no visible edge, so their tail holds such taps)
+                while True:
+                    dx, dy = tail[rng.randrange(len(tail))]
+                    if left <= x + dx * pitch <= right and top <= y + dy * pitch <= bottom:
+                        break
                 x, y = x + dx * pitch, y + dy * pitch
             else:
                 x, y = x + gx, y + gy
@@ -315,7 +323,12 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--out", default="build/bench_keyboards.json")
     args = ap.parse_args()
-    if "uid=0" not in subprocess.run([ADB, "-s", args.serial, "shell", "id"], capture_output=True, text=True, timeout=60).stdout:
+    def is_root():
+        return "uid=0" in subprocess.run([ADB, "-s", args.serial, "shell", "id"], capture_output=True, text=True, timeout=60).stdout
+    if not is_root() and args.serial.startswith("emulator-"):
+        subprocess.run([ADB, "-s", args.serial, "root"], capture_output=True, timeout=60)  # a fresh boot starts unrooted
+        time.sleep(3)
+    if not is_root():
         sys.exit("needs a root shell (emulator)")
     sentences = []
     for line in TATOEBA.open(encoding="utf-8"):
