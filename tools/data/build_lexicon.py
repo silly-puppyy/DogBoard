@@ -67,6 +67,26 @@ FOREIGN_REGIONS = ("british", "british_z", "canadian", "australian")
 MIN_ZIPF_US_VARIANT = 2.0
 
 
+def edits1(w: str):
+    """Words one deletion, transposition, substitution or insertion (a-z) away from w."""
+    letters = "abcdefghijklmnopqrstuvwxyz"
+    splits = [(w[:i], w[i:]) for i in range(len(w) + 1)]
+    for a, b in splits:
+        if b:
+            yield a + b[1:]
+            for c in letters:
+                yield a + c + b[1:]
+        if len(b) > 1:
+            yield a + b[1] + b[0] + b[2:]
+        for c in letters:
+            yield a + c + b
+
+
+def looks_like_typo(w: str, z: float, zipf: dict) -> bool:
+    """True if a word one edit from w is at least 1000 times as frequent (3 on the Zipf scale)."""
+    return any(e != w and zipf.get(e, 0) >= z + 3 for e in edits1(w))
+
+
 def zipf_floor(level: int) -> float:
     for top, floor in LEVEL_FLOOR:
         if level <= top:
@@ -299,6 +319,10 @@ def main():
         add(name, min(zipf.get(name.lower(), floor), max(floor, NAME_ZIPF_CAP)), "geonames")
     for w, z in zipf.items():
         if z < args.min_zipf_web_only or w in forms or w in other_regions or not WORD_RE.match(w) or "." in w:
+            continue
+        # below the old 3.0 cut, web text is full of slips ("thw", "hte", "tooo"): a word one edit away
+        # from one at least 1000x as common is taken for a typo of it
+        if z < 3.0 and looks_like_typo(w, z, zipf):
             continue
         add(w, z, "wordfreq")
     # American variant spellings fill gaps only: a name with the same letters wins (Bonnie, not bonnie)
