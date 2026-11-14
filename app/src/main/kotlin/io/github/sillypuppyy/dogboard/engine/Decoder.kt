@@ -83,14 +83,19 @@ class Decoder(
         val splitWords: Boolean = true,
         /**
          * A tap beyond the pruning radius may still be read as any key at this cost (+ the time term + the
-         * radius's likelihood), for taps that land far off; null = never, as on iOS.
+         * radius's likelihood), for taps that land far off; null = never, as on iOS. 1.5 (eval 2026-11-15,
+         * stray taps from the IMK data at realistic 0.5-1 %: control 97.9 -> 98.2 / 97.3 -> 97.7, rare
+         * 95.6 -> 95.9 / 94.9 -> 95.3, clean taps identical word for word).
          */
-        val farTap: Double? = null,
+        val farTap: Double? = FAR_TAP,
     )
 
     companion object {
         const val LANGUAGE_POWER_CONTEXT = 0.24
         const val LANGUAGE_POWER_UNIGRAM = 0.35
+
+        /** [Config.farTap]'s default: DogBoard's addition to the iOS edit costs. */
+        const val FAR_TAP = 1.5
 
         /** Edit costs: a base plus QUADRATIC * t², t = time since the previous tap clamped to [T_MIN, T_MAX] s. */
         private const val QUADRATIC = -8.16327 // = -1 / 0.35²

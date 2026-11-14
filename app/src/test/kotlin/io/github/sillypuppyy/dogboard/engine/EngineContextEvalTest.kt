@@ -45,8 +45,10 @@ class EngineContextEvalTest : FunSpec({
         class Decoders {
             val plain = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
             val withContext = Decoder(lexicon, bigrams = bigrams)
-            // DOGBOARD_EVAL_FARTAP=cost: the trigram decoder reads taps beyond the pruning radius as any key at that cost
-            val withTrigram = ngrams?.let { Decoder(lexicon, Decoder.Config(farTap = System.getenv("DOGBOARD_EVAL_FARTAP")?.toDoubleOrNull()), bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
+            // DOGBOARD_EVAL_FARTAP=cost: the trigram decoder reads taps beyond the pruning radius as any key at
+            // that cost ("none": never, as iOS; unset: the default, Decoder.FAR_TAP)
+            val farTap = System.getenv("DOGBOARD_EVAL_FARTAP").let { if (it == null) Decoder.FAR_TAP else it.toDoubleOrNull() }
+            val withTrigram = ngrams?.let { Decoder(lexicon, Decoder.Config(farTap = farTap), bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
             init { for (d in listOfNotNull(plain, withContext, withTrigram)) d.unknownWords = charModel }
         }
         val decoders = ThreadLocal.withInitial { Decoders() }
