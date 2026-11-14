@@ -81,6 +81,7 @@ fun HomeScreen() {
                 },
                 onLanguages = { navController.navigate(Routes.Settings.Localization) },
                 onLook = { navController.navigate(Routes.Settings.Theme) },
+                onSearch = { navController.navigate(Routes.Settings.Search) },
                 sound = sound,
                 onSound = { on -> scope.launch { prefs.inputFeedback.audioEnabled.set(on) } },
                 vibration = vibration,

@@ -77,6 +77,7 @@ class SetHomeActions(
     val onVibration: (Boolean) -> Unit = {},
     val numberRow: Boolean = false,
     val onNumberRow: (Boolean) -> Unit = {},
+    val onSearch: (() -> Unit)? = null,
 )
 
 @Composable
@@ -101,9 +102,9 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     // live: no help page yet, so no help button
                     if (actions == null) Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Symbol("help", 24.sp, SetColors.onSurfaceVariant) }
                 }
-                // SetHome:26-29 search (live: hidden until settings search exists)
-                if (actions == null) Row(
-                    Modifier.fillMaxWidth().height(56.dp).background(SetColors.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(horizontal = 18.dp),
+                // SetHome:26-29 search (live: opens the settings search page)
+                if (actions == null || actions.onSearch != null) Row(
+                    Modifier.fillMaxWidth().height(56.dp).then(if (actions?.onSearch != null) Modifier.clickable { actions.onSearch.invoke() } else Modifier).background(SetColors.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(horizontal = 18.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Symbol("search", 24.sp, SetColors.onSurfaceVariant)

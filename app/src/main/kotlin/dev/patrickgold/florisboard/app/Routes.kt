@@ -185,6 +185,11 @@ object Routes {
         @Deeplink("settings/other/fine-tuning")
         object FineTuning
 
+        // DogBoard: settings search (settings layout v2)
+        @Serializable
+        @Deeplink("settings/search")
+        object Search
+
         @Serializable
         @Deeplink("settings/other/physical-keyboard")
         object PhysicalKeyboard
@@ -332,6 +337,26 @@ object Routes {
 
             composableWithDeepLink(Settings.Other::class) { OtherScreen() }
             composableWithDeepLink(Settings.FineTuning::class) { io.github.sillypuppyy.dogboard.settings.FineTuningScreen() }
+            composableWithDeepLink(Settings.Search::class) {
+                val nav = LocalNavController.current
+                io.github.sillypuppyy.dogboard.settings.SettingsSearchScreen { route ->
+                    nav.navigate(
+                        when (route) {
+                            "typing" -> Settings.Typing
+                            "feedback" -> Settings.Keyboard.InputFeedback
+                            "languages" -> Settings.Localization
+                            "theme" -> Settings.Theme
+                            "gestures" -> Settings.Gestures
+                            "clipboard" -> Settings.Clipboard
+                            "dictionary" -> Settings.Dictionary
+                            "finetuning" -> Settings.FineTuning
+                            "advanced" -> Settings.Other
+                            "about" -> Settings.About
+                            else -> Settings.Home
+                        }
+                    )
+                }
+            }
             composableWithDeepLink(Settings.PhysicalKeyboard::class) { PhysicalKeyboardScreen() }
             composableWithDeepLink(Settings.Backup::class) { BackupScreen() }
             composableWithDeepLink(Settings.Restore::class) { navBackStack ->
