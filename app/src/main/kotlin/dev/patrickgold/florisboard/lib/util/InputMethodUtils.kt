@@ -41,7 +41,11 @@ private const val IME_SERVICE_CLASS_NAME = "dev.patrickgold.florisboard.FlorisIm
 private val TIMED_QUERY_DELAY = 500.milliseconds
 
 object InputMethodUtils {
-    fun isFlorisboardEnabled(context: Context): Boolean {
+    // DogBoard: the system service can throw while the system shuts down (DeadSystemException,
+    // FlorisBoard upstream #3373); report "no" instead of crashing the settings app
+    fun isFlorisboardEnabled(context: Context): Boolean = runCatching { isFlorisboardEnabledUnsafe(context) }.getOrDefault(false)
+
+    private fun isFlorisboardEnabledUnsafe(context: Context): Boolean {
         return if (AndroidVersion.ATLEAST_API34_U) {
             context.systemServiceOrNull(InputMethodManager::class)
                 ?.enabledInputMethodList
@@ -54,7 +58,11 @@ object InputMethodUtils {
         }
     }
 
-    fun isFlorisboardSelected(context: Context): Boolean {
+    // DogBoard: the system service can throw while the system shuts down (DeadSystemException,
+    // FlorisBoard upstream #3373); report "no" instead of crashing the settings app
+    fun isFlorisboardSelected(context: Context): Boolean = runCatching { isFlorisboardSelectedUnsafe(context) }.getOrDefault(false)
+
+    private fun isFlorisboardSelectedUnsafe(context: Context): Boolean {
         return if (AndroidVersion.ATLEAST_API34_U) {
             context.systemServiceOrNull(InputMethodManager::class)
                 ?.currentInputMethodInfo
