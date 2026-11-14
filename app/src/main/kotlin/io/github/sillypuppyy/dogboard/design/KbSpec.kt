@@ -64,6 +64,13 @@ data class KbProps(
      * instead; follow-up once the touch model supports a fixed row height.
      */
     val numberRow: Boolean = false,
+    /**
+     * The action key: "word" (the Kb canvas draws words) or "icon" (Panels: the live default); a word
+     * that doesn't fit shows the icon (Panels:56).
+     */
+    val actionStyle: String = "word",
+    /** The app's own label for its action ("Log in"), used in word mode when it fits. */
+    val actionLabel: String? = null,
     val pressed: String = "",
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
@@ -209,8 +216,15 @@ object KbSpec {
 
     /** Kb:508 return-key words. */
     val RET: Map<String, String> = mapOf(
-        "go" to "Go", "search" to "Search", "send" to "Send", "next" to "Next", "done" to "Done",
+        "go" to "Go", "search" to "Search", "send" to "Send", "next" to "Next", "previous" to "Previous", "done" to "Done",
         "join" to "Join", "route" to "Route", "continue" to "Continue",
+    )
+
+    /** Panels:160-168 action icons (Material Symbols), for icon mode and words that don't fit. */
+    val RET_ICON: Map<String, String> = mapOf(
+        "go" to "arrow_forward", "search" to "search", "send" to "send", "next" to "keyboard_tab",
+        "previous" to "keyboard_tab_rtl", "done" to "check", "join" to "arrow_forward", "route" to "arrow_forward",
+        "continue" to "arrow_forward",
     )
 
     /** Kb:602-612 sample bars. */
@@ -410,9 +424,13 @@ object KbSpec {
                 if (k.kind == "bksp") { icon = "backspace"; aria = "Delete" }
                 if (k.kind == "fn") { icon = if (fnKeyKind == "globe") "language" else "mood"; aria = if (fnKeyKind == "globe") "Next language" else "Emoji" }
                 if (k.kind == "ret") {
-                    val word = RET[ret]
-                    if (word != null) { label = word; bg = t.act; fg = t.actFg; shadow = t.actShadow; fs = 15f; fw = 600; aria = word }
-                    else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; fg = t.fnFg; shadow = t.fnShadow; aria = "Return" }
+                    val word = RET[ret]?.let { P.actionLabel?.takeIf { l -> l.isNotBlank() } ?: it }
+                    if (word != null) {
+                        bg = t.act; fg = t.actFg; shadow = t.actShadow; aria = word
+                        // Panels:176 fits(): a word wider than the cap minus 8 dp a side shows the icon
+                        if (P.actionStyle == "word" && word.length * 8.6f <= w - mh * 2 - 16f) { label = word; fs = 15f; fw = 600 }
+                        else icon = RET_ICON[ret] ?: "arrow_forward"
+                    } else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; fg = t.fnFg; shadow = t.fnShadow; aria = "Return" }
                 }
                 if (k.id == pressed && !(k.kind == "ret" && RET[ret] != null)) bg = if (isFnTone || k.kind == "ret") t.pressFn else t.pressKey
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + ri * rowH + mv

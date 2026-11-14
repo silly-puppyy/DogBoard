@@ -440,6 +440,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__number_row",
             default = false,
         )
+        // DogBoard: the action key as a word ("Send") instead of its icon (designer: Icon is the default)
+        val actionKeyWords = boolean(
+            key = "keyboard__action_key_words",
+            default = false,
+        )
         // DogBoard: keyboard height as a percentage of the design's key area (settings layout v2)
         val heightPercent = int(
             key = "keyboard__height_percent",

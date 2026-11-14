@@ -70,6 +70,7 @@ fun HomeScreen() {
         val sound by prefs.inputFeedback.audioEnabled.collectAsState()
         val vibration by prefs.inputFeedback.hapticEnabled.collectAsState()
         val numberRow by prefs.keyboard.numberRow.collectAsState()
+        val actionWords by prefs.keyboard.actionKeyWords.collectAsState()
         val keyboardHeight by prefs.keyboard.heightPercent.collectAsState()
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
@@ -92,6 +93,8 @@ fun HomeScreen() {
                 onVibration = { on -> scope.launch { prefs.inputFeedback.hapticEnabled.set(on) } },
                 numberRow = numberRow,
                 onNumberRow = { on -> scope.launch { prefs.keyboard.numberRow.set(on) } },
+                actionWords = actionWords,
+                onActionWords = { on -> scope.launch { prefs.keyboard.actionKeyWords.set(on) } },
                 keyboardHeight = keyboardHeight,
                 onKeyboardHeight = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },
                 onSection = { title ->

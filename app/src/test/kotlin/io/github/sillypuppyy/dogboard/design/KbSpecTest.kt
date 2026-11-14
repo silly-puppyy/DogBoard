@@ -37,6 +37,12 @@ class KbSpecTest : FunSpec({
         key(KbProps(), "ret").let { it.icon shouldBe "keyboard_return"; it.bg shouldBe css("#dbe2f9") }
         key(KbProps(theme = "dog"), "ret").let { it.icon shouldBe "pets"; it.fill shouldBe 1 }
     }
+    test("action key: icon mode, and a word too wide for the cap shows the icon (Panels:56, 160-168)") {
+        key(KbProps(ret = "done", actionStyle = "icon"), "ret").let { it.icon shouldBe "check"; it.label shouldBe ""; it.bg shouldBe css("#435e91") }
+        key(KbProps(ret = "next", actionStyle = "icon"), "ret").icon shouldBe "keyboard_tab"
+        key(KbProps(ret = "go", actionLabel = "Continue to checkout"), "ret").let { it.icon shouldBe "arrow_forward"; it.label shouldBe "" }
+        key(KbProps(ret = "go", actionLabel = "Log in"), "ret").label shouldBe "Log in"
+    }
     test("fn key is emoji by default, globe on request (Kb:552)") {
         key(KbProps(), "fn").icon shouldBe "mood"
         key(KbProps(fnKey = "globe"), "fn").icon shouldBe "language"

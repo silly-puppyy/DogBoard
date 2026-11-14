@@ -26,6 +26,8 @@ fun LiveKbView(
     field: String,
     /** FlorisBoard's number row setting: the touch model adds the row to the letter planes. */
     numberRow: Boolean,
+    actionWords: Boolean = false,
+    actionLabel: String? = null,
     shiftState: InputShiftState,
     enterAction: String,
     pressedKey: TouchKey?,
@@ -53,6 +55,8 @@ fun LiveKbView(
             plane = plane,
             field = field,
             numberRow = numberRow && plane == "base",
+            actionStyle = if (actionWords) "word" else "icon",
+            actionLabel = actionLabel,
             shift = LiveKb.shift(shiftState),
             ret = if (enterAction in RET_WORDS) enterAction else "return",
             pressed = pressed,
@@ -94,7 +98,7 @@ fun liveDark(): Boolean {
     return mode == dev.patrickgold.florisboard.ime.theme.EffectiveThemeMode.NIGHT
 }
 
-private val RET_WORDS = setOf("send", "search", "go", "next", "done", "join", "route", "continue")
+private val RET_WORDS = setOf("send", "search", "go", "next", "previous", "done", "join", "route", "continue")
 
 /**
  * Stage 2: the suggestion bar drawn by the ported view from the live strip ([strip]); a tap on a

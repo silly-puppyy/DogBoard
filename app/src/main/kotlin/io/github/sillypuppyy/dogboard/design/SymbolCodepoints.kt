@@ -47,6 +47,8 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "keyboard_arrow_up" to 0xE316,
     "keyboard_command_key" to 0xEAE7,
     "keyboard_return" to 0xE31B,
+    "keyboard_tab" to 0xE31C,
+    "keyboard_tab_rtl" to 0xEC73,
     "language" to 0xEA07,
     "last_page" to 0xE5DD,
     "lightbulb" to 0xE90F,

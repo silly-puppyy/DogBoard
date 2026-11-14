@@ -13,6 +13,7 @@ object SettingsSearch {
         Entry("Sound", "Main choices", "feedback", "click audio noise volume"),
         Entry("Vibration", "Main choices", "feedback", "haptics haptic buzz tap feel"),
         Entry("Number row", "Main choices", "home", "digits numbers top row"),
+        Entry("Action key as a word", "Main choices", "home", "enter return send search go done icon label"),
         // languages
         Entry("Languages", "Languages and layouts", "languages", "language layout qwerty add keyboard"),
         // look
