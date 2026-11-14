@@ -283,10 +283,18 @@ class PointerTracker(
                                 DeleteRepeat.Unit.WORD -> ImeActions.BackspaceWord
                                 else -> downKey.attrs.output
                             }
-                            imeController.updateState {
-                                output?.let { emit(it) }
+                            // DogBoard: a held delete at the start of the text deletes nothing, so it
+                            // also doesn't vibrate (FlorisBoard upstream #2823); raw editors (terminals)
+                            // hide their text, so there it keeps sending
+                            val snapshot = imeController.snapshotState()
+                            val nothingToDelete = isBackspace && !snapshot.editor.info.isRawInputEditor &&
+                                snapshot.content.selection.isCollapsed() && snapshot.content.surroundingText.textBefore.isEmpty()
+                            if (!nothingToDelete) {
+                                imeController.updateState {
+                                    output?.let { emit(it) }
+                                }
+                                interactionController.performFeedback(InteractionKind.KeyRepeat, output)
                             }
-                            interactionController.performFeedback(InteractionKind.KeyRepeat, output)
                             delay(step?.delayAfter ?: keyRepeatDelay)
                         }
                     }
