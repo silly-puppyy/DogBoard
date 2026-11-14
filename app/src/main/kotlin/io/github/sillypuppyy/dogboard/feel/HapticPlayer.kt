@@ -67,6 +67,22 @@ class HapticPlayer(context: Context) {
     }
 
     private fun effectFor(tap: HapticTap): VibrationEffect? {
+        // iOS-matched where the motor allows (Android 16 frequency control): a sine burst at the
+        // iOS frequency for the tap's sharpness (80 * 2.875^S Hz, Haptics.frequencyHz), rising and
+        // falling over iOS's 20 ms; strength is relative to this motor's maximum (Apple's absolute
+        // output is unknown)
+        if (supportsEnvelopes && Build.VERSION.SDK_INT >= 36) {
+            val profile = runCatching { vibrator?.frequencyProfile }.getOrNull()
+            if (profile != null && profile.maxFrequencyHz > profile.minFrequencyHz) {
+                val f = Haptics.frequencyHz(tap.sharpness).toFloat().coerceIn(profile.minFrequencyHz, profile.maxFrequencyHz)
+                val ramp = maxOf(IOS_RAMP_MS, minControlPointMs)
+                return VibrationEffect.WaveformEnvelopeBuilder()
+                    .setInitialFrequencyHz(f)
+                    .addControlPoint(tap.intensity, f, ramp)
+                    .addControlPoint(0f, f, ramp)
+                    .build()
+            }
+        }
         if (supportsEnvelopes && Build.VERSION.SDK_INT >= 36) {
             val attack = maxOf(ATTACK_MS, minControlPointMs)
             val decay = maxOf(DECAY_MS, minControlPointMs)
@@ -85,6 +101,8 @@ class HapticPlayer(context: Context) {
     }
 
     private companion object {
+        /** iOS haptic engine: transient attack and decay, 20 ms each. */
+        const val IOS_RAMP_MS = 20L
         const val ATTACK_MS = 4L
         const val DECAY_MS = 20L
     }
