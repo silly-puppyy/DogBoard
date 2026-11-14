@@ -409,7 +409,7 @@ class ImeController(
             lastSpaceUptime = null
             autoSpace = false
             resetWordTracking()
-            resetContent(newSelection, state.editor.getSurroundingText(50, 10))
+            resetContent(newSelection, state.editor.getSurroundingText(SURROUNDING_BEFORE, SURROUNDING_AFTER))
             expectedContentQueue.push(state.content)
         }
 
@@ -848,9 +848,15 @@ class ImeController(
             if (currentWord.isEmpty) {
                 // the cursor rests in or after a word not typed just now: offer corrections for the
                 // whole word (iOS and Gboard do), picking one replaces it
-                val before = trailingWord(state.content.surroundingText.textBefore)
-                val after = leadingWord(state.content.surroundingText.textAfter)
-                if ((before.isNotEmpty() || after.isNotEmpty()) && prefs.suggestion.enabled.get()) {
+                val textBefore = state.content.surroundingText.textBefore
+                val textAfter = state.content.surroundingText.textAfter
+                val before = trailingWord(textBefore)
+                val after = leadingWord(textAfter)
+                // the editor gave only a window of text (50 before, 10 after): a word that fills it
+                // to the edge may go on beyond it, and replacing the visible part would leave the rest
+                val truncated = (after.isNotEmpty() && after.length == textAfter.length && textAfter.length >= SURROUNDING_AFTER) ||
+                    (before.isNotEmpty() && before.length == textBefore.length && textBefore.length >= SURROUNDING_BEFORE)
+                if ((before.isNotEmpty() || after.isNotEmpty()) && !truncated && prefs.suggestion.enabled.get()) {
                     publishWordAroundCursor(sink, before, after)
                     return
                 }
@@ -1291,6 +1297,9 @@ class ImeController(
     }
 
     companion object {
+        // DogBoard: the text window read around the cursor on each selection change
+        private const val SURROUNDING_BEFORE = 50
+        private const val SURROUNDING_AFTER = 10
         private val NEWLINE_SEQ = "\n".asK3String()
 
         /** DogBoard: marks that go before an automatic space, which then follows them. */
