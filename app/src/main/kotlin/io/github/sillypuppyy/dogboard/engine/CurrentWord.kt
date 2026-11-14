@@ -6,12 +6,16 @@ import io.github.sillypuppyy.dogboard.touch.KeyTarget
 /**
  * The word being typed: its letters and, for each letter, where the key was tapped. Taps are
  * what the decoder needs; a letter that did not come from a tap on a letter key (an accent from
- * a long press, a pasted letter) makes the word undecodable.
+ * a long press, a pasted letter) makes the word undecodable. An apostrophe from the symbol keys
+ * doesn't: the decoder gets the other letters ([decoderText]) and the apostrophe is kept.
  */
 class CurrentWord {
     private val letters = StringBuilder()
     private val taps = ArrayList<Tap>()
     private var decodable = true
+
+    /** Per letter: an apostrophe typed without a letter-key tap (it has no entry in [taps]). */
+    private val tapless = ArrayList<Boolean>()
 
     /** Per letter: how shift was set when it was typed ([CaseAdapt.SHIFTED], [CaseAdapt.AUTOSHIFTED]). */
     private val shiftFlags = ArrayList<Int>()
@@ -27,6 +31,12 @@ class CurrentWord {
         private set
 
     val text: String get() = letters.toString()
+
+    /** The letters the decoder sees: [text] without the apostrophes that had no tap. */
+    val decoderText: String get() = buildString { for (i in letters.indices) if (!tapless[i]) append(letters[i]) }
+
+    /** How many apostrophes were typed without a tap (from the symbol keys). */
+    val typedApostrophes: Int get() = tapless.count { it }
     val flags: List<Int> get() = shiftFlags.toList()
     val isEmpty: Boolean get() = letters.isEmpty()
 
@@ -50,20 +60,24 @@ class CurrentWord {
         letters.append(letter)
         shiftFlags.add(shiftFlag)
         val position = tap ?: this.keys[letter.lowercaseChar()]?.let { Tap(it.centerX, it.centerY) }
-        if (position == null) decodable = false else taps.add(position)
+        val apostrophe = position == null && (letter == '\'' || letter == '’')
+        tapless.add(apostrophe)
+        if (position != null) taps.add(position) else if (!apostrophe) decodable = false
     }
 
     fun removeLast() {
         if (letters.isEmpty()) return
         letters.setLength(letters.length - 1)
         if (shiftFlags.size > letters.length) shiftFlags.removeAt(shiftFlags.size - 1)
-        if (taps.size > letters.length) taps.removeAt(taps.size - 1)
+        if (tapless.size > letters.length) tapless.removeAt(tapless.size - 1)
+        while (taps.size > tapless.count { !it }) taps.removeAt(taps.size - 1)
         if (letters.isEmpty()) clear()
     }
 
     fun clear() {
         letters.setLength(0)
         taps.clear()
+        tapless.clear()
         shiftFlags.clear()
         caseContext = CaseAdapt.Context.NONE
         decodable = true
@@ -72,7 +86,7 @@ class CurrentWord {
 
     /** Taps for the decoder, or null if this word cannot be decoded. */
     fun tapsOrNull(): List<Tap>? =
-        if (decodable && taps.size == letters.length && letters.isNotEmpty() && params != null) taps.toList() else null
+        if (decodable && taps.isNotEmpty() && taps.size == tapless.count { !it } && params != null) taps.toList() else null
 
     /**
      * Starts tracking the word the cursor is touching in [textBefore] (typing or deleting at the
@@ -86,6 +100,7 @@ class CurrentWord {
     fun snapshot(): CurrentWord = CurrentWord().also {
         it.letters.append(letters)
         it.taps.addAll(taps)
+        it.tapless.addAll(tapless)
         it.shiftFlags.addAll(shiftFlags)
         it.caseContext = caseContext
         it.decodable = decodable

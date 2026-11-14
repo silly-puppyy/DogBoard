@@ -111,6 +111,11 @@ fun LiveKbBar(
     onBack: () -> Unit = {},
     onMic: () -> Unit = {},
     incognito: Boolean = false,
+    /** A long-press on a suggestion (remove it). */
+    onLongPick: (io.github.sillypuppyy.dogboard.engine.Suggestion) -> Unit = {},
+    /** The word just removed: the bar shows it with Undo instead of suggestions. */
+    removed: String? = null,
+    onUndo: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val dark = liveDark()
@@ -130,13 +135,18 @@ fun LiveKbBar(
         val incognitoNote = incognito && !toolRow && strip.none { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
         val trackpad by io.github.sillypuppyy.dogboard.ime.LiveUi.trackpad.collectAsState()
         val props = KbProps(
-            dark = dark, slots = if (toolRow || incognitoNote) null else slots, bar = if (toolRow) "tools" else "empty",
+            dark = dark, slots = if (toolRow || incognitoNote || removed != null) null else slots,
+            bar = if (toolRow) "tools" else if (removed != null) "removed" else "empty",
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
+            removedWord = removed ?: "",
         )
         val themed = liveTheme().apply(props)
         val render = remember(themed) { KbSpec.render(themed) }
-        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic) {
-            KbActions(onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic)
+        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic, onLongPick, onUndo) {
+            KbActions(
+                onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onSlotLong = { i -> strip.getOrNull(i)?.let(onLongPick) },
+                onUndo = onUndo, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic,
+            )
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
     }

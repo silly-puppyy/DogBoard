@@ -206,6 +206,25 @@ object TypingEngine {
 
     @Volatile
     private var contactNames: Set<String> = emptySet()
+        set(value) {
+            field = value
+            contactKeys = value.mapTo(HashSet()) { sortKey(it) }
+        }
+
+    @Volatile
+    private var contactKeys: Set<String> = emptySet()
+
+    /**
+     * iOS FilterWordsConflictingWithValidContactNames: when the typed letters are a contact's
+     * name, no word outside the contacts replaces them ("Jon" stays Jon, not John); case and
+     * accents may still follow the name. (iOS also compares scores with language power 0.24; not decoded exactly.)
+     */
+    private fun respectingContactNames(typed: String, candidates: List<Candidate>): List<Candidate> {
+        val key = sortKey(typed)
+        if (key !in contactKeys) return candidates
+        val names = contactNames
+        return candidates.filter { sortKey(it.word) == key || it.word in names }
+    }
 
     private fun writeAtomically(file: File, write: (java.io.OutputStream) -> Unit) = file.writeAtomically(write)
 
@@ -351,10 +370,11 @@ object TypingEngine {
         return lock.read {
             engine.decoder.decode(
                 taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
-                previous = engine.contextId(previous), typed = word.text,
-                personal = personalMix(engine, previous),
+                previous = engine.contextId(previous), typed = word.decoderText,
+                personal = personalMix(engine, previous, previous2),
                 previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
             )
+                .let { withTypedApostrophes(word, it) }
                 .filter { !isBlocked(it.word) && (it.isTypedString || it.word.equals(word.text, ignoreCase = true) || !isNotSuggestible(it.word)) }
                 .take(maxResults)
         }
@@ -384,6 +404,7 @@ object TypingEngine {
         val prevTaps = previous.tapsOrNull() ?: return null
         val curTaps = current.tapsOrNull() ?: return null
         if (previousCommitted.any { it.isDigit() } || lock.read { isBlocked(previousCommitted) }) return null
+        if (previous.typedApostrophes > 0) return null // its letters alone aren't what was typed
         if (rejections.isBlocked(previous.text, previousCommitted)) return null
         return lock.read {
             val d = engine.retroDecoder
@@ -391,6 +412,7 @@ object TypingEngine {
                 prevTaps, previous.keys, previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
             ).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
+                .let { respectingContactNames(previous.text, it) }
             fun joint(prevWord: String, prevScore: Double): Double {
                 val cur = d.decode(curTaps, current.keys, current.params!!, 1, includeCompletions = false,
                     previous = bigrams.contextId(prevWord.lowercase()), typed = current.text)
@@ -423,7 +445,7 @@ object TypingEngine {
             if (!rejections.isBlocked(word.text, phrase, consume = commit)) return phrase
         }
         if (candidates.isEmpty()) return null
-        val kept = withoutLearnedTypo(word.text, candidates).filter { keepsPopupLetters(word.text, it.word) }
+        val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates)).filter { keepsPopupLetters(word.text, it.word) }
         val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), level.level)
             ?: return null
         return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
@@ -552,18 +574,21 @@ object TypingEngine {
     /** The last mix handed out, reused while nothing it depends on changes (the decoder then continues its search). */
     private var lastMix: Triple<Any?, Int, ((Int, Double) -> Double)?>? = null
 
-    private fun personalMix(engine: Loaded, previous: String?): ((Int, Double) -> Double)? {
+    private fun personalMix(engine: Loaded, previous: String?, previous2: String? = null): ((Int, Double) -> Double)? {
         val p = personal
         val version = p.version
-        lastMix?.let { (prev, v, mix) -> if (prev == (engine to previous) && v == version) return mix }
-        if (p.weight(previous != null) <= 0.0) return null.also { lastMix = Triple(engine to previous, version, null) }
-        return makeMix(engine, p, previous).also { lastMix = Triple(engine to previous, version, it) }
+        val key = Triple(engine, previous, previous2)
+        lastMix?.let { (prev, v, mix) -> if (prev == key && v == version) return mix }
+        if (p.weight(previous != null) <= 0.0) return null.also { lastMix = Triple(key, version, null) }
+        return makeMix(engine, p, previous, previous2).also { lastMix = Triple(key, version, it) }
     }
 
-    private fun makeMix(engine: Loaded, p: PersonalModel, previous: String?): (Int, Double) -> Double {
+    private fun makeMix(engine: Loaded, p: PersonalModel, previous: String?, previous2: String?): (Int, Double) -> Double {
+        // the start of a text has no word before it
+        val p2 = previous2?.takeIf { previous != null && previous != Bigrams.START && it != Bigrams.START }
         return { node, logProb ->
             val word = engine.lexicon.word(node)
-            if (word == null) logProb else ln(p.mix(exp(logProb), previous, word).coerceAtLeast(1e-300))
+            if (word == null) logProb else ln(p.mix(exp(logProb), previous, word, p2).coerceAtLeast(1e-300))
         }
     }
 
@@ -572,10 +597,10 @@ object TypingEngine {
      * suggestion picked): counted in the personal model; an unknown word is learned (iOS: one
      * accept, strength from use).
      */
-    fun accepted(previous: String?, word: String) {
+    fun accepted(previous: String?, word: String, previous2: String? = null) {
         val engine = loaded ?: return
         if (word.isBlank() || word.length > 48 || !word.all { isWordChar(it) } || !word.any { it.isLetter() }) return
-        personal.accept(previous, word)
+        personal.accept(previous, word, previous2?.takeIf { previous != null && previous != Bigrams.START && it != Bigrams.START })
         val isNew = lock.write {
             val known = engine.lexicon.contains(word)
             if (!known) {
@@ -617,6 +642,48 @@ object TypingEngine {
         val split = candidates.any { it.words > 1 && it.word.replace(" ", "").equals(typed, ignoreCase = true) }
         return if (split) candidates.filter { !it.word.equals(typed, ignoreCase = true) } else candidates
     }
+
+    /**
+     * A word typed with an apostrophe from the symbol keys was decoded from its letters only: the
+     * reading of exactly those letters is the word as typed ("dogs" → "dog's"), and every other
+     * candidate keeps at least as many apostrophes ("dpg's" → "dog's", not "dogs").
+     */
+    private fun withTypedApostrophes(word: CurrentWord, candidates: List<Candidate>): List<Candidate> {
+        val need = word.typedApostrophes
+        if (need == 0) return candidates
+        val letters = word.decoderText
+        val out = LinkedHashMap<String, Candidate>()
+        for (c in candidates) {
+            val mapped = if (c.word.equals(letters, ignoreCase = true)) c.copy(word = word.text) else c
+            if (mapped.word.count { it == '\'' || it == '’' } < need) continue
+            val old = out[mapped.word.lowercase()]
+            if (old == null || mapped.score > old.score) out[mapped.word.lowercase()] = mapped
+        }
+        return out.values.sortedByDescending { it.score }
+    }
+
+    /**
+     * The system spell checker's question: is [word] known, and if not, what was likely meant (up
+     * to [max], best first)? Null while the word data loads. Numbers and words with other symbols
+     * are never flagged; a curly apostrophe counts as a straight one.
+     */
+    fun spell(word: String, max: Int): Pair<Boolean, List<String>>? {
+        val engine = loaded ?: return null
+        val w = word.replace('’', '\'')
+        if (w.isEmpty() || !w.all { isWordChar(it) } || w.none { it.isLetter() }) return true to emptyList()
+        if (lock.read { engine.lexicon.contains(w) }) return true to emptyList()
+        // the letters on their key centres, as for a word the cursor rests in
+        val typed = CurrentWord().apply { for (c in w) addLetter(c, null, SPELL_KEYS, SPELL_PARAMS) }
+        val fixes = candidates(typed, null, max + 3)
+            .filter { !it.isTypedString && !it.isCompletion && !it.word.equals(w, ignoreCase = true) }
+            .map { if (w.first().isUpperCase()) it.word.replaceFirstChar(Char::uppercaseChar) else it.word }
+            .distinct()
+            .take(max)
+        return false to fixes
+    }
+
+    private val SPELL_KEYS = QwertyGeometry.letterKeys(375f, 216f)
+    private val SPELL_PARAMS = io.github.sillypuppyy.dogboard.touch.GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
 
     /** True if any word of [candidate] (one word, or several when words were split) is never offered. */
     private fun isNotSuggestible(candidate: String): Boolean =

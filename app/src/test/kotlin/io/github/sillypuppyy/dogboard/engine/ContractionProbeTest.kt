@@ -22,7 +22,7 @@ class ContractionProbeTest : FunSpec({
             "ill be there", "i feel ill", "hell yes", "go to hell", "he said hell be late", "a sea shell", "shell be fine",
             "its raining", "the dog wagged its tail", "lets go", "she lets him", "well see", "very well",
             "were here", "we were", "wont happen", "wed better go", "they wed in june", "id like that", "my id card",
-            "wed love to", "wed be happy", "i wish wed known", "i wont go", "he wont stop", "the couple will wed", "wed like to", "if wed known", "love u", "see u soon", "are u ok", "thank u", "u there", "o well", "o my god", "i owe u", "cant wait", "dont know", "im here", "youre right", "theyre gone", "whats up", "thats it", "hes here",
+            "wed love to", "wed be happy", "i wish wed known", "i wont go", "he wont stop", "the couple will wed", "wed like to", "if wed known", "love u", "see u soon", "are u ok", "thank u", "u there", "o well", "o my god", "i owe u", "oh shit", "what the fuck", "fucking hell", "you ass", "holy shit man", "shit happens", "cant wait", "dont know", "im here", "youre right", "theyre gone", "whats up", "thats it", "hes here",
         )
         for (phrase in phrases) {
             var previous = Bigrams.START
@@ -55,6 +55,31 @@ class ContractionProbeTest : FunSpec({
                 val result = autocorrect.correction("u", candidates) ?: "u"
                 println("PROBE-U %s u(→%s) -> %s   top: %s".format(before, toward, result, candidates.take(3).joinToString { "%s %.2f".format(it.word, it.score) }))
             }
+        }
+    }
+
+    test("possessives typed with an apostrophe, full engine").config(enabled = System.getenv("DOGBOARD_PROBE") == "1") {
+        val keys = QwertyGeometry.letterKeys(375f, 216f)
+        val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
+        TypingEngine.unloadForTest()
+        TypingEngine.load(
+            openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+            openBigrams = { File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader() },
+            openNoSuggest = { File("src/main/assets/dogboard/en.nosuggest.txt").bufferedReader() },
+        )
+        try {
+            for (w in listOf("Kayla's", "puppy's", "roommate's", "kids'", "parents'", "dogs'", "dog's", "puppys", "roommates", "kids", "Kaylas")) {
+                val word = CurrentWord().apply {
+                    // the apostrophe comes from the symbol layer: no letter-key tap
+                    for (c in w) addLetter(c, keys[c.lowercaseChar()]?.let { Tap(it.centerX, it.centerY) }, keys, params)
+                }
+                val candidates = TypingEngine.candidates(word, "the")
+                val result = TypingEngine.correction(word, candidates) ?: w
+                println("PROBE-POSS %-11s -> %-11s decodable=%s top: %s".format(w, result, word.tapsOrNull() != null,
+                    candidates.take(3).joinToString { "%s %.2f".format(it.word, it.score) }))
+            }
+        } finally {
+            TypingEngine.unloadForTest()
         }
     }
 })

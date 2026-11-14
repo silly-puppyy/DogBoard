@@ -87,15 +87,10 @@ class LatinLanguageProvider(context: Context) : SpellingProvider, SuggestionProv
         allowPossiblyOffensive: Boolean,
         isPrivateSession: Boolean,
     ): SpellingResult {
-        return when (word.lowercase()) {
-            // Use typo for typing errors
-            "typo" -> SpellingResult.typo(arrayOf("typo1", "typo2", "typo3"))
-            // Use grammar error if the algorithm can detect this. On Android 11 and lower grammar errors are visually
-            // marked as typos due to a lack of support
-            "gerror" -> SpellingResult.grammarError(arrayOf("grammar1", "grammar2", "grammar3"))
-            // Use valid word for valid input
-            else -> SpellingResult.validWord()
-        }
+        // DogBoard: the typing engine's lexicon and decoder (FlorisBoard's was a placeholder)
+        val (known, fixes) = io.github.sillypuppyy.dogboard.engine.TypingEngine.spell(word, maxSuggestionCount)
+            ?: return SpellingResult.unspecified()
+        return if (known) SpellingResult.validWord() else SpellingResult.typo(fixes.toTypedArray(), isHighConfidenceResult = fixes.isNotEmpty())
     }
 
     override suspend fun suggest(

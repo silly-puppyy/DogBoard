@@ -12,8 +12,9 @@ import kotlin.math.min
  *     P(w | prev) = (1 − d) · P_static(w | prev) + d · P_personal(w | prev)
  *     d = (0.65 with a previous word, else 0.45) · min(1, (words typed / 1000)²)
  *
- * Counts decay by exp(−0.007 · days) (half-life 99 days). P_personal interpolates the pair and
- * the word counts. Words are added by [accept] (a word typed and kept, a correction kept, a
+ * Counts decay by exp(−0.007 · days) (half-life 99 days). P_personal interpolates the triple
+ * (two words of context, when that context was seen), the pair and the word counts; iOS's dynamic
+ * model goes to order 5, ours to 3. Words are added by [accept] (a word typed and kept, a correction kept, a
  * suggestion picked); [forget] removes a word used fewer than 7 times, else lowers it.
  */
 class PersonalModel(private val file: File? = null, private val now: () -> Long = System::currentTimeMillis) {
@@ -21,6 +22,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
 
     private val words = HashMap<String, Count>()
     private val pairs = HashMap<Pair<String, String>, Count>()
+    private val triples = HashMap<Triple<String, String, String>, Count>()
     private val uses = HashMap<String, Int>() // undecayed uses, for forgetting
     private var typed = 0L
     private var dirty = 0
@@ -34,12 +36,15 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     private var cacheDay = -1L
     private var totalCache = 0.0
     private val afterCache = HashMap<String, Double>()
+    private val after2Cache = HashMap<Pair<String, String>, Double>()
 
     private fun totals(day: Long) {
         if (cacheDay == day) return
         totalCache = words.values.sumOf { it.decayed(day) }
         afterCache.clear()
         for ((k, c) in pairs) afterCache[k.first] = (afterCache[k.first] ?: 0.0) + c.decayed(day)
+        after2Cache.clear()
+        for ((k, c) in triples) (k.first to k.second).let { after2Cache[it] = (after2Cache[it] ?: 0.0) + c.decayed(day) }
         cacheDay = day
     }
 
@@ -55,15 +60,18 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
 
     private fun bump(c: Count?, day: Long): Count = (c ?: Count(0.0, day)).apply { value = decayed(day) + 1.0; this.day = day }
 
-    /** [word] (as written) was accepted after [previous] (null at the start of a text). */
+    /** [word] (as written) was accepted after [previous] (null at the start of a text), and [previous2] before that. */
     @Synchronized
-    fun accept(previous: String?, word: String) {
+    fun accept(previous: String?, word: String, previous2: String? = null) {
         version++
         val day = today()
         val w = word.lowercase()
         words[w] = bump(words[w], day)
         uses[w] = (uses[w] ?: 0) + 1
-        previous?.lowercase()?.let { p -> pairs[p to w] = bump(pairs[p to w], day) }
+        previous?.lowercase()?.let { p ->
+            pairs[p to w] = bump(pairs[p to w], day)
+            previous2?.lowercase()?.let { p2 -> Triple(p2, p, w).let { t -> triples[t] = bump(triples[t], day) } }
+        }
         typed++
         cacheDay = -1
         if (++dirty >= SAVE_EVERY) save()
@@ -77,6 +85,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         val w = word.lowercase()
         words.remove(w); uses.remove(w)
         pairs.keys.removeAll { it.first == w || it.second == w }
+        triples.keys.removeAll { it.first == w || it.second == w || it.third == w }
         cacheDay = -1
         save()
     }
@@ -88,6 +97,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         if ((uses[w] ?: 0) < FORGET_BELOW) {
             words.remove(w); uses.remove(w)
             pairs.keys.removeAll { it.first == w || it.second == w }
+        triples.keys.removeAll { it.first == w || it.second == w || it.third == w }
         } else {
             words[w]?.let { it.value = it.decayed(today()) / 2; it.day = today() }
         }
@@ -112,9 +122,9 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     fun weight(hasPrevious: Boolean): Double =
         (if (hasPrevious) WEIGHT_CONTEXT else WEIGHT_NO_CONTEXT) * min(1.0, (typed / RAMP_WORDS).let { it * it })
 
-    /** P_personal(word | previous): pair and word counts interpolated; 0 for unseen words. */
+    /** P_personal(word | previous2 previous): triple, pair and word counts interpolated; 0 for unseen words. */
     @Synchronized
-    fun probability(previous: String?, word: String): Double {
+    fun probability(previous: String?, word: String, previous2: String? = null): Double {
         if (typed == 0L) return 0.0
         val day = today()
         val w = word.lowercase()
@@ -125,20 +135,25 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         val after = afterCache[p] ?: 0.0
         if (after <= 0) return unigram
         val bigram = (pairs[p to w]?.decayed(day) ?: 0.0) / after
-        return PAIR_SHARE * bigram + (1 - PAIR_SHARE) * unigram
+        val pairMix = PAIR_SHARE * bigram + (1 - PAIR_SHARE) * unigram
+        val p2 = previous2?.lowercase() ?: return pairMix
+        val after2 = after2Cache[p2 to p] ?: 0.0
+        if (after2 <= 0) return pairMix
+        val trigram = (triples[Triple(p2, p, w)]?.decayed(day) ?: 0.0) / after2
+        return PAIR_SHARE * trigram + (1 - PAIR_SHARE) * pairMix
     }
 
     /** Mixes a static probability with the personal model ([PersonalModel] doc). */
-    fun mix(staticProbability: Double, previous: String?, word: String): Double {
+    fun mix(staticProbability: Double, previous: String?, word: String, previous2: String? = null): Double {
         val d = weight(previous != null)
         if (d <= 0) return staticProbability
-        return (1 - d) * staticProbability + d * probability(previous, word)
+        return (1 - d) * staticProbability + d * probability(previous, word, previous2)
     }
 
     @Synchronized
     fun clear() {
         version++
-        words.clear(); pairs.clear(); uses.clear(); typed = 0; cacheDay = -1
+        words.clear(); pairs.clear(); triples.clear(); uses.clear(); typed = 0; cacheDay = -1
         save()
     }
 
@@ -153,6 +168,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
                 out.write("#dogboard-personal 1\ttyped\t$typed\n")
                 for ((w, c) in words) out.write("w\t$w\t${c.value}\t${c.day}\t${uses[w] ?: 0}\n")
                 for ((k, c) in pairs) out.write("p\t${k.first}\t${k.second}\t${c.value}\t${c.day}\n")
+                for ((k, c) in triples) out.write("t\t${k.first}\t${k.second}\t${k.third}\t${c.value}\t${c.day}\n")
             }
             tmp.renameTo(f)
         }
@@ -167,6 +183,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
                 p[0].startsWith("#") && p.size >= 3 -> typed = p[2].toLongOrNull() ?: 0
                 p[0] == "w" && p.size == 5 -> { words[p[1]] = Count(p[2].toDouble(), p[3].toLong()); uses[p[1]] = p[4].toInt() }
                 p[0] == "p" && p.size == 5 -> pairs[p[1] to p[2]] = Count(p[3].toDouble(), p[4].toLong())
+                p[0] == "t" && p.size == 6 -> triples[Triple(p[1], p[2], p[3])] = Count(p[4].toDouble(), p[5].toLong())
             }
         }
     }

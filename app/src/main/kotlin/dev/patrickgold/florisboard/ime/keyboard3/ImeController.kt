@@ -155,9 +155,12 @@ class ImeController(
     // DogBoard: the last finished word and the word before it, accepted into the personal model
     // once the next word is finished or a suggestion picked without an undo (iOS token acceptance)
     private var unconfirmedWord: Pair<String?, String>? = null
+    /** The word before [unconfirmedWord]'s previous one (the personal model's two-word context). */
+    private var unconfirmedWord2: String? = null
     // DogBoard: a word changed by retrocorrection, accepted only once the word after the one that
     // triggered it is finished (a backspace right after can still undo it)
     private var pendingRetroAccept: Pair<String?, String>? = null
+    private var pendingRetroAccept2: String? = null
 
     /**
      * DogBoard: the last few autocorrections in this field (original, corrected, and up to 24
@@ -577,6 +580,7 @@ class ImeController(
             if (retro != null) {
                 // not yet: the backspace that undoes this retrocorrection must also undo learning it
                 pendingRetroAccept = unconfirmedWord
+                pendingRetroAccept2 = unconfirmedWord2
                 unconfirmedWord = null
             } else {
                 confirmAcceptedWord()
@@ -585,6 +589,13 @@ class ImeController(
             var committed = word.text // what this word ends up as
             // a reverted autocorrection that is finished unchanged is a word the user wants
             if (!word.isEmpty && word.text == rejectedWord) learnWord(word.text)
+            // letters right after a number: one slipped key in its suffix is fixed ("1sr" → "1st");
+            // a backspace right after puts back what was typed
+            val digitFix = if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord()) suffixAfterNumber(word.text) else null
+            if (digitFix != null && replaceBeforeCursor(word.text, digitFix)) {
+                committed = digitFix
+                lastCorrection = LastCorrection(word.snapshot(), digitFix, separator)
+            }
             if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord() && !followsDot(word.text)) {
                 val typed = word.text
                 val context = wordContext()
@@ -607,10 +618,10 @@ class ImeController(
                         unconfirmedCorrection = typed to corrected
                         scope.launch { TypingEngine.noteCorrected(typed, corrected) }
                     }
-                    noteFinishedWord(context, corrected)
+                    noteFinishedWord(context, corrected, context2)
                     if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context)
                 } else {
-                    noteFinishedWord(context, typed)
+                    noteFinishedWord(context, typed, context2)
                     if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context)
                 }
             } else if (!word.isEmpty && separator == " " && word.text != rejectedWord) {
@@ -750,7 +761,7 @@ class ImeController(
             confirmKeptCorrection()
             confirmPendingRetro()
             confirmAcceptedWord()
-            noteFinishedWord(previous, suggestion.word)
+            noteFinishedWord(previous, suggestion.word, wordContext2())
             currentWord.clear()
             lastCorrection = null
             rejectedWord = null
@@ -769,7 +780,7 @@ class ImeController(
             confirmKeptCorrection()
             confirmPendingRetro()
             confirmAcceptedWord()
-            if (typed.isNotEmpty()) noteFinishedWord(previous, typed)
+            if (typed.isNotEmpty()) noteFinishedWord(previous, typed, wordContext2())
             val app = state.editor.info.packageName
             if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.emojiUsed(emoji, app) }
             currentWord.clear()
@@ -783,22 +794,25 @@ class ImeController(
         }
 
         /** [word] (after [previous]) was finished; it is accepted when the next word confirms it. */
-        private fun noteFinishedWord(previous: String?, word: String) {
+        private fun noteFinishedWord(previous: String?, word: String, previous2: String? = null) {
             if (!learningAllowed()) return
             unconfirmedWord = previous to word
+            unconfirmedWord2 = previous2
         }
 
         /** The word finished before this one was not undone: accept it (personal model, learning). */
         private fun confirmPendingRetro() {
             val (previous, word) = pendingRetroAccept ?: return
+            val previous2 = pendingRetroAccept2
             pendingRetroAccept = null
-            if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.accepted(previous, word) }
+            if (!state.flags.isIncognitoMode) scope.launch { TypingEngine.accepted(previous, word, previous2) }
         }
 
         private fun confirmAcceptedWord() {
             val (previous, word) = unconfirmedWord ?: return
+            val previous2 = unconfirmedWord2
             unconfirmedWord = null
-            scope.launch { TypingEngine.accepted(previous, word) }
+            scope.launch { TypingEngine.accepted(previous, word, previous2) }
         }
 
         /** The autocorrection before this word was not undone: record it as kept. */
@@ -861,6 +875,14 @@ class ImeController(
             val before = state.content.surroundingText.textBefore
             val i = before.length - word.length - 1
             return i >= 0 && before.endsWith(word) && (before[i] == '.' || before[i].isDigit())
+        }
+
+        /** [word] typed right after a number: the fixed suffix ([io.github.sillypuppyy.dogboard.engine.DigitWords]), or null. */
+        private fun suffixAfterNumber(word: String): String? {
+            val before = state.content.surroundingText.textBefore
+            if (!before.endsWith(word)) return null
+            val digits = before.substring(0, before.length - word.length).takeLastWhile { it.isDigit() }
+            return io.github.sillypuppyy.dogboard.engine.DigitWords.fix(digits, word)
         }
 
         private fun cursorInsideWord(): Boolean =

@@ -101,6 +101,12 @@ class Decoder(
 
         private val SHORT_WORDS = listOf("u" to "you", "o" to "oh")
 
+        /**
+         * ln of how often a word's possessive occurs relative to the word: about the 25th
+         * percentile of the stored pairs (median 0.033, kept low as those are the frequent ones).
+         */
+        private val POSSESSIVE_LOG_RATIO = ln(0.02)
+
         /** Word restarts kept per tap: the most likely few. */
         private const val MAX_RESTARTS = 3
     }
@@ -378,6 +384,13 @@ class Decoder(
                 for ((form, formLp) in lexicon.forms(s.node)) {
                     val lf = before + l + (formLp - nodeLp)
                     add(Candidate(words(form), s.geometry + w * lf, s.geometry, lf, s.edits, isCompletion = false, words = count, contextSupport = support))
+                }
+                // a word plus a lone "s" ("puppy s") is more likely the possessive "puppy's", which
+                // the lexicon stores only when frequent: generated here, the missed apostrophe
+                // priced like the missed space
+                if (p != null && p.count == 1 && lexicon.word(s.node) == "s") {
+                    val lp = p.languageModel + POSSESSIVE_LOG_RATIO
+                    add(Candidate(p.text + "'s", s.geometry + w * lp, s.geometry, lp, s.edits, isCompletion = false))
                 }
             }
             if (includeCompletions) {

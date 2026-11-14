@@ -153,8 +153,9 @@ fun RowScope.KbBarSpecial(r: KbRender) {
         }
         x.mRemoved -> Row(Modifier.weight(1f).padding(start = 8.dp, end = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             // Kb:117-120
-            DText("“keyboards” won’t be suggested again", style = text(14, 400, t.barMuted))
-            Box(Modifier.height(40.dp).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { DText("Undo", style = text(14, 600, t.linkFg)) }
+            val actions = LocalKbActions.current
+            DText("“${x.removedWord}” won’t be suggested again", style = text(14, 400, t.barMuted))
+            Box(Modifier.height(40.dp).tap(actions?.onUndo).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) { DText("Undo", style = text(14, 600, t.linkFg)) }
         }
         x.mVoice -> Row(Modifier.weight(1f).padding(start = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             // Kb:124-127

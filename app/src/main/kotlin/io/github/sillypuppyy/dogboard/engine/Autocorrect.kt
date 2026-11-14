@@ -145,7 +145,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         return medial + word.count { Normalizer.normalize(it.toString(), Normalizer.Form.NFD).length > 1 }
     }
 
-    /** The letters only, without case or accents ("We're" and "were" share one). */
-    private fun sortKey(word: String): String =
-        Normalizer.normalize(word, Normalizer.Form.NFD).filter { it.isLetterOrDigit() }.lowercase()
 }
+
+/** The letters only, without case or accents ("We're" and "were" share one): iOS's sort key. */
+internal fun sortKey(word: String): String =
+    Normalizer.normalize(word, Normalizer.Form.NFD).filter { it.isLetterOrDigit() }.lowercase()
+

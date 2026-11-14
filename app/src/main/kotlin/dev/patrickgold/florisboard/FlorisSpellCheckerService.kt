@@ -43,6 +43,11 @@ class FlorisSpellCheckerService : SpellCheckerService() {
 
         super.onCreate()
         dictionaryManager.loadUserDictionariesIfNecessary()
+        // DogBoard: spelling comes from the typing engine; load it if the keyboard hasn't (until
+        // then words are "unspecified", not flagged)
+        kotlin.concurrent.thread(name = "dogboard-spell-load") {
+            io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this)
+        }
     }
 
     override fun createSession(): Session {

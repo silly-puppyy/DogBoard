@@ -69,8 +69,14 @@ fun TextInputLayout(
             val ui = io.github.sillypuppyy.dogboard.ime.LiveUi
             val toolRow by ui.toolRow.collectAsState()
             val panel by ui.panel.collectAsState()
+            val removed by io.github.sillypuppyy.dogboard.ime.LiveStrip.removed.collectAsState()
+            val refresh = { imeController.updateStateBlocking { refreshSuggestions() } }
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
                 strip = strip,
+                // a long-press removes a suggestion for good, with Undo for 4 s (design Panels:102)
+                onLongPick = { s -> io.github.sillypuppyy.dogboard.ime.LiveStrip.remove(s, refresh) },
+                removed = removed,
+                onUndo = { io.github.sillypuppyy.dogboard.ime.LiveStrip.undo(refresh) },
                 onPick = { s ->
                     imeController.updateStateBlocking { emitCandidate(io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(s)) }
                 },

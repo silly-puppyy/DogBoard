@@ -2,6 +2,7 @@ package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
@@ -51,6 +52,10 @@ import androidx.compose.ui.unit.sp
 /** Taps on the live keyboard's bar (stage 2). Null in the design gallery, where nothing is tappable. */
 class KbActions(
     val onSlot: (Int) -> Unit,
+    /** A long-press on a slot: remove that suggestion (Panels:102). */
+    val onSlotLong: (Int) -> Unit = {},
+    /** Undo on the removed bar (Kb:119). */
+    val onUndo: () -> Unit = {},
     val onLeft: () -> Unit = {},
     val onMic: () -> Unit = {},
     /** A tool tapped in the bar's tool row or the tools panel, by its icon name (Kb:663-668). */
@@ -65,6 +70,10 @@ val LocalKbActions = androidx.compose.runtime.staticCompositionLocalOf<KbActions
 
 internal fun Modifier.tap(action: (() -> Unit)?): Modifier =
     if (action == null) this else this.then(Modifier.clickable(onClick = action))
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+internal fun Modifier.tap(action: (() -> Unit)?, onLong: (() -> Unit)?): Modifier =
+    if (action == null) this else this.then(Modifier.combinedClickable(onClick = action, onLongClick = onLong))
 
 /**
  * The Kb.dc.html template (Kb:16-322) drawn from a [KbRender]. Panels, the dev row and the special
@@ -313,7 +322,7 @@ private fun RowScope.KbSlots(r: KbRender) {
             for ((i, s) in (if (centreAlone) listOf(1 to centre!!) else r.slots.withIndex().map { it.index to it.value })) {
                 if (s.showDiv && !centreAlone) Box(Modifier.size(1.dp, 22.dp).background(t.div))
                 Box(
-                    Modifier.weight(1f).height(48.dp).lint("slot:${s.text}").tap(actions?.let { a -> { a.onSlot(i) } }),
+                    Modifier.weight(1f).height(48.dp).lint("slot:${s.text}").tap(actions?.let { a -> { a.onSlot(i) } }, actions?.let { a -> { a.onSlotLong(i) } }),
                     contentAlignment = Alignment.Center,
                 ) {
                     LintParent("slot:${s.text}") { SlotText(r, s) }

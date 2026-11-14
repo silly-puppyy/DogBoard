@@ -62,4 +62,28 @@ class PersonalModelTest : FunSpec({
         loaded.wordsTyped shouldBe 25L
         loaded.probability("hi", "there") shouldBeGreaterThan 0.5
     }
+
+    test("two words of context: triples tell apart what one word can't") {
+        val m = fresh()
+        // after "to", the user writes "see" in "want to see" but "go" in "have to go"
+        repeat(10) { m.accept("to", "see", "want") }
+        repeat(10) { m.accept("to", "go", "have") }
+        m.probability("to", "see", "want") shouldBeGreaterThan m.probability("to", "go", "want")
+        m.probability("to", "go", "have") shouldBeGreaterThan m.probability("to", "see", "have")
+        // one word of context alone: the two are even
+        m.probability("to", "see") shouldBe (m.probability("to", "go") plusOrMinus 1e-12)
+        // an unseen two-word context falls back to the pair
+        m.probability("to", "see", "need") shouldBe (m.probability("to", "see") plusOrMinus 1e-12)
+    }
+    test("triples are saved, loaded and forgotten with their words") {
+        val f = File.createTempFile("personal", ".tsv").apply { deleteOnExit() }
+        val m = fresh(f)
+        repeat(3) { m.accept("to", "see", "want") }
+        repeat(3) { m.accept("to", "go", "have") }
+        m.save()
+        val loaded = fresh(f)
+        loaded.probability("to", "see", "want") shouldBeGreaterThan loaded.probability("to", "see")
+        loaded.remove("want")
+        loaded.probability("to", "see", "want") shouldBe (loaded.probability("to", "see") plusOrMinus 1e-12)
+    }
 })

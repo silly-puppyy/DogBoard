@@ -70,4 +70,26 @@ class FilterStackTest : FunSpec({
         top.word shouldBe "u"
         (top.languageModel > lex.logProb("u")!!) shouldBe true
     }
+
+    test("a typed contact name is not corrected to another word (iOS contact-name filter)") {
+        TypingEngine.unloadForTest()
+        TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+        try {
+            val without = finished("jom")
+            TypingEngine.setContactNames(listOf("Jom"))
+            println("contact probe: jom -> $without without the contact, ${finished("jom")} with it")
+            finished("jom") shouldBe "Jom"
+            finished("thw") shouldBe "the" // other words are corrected as before
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
+
+    test("learning a case variant of a dictionary word adds no new casing (what iOS filters #26/#27 guard)") {
+        val lex = Lexicon.of(mapOf("hello" to 1000L, "the" to 5000L))
+        lex.addWord("Hello", -12.0) // learned with a capital, e.g. at a sentence start
+        lex.formsOf("hello") shouldBe listOf("hello")
+        lex.addWord("Zorblax", -12.0) // a new word keeps the casing it was learned with
+        lex.formsOf("zorblax") shouldBe listOf("Zorblax")
+    }
 })
