@@ -26,6 +26,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--max-pairs", type=int, default=3_000_000)
     ap.add_argument("--max-triples", type=int, default=3_000_000)
+    ap.add_argument("--legacy", action="store_true", help="the earlier float layout (DGN1); the app reads only DGN2")
     args = ap.parse_args()
     lex = {l.split("\t")[0].lower() for l in open(LEX, encoding="utf-8") if not l.startswith("#")}
     keep = lex | {"<s>", "</s>"}
@@ -67,6 +68,9 @@ def main():
     print(f"kept vocab {len(vocab)}, top pairs {len(pairs)}, top triples {len(triples)}", file=sys.stderr)
     pairs = sorted(((k, p, bo) for p, k, bo in pairs), key=lambda e: e[0])
     triples = sorted(((k, p) for p, k in triples), key=lambda e: e[0])
+    if not args.legacy:
+        write_compact(args.out, vocab, uni_p, uni_b, pairs, triples)
+        return
     with open(args.out, "wb") as o:
         o.write(struct.pack(">iiii", 0x44474E31, len(vocab), len(pairs), len(triples)))
         for w in vocab:
@@ -80,6 +84,53 @@ def main():
         o.write(struct.pack(f">{len(triples)}q", *[k for k, _ in triples]))
         o.write(struct.pack(f">{len(triples)}f", *[p for _, p in triples]))
     print(f"wrote {args.out}: vocab {len(vocab)}, pairs {len(pairs)}, triples {len(triples)}", file=sys.stderr)
+
+
+def codebook(values, levels=256):
+    """Quantile codebook: the mean of each of [levels] equal-count bins; returns (centers, codes)."""
+    order = sorted(range(len(values)), key=lambda i: values[i])
+    n = len(values)
+    centers, codes = [], [0] * n
+    for q in range(levels):
+        lo, hi = q * n // levels, (q + 1) * n // levels
+        if lo >= hi:
+            centers.append(centers[-1] if centers else 0.0)
+            continue
+        idx = order[lo:hi]
+        centers.append(sum(values[i] for i in idx) / len(idx))
+        for i in idx:
+            codes[i] = q
+    return centers, codes
+
+
+def write_compact(out, vocab, uni_p, uni_b, pairs, triples):
+    """DGN2 layout (big-endian): magic, counts; vocabulary (u16 length + UTF-8); ln unigram probs
+    and back-offs (f32); pair codebooks (2 x 256 f32: prob, back-off); pair offsets by first word
+    (i32, vocab + 1); pair second words (i32) with prob and back-off codes (u8); triple codebook
+    (256 f32); triple keys (i64, a<<42|b<<21|c) with prob codes (u8)."""
+    pc, pcode = codebook([p for _, p, _ in pairs])
+    bc, bcode = codebook([b for _, _, b in pairs])
+    tc, tcode = codebook([p for _, p in triples])
+    offsets = [0] * (len(vocab) + 1)
+    for k, _, _ in pairs:
+        offsets[(k >> 32) + 1] += 1
+    for i in range(len(vocab)):
+        offsets[i + 1] += offsets[i]
+    with open(out, "wb") as o:
+        o.write(struct.pack(">iiii", 0x44474E32, len(vocab), len(pairs), len(triples)))
+        for w in vocab:
+            b = w.encode("utf-8")
+            o.write(struct.pack(">H", len(b))); o.write(b)
+        o.write(struct.pack(f">{len(vocab)}f", *uni_p))
+        o.write(struct.pack(f">{len(vocab)}f", *uni_b))
+        o.write(struct.pack(">256f", *pc)); o.write(struct.pack(">256f", *bc))
+        o.write(struct.pack(f">{len(offsets)}i", *offsets))
+        o.write(struct.pack(f">{len(pairs)}i", *[k & 0xFFFFFFFF for k, _, _ in pairs]))
+        o.write(bytes(pcode)); o.write(bytes(bcode))
+        o.write(struct.pack(">256f", *tc))
+        o.write(struct.pack(f">{len(triples)}q", *[k for k, _ in triples]))
+        o.write(bytes(tcode))
+    print(f"wrote {out} (compact): vocab {len(vocab)}, pairs {len(pairs)}, triples {len(triples)}", file=sys.stderr)
 
 
 if __name__ == "__main__":
