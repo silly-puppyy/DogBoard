@@ -35,21 +35,23 @@ class EngineContextEvalTest : FunSpec({
         val keys = QwertyGeometry.letterKeys(375f, 216f)
         val keyList = keys.entries.toList()
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-        val plain = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
-        val withContext = Decoder(lexicon, bigrams = bigrams)
         // optional: a trigram model binary (DOGBOARD_NGRAMS=path, tools/data/arpa_to_dogboard.py)
         val ngrams = System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
-        val withTrigram = ngrams?.let { Decoder(lexicon, bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
         val autocorrect = Autocorrect(lexicon)
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
         // optional: the unknown-word letter model (DOGBOARD_CHARLM=path, tools/data/build_charlm.py) and its veto
         val charModel = System.getenv("DOGBOARD_CHARLM")?.let { File(it) }?.takeIf { it.isFile }?.bufferedReader()?.use { CharModel.parse(it) }
-        for (d in listOfNotNull(plain, withContext, withTrigram)) d.unknownWords = charModel
-        // optional: the neural tap net (DOGBOARD_TAPNET=tapnet.bin, tools/ml/mltt_export.py) read through the lexicon
-        val tapNet = System.getenv("DOGBOARD_TAPNET")?.let { File(it) }?.takeIf { it.isFile }?.let { TapNet.read(it.readBytes()) }
-        val tapNetDecoder = tapNet?.let { TapNetDecoder(lexicon) }
-        // DOGBOARD_EVAL_MERGE_OUT=file: words the merge fixed or broke against the trigram decoder alone
-        val mergeOut = System.getenv("DOGBOARD_EVAL_MERGE_OUT")?.let { File(it).printWriter() }
+        // decoders keep per-word state, so each worker thread has its own (DOGBOARD_EVAL_THREADS, default 3)
+        class Decoders {
+            val plain = Decoder(lexicon, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM))
+            val withContext = Decoder(lexicon, bigrams = bigrams)
+            // DOGBOARD_EVAL_FARTAP=cost: the trigram decoder reads taps beyond the pruning radius as any key at that cost
+            val withTrigram = ngrams?.let { Decoder(lexicon, Decoder.Config(farTap = System.getenv("DOGBOARD_EVAL_FARTAP")?.toDoubleOrNull()), bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
+            init { for (d in listOfNotNull(plain, withContext, withTrigram)) d.unknownWords = charModel }
+        }
+        val decoders = ThreadLocal.withInitial { Decoders() }
+        val trigramOnly = System.getenv("DOGBOARD_EVAL_TRIGRAM_ONLY") == "1" && ngrams != null
+        val pool = java.util.concurrent.ForkJoinPool(System.getenv("DOGBOARD_EVAL_THREADS")?.toIntOrNull() ?: 3)
 
         // DOGBOARD_EVAL_TEXT=file: one sentence per line (held-out sets from tools/data/build_eval_sets.py)
         val evalText = System.getenv("DOGBOARD_EVAL_TEXT")?.let { File(it) }?.takeIf { it.isFile }
@@ -76,19 +78,25 @@ class EngineContextEvalTest : FunSpec({
         val outlierRates = listOf(0.0) + (System.getenv("DOGBOARD_EVAL_OUTLIERS")?.split(',')?.map { it.toDouble() }.orEmpty().takeIf { tail != null }.orEmpty())
         val pitch = keys.getValue('s').centerX - keys.getValue('a').centerX
         val dumpAt = System.getenv("DOGBOARD_EVAL_ERRORS_AT")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (1.5 to 2.0)
+        class Tally {
+            var words = 0; var raw = 0; var rightPlain = 0; var rightContext = 0; var rightTrigram = 0; var outOfLexicon = 0
+            val nanos = LongArray(3) // plain, bigram, trigram
+            val errors = ArrayList<String>()
+            fun add(o: Tally) {
+                words += o.words; raw += o.raw; rightPlain += o.rightPlain; rightContext += o.rightContext; rightTrigram += o.rightTrigram
+                outOfLexicon += o.outOfLexicon
+                errors += o.errors
+                for (i in nanos.indices) nanos[i] += o.nanos[i]
+            }
+        }
         for ((sx, sy) in sigmas) for (outliers in outlierRates) {
-            val rng = Random(3)
-            val tailRng = Random(5)
-            var words = 0
-            var raw = 0
-            var rightPlain = 0
-            var rightContext = 0
-            var rightTrigram = 0
-            var outOfLexicon = 0
-            var rightNet = 0
-            var rightEither = 0
-            var rightMerged = 0
-            for (sentence in sentences) {
+            // one seed per sentence, so the taps don't depend on the thread count
+            fun sentenceTally(index: Int, sentence: String): Tally {
+                val d = decoders.get()
+                val plain = d.plain; val withContext = d.withContext; val withTrigram = d.withTrigram
+                val rng = Random(3L * 1_000_003 + index)
+                val tailRng = Random(5L * 1_000_003 + index)
+                val r = Tally()
                 var previous = Bigrams.START
                 var previous2: String? = null
                 for (m in token.findAll(sentence)) {
@@ -119,49 +127,42 @@ class EngineContextEvalTest : FunSpec({
                         if (charModel != null && typedStringVeto(candidates)) return literal
                         return autocorrect.correction(literal, candidates) ?: literal
                     }
-                    words++
-                    if (!lexicon.contains(t)) outOfLexicon++
-                    if (literal == letters) raw++
-                    if (final(plain, -1).equals(t, ignoreCase = true)) rightPlain++
-                    if (final(withContext, bigrams.contextId(previous)).equals(t, ignoreCase = true)) rightContext++
-                    var trigramRight = false
-                    if (withTrigram != null) {
-                        val got = final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1)
-                        trigramRight = got.equals(t, ignoreCase = true)
-                        if (trigramRight) rightTrigram++
-                        else if (sx == dumpAt.first && sy == dumpAt.second && outliers == 0.0) errorsOut?.println("$t\t$literal\t$got\t$previous")
+                    r.words++
+                    if (!lexicon.contains(t)) r.outOfLexicon++
+                    if (literal == letters) r.raw++
+                    fun <T> timed(slot: Int, f: () -> T): T { val t0 = System.nanoTime(); return f().also { r.nanos[slot] += System.nanoTime() - t0 } }
+                    // DOGBOARD_EVAL_TRIGRAM_ONLY=1: skip the unigram and bigram decoders (3x faster; their columns read 0)
+                    if (!trigramOnly) {
+                        if (timed(0) { final(plain, -1) }.equals(t, ignoreCase = true)) r.rightPlain++
+                        if (timed(1) { final(withContext, bigrams.contextId(previous)) }.equals(t, ignoreCase = true)) r.rightContext++
                     }
-                    if (tapNet != null && tapNetDecoder != null && withTrigram != null && literal.length >= 3) {
-                        val readings = tapNetDecoder.decode(tapNet.forward(IntArray(literal.length) { literal[it] - 'a' + 1 }))
-                        val net = readings.firstOrNull()?.word ?: literal
-                        val netRight = net.equals(t, ignoreCase = true)
-                        if (netRight) rightNet++
-                        if (netRight || trigramRight) rightEither++
-                        // iOS's ensemble: the net's candidate merged into the trigram decoder's, then the same filters
-                        val c1 = bigrams.contextId(previous)
-                        val c2 = previous2?.let { bigrams.contextId(it) } ?: -1
-                        val candidates = withTrigram.decode(taps, keys, params, previous = c1, typed = literal, previous2 = c2)
-                        val merged = TapNetMerge.merge(candidates, TapNetMerge.candidate(readings, literal, withTrigram, c1, c2), literal)
-                        val got = if (charModel != null && typedStringVeto(merged)) literal else autocorrect.correction(literal, merged) ?: literal
-                        if (got.equals(t, ignoreCase = true)) rightMerged++
-                        if (got.equals(t, ignoreCase = true) != trigramRight) mergeOut?.println("${if (trigramRight) "BROKE" else "FIXED"}\t%.2f\t$t\t$literal\t$got\t$previous\t${candidates.firstOrNull()?.let { "%s ω %.2f lm %.2f".format(it.word, it.score, it.languageModel) }}\t${merged.firstOrNull()?.let { "%s ω %.2f lm %.2f".format(it.word, it.score, it.languageModel) }}".format(outliers))
-                    } else if (trigramRight) { rightNet++; rightEither++; rightMerged++ } // short words: the net doesn't run (iOS: >= 3 letters)
+                    if (withTrigram != null) {
+                        val got = timed(2) { final(withTrigram, bigrams.contextId(previous), previous2?.let { bigrams.contextId(it) } ?: -1) }
+                        if (got.equals(t, ignoreCase = true)) r.rightTrigram++
+                        else if (sx == dumpAt.first && sy == dumpAt.second && outliers == 0.0) r.errors += "$t\t$literal\t$got\t$previous"
+                    }
                     previous2 = previous
                     previous = t.lowercase()
                 }
+                return r
             }
-            if (tapNet != null) println("TAPNET %.1fx%.1f%s: net + lexicon (unigram) %.1f%%, right in trigram or net %.1f%%, merged (iOS rule) %.1f%%".format(
-                sx, sy, if (outliers > 0) " + %.0f%% far".format(outliers * 100) else "", rightNet * 100.0 / words, rightEither * 100.0 / words, rightMerged * 100.0 / words))
+            val parts = pool.submit(java.util.concurrent.Callable {
+                sentences.indices.toList().parallelStream().map { sentenceTally(it, sentences[it]) }.toList()
+            }).get()
+            val all = Tally().also { a -> parts.forEach { a.add(it) } }
+            all.errors.forEach { errorsOut?.println(it) }
+            val words = all.words
+            println("TIMING ms per word: " + listOf("plain", "bigram", "trigram").zip(all.nanos.toList()).joinToString { (n, v) -> "%s %.1f".format(n, v / 1e6 / words) })
             println(
                 "CONTEXT sigma %.1fx%.1f mm%s, %d words (%.1f%% not in lexicon): raw %.1f%%, unigram %.1f%%, bigram %.1f%%, trigram %s".format(
-                    sx, sy, if (outliers > 0) " + %.0f%% far taps".format(outliers * 100) else "", words, outOfLexicon * 100.0 / words, raw * 100.0 / words, rightPlain * 100.0 / words,
-                    rightContext * 100.0 / words, if (withTrigram != null) "%.1f%%".format(rightTrigram * 100.0 / words) else "-",
+                    sx, sy, if (outliers > 0) " + %.0f%% far taps".format(outliers * 100) else "", words, all.outOfLexicon * 100.0 / words, all.raw * 100.0 / words, all.rightPlain * 100.0 / words,
+                    all.rightContext * 100.0 / words, if (ngrams != null) "%.1f%%".format(all.rightTrigram * 100.0 / words) else "-",
                 )
             )
-            if (sx == 1.5 && sy == 2.0 && outliers == 0.0) (rightContext.toDouble() / words) shouldBeGreaterThan (rightPlain.toDouble() / words)
+            if (sx == 1.5 && sy == 2.0 && outliers == 0.0 && !trigramOnly) (all.rightContext.toDouble() / words) shouldBeGreaterThan (all.rightPlain.toDouble() / words)
         }
+        pool.shutdown()
         errorsOut?.close()
-        mergeOut?.close()
     }
 
     test("key prior: raw letters with no prior, the word prior, and the word + previous-word prior").config(enabled = EVAL && tatoeba.exists()) {

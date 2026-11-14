@@ -53,6 +53,12 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         /** iOS BoostMinimumVariation: a plainer spelling this close to the top goes first. */
         private val MIN_VARIATION_RATIO = ln(1.1)
 
+        /** "X's" spellings that are contractions, not possessives (#28 leaves them to the scores). */
+        private val CONTRACTIONS_S = setOf(
+            "it's", "he's", "she's", "that's", "what's", "there's", "here's", "who's", "let's", "where's", "how's",
+            "one's", "when's", "why's",
+        )
+
         /** Characters that make a completion a "special edit" (contractions and the like). */
         private val SPECIAL_EDIT_CHARS = setOf('\'', '’', '&')
 
@@ -85,6 +91,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             .filter { it.words == 1 || it.contextSupport >= MIN_CONTEXT_SUPPORT } // Rule 3
             .mapNotNull { c -> case(c.word)?.let { c to it } }
             .let(::boostPlainer)
+            .let(::boostPreferredForm)
         val (top, t) = cased.firstOrNull() ?: return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
@@ -137,6 +144,34 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         }
         if (pick < 0) return cased
         return listOf(cased[pick]) + cased.filterIndexed { i, _ -> i != pick }
+    }
+
+    /**
+     * iOS BoostPreferedFormForSortkey (#28): of the spellings of the top word that differ only by an
+     * apostrophe ("abbeys" / "abbey's"), the lexicon's preferred one goes first. iOS flags one form per
+     * spelling in its data: the plain plural for ordinary nouns, the possessive for names (Abdul's over
+     * Abduls). Our possessives are generated, so the rule stands in for the flag; contractions
+     * ("it's", "he's") are not possessives and are left alone.
+     */
+    private fun boostPreferredForm(cased: List<Pair<Candidate, String>>): List<Pair<Candidate, String>> {
+        if (cased.size < 2) return cased
+        val top = cased[0].first.word
+        val key = sortKey(top)
+        val j = cased.indexOfFirst { (c, _) -> c.word != top && sortKey(c.word) == key && isPossessivePair(top, c.word) }
+        if (j < 0) return cased
+        val other = cased[j].first.word
+        val possessive = if (top.endsWith("'s") || top.endsWith("’s")) top else other
+        val base = possessive.dropLast(2)
+        val preferred = if (base.firstOrNull()?.isUpperCase() == true) possessive else (if (possessive == top) other else top)
+        if (preferred == top) return cased
+        return listOf(cased[j]) + cased.filterIndexed { i, _ -> i != j }
+    }
+
+    /** "Xs" and "X's" (X's not a contraction). */
+    private fun isPossessivePair(a: String, b: String): Boolean {
+        val (poss, plain) = if (a.endsWith("'s") || a.endsWith("’s")) a to b else b to a
+        if (!(poss.endsWith("'s") || poss.endsWith("’s")) || plain.contains('\'') || plain.contains('’')) return false
+        return poss.lowercase().replace('’', '\'') !in CONTRACTIONS_S && plain.equals(poss.dropLast(2) + "s", ignoreCase = true)
     }
 
     /** Marks inside words (apostrophes, hyphens, dots) plus accented letters. */

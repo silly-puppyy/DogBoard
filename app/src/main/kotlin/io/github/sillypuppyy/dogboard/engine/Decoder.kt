@@ -81,6 +81,11 @@ class Decoder(
         val beamWidth: Int = 100,
         /** Split taps that run words together into several words ("helloeveryone"). */
         val splitWords: Boolean = true,
+        /**
+         * A tap beyond the pruning radius may still be read as any key at this cost (+ the time term + the
+         * radius's likelihood), for taps that land far off; null = never, as on iOS.
+         */
+        val farTap: Double? = null,
     )
 
     companion object {
@@ -273,7 +278,7 @@ class Decoder(
         val prune = params.pruneThreshold
         fun tapScore(c: Char, i: Int): Pair<Double, Int>? {
             val ll = info[i].likelihood[c] ?: return null
-            if (ll < prune) return null
+            if (ll < prune) return config.farTap?.let { (it + info[i].q + prune) to 1 }
             return if (c in info[i].nearby) ll to 0 else (SUBSTITUTION + info[i].q + ll) to 1
         }
 

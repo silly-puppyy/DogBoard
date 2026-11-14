@@ -239,6 +239,7 @@ def main():
     ap.add_argument("--max-surnames", type=int, default=20000, help="most common Census surnames to include")
     ap.add_argument("--out", default="app/src/main/assets/dogboard/en.lexicon.tsv")
     ap.add_argument("--casing", default="", help="casing_counts.py output; keeps SCOWL's casings of a word with a measured split")
+    ap.add_argument("--min-zipf-web-only", type=float, default=MIN_ZIPF_WEB_ONLY, help="words only wordfreq has (slang, brands, tech) kept from this Zipf up")
     ap.add_argument("--min-zipf-possessive", type=float, default=MIN_ZIPF_POSSESSIVE, help="possessives ('s, s') kept from this Zipf up")
     ap.add_argument("--seen-counts", default="", help="count_unigrams.py output (FineWeb): plain lowercase SCOWL words it never saw are dropped")
     args = ap.parse_args()
@@ -297,7 +298,7 @@ def main():
         floor = min(1.5, max(0.5, 0.25 * math.log10(max(pop, 1))))
         add(name, min(zipf.get(name.lower(), floor), max(floor, NAME_ZIPF_CAP)), "geonames")
     for w, z in zipf.items():
-        if z < MIN_ZIPF_WEB_ONLY or w in forms or w in other_regions or not WORD_RE.match(w) or "." in w:
+        if z < args.min_zipf_web_only or w in forms or w in other_regions or not WORD_RE.match(w) or "." in w:
             continue
         add(w, z, "wordfreq")
     # American variant spellings fill gaps only: a name with the same letters wins (Bonnie, not bonnie)

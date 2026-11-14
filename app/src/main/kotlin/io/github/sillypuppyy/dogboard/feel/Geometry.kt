@@ -18,16 +18,19 @@ object Geometry {
     val KeyAreaHeightLandscape: Dp = 162.dp
 
     /**
-     * Portrait key area: a fixed height, only the key widths stretch (designer, 2026-11-14: Compact
-     * 192 / Default 216 / Tall 240 dp; Default is 226 dp on phones 414 dp or wider; the 375 dp
-     * canvas was a drawing size, not a ratio to keep). [heightScale] is the user's height setting.
+     * Portrait key area: four rows at Gboard's row height for the screen width (user, 2026-11-14: "fit to
+     * Gboard"; measured on the emulator with tools/test/keyboard_sizes.py: 48.0 dp below 350 dp,
+     * 50.3 dp up to 400 dp, 59.0 dp from 400 dp, whatever the screen height). Replaces the designer's
+     * fixed 216 / 226 dp (iOS's). [heightScale] is the user's height setting (100 % = Gboard's).
      */
-    fun keyAreaHeightPortrait(screenWidth: Dp): Dp =
-        (if (screenWidth >= WideWidth) KeyAreaHeightPortraitWide else KeyAreaHeightPortrait) * heightScale
+    fun keyAreaHeightPortrait(screenWidth: Dp): Dp = rowHeightPortrait(screenWidth) * 4 * heightScale
 
-    /** Phones at least this wide get [KeyAreaHeightPortraitWide] (designer). */
-    val WideWidth: Dp = 414.dp
-    val KeyAreaHeightPortraitWide: Dp = 226.dp
+    /** One key row in portrait, from Gboard's size steps (thresholds: between 340 and 350, and 400). */
+    fun rowHeightPortrait(screenWidth: Dp): Dp = when {
+        screenWidth >= 400.dp -> 59.0.dp
+        screenWidth >= 350.dp -> 50.3.dp
+        else -> 48.0.dp
+    }
 
     /** The user's keyboard height setting (Settings home, 80-130 %), as a factor on the key area. */
     @Volatile

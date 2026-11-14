@@ -477,7 +477,10 @@ object TypingEngine {
         }
         if (candidates.isEmpty()) return null
         val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates))
-            .filter { keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) }
+            .filter {
+                keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) &&
+                    keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word)
+            }
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
         if (vetoesCorrection(kept)) return null
@@ -749,6 +752,19 @@ object TypingEngine {
         return if (top.word.equals(typed, ignoreCase = true) && isNotSuggestible(top.word)) listOf(top) else candidates
     }
 
+    /**
+     * iOS FilterAllCapsNoSuggestWordsOfLength (#11): unless the input is already in capitals, a
+     * correction may not bring in a two-letter all-caps word that is never offered, or a learned one
+     * not used enough yet (iOS: learned once, not "sufficiently learned").
+     */
+    private fun isAllCapsNoSuggest(typed: String, candidate: String): Boolean {
+        if (typed == typed.uppercase()) return false
+        return candidate.split(' ').any { w ->
+            w.length == 2 && w.all { it.isUpperCase() } &&
+                (isNotSuggestible(w) || (lock.read { w.lowercase() in learnedWords } && personal.uses(w) < 2))
+        }
+    }
+
     /** True if any word of [candidate] (one word, or several when words were split) is never offered. */
     private fun isNotSuggestible(candidate: String): Boolean =
         blockNotSuggestible && noSuggest.isNotEmpty() && candidate.split(' ').any { it.lowercase() in noSuggest }
@@ -776,6 +792,10 @@ object TypingEngine {
         contactNames = emptySet()
     }
 }
+
+/** iOS FilterCharacterCount (#13): a correction keeps at least as many "&" as were typed ("AT&T"). */
+internal fun keepsAmpersands(typed: String, candidate: String): Boolean =
+    candidate.count { it == '&' } >= typed.count { it == '&' }
 
 /**
  * iOS FilterPopupVariantMismatch: a letter typed from a long-press popup stays in a correction, at
