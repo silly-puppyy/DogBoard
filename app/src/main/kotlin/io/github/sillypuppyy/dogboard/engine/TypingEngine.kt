@@ -170,6 +170,7 @@ object TypingEngine {
             learnedWords.add(w.lowercase())
             lexicon.addWord(w, engine.acceptedWordLogProb)
         }
+        for (n in appNames) if (!lexicon.contains(n)) lexicon.addWord(n, engine.userWordLogProb)
         lock.write {
             blocked.clear()
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
@@ -204,6 +205,21 @@ object TypingEngine {
      * a moderately common word. Kept in memory only; a different set reloads the word data so
      * removed names are forgotten.
      */
+    /**
+     * The names of the apps on the phone ([io.github.sillypuppyy.dogboard.apps.AppNames]) as known
+     * words, the ones the lexicon lacks (iOS: installed app names in the dynamic dictionary). Only
+     * added: an uninstalled app's name stays known until the next start.
+     */
+    fun addAppNames(names: Collection<String>) {
+        appNames = appNames + names
+        val engine = loaded ?: return
+        lock.write { for (n in names) if (!engine.lexicon.contains(n)) engine.lexicon.addWord(n, engine.userWordLogProb) }
+    }
+
+    /** Kept for reloads (the lexicon is rebuilt when a contact name goes away). */
+    @Volatile
+    private var appNames: Set<String> = emptySet()
+
     fun setContactNames(names: Collection<String>) {
         val engine = loaded ?: return
         val fresh = names.toSet()
@@ -776,6 +792,7 @@ object TypingEngine {
     internal fun unloadForTest() {
         loaded = null
         charModel = null
+        appNames = emptySet()
         ngramModel = null
         userWordsFile = null
         blockedWordsFile = null

@@ -39,6 +39,20 @@ class FilterStackTest : FunSpec({
         isCommonLearnedTypo("Can", "can't") shouldBe false // exact case, as iOS
     }
 
+    test("installed app names are known words, also after a reload (iOS dynamic type 2)") {
+        TypingEngine.unloadForTest()
+        try {
+            TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+            TypingEngine.isKnownWord("Snapflix") shouldBe false
+            TypingEngine.addAppNames(listOf("Snapflix"))
+            TypingEngine.isKnownWord("Snapflix") shouldBe true
+            TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+            TypingEngine.isKnownWord("Snapflix") shouldBe true
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
+
     test("#13 a correction keeps the typed ampersands") {
         keepsAmpersands("at&y", "at&t") shouldBe true
         keepsAmpersands("at&y", "arty") shouldBe false

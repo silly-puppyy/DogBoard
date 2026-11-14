@@ -291,6 +291,8 @@ class FlorisImeService : LifecycleInputMethodService() {
             io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService)
             }
+            // DogBoard: the names of the apps on the phone are words too (iOS does this)
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.addAppNames(io.github.sillypuppyy.dogboard.apps.AppNames.read(this@FlorisImeService))
             imeController.updateState { refreshSuggestions() }
             // DogBoard: contact names, only while the user opts in and grants access; switching the
             // setting off takes them out again without a restart

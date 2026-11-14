@@ -15,6 +15,11 @@
           in the Settings Ui why FlorisBoard may not be working.
      -->
     <queries>
+        <!-- DogBoard: the launcher's app names become known words (apps/AppNames.kt) -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
         <intent>
             <action android:name="android.view.InputMethod"/>
         </intent>
