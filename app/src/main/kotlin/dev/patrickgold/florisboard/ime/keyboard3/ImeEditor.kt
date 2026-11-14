@@ -94,6 +94,16 @@ open class ImeEditor(
         }
     }
 
+    /**
+     * DogBoard: tells the app that [old] at [offset] was autocorrected to [new]. Android's text views
+     * flash a highlight over it in their own highlight colour, fading over 400 ms (Editor
+     * CorrectionHighlighter), as Gboard does; apps without it ignore the call.
+     */
+    fun commitCorrection(offset: Int, old: String, new: String) {
+        val ic = ic.get() ?: return
+        runCatching { ic.commitCorrection(android.view.inputmethod.CorrectionInfo(offset, old, new)) }
+    }
+
     /** DogBoard: selects [start]..[end] in the field (the text-editing panel's selection mode). */
     fun setSelection(start: Int, end: Int) {
         val ic = ic.get() ?: return

@@ -588,6 +588,8 @@ class ImeController(
                         candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
                 }
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
+                    // the app flashes the corrected word (Android's correction highlight, as Gboard)
+                    state.content.selection.start.let { end -> if (end >= corrected.length) state.editor.commitCorrection(end - corrected.length, typed, corrected) }
                     committed = corrected
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
                     if (!state.flags.isIncognitoMode) {
@@ -629,6 +631,10 @@ class ImeController(
             val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes())
                 ?: return null
             if (!replaceBeforeCursor("${back.committed} $typed", "$newPrevious $typed")) return null
+            state.content.selection.start.let { end ->
+                val offset = end - typed.length - 1 - newPrevious.length
+                if (offset >= 0) state.editor.commitCorrection(offset, back.committed, newPrevious)
+            }
             if (BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "retro ${back.committed} -> $newPrevious before $typed")
             // the earlier word's pending learning and kept-correction now refer to the new word
             unconfirmedWord = unconfirmedWord?.let { (ctx, w) -> if (w == back.committed) ctx to newPrevious else ctx to w }

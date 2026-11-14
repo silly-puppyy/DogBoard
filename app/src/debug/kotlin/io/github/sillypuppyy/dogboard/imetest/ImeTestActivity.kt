@@ -62,6 +62,12 @@ class ImeTestActivity : Activity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: android.text.Editable?) {
                 android.util.Log.i("DogBoardText", "text=[${s ?: ""}]")
+                // the styling keyboards attach (composing spans, highlights): for studying other keyboards
+                s?.getSpans(0, s.length, Any::class.java)?.filter { it !is android.text.method.KeyListener && it.javaClass.name.let { n -> !n.contains("Watcher") && !n.contains("Selection") && !n.contains("ChangeWatcher") } }
+                    ?.forEach { sp ->
+                        val bg = (sp as? android.text.style.BackgroundColorSpan)?.backgroundColor?.let { " bg=#%08x".format(it) } ?: ""
+                        android.util.Log.i("DogBoardSpans", "${sp.javaClass.name} ${s.getSpanStart(sp)}-${s.getSpanEnd(sp)} flags=0x%x$bg".format(s.getSpanFlags(sp)))
+                    }
             }
         })
 
