@@ -67,6 +67,7 @@ fun HomeScreen() {
         val sound by prefs.inputFeedback.audioEnabled.collectAsState()
         val vibration by prefs.inputFeedback.hapticEnabled.collectAsState()
         val numberRow by prefs.keyboard.numberRow.collectAsState()
+        val keyboardHeight by prefs.keyboard.heightPercent.collectAsState()
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
         io.github.sillypuppyy.dogboard.design.settings.SetHome(
@@ -88,6 +89,8 @@ fun HomeScreen() {
                 onVibration = { on -> scope.launch { prefs.inputFeedback.hapticEnabled.set(on) } },
                 numberRow = numberRow,
                 onNumberRow = { on -> scope.launch { prefs.keyboard.numberRow.set(on) } },
+                keyboardHeight = keyboardHeight,
+                onKeyboardHeight = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },
                 onSection = { title ->
                     navController.navigate(
                         when (title) {

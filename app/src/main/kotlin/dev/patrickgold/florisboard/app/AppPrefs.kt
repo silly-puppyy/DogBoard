@@ -440,6 +440,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__number_row",
             default = false,
         )
+        // DogBoard: keyboard height as a percentage of the design's key area (settings layout v2)
+        val heightPercent = int(
+            key = "keyboard__height_percent",
+            default = 100,
+        )
         val spaceBarMode = enum(
             key = "keyboard__space_bar_display_mode",
             default = SpaceBarMode.CURRENT_LANGUAGE,

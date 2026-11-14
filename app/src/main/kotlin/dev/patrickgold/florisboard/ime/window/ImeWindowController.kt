@@ -139,7 +139,10 @@ class ImeWindowController(
             activeWindowConfig,
             userPreferredOptions,
             editor.version,
-        ) { rootInsets, windowConfig, userConfig, _ ->
+            prefs.keyboard.heightPercent.asFlow(),
+        ) { rootInsets, windowConfig, userConfig, _, heightPercent ->
+            // DogBoard: the keyboard height setting scales the default key area (feel/Geometry)
+            io.github.sillypuppyy.dogboard.feel.Geometry.heightScale = heightPercent.coerceIn(80, 130) / 100f
             doComputeWindowSpec(rootInsets, windowConfig, userConfig)
         }.collectIn(scope) { windowSpec ->
             activeWindowSpec.value = windowSpec

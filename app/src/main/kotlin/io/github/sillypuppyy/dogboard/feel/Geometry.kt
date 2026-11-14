@@ -22,7 +22,11 @@ object Geometry {
      * screen width (wider phones get taller keys instead of squarer ones; user, 2026-11-14).
      */
     fun keyAreaHeightPortrait(screenWidth: Dp): Dp =
-        KeyAreaHeightPortrait * (screenWidth / DesignWidth).coerceIn(1f, 1.2f)
+        KeyAreaHeightPortrait * (screenWidth / DesignWidth).coerceIn(1f, 1.2f) * heightScale
+
+    /** The user's keyboard height setting (Settings home, 80-130 %), as a factor on the key area. */
+    @Volatile
+    var heightScale: Float = 1f
 
     /**
      * Space between a key's visible cap and its touch cell, per side. Estimated: a 37.5 x 54 dp

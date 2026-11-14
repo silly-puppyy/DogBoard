@@ -78,6 +78,8 @@ class SetHomeActions(
     val numberRow: Boolean = false,
     val onNumberRow: (Boolean) -> Unit = {},
     val onSearch: (() -> Unit)? = null,
+    val keyboardHeight: Int = 100,
+    val onKeyboardHeight: (Int) -> Unit = {},
 )
 
 @Composable
@@ -158,6 +160,10 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         SetSwitchRow("main:sound", "Sound", "A click on each key", actions.sound, actions.onSound)
                         SetSwitchRow("main:vibration", "Vibration", "A tap on each key", actions.vibration, actions.onVibration)
                         SetSwitchRow("main:numrow", "Number row", "Digits above the letters", actions.numberRow, actions.onNumberRow)
+                        SetSliderRow(
+                            "main:height", "Keyboard height", "Taller keys are easier to hit; shorter ones leave more room for the app.",
+                            actions.keyboardHeight.toFloat(), 100f, 80f..130f, 5f, { v -> "${v.toInt()} %" },
+                        ) { v -> actions.onKeyboardHeight(v.toInt()) }
                     }
                 }
                 // SetHome:83-93 all settings
