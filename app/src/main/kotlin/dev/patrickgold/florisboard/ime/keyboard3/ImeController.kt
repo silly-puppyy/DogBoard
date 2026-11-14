@@ -854,12 +854,13 @@ class ImeController(
         /** True when a letter follows the cursor: only part of the word is before it. */
         /**
          * iOS FilterAlteredURLFragments: a word right after a "." with no space ("www.exmaple",
-         * "file.tx") is part of an address or file name and is not corrected.
+         * "file.tx") is part of an address or file name and is not corrected. DogBoard: the same
+         * for letters right after a digit ("1st", "5pm", "2nd"), which are not words on their own.
          */
         private fun followsDot(word: String): Boolean {
             val before = state.content.surroundingText.textBefore
             val i = before.length - word.length - 1
-            return i >= 0 && before.endsWith(word) && before[i] == '.'
+            return i >= 0 && before.endsWith(word) && (before[i] == '.' || before[i].isDigit())
         }
 
         private fun cursorInsideWord(): Boolean =
