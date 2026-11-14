@@ -140,7 +140,9 @@ def build() -> str:
         "",
         "<!-- Actions -->",
         f'<key id="bksp" output="@k3:action/backspace" width="{SHIFT}" />',
-        f'<key id="enter" output="@k3:action/enter" width="{RETURN}" />',
+        # long-press: a line break, so chats that send on the action key can still get one (designer Panels:56)
+        f'<key id="enter" output="@k3:action/enter" width="{RETURN}" longPressKeyIds="newline" />',
+        '<key id="newline" output="\\u{000A}" />',
         f'<key id="space" output="\\u{{0020}}" width="{SPACE}" />',
         f'<key id="space-email" output="\\u{{0020}}" width="{SPACE_EMAIL}" />',
         f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
@@ -214,6 +216,7 @@ def build() -> str:
         '        <display keyId="to-symbol-2" display="#+=" />',
         '        <display keyId="to-base" display="ABC" />',
         '        <display keyId="space" display="space" />',
+        '        <display keyId="newline" display="New line" />',
         '        <display keyId="space-email" display="space" />',
         '        <display keyId="base-numeric" display="ABC" />',
         '        <display keyId="symbols-numeric" display="#+=" />',

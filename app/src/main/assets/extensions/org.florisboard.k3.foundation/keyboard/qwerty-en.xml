@@ -10,6 +10,7 @@
         <display keyId="to-symbol-2" display="#+=" />
         <display keyId="to-base" display="ABC" />
         <display keyId="space" display="space" />
+        <display keyId="newline" display="New line" />
         <display keyId="space-email" display="space" />
         <display keyId="base-numeric" display="ABC" />
         <display keyId="symbols-numeric" display="#+=" />
@@ -29,7 +30,8 @@
 
         <!-- Actions -->
         <key id="bksp" output="@k3:action/backspace" width="1.28" />
-        <key id="enter" output="@k3:action/enter" width="2.4933" />
+        <key id="enter" output="@k3:action/enter" width="2.4933" longPressKeyIds="newline" />
+        <key id="newline" output="\u{000A}" />
         <key id="space" output="\u{0020}" width="5.0133" />
         <key id="space-email" output="\u{0020}" width="2.5133" />
         <key id="at-email" output="@" width="1.25" />
