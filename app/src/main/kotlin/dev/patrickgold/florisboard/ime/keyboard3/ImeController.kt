@@ -173,7 +173,12 @@ class ImeController(
      * characters before the word as an anchor): tapping back into one offers the original first,
      * like Gboard's "tap highlighted text to undo" and iOS's choice bubble.
      */
-    private class RecentCorrection(val original: String, val corrected: String, val anchor: String)
+    /**
+     * An autocorrection made in this field: the typed [original], what it became, the text before it
+     * ([anchor]) and the other words offered then. iOS keeps these for the whole document
+     * (autocorrectionListsForWordsInDocument) and shows them when the cursor goes back into the word.
+     */
+    private class RecentCorrection(val original: String, val corrected: String, val anchor: String, val alternatives: List<String> = emptyList())
     private val recentCorrections = ArrayDeque<RecentCorrection>()
     private var deletingWord: String? = null
     private var rejectedWord: String? = null
@@ -617,7 +622,12 @@ class ImeController(
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     // the app flashes the corrected word (Android's correction highlight, as Gboard)
                     state.content.selection.start.let { end -> if (end >= corrected.length) state.editor.commitCorrection(end - corrected.length, typed, corrected) }
-                    noteRecentCorrection(typed, corrected, state.content.surroundingText.textBefore.dropLast(corrected.length))
+                    noteRecentCorrection(
+                        typed, corrected, state.content.surroundingText.textBefore.dropLast(corrected.length),
+                        candidates.asSequence().map { it.word }
+                            .filter { !it.equals(corrected, ignoreCase = true) && !it.equals(typed, ignoreCase = true) }
+                            .distinctBy { it.lowercase() }.take(2).toList(),
+                    )
                     committed = corrected
                     lastCorrection = LastCorrection(word.snapshot(), corrected, separator)
                     if (!state.flags.isIncognitoMode) {
@@ -718,15 +728,21 @@ class ImeController(
             val context2 = io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore.subSequence(0, textBefore.length - before.length))
             val curly = curlyApostrophes()
             wordAroundCursor = before to after
-            // a word autocorrected moments ago (same text before it): its original comes first
+            // a word autocorrected in this field: its original comes first, then the words offered at
+            // the time (iOS); the same place (text before it) wins, else the latest correction to it
             val beforeWord = textBefore.subSequence(0, textBefore.length - before.length)
             val recent = recentCorrections.lastOrNull { it.corrected == whole && beforeWord.endsWith(it.anchor) }
+                ?: recentCorrections.lastOrNull { it.corrected == whole }
             suggestionJob = scope.launch {
                 val candidates = TypingEngine.candidates(word, context, previous2 = context2)
                 var strip = SuggestionStrip.build(whole, candidates, null, TypingEngine.caseFor(word, curly), null)
                 if (recent != null) {
                     val undo = Suggestion(recent.original, Suggestion.Kind.LITERAL).also { it.revertOf = recent.corrected; it.forTyped = whole }
-                    strip = (listOf(undo) + strip.filter { !it.word.equals(recent.original, ignoreCase = true) }).take(SuggestionStrip.SLOTS)
+                    val case = TypingEngine.caseFor(word, curly)
+                    val offered = recent.alternatives.map { a -> Suggestion(case(a) ?: a, Suggestion.Kind.WORD).also { it.forTyped = whole } }
+                    strip = (listOf(undo) + offered + strip)
+                        .filter { it === undo || !it.word.equals(recent.original, ignoreCase = true) }
+                        .distinctBy { it.word.lowercase() }.take(SuggestionStrip.SLOTS)
                 }
                 if (isActive) sink(strip)
             }
@@ -838,17 +854,17 @@ class ImeController(
             scope.launch { TypingEngine.learn(word) }
         }
 
+        private fun noteRecentCorrection(original: String, corrected: String, textBeforeWord: CharSequence, alternatives: List<String> = emptyList()) {
+            recentCorrections.addLast(RecentCorrection(original, corrected, textBeforeWord.takeLast(24).toString(), alternatives))
+            while (recentCorrections.size > MAX_RECENT_CORRECTIONS) recentCorrections.removeFirst()
+        }
+
         /**
          * DogBoard: forgets everything tied to the previous field, so nothing carries over: the
          * user's shift choice (an empty new field must auto-capitalise), the automatic space, the
          * double-space timer, and the word or correction waiting to be accepted (it is dropped,
          * not accepted: the previous field may have been incognito, or the text discarded).
          */
-        private fun noteRecentCorrection(original: String, corrected: String, textBeforeWord: CharSequence) {
-            recentCorrections.addLast(RecentCorrection(original, corrected, textBeforeWord.takeLast(24).toString()))
-            while (recentCorrections.size > 3) recentCorrections.removeFirst()
-        }
-
         private fun resetFieldState() {
             recentCorrections.clear()
             shiftChosenAt = null
@@ -1449,6 +1465,9 @@ private val FORM_VARIATIONS = setOf(
     InputAttributes.Variation.POSTAL_ADDRESS,
     InputAttributes.Variation.PHONETIC,
 )
+/** Autocorrections remembered per field for going back into a word (iOS keeps the whole document's). */
+private const val MAX_RECENT_CORRECTIONS = 50
+
 private val NO_DOUBLE_SPACE_VARIATIONS = setOf(
     InputAttributes.Variation.EMAIL_ADDRESS,
     InputAttributes.Variation.WEB_EMAIL_ADDRESS,
