@@ -46,8 +46,11 @@ class Decoder(
     private val config: Config = Config(),
     private val bigrams: Bigrams? = null,
     /** A two-word-context model ([NgramScorer]); when set it scores words instead of [bigrams]. */
-    private val context: ContextScorer? = null,
+    context: ContextScorer? = null,
 ) {
+    /** Can be attached after loading (TypingEngine.attachNgrams), so startup isn't slowed. */
+    @Volatile
+    var context: ContextScorer? = context
     /** ln P(word | prev2 prev) for lexicon word ids and [Bigrams.contextId]-style context ids (-1: none). */
     fun interface ContextScorer {
         fun logProb(prev2: Int, prev: Int, wordId: Int, unigramLogProb: Double): Double
@@ -134,6 +137,7 @@ class Decoder(
         val previous: Int,
         val previous2: Int,
         val personal: Any?,
+        val context: ContextScorer?,
         val lexiconVersion: Int,
     ) {
         val taps = ArrayList<Tap>()
@@ -215,10 +219,10 @@ class Decoder(
         val w = config.languagePower
 
         var sr = search
-        if (sr == null || sr.keys !== keys || sr.params != params || sr.previous != previous || sr.previous2 != previous2 || sr.personal !== personal ||
+        if (sr == null || sr.keys !== keys || sr.params != params || sr.previous != previous || sr.previous2 != previous2 || sr.personal !== personal || sr.context !== context ||
             sr.lexiconVersion != lexicon.version
         ) {
-            sr = Search(keys, params, previous, previous2, personal, lexicon.version).also { search = it }
+            sr = Search(keys, params, previous, previous2, personal, context, lexicon.version).also { search = it }
         }
         var m = 0
         while (m < minOf(n, sr.taps.size) && sr.taps[m] == taps[m]) m++
@@ -253,7 +257,7 @@ class Decoder(
         val shortWords = shortWordMap()
         fun lm(node: Int, prev: Int, prev2: Int = -1): Double {
             fun of(n: Int): Double {
-                val base = context?.logProb(prev2, prev, lexicon.wordId(n), lexicon.logProb(n))
+                val base = sr.context?.logProb(prev2, prev, lexicon.wordId(n), lexicon.logProb(n))
                     ?: bigrams?.logProb(prev, lexicon.wordId(n), lexicon.logProb(n)) ?: lexicon.logProb(n)
                 // the personal model mixed in (PersonalModel: iOS dynamic model weights)
                 return personal?.invoke(n, base) ?: base

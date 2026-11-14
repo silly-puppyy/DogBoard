@@ -10,8 +10,23 @@ import java.io.File
  * comes first loads it. Call off the main thread.
  */
 object EngineLoader {
+    private fun loadNgrams(app: Context): io.github.sillypuppyy.dogboard.engine.NgramModel? = runCatching {
+        app.assets.openFd("dogboard/en.ngrams.bin").use { fd ->
+            java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
+                val t0 = android.os.SystemClock.uptimeMillis()
+                io.github.sillypuppyy.dogboard.engine.NgramModel.fromBuffer(
+                    ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length),
+                ).also { m ->
+                    android.util.Log.i("DogBoardPerf", "trigram model: ${m?.pairCount} pairs, ${m?.tripleCount} triples, " +
+                        "${android.os.SystemClock.uptimeMillis() - t0} ms")
+                }
+            }
+        }
+    }.getOrNull()
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
+        val t0 = android.os.SystemClock.uptimeMillis()
         val app = context.applicationContext
         val assets = app.assets
         val files = app.filesDir
@@ -33,5 +48,10 @@ object EngineLoader {
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
             snapshotKey = app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
         )
+        android.util.Log.i("DogBoardPerf", "engine ready (suggestions on) after ${android.os.SystemClock.uptimeMillis() - t0} ms")
+        // the trigram model (when built into this app), attached after the engine is ready so
+        // startup isn't slowed: memory-mapped from the package, which stores it uncompressed
+        // (build.gradle.kts noCompress), so nothing is copied to the heap
+        TypingEngine.attachNgrams(loadNgrams(app))
     }
 }

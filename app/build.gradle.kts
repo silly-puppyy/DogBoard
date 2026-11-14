@@ -91,6 +91,11 @@ configure<ApplicationExtension> {
         }
     }
 
+    // DogBoard: the trigram model is memory-mapped straight from the APK, so it must be stored uncompressed
+    androidResources {
+        noCompress += "bin"
+    }
+
     buildFeatures {
         buildConfig = true
         compose = true

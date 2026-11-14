@@ -17,6 +17,10 @@ object TypingEngine {
     @Volatile
     private var loaded: Loaded? = null
 
+    /** The attached trigram model, re-attached when the word data reloads (reset, contacts). */
+    @Volatile
+    private var ngramModel: NgramModel? = null
+
     /**
      * Whether words take the dictionary's capitals when typed without any ("john" → "John",
      * "i" → "I"); off keeps them as typed. Sentence starts are a separate setting.
@@ -60,14 +64,11 @@ object TypingEngine {
     /** Words the user taught the keyboard (not in the shipped lexicon), lowercase. */
     private val learnedWords = HashSet<String>()
 
-    private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, ngrams: NgramModel? = null) {
-        /** The two-word-context model, when its data is shipped (scores words instead of the bigrams). */
-        private val contextScorer = if (ngrams != null && bigrams != null) NgramScorer(ngrams, lexicon, bigrams.sentenceStart) else null
+    private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?) {
         val decoder = Decoder(
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
-            contextScorer,
         )
         val autocorrect = Autocorrect(lexicon)
 
@@ -76,7 +77,6 @@ object TypingEngine {
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
-            contextScorer,
         )
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
@@ -114,8 +114,6 @@ object TypingEngine {
         snapshotDir: File? = null,
         snapshotKey: String = "",
         addedWords: File? = null,
-        /** The trigram model's binary file (NgramModel.readBinary), if shipped. */
-        openNgrams: (() -> java.io.InputStream)? = null,
     ) {
         if (loaded != null) return
         addedWordsFile = addedWords
@@ -123,7 +121,6 @@ object TypingEngine {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
-                openNgrams,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -147,8 +144,7 @@ object TypingEngine {
                 ?.let { runCatching { Bigrams.readSnapshot(it.readBytes(), lexicon) }.getOrNull() }
                 ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
         }
-        val ngrams = openNgrams?.let { open -> runCatching { open().use { NgramModel.readBinary(it) } }.getOrNull() }
-        val engine = Loaded(lexicon, bigrams, ngrams)
+        val engine = Loaded(lexicon, bigrams)
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
@@ -173,6 +169,20 @@ object TypingEngine {
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
         }
         loaded = engine
+        ngramModel?.let { attachNgrams(it) }
+    }
+
+    /**
+     * Attaches the trigram model to the loaded engine (call after [load], off the main thread):
+     * kept apart so the keyboard is ready with the bigram model first and upgrades a moment later.
+     */
+    fun attachNgrams(model: NgramModel?) {
+        if (model != null) ngramModel = model
+        val engine = loaded ?: return
+        val bigrams = engine.bigrams ?: return
+        val scorer = model?.let { NgramScorer(it, engine.lexicon, bigrams.sentenceStart) } ?: return
+        engine.decoder.context = scorer
+        engine.retroDecoder.context = scorer
     }
 
     /**
@@ -616,6 +626,7 @@ object TypingEngine {
     /** Forgets everything loaded (tests only). */
     internal fun unloadForTest() {
         loaded = null
+        ngramModel = null
         userWordsFile = null
         blockedWordsFile = null
         blocked.clear()
