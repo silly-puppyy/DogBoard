@@ -4,8 +4,7 @@ import java.io.File
 
 /**
  * Text replacements (iOS Settings › Keyboard › Text Replacement): a shortcut the user types is
- * replaced by its phrase when the word is finished. As on iOS
- * : the shortcut is matched ignoring case and is tried before the
+ * replaced by its phrase when the word is finished. As on iOS: the shortcut is matched ignoring case and is tried before the
  * correction engine, so it beats autocorrection; the phrase then takes the typed capitals like
  * any correction ([CaseAdapt]) and shows as the autocorrection chip.
  *

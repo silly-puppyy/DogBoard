@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trains DogBoard's neural tap-typing model (our MLTT; notes/research/neural-autocorrect-plan.md).
+"""Trains DogBoard's neural tap-typing model (an iOS-style tap model; notes/research/neural-autocorrect-plan.md).
 
     tools/ml/mltt_train.py TRAIN.npz VALID.npz OUT.pt [--epochs 3] [--threads 8]
 

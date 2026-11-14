@@ -1,7 +1,7 @@
 package io.github.sillypuppyy.dogboard.feel
 
 /**
- * iOS smart punctuation notes/design/settings-model.md §6): what a
+ * iOS smart punctuation (notes/design/settings-model.md §6): what a
  * typed ', ", - or . becomes, given the text around the cursor. Two switches as on iOS: smart
  * quotes (curly quotes and apostrophes) and smart dashes (dashes and the ellipsis).
  *

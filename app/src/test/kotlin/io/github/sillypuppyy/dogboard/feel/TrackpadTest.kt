@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.shouldBe
 
-/** iOS keyboardTrackpadCurve . */
+/** iOS's space-bar trackpad acceleration curve. */
 class TrackpadTest : FunSpec({
     test("parabola, then tangent line from 2, then square root from 5") {
         Trackpad.speed(1.0) shouldBe (0.04 plusOrMinus 1e-9)

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Training data for DogBoard's neural tap-typing model (our MLTT; notes/research/neural-autocorrect-plan.md).
+"""Training data for DogBoard's neural tap-typing model (an iOS-style tap model; notes/research/neural-autocorrect-plan.md).
 
     tools/ml/mltt_data.py UNIGRAMS LEXICON OUT.npz [--samples 2000000] [--seed 1]
 
 Each sample is a word typed with simulated finger error, read as the nearest key per tap (the
-net's input, as iOS feeds its MLTT), with the word itself as the target:
+net's input, as iOS feeds its tap model), with the word itself as the target:
 - words: lexicon words (a-z and apostrophe) drawn by FineWeb frequency ** 0.5 (flattened, so
   rarer words are seen too);
 - [superseded 2026-11-14 by the IMK-measured noise in type_word] typing speed: a time between taps drawn per word (0.12-0.5 s); faster widens the spread as

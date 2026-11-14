@@ -4,8 +4,7 @@ import java.io.File
 import kotlin.math.ln
 
 /**
- * Which autocorrections not to make again, following iOS
- * :
+ * Which autocorrections not to make again, following iOS:
  *
  * Hard rejections (the user undid a correction, or kept their own word while it was offered)
  * are counted per (typed, correction) with the time of the last one. The pair is blocked while

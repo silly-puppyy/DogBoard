@@ -15,7 +15,7 @@ object Trackpad {
     const val STEP_DP = 8f
 
     /*
-     * iOS acceleration (keyboardTrackpadCurve): gains
+     * iOS acceleration (its keyboard trackpad curve): gains
      * linear 0, parabolic 0.2 (cubic, quartic 0), a tangent line from speed 2 and a square-root
      * tangent from speed 5 (_UITextSelectionSettings gain / linear / parabolic). Each movement of
      * d points adds d * speed(|d|) on top of d.

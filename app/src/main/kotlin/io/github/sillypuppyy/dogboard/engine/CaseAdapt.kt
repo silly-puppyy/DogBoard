@@ -1,7 +1,8 @@
 package io.github.sillypuppyy.dogboard.engine
 
 /**
- * How a suggestion or correction takes the capitals the user typed, following iOS.
+ * How a suggestion or correction takes the capitals the user typed, following iOS
+ * (settings-model.md §3).
  *
  * The typed word is classified from its letters and, per letter, whether shift was pressed by the
  * user ([SHIFTED]) or set by the keyboard ([AUTOSHIFTED]); the class decides what happens to a
@@ -73,7 +74,7 @@ object CaseAdapt {
                 if (capitalised && candidate.length >= input.length - 1 && sameLetter(candidate.firstOrNull(), input.firstOrNull())) {
                     capitaliseFirst(candidate)
                 } else if (acceptsForMixedCase(candidate, input, flags)) {
-                    // on iOS the fall-through reaches the capitalising step for this type;
+                    // iOS falls through to the capitalising step for this type;
                     // the exact path in between was not recovered, so the mixed-case test gates it
                     capitaliseFirst(candidate)
                 } else null

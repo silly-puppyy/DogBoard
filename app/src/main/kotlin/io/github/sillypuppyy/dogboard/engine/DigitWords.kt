@@ -4,7 +4,7 @@ package io.github.sillypuppyy.dogboard.engine
  * Letters typed right after a number ("1st", "5pm"). iOS keeps such tokens in its lexicon; ours
  * has no digits, so a word after a digit is otherwise left alone (ImeController.followsDot). This
  * fixes one slipped key in a suffix that fits the number: "1sr" → "1st", "5om" → "5pm". DogBoard's
- * own rule (not decoded from iOS): every letter must be the right key or a direct neighbour, and
+ * own rule (not an iOS rule): every letter must be the right key or a direct neighbour, and
  * anything else stays as typed.
  */
 object DigitWords {

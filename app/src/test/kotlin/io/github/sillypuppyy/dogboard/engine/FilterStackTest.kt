@@ -18,7 +18,7 @@ private fun finished(letters: String): String {
     return TypingEngine.correction(word, TypingEngine.candidates(word, null)) ?: letters
 }
 
-/** iOS autocorrect filters. */
+/** iOS autocorrect filters, ported. */
 class FilterStackTest : FunSpec({
     fun c(w: String, score: Double) = Candidate(w, score, score, score, 1, isCompletion = false)
 
@@ -104,6 +104,19 @@ class FilterStackTest : FunSpec({
             TypingEngine.correction(a, TypingEngine.candidates(a, "is")).let { it == null || it.length != 1 || it == "a" } shouldBe true
             val d = typed("duck")
             TypingEngine.candidates(d, null).map { it.word } shouldBe listOf("duck")
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
+
+    test("an extra first tap is dropped, as iOS does (ghello → hello, gthe → the)") {
+        TypingEngine.unloadForTest()
+        TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+        try {
+            println("first-tap probe: ghello -> ${finished("ghello")}, gthe -> ${finished("gthe")}, ahello -> ${finished("ahello")}")
+            finished("ghello") shouldBe "hello"
+            finished("gthe") shouldBe "the"
+            finished("hello") shouldBe "hello"
         } finally {
             TypingEngine.unloadForTest()
         }

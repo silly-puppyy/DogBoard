@@ -1,19 +1,23 @@
-<p><i>FlorisBoard</i> is an open-source keyboard aimed at providing you with an easy way to type while respecting your privacy.</p>
-<p><b>Note:</b> This project is currently in beta stage. If you want to see a feature being implemented or want to report a bug, please visit this project's repository (linked in the end of the description) on GitHub and file an issue. This helps making FlorisBoard even better! Thank you!</p>
-<p><b>Currently implemented and fully working features:</b></p>
+<p><i>DogBoard</i> is a keyboard that fixes your typos the way you expect, and keeps everything you type on your phone. It has no internet permission at all.</p>
+<p><b>Typing</b></p>
 <ul>
-    <li>Huge variety of Latin keyboard layouts</li>
-    <li>Limited support for non-Latin keyboard layouts (Arabic, Persian and Hebrew currently, more are planned)</li>
-    <li>Easy switching between languages/layouts by defining subtypes in the settings</li>
-    <li>Full theme customization + theme presets for day/night themes</li>
-    <li>Automatic day/night theme switching</li>
-    <li>Keyboard layouts for typing in a (phone) number</li>
-    <li>Special characters input</li>
-    <li>Emoji/Emoticon keyboard</li>
-    <li>One-handed/compact mode for easier typing on large devices</li>
-    <li>Customization of key press sound/vibration</li>
-    <li>Customizable actions for gestures: swipe up/down/left/right, space bar left/right, delete key swipe)</li>
-    <li>Integrated special symbols into character layouts</li>
-    <li>Clipboard/Cursor toolbar</li>
-    <li>Clipboard manager/history</li>
+    <li>Autocorrect with a full English dictionary, a language model of word context, and a model of how fingers miss keys</li>
+    <li>Looks back: the next word can fix the one before it</li>
+    <li>Names, slang and brands you type stay as you typed them</li>
+    <li>Learns your words and how you write, on the device; long-press a suggestion to remove it</li>
+    <li>Text shortcuts, smart punctuation, emoji suggestions</li>
+    <li>Space-bar trackpad to move the cursor</li>
 </ul>
+<p><b>Looks and feel</b></p>
+<ul>
+    <li>Material You themes that follow your wallpaper, light and dark</li>
+    <li>Adjustable keyboard height, number row, sound and vibration</li>
+    <li>Clipboard history, one-handed and floating modes</li>
+</ul>
+<p><b>Privacy</b></p>
+<ul>
+    <li>No network access: nothing you type can leave the keyboard</li>
+    <li>Incognito mode, and nothing learned in password fields</li>
+    <li>Open source (Apache 2.0), built on FlorisBoard</li>
+</ul>
+<p>English (US) for now; more languages are planned.</p>

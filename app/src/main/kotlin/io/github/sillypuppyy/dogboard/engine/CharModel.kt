@@ -6,7 +6,7 @@ import java.io.BufferedReader
  * How plausible a word our lexicon lacks is, letter by letter: a 5-gram over a-z and the
  * apostrophe, trained on the words FineWeb has and our lexicon doesn't (names, slang, brands;
  * tools/data/build_charlm.py). "Kaito" and "Gumroad" score like words, "thw" and "xqzt" don't.
- * It stands in for iOS's neural model in the exact-typed-string veto.
+ * It stands in for iOS's neural model in its exact-typed-string veto.
  *
  * Stored as sorted long keys (context letters and the next letter, 5 bits each) with float values,
  * so the ~330k entries take a few MB and no strings.

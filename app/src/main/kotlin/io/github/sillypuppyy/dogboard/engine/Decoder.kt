@@ -31,7 +31,7 @@ data class Candidate(
     val words: Int = 1,
     /**
      * ln of (the words' probability in context / their probability alone), for iOS's check that a
-     * multi-word correction has linguistic support.
+     * multi-word correction has linguistic support (Rule 3).
      */
     val contextSupport: Double = 0.0,
 )
@@ -314,11 +314,10 @@ class Decoder(
                 lexicon.forEachChild(s.node) { c, child ->
                     tapScore(c, t)?.let { (score, edit) -> offer(out, child, s.geometry + score, s.edits + edit, s.prefix) }
                 }
-                // An extra tap that belongs to no letter (not the first one).
-                if (t > 0) {
-                    val extra = if (info[t].nearest == info[t - 1].nearest) DELETION_REPEATED + info[t].q else DELETION + info[t].q + DELETION_LANGUAGE
-                    offer(out, s.node, s.geometry + extra, s.edits + 1, s.prefix)
-                }
+                // An extra tap that belongs to no letter, the first one included (iOS: "ghello" → "hello")
+                val repeated = t > 0 && info[t].nearest == info[t - 1].nearest
+                val extra = if (repeated) DELETION_REPEATED + info[t].q else DELETION + info[t].q + DELETION_LANGUAGE
+                offer(out, s.node, s.geometry + extra, s.edits + 1, s.prefix)
             }
             // Swapped pair: tap i-2 belongs to the next letter, tap i-1 to this one.
             if (i >= 2) {

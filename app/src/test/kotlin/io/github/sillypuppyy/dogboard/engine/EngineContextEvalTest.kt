@@ -55,7 +55,7 @@ class EngineContextEvalTest : FunSpec({
                 .map { it[2].replace('’', '\'') }
         val sentences = source
             .filter { s -> token.findAll(s).none { it.value.lowercase() in setOf("tom", "mary") } }
-            .take(800)
+            .take(System.getenv("DOGBOARD_EVAL_MAX")?.toIntOrNull() ?: 800) // DOGBOARD_EVAL_MAX: more sentences, more power
             .toList()
 
         // optional: every trigram miss at 1.5x2.0 mm (DOGBOARD_EVAL_ERRORS=file): expected, raw letters, result, previous word

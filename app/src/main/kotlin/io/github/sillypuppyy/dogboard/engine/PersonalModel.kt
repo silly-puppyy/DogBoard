@@ -7,7 +7,6 @@ import kotlin.math.min
 /**
  * The personal language model: the words and word pairs the user has accepted, with counts that
  * fade with time, mixed with the static model the way iOS mixes its dynamic model:
- * 
  *
  *     P(w | prev) = (1 − d) · P_static(w | prev) + d · P_personal(w | prev)
  *     d = (0.65 with a previous word, else 0.45) · min(1, (words typed / 1000)²)

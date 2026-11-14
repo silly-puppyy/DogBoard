@@ -4,7 +4,7 @@ import java.util.regex.Pattern
 
 /**
  * When the keyboard turns shift on by itself, following the iOS rules
- * (notes/design/settings-model.md §3; behaviour as on iOS).
+ * (notes/design/settings-model.md §3; matches iOS behaviour).
  *
  * Sentences: the text before the cursor must end in a sentence boundary, then spaces, then
  * opening punctuation. A boundary is the start of the text, a new line, three spaces, or a word
