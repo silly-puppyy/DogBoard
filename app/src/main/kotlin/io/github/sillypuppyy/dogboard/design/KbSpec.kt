@@ -34,6 +34,10 @@ data class KbProps(
     val incognito: Boolean = false,
     /** bar "removed": the word long-pressed away (Kb:118; the canvas's sample is "keyboards"). */
     val removedWord: String = "keyboards",
+    /** bar "clip": the recent-copy chip's text (Kb:102-105; the canvas's sample is "Paste copied image"). */
+    val clipLabel: String = "Paste copied image",
+    /** The chip's thumbnail (images and videos; a text clip has none). */
+    val clipMedia: Boolean = true,
     val trackpad: Boolean = false,
     /** Live trackpad: the finger's x in dp from the keyboard's left edge (the puck follows it). */
     val trackpadX: Float? = null,

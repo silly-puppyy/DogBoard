@@ -130,11 +130,12 @@ fun RowScope.KbBarSpecial(r: KbRender) {
         x.mClip -> Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             // Kb:102-105
             Row(
-                Modifier.height(36.dp).background(t.chip, PILL).padding(start = 4.dp, end = 14.dp),
+                Modifier.height(36.dp).tap(LocalKbActions.current?.onRecentClip).background(t.chip, PILL).padding(start = 4.dp, end = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.size(28.dp).clip(PILL).stripes(t.fn, t.key, 4f).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
-                DText("Paste copied image", style = text(15, 500, t.chipFg))
+                if (x.clipMedia) Box(Modifier.size(28.dp).clip(PILL).stripes(t.fn, t.key, 4f).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
+                else Box(Modifier.size(6.dp))
+                DText(x.clipLabel, style = text(15, 500, t.chipFg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
         x.mAutofill -> Row(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {

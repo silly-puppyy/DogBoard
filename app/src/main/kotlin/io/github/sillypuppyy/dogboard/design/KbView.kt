@@ -56,6 +56,8 @@ class KbActions(
     val onSlotLong: (Int) -> Unit = {},
     /** Undo on the removed bar (Kb:119). */
     val onUndo: () -> Unit = {},
+    /** The recent-copy chip tapped: paste it (Panels:103). */
+    val onRecentClip: () -> Unit = {},
     val onLeft: () -> Unit = {},
     val onMic: () -> Unit = {},
     /** A tool tapped in the bar's tool row or the tools panel, by its icon name (Kb:663-668). */

@@ -37,7 +37,7 @@ data class KbEmojiCat(val icon: String, val name: String, val fill: Int, val fg:
 data class KbExtras(
     // Kb:615-619 bar modes
     val mTools: Boolean, val mClip: Boolean, val mAutofill: Boolean, val mRemoved: Boolean, val mVoice: Boolean,
-    val mIncog: Boolean, val toolRow: List<KbTool>, val removedWord: String,
+    val mIncog: Boolean, val toolRow: List<KbTool>, val removedWord: String, val clipLabel: String, val clipMedia: Boolean,
     // Kb:637-644
     val dev: Boolean, val devKeys: List<KbDevKey>,
     // Kb:646-680
@@ -133,7 +133,7 @@ object KbExtrasSpec {
 
         return KbExtras(
             mTools = special && P.bar == "tools", mClip = special && P.bar == "clip", mAutofill = special && P.bar == "autofill",
-            mRemoved = special && P.bar == "removed", mVoice = special && P.bar == "voice", mIncog = mIncog, toolRow = toolRow, removedWord = P.removedWord,
+            mRemoved = special && P.bar == "removed", mVoice = special && P.bar == "voice", mIncog = mIncog, toolRow = toolRow, removedWord = P.removedWord, clipLabel = P.clipLabel, clipMedia = P.clipMedia,
             dev = P.dev && panel.isEmpty(), devKeys = devKeys,
             panel = panel, showPanel = panel.isNotEmpty() && !barless,
             pClip = pClip, pEmoji = pEmoji, pTools = pTools, pEdit = pEdit,

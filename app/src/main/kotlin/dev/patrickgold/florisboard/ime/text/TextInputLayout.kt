@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import dev.patrickgold.florisboard.clipboardManager
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,8 +73,30 @@ fun TextInputLayout(
             val panel by ui.panel.collectAsState()
             val removed by io.github.sillypuppyy.dogboard.ime.LiveStrip.removed.collectAsState()
             val refresh = { imeController.updateStateBlocking { refreshSuggestions() } }
+            // the recent-copy chip: the current clip for 60 s after it was copied (RecentClip)
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val clipboardManager = androidx.compose.runtime.remember(context) { context.clipboardManager().value }
+            val primaryClip by clipboardManager.primaryClipFlow.collectAsState()
+            var clipShown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem?>(null) }
+            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode) {
+                val offer = io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
+                clipShown = offer
+                if (offer != null) {
+                    kotlinx.coroutines.delay(io.github.sillypuppyy.dogboard.ime.RecentClip.WINDOW_MS - (System.currentTimeMillis() - offer.creationTimestampMs))
+                    clipShown = null
+                }
+            }
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
                 strip = strip,
+                clipLabel = clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
+                clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
+                onClip = {
+                    clipShown?.let { item ->
+                        io.github.sillypuppyy.dogboard.ime.RecentClip.markUsed(item)
+                        clipShown = null
+                        imeController.updateStateBlocking { emitClipboardItem(item) }
+                    }
+                },
                 // a long-press removes a suggestion for good, with Undo for 4 s (design Panels:102)
                 onLongPick = { s -> io.github.sillypuppyy.dogboard.ime.LiveStrip.remove(s, refresh) },
                 removed = removed,
