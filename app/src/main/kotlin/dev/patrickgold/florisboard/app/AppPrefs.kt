@@ -756,6 +756,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "typing__dictionary_capitals",
             default = true,
         )
+        // DogBoard: Advanced › Fine-tuning timings (design SetFeel:103-115; defaults = feel/Timings, iOS)
+        val doubleSpaceMs = int(key = "feel__double_space_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DoubleSpacePeriod.inWholeMilliseconds.toInt())
+        val deleteFirstMs = int(key = "feel__delete_first_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteFirstRepeat.inWholeMilliseconds.toInt())
+        val deleteCharMs = int(key = "feel__delete_char_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteCharInterval.inWholeMilliseconds.toInt())
+        val deleteWordsAfter = int(key = "feel__delete_words_after", default = io.github.sillypuppyy.dogboard.feel.Timings.DELETE_CHARS_BEFORE_WORDS)
+        val deleteWordMs = int(key = "feel__delete_word_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteWordInterval.inWholeMilliseconds.toInt())
+        val trackpadHoldMs = int(key = "feel__trackpad_hold_ms", default = io.github.sillypuppyy.dogboard.feel.Trackpad.HOLD_MS.toInt())
+        val trackpadStepDp = int(key = "feel__trackpad_step_dp", default = io.github.sillypuppyy.dogboard.feel.Trackpad.STEP_DP.toInt())
         // DogBoard: iOS "Enable Caps Lock" (KeyboardCapsLock); off = a second shift tap just toggles
         val capsLockEnabled = boolean(
             key = "typing__caps_lock_enabled",

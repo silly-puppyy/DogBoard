@@ -106,7 +106,7 @@ sealed interface TrackedPointer {
     ) : TrackedPointer {
         /** DogBoard: the space bar was held long enough to be a trackpad, even if never moved. */
         fun isTrackpad(nowUptime: Long): Boolean = cursorAnchorDp != null ||
-            (downKey.attrs.output == SPACE && !trackpadCancelled && nowUptime - down.uptimeMillis >= Trackpad.HOLD_MS)
+            (downKey.attrs.output == SPACE && !trackpadCancelled && nowUptime - down.uptimeMillis >= io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs)
     }
 }
 
@@ -306,7 +306,7 @@ class PointerTracker(
                 val downId = down.id
                 val downXDp = down.position.x / density
                 scope.launch {
-                    delay(Trackpad.HOLD_MS)
+                    delay(io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs)
                     mutateLocked {
                         val tp = trackedOutputPointer.value ?: return@mutateLocked
                         if (tp.id != downId || tp.cursorAnchorDp != null || tp.trackpadCancelled) return@mutateLocked
@@ -403,7 +403,7 @@ class PointerTracker(
         var anchor = trackedPointer.cursorAnchorDp
         if (anchor == null) {
             if (trackedPointer.trackpadCancelled) return
-            if (move.uptimeMillis - trackedPointer.down.uptimeMillis < Trackpad.HOLD_MS) {
+            if (move.uptimeMillis - trackedPointer.down.uptimeMillis < io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs) {
                 val movedDp = (move.position - trackedPointer.down.position).getDistance() / density
                 if (movedDp > Trackpad.ALLOWABLE_MOVEMENT_DP) {
                     trackedOutputPointer.value = trackedPointer.copy(trackpadCancelled = true)
@@ -417,13 +417,13 @@ class PointerTracker(
         // iOS: each movement is accelerated by its own size (fast flicks go far, slow drags stay precise)
         val lastX = trackedPointer.trackpadLastXDp ?: xDp
         anchor += Trackpad.accelerated(xDp - lastX)
-        val steps = (anchor / Trackpad.STEP_DP).toInt()
+        val steps = (anchor / io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadStepDp).toInt()
         if (steps != 0) {
             imeController.updateState {
                 val arrow = if (steps > 0) ImeActions.ArrowRight else ImeActions.ArrowLeft
                 repeat(abs(steps)) { emitDescriptor(arrow) }
             }
-            anchor -= steps * Trackpad.STEP_DP
+            anchor -= steps * io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadStepDp
         }
         trackedOutputPointer.value = trackedPointer.copy(cursorAnchorDp = anchor, trackpadLastXDp = xDp)
     }

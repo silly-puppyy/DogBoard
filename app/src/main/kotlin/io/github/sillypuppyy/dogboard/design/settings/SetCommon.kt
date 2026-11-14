@@ -121,7 +121,7 @@ fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onCha
         LintParent(id) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DText(title, style = setText(16f))
-                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant))
+                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = 3)
             }
             val track = if (checked) SetColors.primary else SetColors.surfaceContainerHighest
             Box(
@@ -168,7 +168,7 @@ fun SetSliderRow(
                     ) { Symbol("restart_alt", 20.sp, SetColors.primary) }
                 } else Box(Modifier.size(44.dp))
             }
-            DText(explain, Modifier.padding(end = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = (14 * 1.4).sp))
+            DText(explain, Modifier.padding(end = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = (14 * 1.4).sp), maxLines = 4)
             val steps = ((range.endInclusive - range.start) / step).toInt() - 1
             androidx.compose.material3.Slider(
                 value = value, onValueChange = { v -> onChange((Math.round((v - range.start) / step) * step + range.start)) },

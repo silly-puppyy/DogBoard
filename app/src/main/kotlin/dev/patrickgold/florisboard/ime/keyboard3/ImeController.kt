@@ -220,6 +220,14 @@ class ImeController(
 
     init {
         io.github.sillypuppyy.dogboard.engine.TypingEngine.dictionaryCapitals = { prefs.typing.dictionaryCapitals.get() }
+        // DogBoard: Fine-tuning timings, kept in step with their preferences
+        val feel = io.github.sillypuppyy.dogboard.feel.FeelSettings
+        prefs.typing.doubleSpaceMs.asFlow().collectIn(scope) { feel.doubleSpaceMs = it.toLong() }
+        prefs.typing.deleteCharMs.asFlow().collectIn(scope) { feel.deleteCharMs = it.toLong() }
+        prefs.typing.deleteWordsAfter.asFlow().collectIn(scope) { feel.deleteWordsAfter = it }
+        prefs.typing.deleteWordMs.asFlow().collectIn(scope) { feel.deleteWordMs = it.toLong() }
+        prefs.typing.trackpadHoldMs.asFlow().collectIn(scope) { feel.trackpadHoldMs = it.toLong() }
+        prefs.typing.trackpadStepDp.asFlow().collectIn(scope) { feel.trackpadStepDp = it.toFloat() }
         combine(
             prefs.devtools.enabled.asFlow(),
             prefs.devtools.showDragAndDropHelpers.asFlow(),

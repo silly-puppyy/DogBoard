@@ -30,6 +30,21 @@ object Timings {
 }
 
 /**
+ * The timings in effect: the [Timings] defaults unless the user changed them in Advanced ›
+ * Fine-tuning (ImeController keeps these in step with the preferences).
+ */
+object FeelSettings {
+    @Volatile var doubleSpaceMs: Long = Timings.DoubleSpacePeriod.inWholeMilliseconds
+    @Volatile var deleteFirstMs: Long = Timings.DeleteFirstRepeat.inWholeMilliseconds
+    @Volatile var deleteCharMs: Long = Timings.DeleteCharInterval.inWholeMilliseconds
+    /** 0: never switch to whole words. */
+    @Volatile var deleteWordsAfter: Int = Timings.DELETE_CHARS_BEFORE_WORDS
+    @Volatile var deleteWordMs: Long = Timings.DeleteWordInterval.inWholeMilliseconds
+    @Volatile var trackpadHoldMs: Long = Trackpad.HOLD_MS
+    @Volatile var trackpadStepDp: Float = Trackpad.STEP_DP
+}
+
+/**
  * The schedule of a held delete key: which unit each repeat deletes and how long to wait before
  * the next one.
  */
@@ -45,10 +60,11 @@ object DeleteRepeat {
     fun step(repeatIndex: Int): Step {
         // the initial press counts as the first deleted character
         val charsDeletedSoFar = repeatIndex + 1
-        return if (charsDeletedSoFar < Timings.DELETE_CHARS_BEFORE_WORDS) {
-            Step(Unit.CHARACTER, Timings.DeleteCharInterval)
+        val wordsAfter = FeelSettings.deleteWordsAfter
+        return if (wordsAfter == 0 || charsDeletedSoFar < wordsAfter) {
+            Step(Unit.CHARACTER, FeelSettings.deleteCharMs.milliseconds)
         } else {
-            Step(Unit.WORD, Timings.DeleteWordInterval)
+            Step(Unit.WORD, FeelSettings.deleteWordMs.milliseconds)
         }
     }
 }

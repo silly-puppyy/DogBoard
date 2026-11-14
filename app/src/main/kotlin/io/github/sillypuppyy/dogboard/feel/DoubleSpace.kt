@@ -13,7 +13,7 @@ object DoubleSpace {
      * space key press, or null when anything else was typed or deleted since then.
      */
     fun shouldInsertPeriod(textBefore: CharSequence, msSinceLastSpace: Long?): Boolean {
-        if (msSinceLastSpace == null || msSinceLastSpace > Timings.DoubleSpacePeriod.inWholeMilliseconds) return false
+        if (msSinceLastSpace == null || msSinceLastSpace > FeelSettings.doubleSpaceMs) return false
         val n = textBefore.length
         if (n < 2 || textBefore[n - 1] != ' ') return false
         val c = textBefore[n - 2]

@@ -84,6 +84,11 @@ private class AndroidInteractionController(
     }.combine(prefs.typing.capsLockDoubleTapMs.asFlow()) { options, capsLockMs ->
         // DogBoard: the caps-lock double-tap window is a setting (Feel › Advanced)
         options.copy(doubleTapTimeout = capsLockMs.milliseconds)
+    }.combine(prefs.typing.deleteFirstMs.asFlow()) { options, ms ->
+        // DogBoard: Fine-tuning "Start repeating after" (a held key's first repeat)
+        options.copy(keyRepeatTimeout = ms.milliseconds)
+    }.combine(prefs.typing.deleteCharMs.asFlow()) { options, ms ->
+        options.copy(keyRepeatDelay = ms.milliseconds)
     }.stateIn(scope, SharingStarted.Eagerly, InteractionTimingOptions.Default)
 
     override val activeFeedbackOptions = combine<Any, InteractionFeedbackOptions>(
