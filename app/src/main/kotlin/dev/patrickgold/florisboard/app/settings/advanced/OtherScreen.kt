@@ -76,7 +76,12 @@ fun OtherScreen() {
                 )
             }
             SegmentedListColumn {
-                val count = 6
+                // DogBoard: the settings app follows the phone's theme, accent and language, and the
+                // launcher icon can't be hidden on Android 10+ (settings layout v2: hidden)
+                val dogboardDesign by prefs.keyboard.dogboardDesign.collectAsState()
+                val count = if (dogboardDesign) 2 else 6
+                val first = if (dogboardDesign) 0 else 4
+                if (!dogboardDesign) {
                 ListPreference(
                     prefs.other.settingsTheme,
                     shapes = ListItemDefaults.segmentedShapes(0, count),
@@ -179,14 +184,15 @@ fun OtherScreen() {
                     },
                     enabledIf = { AndroidVersion.ATMOST_API28_P },
                 )
+                }
                 Preference(
-                    shapes = ListItemDefaults.segmentedShapes(4, count),
+                    shapes = ListItemDefaults.segmentedShapes(first, count),
                     icon = ImageVector.vectorResource(R.drawable.ic_keyboard_keys),
                     title = stringRes(R.string.physical_keyboard__title),
                     onClick = { navController.navigate(Routes.Settings.PhysicalKeyboard) },
                 )
                 Preference(
-                    shapes = ListItemDefaults.segmentedShapes(5, count),
+                    shapes = ListItemDefaults.segmentedShapes(first + 1, count),
                     icon = Icons.Default.Adb,
                     title = stringRes(R.string.devtools__title),
                     onClick = { navController.navigate(Routes.Devtools.Home) },
