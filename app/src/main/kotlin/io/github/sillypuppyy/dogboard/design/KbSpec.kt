@@ -350,6 +350,9 @@ object KbSpec {
         // Kb:509-512
         val pressed = P.pressed.ifEmpty { P.preview }
         val scale = t.fsScale
+        // the design is drawn 375 dp wide; on wider phones the key area grows with the width
+        // (feel/Geometry.kt), so labels and icons grow with it to keep the design's proportions
+        val sizeScale = if (landscape) 1f else (W / 375f).coerceIn(1f, 1.2f)
         val labelOp = if (trackpad) 0f else 1f
         val capOp = if (trackpad) 0.55f else 1f
 
@@ -408,8 +411,8 @@ object KbSpec {
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
                 if (isFnTone && icon.isEmpty() && k.kind != "mode" && k.kind != "fnchar") fs = 15f
                 KbKey(
-                    gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, fg = fg, shadow = shadow, fs = fs, fw = fw,
-                    icon = icon, fill = fill, iconSize = iconSize, label = label, aria = aria, hint = hint, sub = sub,
+                    gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
+                    icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, sub = sub,
                     base = k.base.ifEmpty { k.id },
                 )
             })
