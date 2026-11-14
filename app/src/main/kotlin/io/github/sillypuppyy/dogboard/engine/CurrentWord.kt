@@ -118,6 +118,21 @@ fun leadingWord(textAfter: CharSequence, maxLength: Int = 48): String {
  * [Bigrams.START] at the start of the text or of a sentence, or null when the word follows
  * something else (digits, symbols).
  */
+/**
+ * The word before [previousContext]'s word ([Bigrams.START] at a sentence start, null if none):
+ * the second word of context for the two-word-context model.
+ */
+fun previousContext2(textBefore: CharSequence): String? {
+    var i = textBefore.length
+    while (i > 0 && textBefore[i - 1].isWhitespace()) i--
+    if (i == 0) return null
+    val last = textBefore[i - 1]
+    if (last == '.' || last == '!' || last == '?') return null
+    val word = trailingWord(textBefore.subSequence(0, i))
+    if (word.isEmpty()) return null
+    return previousContext(textBefore.subSequence(0, i - word.length))
+}
+
 fun previousContext(textBefore: CharSequence): String? {
     var i = textBefore.length
     while (i > 0 && textBefore[i - 1].isWhitespace()) i--

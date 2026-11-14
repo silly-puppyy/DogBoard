@@ -578,12 +578,13 @@ class ImeController(
             if (!word.isEmpty && correctionAllowed() && word.text != rejectedWord && !cursorInsideWord() && !followsDot(word.text)) {
                 val typed = word.text
                 val context = wordContext()
-                val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context) }?.second
-                    ?: TypingEngine.candidates(word, context)
+                val context2 = wordContext2()
+                val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context, context2) }?.second
+                    ?: TypingEngine.candidates(word, context, previous2 = context2)
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
                 val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)
                 if (BuildConfig.DEBUG) {
-                    android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context)} " +
+                    android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context, context2)} " +
                         candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
                 }
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
@@ -674,10 +675,11 @@ class ImeController(
             }
             val textBefore = state.content.surroundingText.textBefore
             val context = previousContext(textBefore.subSequence(0, textBefore.length - before.length))
+            val context2 = io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore.subSequence(0, textBefore.length - before.length))
             val curly = curlyApostrophes()
             wordAroundCursor = before to after
             suggestionJob = scope.launch {
-                val candidates = TypingEngine.candidates(word, context)
+                val candidates = TypingEngine.candidates(word, context, previous2 = context2)
                 if (isActive) sink(SuggestionStrip.build(whole, candidates, null, TypingEngine.caseFor(word, curly), null))
             }
         }
@@ -844,7 +846,15 @@ class ImeController(
             return previousContext(textBefore.subSequence(0, end))
         }
 
-        private fun decodeKey(typed: String, context: String?) = "$typed\u0000$context"
+        private fun decodeKey(typed: String, context: String?, context2: String?) = "$typed\u0000$context\u0000$context2"
+
+        /** The word before [wordContext]'s (two-word-context model). */
+        private fun wordContext2(): String? {
+            val textBefore = state.content.surroundingText.textBefore
+            val typed = currentWord.text
+            val end = if (textBefore.endsWith(typed)) textBefore.length - typed.length else textBefore.length
+            return io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore.subSequence(0, end))
+        }
 
         /** Recomputes the suggestion strip, e.g. once the engine has finished loading. */
         fun refreshSuggestions() = publishSuggestions()
@@ -878,6 +888,7 @@ class ImeController(
                 return
             }
             val context = wordContext()
+            val context2 = wordContext2()
             // iOS "Predictive" off: no predictions or other words, but the bar still shows the
             // autocorrection and the typed word
             val predictive = prefs.suggestion.enabled.get()
@@ -912,8 +923,8 @@ class ImeController(
                 io.github.sillypuppyy.dogboard.engine.EmojiSuggestionMode.OFF
             } else prefs.suggestion.emojiMode.get()
             suggestionJob = scope.launch {
-                val candidates = TypingEngine.candidates(word, context)
-                latestDecode = decodeKey(word.text, context) to candidates
+                val candidates = TypingEngine.candidates(word, context, previous2 = context2)
+                latestDecode = decodeKey(word.text, context, context2) to candidates
                 val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
                 val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
                 latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }

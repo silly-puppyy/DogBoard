@@ -45,7 +45,14 @@ class Decoder(
     private val lexicon: Lexicon,
     private val config: Config = Config(),
     private val bigrams: Bigrams? = null,
+    /** A two-word-context model ([NgramScorer]); when set it scores words instead of [bigrams]. */
+    private val context: ContextScorer? = null,
 ) {
+    /** ln P(word | prev2 prev) for lexicon word ids and [Bigrams.contextId]-style context ids (-1: none). */
+    fun interface ContextScorer {
+        fun logProb(prev2: Int, prev: Int, wordId: Int, unigramLogProb: Double): Double
+    }
+
     data class Config(
         /** Language power: 0.24 with a context model, 0.35 without (iOS k_linguistic_context_power). */
         val languagePower: Double = LANGUAGE_POWER_CONTEXT,
@@ -100,7 +107,7 @@ class Decoder(
      * segment (UnigramTypingModel extending_key_could_terminate_input_segment: any key may begin
      * a new word once the letters before it are a whole word, at the cost of that word ending).
      */
-    private class Prefix(val text: String, val languageModel: Double, val support: Double, val last: Int, val count: Int)
+    private class Prefix(val text: String, val languageModel: Double, val support: Double, val last: Int, val count: Int, val secondLast: Int = -1)
 
     private class State(val node: Int, val geometry: Double, val edits: Int, val prefix: Int = 0)
 
@@ -125,6 +132,7 @@ class Decoder(
         val keys: Map<Char, KeyTarget>,
         val params: GaussianTouch.Params,
         val previous: Int,
+        val previous2: Int,
         val personal: Any?,
         val lexiconVersion: Int,
     ) {
@@ -199,16 +207,18 @@ class Decoder(
         previous: Int = -1,
         typed: String? = null,
         personal: ((node: Int, logProb: Double) -> Double)? = null,
+        /** The word before [previous] (same kind of id), -1 for none: for a two-word-context model. */
+        previous2: Int = -1,
     ): List<Candidate> {
         val n = taps.size
         if (n == 0) return emptyList()
         val w = config.languagePower
 
         var sr = search
-        if (sr == null || sr.keys !== keys || sr.params != params || sr.previous != previous || sr.personal !== personal ||
+        if (sr == null || sr.keys !== keys || sr.params != params || sr.previous != previous || sr.previous2 != previous2 || sr.personal !== personal ||
             sr.lexiconVersion != lexicon.version
         ) {
-            sr = Search(keys, params, previous, personal, lexicon.version).also { search = it }
+            sr = Search(keys, params, previous, previous2, personal, lexicon.version).also { search = it }
         }
         var m = 0
         while (m < minOf(n, sr.taps.size) && sr.taps[m] == taps[m]) m++
@@ -239,10 +249,12 @@ class Decoder(
         }
 
         fun context(prefix: Int) = prefixes[prefix]?.last ?: previous
+        fun context2(prefix: Int) = prefixes[prefix]?.secondLast ?: previous2
         val shortWords = shortWordMap()
-        fun lm(node: Int, prev: Int): Double {
+        fun lm(node: Int, prev: Int, prev2: Int = -1): Double {
             fun of(n: Int): Double {
-                val base = bigrams?.logProb(prev, lexicon.wordId(n), lexicon.logProb(n)) ?: lexicon.logProb(n)
+                val base = context?.logProb(prev2, prev, lexicon.wordId(n), lexicon.logProb(n))
+                    ?: bigrams?.logProb(prev, lexicon.wordId(n), lexicon.logProb(n)) ?: lexicon.logProb(n)
                 // the personal model mixed in (PersonalModel: iOS dynamic model weights)
                 return personal?.invoke(n, base) ?: base
             }
@@ -255,9 +267,9 @@ class Decoder(
             val form = lexicon.forms(s.node).firstOrNull()?.first ?: return -1
             val text = if (p == null) form else p.text + " " + form
             sr.prefixIds[text]?.let { return it }
-            val l = lm(s.node, context(s.prefix))
+            val l = lm(s.node, context(s.prefix), context2(s.prefix))
             val support = (p?.support ?: 0.0) + (l - lexicon.logProb(s.node))
-            prefixes.add(Prefix(text, (p?.languageModel ?: 0.0) + l, support, lexicon.wordId(s.node), (p?.count ?: 0) + 1))
+            prefixes.add(Prefix(text, (p?.languageModel ?: 0.0) + l, support, lexicon.wordId(s.node), (p?.count ?: 0) + 1, context(s.prefix)))
             return (prefixes.size - 1).also { sr.prefixIds[text] = it }
         }
 
@@ -350,11 +362,12 @@ class Decoder(
         for (s in last!!.values) {
             val p = prefixes[s.prefix]
             val prev = context(s.prefix)
+            val prev2 = context2(s.prefix)
             fun words(lastWord: String) = if (p == null) lastWord else p.text + " " + lastWord
             val before = p?.languageModel ?: 0.0
             val count = (p?.count ?: 0) + 1
             if (lexicon.isWord(s.node)) {
-                val l = lm(s.node, prev)
+                val l = lm(s.node, prev, prev2)
                 val support = if (p == null) 0.0 else p.support + (l - lexicon.logProb(s.node))
                 // each casing of the word ("google", "Google") with its share of the word's probability
                 val nodeLp = lexicon.logProb(s.node)
@@ -369,7 +382,7 @@ class Decoder(
                 val depth = lexicon.depth(s.node)
                 val added = lexicon.depth(best) - depth
                 val geometry = s.geometry + w * (PREDICTION_COSTS[minOf(depth, 5)] + (added - 1) * PREDICTION_PER_LETTER)
-                val l = lm(best, prev)
+                val l = lm(best, prev, prev2)
                 val support = if (p == null) 0.0 else p.support + (l - lexicon.logProb(best))
                 add(Candidate(words(lexicon.word(best)!!), geometry + w * (before + l), geometry, before + l, s.edits, isCompletion = true, words = count, contextSupport = support))
             }

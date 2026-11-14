@@ -163,3 +163,29 @@ class NgramModel private constructor(
         }
     }
 }
+
+/**
+ * Scores lexicon words with an [NgramModel] for the decoder: lexicon word ids and context ids
+ * ([Bigrams.contextId]: a lexicon word id, or [sentenceStart] for the start of a sentence) are
+ * mapped to the model's ids once; words the model lacks (names, learned words) keep the lexicon's
+ * own probability.
+ */
+class NgramScorer(private val model: NgramModel, private val lexicon: Lexicon, private val sentenceStart: Int) : Decoder.ContextScorer {
+    private val lexToModel = IntArray(lexicon.size) { id -> lexicon.word(lexicon.nodeOfWord(id))?.let { model.idOf(it.lowercase()) } ?: -1 }
+    private val start = model.idOf(NgramModel.START)
+
+    private fun contextToModel(ctx: Int): Int = when {
+        ctx < 0 -> -1
+        ctx == sentenceStart -> start
+        ctx < lexToModel.size -> lexToModel[ctx]
+        else -> -1
+    }
+
+    override fun logProb(prev2: Int, prev: Int, wordId: Int, unigramLogProb: Double): Double {
+        val w = if (wordId in lexToModel.indices) lexToModel[wordId] else -1
+        if (w < 0) return unigramLogProb
+        val b = contextToModel(prev)
+        val a = if (b >= 0) contextToModel(prev2) else -1
+        return model.logProb(a, b, w) ?: unigramLogProb
+    }
+}

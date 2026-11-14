@@ -60,11 +60,14 @@ object TypingEngine {
     /** Words the user taught the keyboard (not in the shipped lexicon), lowercase. */
     private val learnedWords = HashSet<String>()
 
-    private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?) {
+    private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, ngrams: NgramModel? = null) {
+        /** The two-word-context model, when its data is shipped (scores words instead of the bigrams). */
+        private val contextScorer = if (ngrams != null && bigrams != null) NgramScorer(ngrams, lexicon, bigrams.sentenceStart) else null
         val decoder = Decoder(
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
+            contextScorer,
         )
         val autocorrect = Autocorrect(lexicon)
 
@@ -73,6 +76,7 @@ object TypingEngine {
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
+            contextScorer,
         )
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
@@ -110,6 +114,8 @@ object TypingEngine {
         snapshotDir: File? = null,
         snapshotKey: String = "",
         addedWords: File? = null,
+        /** The trigram model's binary file (NgramModel.readBinary), if shipped. */
+        openNgrams: (() -> java.io.InputStream)? = null,
     ) {
         if (loaded != null) return
         addedWordsFile = addedWords
@@ -117,6 +123,7 @@ object TypingEngine {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
+                openNgrams,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -140,7 +147,8 @@ object TypingEngine {
                 ?.let { runCatching { Bigrams.readSnapshot(it.readBytes(), lexicon) }.getOrNull() }
                 ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
         }
-        val engine = Loaded(lexicon, bigrams)
+        val ngrams = openNgrams?.let { open -> runCatching { open().use { NgramModel.readBinary(it) } }.getOrNull() }
+        val engine = Loaded(lexicon, bigrams, ngrams)
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
@@ -326,7 +334,8 @@ object TypingEngine {
      * Decoded words for [word]'s taps, best first; empty if not ready or not decodable.
      * [previous] is the word before it ([previousContext]), or null.
      */
-    fun candidates(word: CurrentWord, previous: String?, maxResults: Int = 8): List<Candidate> {
+    /** [previous2]: the word before [previous] (or [Bigrams.START]), for the two-word-context model. */
+    fun candidates(word: CurrentWord, previous: String?, maxResults: Int = 8, previous2: String? = null): List<Candidate> {
         val engine = loaded ?: return emptyList()
         val taps = word.tapsOrNull() ?: return emptyList()
         return lock.read {
@@ -334,6 +343,7 @@ object TypingEngine {
                 taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
                 previous = engine.contextId(previous), typed = word.text,
                 personal = personalMix(engine, previous),
+                previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
             )
                 .filter { !isBlocked(it.word) && (it.isTypedString || it.word.equals(word.text, ignoreCase = true) || !isNotSuggestible(it.word)) }
                 .take(maxResults)
