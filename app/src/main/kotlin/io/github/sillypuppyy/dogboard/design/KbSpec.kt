@@ -29,6 +29,8 @@ data class KbProps(
     val clips: List<KbClipData>? = null,
     val skinPicker: Boolean = false,
     val devCtrl: String = "off", // off, armed, locked
+    /** Kb:428, 730: the action key greyed, "unavailable until you type" (an empty field that can't be sent). */
+    val actionOff: Boolean = false,
     val devAlt: String = "off",
     val dev: Boolean = false,
     val incognito: Boolean = false,
@@ -298,6 +300,9 @@ object KbSpec {
         "contact" to listOf(KbChipData("person", "Sam Lee"), KbChipData("call", "+1 555-0142"), KbChipData("cake", "3 December")),
     )
 
+    /** Kb:604: what Ctrl + letter does, shown on the letters while Ctrl is armed. */
+    val CTRLH: Map<String, String> = mapOf("a" to "all", "c" to "copy", "v" to "paste", "x" to "cut", "z" to "undo", "y" to "redo", "s" to "save", "f" to "find")
+
     /** Kb:602-612 sample bars. */
     val BARS: Map<String, List<Pair<String, String>>> = mapOf(
         "empty" to listOf("I" to "p", "The" to "p", "He" to "p"),
@@ -308,7 +313,8 @@ object KbSpec {
         "tehteh" to listOf("“Tehteh”" to "lit", "Truth" to "w", "There" to "w"),
         "emoji" to listOf("“dog”" to "lit", "dogs" to "w", "🐕" to "emo"),
         "omw" to listOf("“omw”" to "lit", "On my way!" to "ac", "own" to "w"),
-        "undone" to listOf("“teh”" to "kept", "the" to "w", "ten" to "w"),
+        "bal" to listOf("“bal”" to "lit", "ball" to "ac", "balance" to "w"), // Kb:835
+        "undone" to listOf("“bal”" to "kept", "ball" to "w", "balance" to "w"), // Kb:836
     )
 
     /** Key spec before styling (Kb:458-466). */
@@ -339,6 +345,8 @@ object KbSpec {
         val hintKind = P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
         val panel = P.panel
         val dev = P.dev && panel.isEmpty()
+        // Kb:604-605: with Ctrl armed, letters show what Ctrl + letter does
+        val ctrlOn = dev && P.devCtrl != "off"
         val incognito = P.incognito
         val trackpad = P.trackpad
         val fnKeyKind = P.fnKey
@@ -473,7 +481,7 @@ object KbSpec {
                 // designer 2026-11-14: letters 25 sp, numbers and symbols 24 sp; every function icon a
                 // 24 dp Material Symbols glyph (at 22 it drew ~16 dp)
                 var icon = ""; var fill = 0; var label = k.label; val iconSize = 24f; var hint = ""
-                var aria = k.label.ifEmpty { k.id }; val sub = k.sub
+                var aria = k.label.ifEmpty { k.id }; var sub = k.sub
                 val isFnTone = k.kind in listOf("shift", "bksp", "mode", "fn", "fnchar", "spaceicon")
                 if (isFnTone) { bg = t.fn; fg = t.fnFg; shadow = t.fnShadow }
                 if (k.kind == "char") {
@@ -487,8 +495,10 @@ object KbSpec {
                     }
                     if (plane == "base" && numRow == "hints" && base in "qwertyuiop" && base.length == 1) hint = AND_HINT[base] ?: ""
                 }
+                // Kb:754
+                if (k.kind == "char" && ctrlOn && plane == "base") CTRLH[k.base.ifEmpty { k.id }]?.let { sub = it; fs = 20f * scale; hint = "" }
                 if (k.kind == "pad") { fs = 26f; fw = 400 }
-                if (k.kind == "fnchar") { fs = if (k.label.length > 1) 15f else 22f; fw = if (k.label.length > 1) 500 else 400 }
+                if (k.kind == "fnchar") { fs = if (k.label.length > 1) 15f else 24f; fw = if (k.label.length > 1) 500 else 400 } // Kb:755
                 if (k.kind == "mode") { fs = 15f; fw = 500 }
                 // Kb:757 (themes' own space text: not in our tokens yet)
                 if (k.kind == "space") {
@@ -513,6 +523,8 @@ object KbSpec {
                     val word = RET[ret]?.let { P.actionLabel?.takeIf { l -> l.isNotBlank() } ?: it }
                     if (word != null) {
                         bg = t.act; fg = t.actFg; shadow = t.actShadow; aria = word
+                        // Kb:772
+                        if (P.actionOff) { bg = t.fn; fg = t.fnFg; shadow = t.fnShadow; aria = "$word, unavailable until you type" }
                         // Panels:176 fits(): a word wider than the cap minus 8 dp a side shows the icon
                         if (P.actionStyle == "word" && word.length * 8.6f <= w - mh * 2 - 16f) { label = word; fs = 15f; fw = 600 }
                         else icon = RET_ICON[ret] ?: "arrow_forward"

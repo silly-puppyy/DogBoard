@@ -192,11 +192,11 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                 for (h in listOf(8, 18, 12, 22, 10)) Box(Modifier.size(3.dp, h.dp).background(t.linkFg, RoundedCornerShape(2.dp)))
             }
             DText("Listening…", style = text(15, 400, t.barFg))
-            DText("English (US) · on device", style = text(13, 400, t.barMuted))
+            DText("English (US), on device", style = text(13, 400, t.barMuted))
         }
         x.mIncog -> Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             // Kb:131
-            DText("Incognito · nothing is learned or saved", style = text(14, 400, t.barMuted))
+            DText("Incognito: nothing is learned or saved", style = text(14, 400, t.barMuted))
         }
         else -> Spacer(Modifier.weight(1f))
     }

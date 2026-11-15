@@ -44,6 +44,13 @@ class KbSpecTest : FunSpec({
         key(KbProps(numRow = "hints"), "q").hint shouldBe "1"
         KbSpec.render(KbProps(numRow = "on")).rows[0].keys.map { it.label } shouldContainExactly "1234567890".map { it.toString() }
     }
+    test("re-sync batch A: action off (Kb:772), Ctrl hints (Kb:604, 754), Brand = Fur (Kb:475-478)") {
+        key(KbProps(ret = "send", actionOff = true), "ret").let { it.bg shouldBe css("#dbe2f9"); it.aria shouldBe "Send, unavailable until you type" }
+        key(KbProps(dev = true, devCtrl = "armed"), "c").sub shouldBe "copy"
+        key(KbProps(dev = true, devCtrl = "off"), "c").sub shouldBe ""
+        KbThemes.tokens("brand", false).bg shouldBe css("#fbebe1")
+        KbThemes.tokens("brand", true).act shouldBe css("#ffb77a")
+    }
     test("key preview: held, then fading after release without the key looking pressed") {
         val held = KbSpec.render(KbProps(preview = "g"))
         held.pv!!.alpha shouldBe 1f
@@ -94,7 +101,7 @@ class KbSpecTest : FunSpec({
         val swatches = listOf(
             Triple("dogboard", false, "#ededf4 #ffffff #dbe2f9 #435e91 #d8e2ff"),
             Triple("dogboard", true, "#1a1b20 #33353a #3f4759 #adc7ff #2a4678"),
-            Triple("brand", false, "#f0eee2 #ffffff #e2e5c2 #59631f #ddea96"),
+            Triple("brand", false, "#fbebe1 #ffffff #efe0d6 #88521c #ffdcc2"), // Kb:476 (Fur)
             Triple("paper", false, "#e3e4e6 #fdfdfd #c9cbcf #2d2f33 #ffffff"),
             Triple("midnight", true, "#16171b #2c2e33 #212328 #9db8f2 #2a3a5c"),
             Triple("ink", true, "#000000 #1a1b1f #111216 #2a4678 #1d2940"),
