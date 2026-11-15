@@ -92,6 +92,61 @@ class NgramModel private constructor(
 
     /** The [n] most likely next words after [a] [b] by the trigram and bigram entries, most likely first. */
     fun followers(a: Int, b: Int, n: Int): List<Pair<Int, Double>> {
+        if (n <= 0) return emptyList()
+        // Called after every word on the way to the bar, holding the engine lock, and a common word
+        // has tens of thousands of followers ("the", "to"): one pass, no per-word lookups or boxing,
+        // only the best n kept. The trigram entries for "a b" and the bigram entries for "b" are both
+        // sorted by word id, so they are walked side by side: a word with a trigram entry scores by
+        // it, every other follower of b by backoff(a b) + its bigram entry (as logProb).
+        val top = TopN(n)
+        var t = -1; var tEnd = -1
+        if (a >= 0 && b >= 0) {
+            val prefix = tri(a, b, 0)
+            t = triSearch(prefix).let { if (it < 0) -it - 1 else it }
+            tEnd = t
+            while (tEnd < triKeys.limit() && (triKeys[tEnd] and MASK21.inv()) == prefix) tEnd++
+            for (i in t until tEnd) top.offer((triKeys[i] and MASK21).toInt(), triPBook[triP.get(i).toInt() and 0xff].toDouble())
+        }
+        if (b >= 0 && b + 1 < biOffsets.limit()) {
+            val bo = if (a >= 0) pairIndex(a, b).let { p -> if (p >= 0) biBBook[biB.get(p).toInt() and 0xff].toDouble() else 0.0 } else 0.0
+            for (i in biOffsets[b] until biOffsets[b + 1]) {
+                val w = biWords[i]
+                while (t in 0 until tEnd && (triKeys[t] and MASK21).toInt() < w) t++
+                if (t in 0 until tEnd && (triKeys[t] and MASK21).toInt() == w) continue
+                top.offer(w, bo + biPBook[biP.get(i).toInt() and 0xff])
+            }
+        }
+        return top.sorted()
+    }
+
+    /** The [n] highest-scoring (word, score) pairs offered, without keeping the rest. */
+    private class TopN(private val n: Int) {
+        private val words = IntArray(n)
+        private val scores = DoubleArray(n)
+        private var size = 0
+        private var worst = 0  // slot of the lowest kept score, once full
+
+        fun offer(w: Int, s: Double) {
+            if (size < n) {
+                words[size] = w; scores[size] = s; size++
+                if (size == n) findWorst()
+            } else if (s > scores[worst]) {
+                words[worst] = w; scores[worst] = s
+                findWorst()
+            }
+        }
+
+        private fun findWorst() {
+            var k = 0
+            for (i in 1 until size) if (scores[i] < scores[k]) k = i
+            worst = k
+        }
+
+        fun sorted(): List<Pair<Int, Double>> = (0 until size).map { words[it] to scores[it] }.sortedByDescending { it.second }
+    }
+
+    /** [followers] the slow, obvious way (every follower through [logProb], full sort): tests compare. */
+    internal fun followersReference(a: Int, b: Int, n: Int): List<Pair<Int, Double>> {
         val scores = HashMap<Int, Double>()
         if (b >= 0 && b + 1 < biOffsets.limit()) {
             for (i in biOffsets[b] until biOffsets[b + 1]) scores[biWords[i]] = logProb(a, b, biWords[i]) ?: Double.NEGATIVE_INFINITY

@@ -17,5 +17,19 @@ class NgramFileProbeTest : FunSpec({
         (m.logProb(i, love, m.idOf("you"))!! > m.logProb(i, love, m.idOf("yours"))!!) shouldBe true
         (m.logProb(-1, m.idOf("thank"), m.idOf("you"))!! > m.logProb(-1, m.idOf("thank"), m.idOf("yew"))!!) shouldBe true
         println("NGRAM followers of 'i love': " + m.followers(i, love, 5).joinToString { m.word(it.first) })
+
+        // followers() keeps only the best n instead of scoring and sorting every follower: same
+        // scores, in the same order, as the full scan, on contexts with many followers
+        for ((p2, p1) in listOf("of" to "the", null to "the", "i" to "love", "going" to "to", null to "and")) {
+            val a = p2?.let { m.idOf(it) } ?: -1; val b = m.idOf(p1)
+            repeat(3) { m.followers(a, b, 12); m.followersReference(a, b, 12) }  // JIT warm-up: time the steady state
+            var t = System.nanoTime()
+            val fast = m.followers(a, b, 12)
+            val fastUs = (System.nanoTime() - t) / 1000
+            t = System.nanoTime()
+            val slow = m.followersReference(a, b, 12)
+            println("NGRAM followers '${p2 ?: "-"} $p1': $fastUs µs (was ${(System.nanoTime() - t) / 1000} µs): " + fast.joinToString { m.word(it.first) })
+            fast.map { it.second } shouldBe slow.map { it.second }
+        }
     }
 })

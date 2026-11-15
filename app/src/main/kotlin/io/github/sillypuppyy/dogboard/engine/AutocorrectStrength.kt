@@ -19,7 +19,7 @@ import kotlin.math.exp
  */
 class AutocorrectStrength(private val file: File? = null) {
     @Volatile
-    var score: Double = file?.takeIf { it.exists() }?.readText()?.trim()?.toDoubleOrNull()?.coerceIn(-SCORE_LIMIT, SCORE_LIMIT) ?: 0.0
+    var score: Double = file?.also { awaitPendingWrites() }?.takeIf { it.exists() }?.readText()?.trim()?.toDoubleOrNull()?.coerceIn(-SCORE_LIMIT, SCORE_LIMIT) ?: 0.0
         private set
 
     fun reverted() = move(REVERTED)
@@ -47,7 +47,7 @@ class AutocorrectStrength(private val file: File? = null) {
     }
 
     private fun save() {
-        file?.writeTextAtomically("%.4f".format(java.util.Locale.ROOT, score))
+        file?.writeTextLater("%.4f".format(java.util.Locale.ROOT, score))
     }
 
     companion object {

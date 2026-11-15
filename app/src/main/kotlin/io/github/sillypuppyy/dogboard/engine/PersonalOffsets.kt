@@ -99,10 +99,11 @@ class PersonalOffsets(private val file: File? = null) {
             sb.append("bucket ").append(if (i == buckets.size - 1) lastSize else BUCKET_SIZE).append('\n')
             for ((c, s) in b) sb.append(c).append('\t').append(s.n).append('\t').append("%.4f".format(java.util.Locale.ROOT, s.sx)).append('\t').append("%.4f".format(java.util.Locale.ROOT, s.sy)).append('\n')
         }
-        f.writeTextAtomically(sb.toString())
+        f.writeTextLater(sb.toString())
     }
 
     private fun load() {
+        awaitPendingWrites()
         val f = file?.takeIf { it.exists() } ?: return
         runCatching {
             for (line in f.readLines()) {
