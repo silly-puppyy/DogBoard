@@ -35,6 +35,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** A smart chip's longest label before "…" (ours; Gboard's clip chips: 107 dp for the whole chip). */
+private val CHIP_TEXT_MAX = 150.dp
+
 private val PILL = RoundedCornerShape(50)
 private val TILE = RoundedCornerShape(16.dp)
 
@@ -130,8 +133,10 @@ fun RowScope.KbBarSpecial(r: KbRender) {
             ) { Symbol(b.icon, 24.sp, t.barFg) }
         }
         // Kb:134-140: chips 36 dp, 999 px radius, 12/10 padding, 18 dp icon, 14/500 label, 12/400 sub at 0.75
+        // Kb clips the row; ours scrolls sideways and caps a chip's text, as Gboard's clip chips (measured
+        // 2026-11-15: 107 dp, "…"), so a long clip doesn't push its pieces off the bar
         x.mChips -> Row(
-            Modifier.weight(1f).padding(horizontal = 4.dp).clipToBounds(),
+            Modifier.weight(1f).padding(horizontal = 4.dp).clipToBounds().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
         ) {
             val actions = LocalKbActions.current
@@ -145,7 +150,7 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Symbol(c.icon, 18.sp, fg)
-                    DText(c.label, style = text(14, 500, fg))
+                    DText(c.label, Modifier.widthIn(max = CHIP_TEXT_MAX), style = text(14, 500, fg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     if (c.sub.isNotEmpty()) DText(c.sub, Modifier.alpha(0.75f), style = text(12, 400, fg))
                 }
             }

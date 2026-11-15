@@ -82,9 +82,17 @@ fun TextInputLayout(
             val clipboardManager = androidx.compose.runtime.remember(context) { context.clipboardManager().value }
             val primaryClip by clipboardManager.primaryClipFlow.collectAsState()
             var clipShown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem?>(null) }
+            // a text clip's chips: the whole text, then what is inside it (Gboard: phone, email, link, address, date)
+            var clipChips by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<io.github.sillypuppyy.dogboard.design.KbChipData>>(emptyList()) }
             androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode) {
                 val offer = io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
                 clipShown = offer
+                clipChips = if (offer == null || offer.isSensitive || offer.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT) emptyList()
+                else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    val whole = io.github.sillypuppyy.dogboard.design.KbChipData(io.github.sillypuppyy.dogboard.ime.RecentClip.icon(context, offer), io.github.sillypuppyy.dogboard.ime.RecentClip.label(offer))
+                    listOf(whole) + io.github.sillypuppyy.dogboard.ime.RecentClip.entities(context, offer.text.orEmpty()).take(3)
+                        .map { (icon, text) -> io.github.sillypuppyy.dogboard.design.KbChipData(icon, text) }
+                }
                 if (offer != null) {
                     kotlinx.coroutines.delay(io.github.sillypuppyy.dogboard.ime.RecentClip.WINDOW_MS - (System.currentTimeMillis() - offer.creationTimestampMs))
                     clipShown = null
@@ -95,12 +103,27 @@ fun TextInputLayout(
             val inlineAutofill by dev.patrickgold.florisboard.ime.nlp.NlpInlineAutofill.suggestions.collectAsState()
             val showAutofill = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && inlineAutofill.isNotEmpty() && !toolRow && panel.isEmpty()
             Box {
-            val chips by io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.collectAsState()
+            val contactChips by io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.collectAsState()
+            // contact chips while a name is typed; else, with nothing typed, a text clip's chips
+            val typing = strip.any { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
+            val clipChipsShown = contactChips.isEmpty() && !typing && clipShown != null && clipChips.isNotEmpty()
+            val chips = if (contactChips.isNotEmpty()) contactChips else if (clipChipsShown) clipChips else emptyList()
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
                 strip = if (showAutofill) emptyList() else strip,
                 chips = if (showAutofill) emptyList() else chips,
-                onChip = { i -> chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } } },
-                clipLabel = clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
+                onChip = { i ->
+                    if (clipChipsShown) {
+                        val item = clipShown
+                        if (item != null) {
+                            io.github.sillypuppyy.dogboard.ime.RecentClip.markUsed(item)
+                            clipShown = null
+                            // the whole clip pastes as itself; a piece of it as text
+                            if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item) }
+                            else clipChips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } }
+                        }
+                    } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } }
+                },
+                clipLabel = if (clipChipsShown) null else clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
                 onClip = {
                     clipShown?.let { item ->
