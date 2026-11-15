@@ -1,6 +1,7 @@
 # Words people type often that SCOWL lacks and that fall under build_lexicon.py's web-only cut
 # (MIN_ZIPF_WEB_ONLY): added whatever their wordfreq frequency (EXTRA_ZIPF_FLOOR when wordfreq has
-# none) and never dropped as glued pairs. Reviewed by hand; one word per line.
+# none) and never dropped as glued pairs. Reviewed by hand; one word per line. A brand written in
+# its own casing (WhatsApp) replaces a lowercase spelling only web text has.
 autocorrect
 autocorrected
 autocorrects
@@ -96,3 +97,7 @@ yeet
 cringey
 finna
 rizz
+WhatsApp
+AirPods
+iMessage
+Gmail
