@@ -115,6 +115,8 @@ data class KbKey(
     val fw: Int = 400,
     val icon: String = "",
     val fill: Int = 0,
+    /** Kb:741: the cap's gradient fill (Gloss), drawn instead of [bg]. */
+    val bgGradient: CssGradient? = null,
     val iconSize: Float = 22f,
     val label: String = "",
     val aria: String = "",
@@ -478,12 +480,13 @@ object KbSpec {
                 x += w
                 if (k.kind == "gap") return@map KbKey(gap = true, x = kx, w = w)
                 var bg = t.key; var fg = t.keyFg; var shadow = t.keyShadow; var fs = 25 * scale; var fw = t.fw
+                var bgG = t.grad["keyG"] // Kb:740: the G tokens, with their colour as the fallback
                 // designer 2026-11-14: letters 25 sp, numbers and symbols 24 sp; every function icon a
                 // 24 dp Material Symbols glyph (at 22 it drew ~16 dp)
                 var icon = ""; var fill = 0; var label = k.label; val iconSize = 24f; var hint = ""
                 var aria = k.label.ifEmpty { k.id }; var sub = k.sub
                 val isFnTone = k.kind in listOf("shift", "bksp", "mode", "fn", "fnchar", "spaceicon")
-                if (isFnTone) { bg = t.fn; fg = t.fnFg; shadow = t.fnShadow }
+                if (isFnTone) { bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow }
                 if (k.kind == "char") {
                     fs = (if (letterRe.matches(label.take(1)) && label.length == 1) 25 else 24) * scale
                     if (label == ".com") { fs = 16f; fw = 500 }
@@ -500,42 +503,49 @@ object KbSpec {
                 if (k.kind == "pad") { fs = 26f; fw = 400 }
                 if (k.kind == "fnchar") { fs = if (k.label.length > 1) 15f else 24f; fw = if (k.label.length > 1) 500 else 400 } // Kb:755
                 if (k.kind == "mode") { fs = 15f; fw = 500 }
-                // Kb:757 (themes' own space text: not in our tokens yet)
+                // Kb:757
                 if (k.kind == "space") {
                     label = when {
                         P.spaceLabel == "space" -> "space"
                         P.spaceLabel == "lang" || (P.spaceLabel == "auto" && fnKeyKind == "globe") -> P.langName
+                        P.spaceLabel == "auto" && t.spaceText.isNotEmpty() -> t.spaceText
                         else -> ""
                     }
-                    fs = 14f; fw = 400; aria = "Space"
+                    fs = if (t.spaceText.isNotEmpty()) 15f else 14f; fw = if (t.spaceText.isNotEmpty()) t.fw else 400
+                    fg = t.spaceFg ?: t.hint; aria = "Space"
                 }
                 if (k.kind == "spaceicon") { icon = "space_bar"; label = ""; aria = "Space" }
                 if (k.kind == "shift") {
                     aria = when (shift) { "lock" -> "Caps lock on"; "off" -> "Shift"; "auto" -> "Shift, auto-capital"; else -> "Shift on" }
                     icon = if (shift == "lock") "shift_lock" else "shift"
                     fill = if (shift == "off") 0 else 1
-                    if (shift == "on") { bg = t.key; fg = t.keyFg; shadow = t.keyShadow }
-                    if (shift == "lock") { bg = t.lock; fg = t.lockFg; shadow = emptyList() }
+                    if (shift == "on") { bg = t.key; bgG = t.grad["keyG"]; fg = t.keyFg; shadow = t.keyShadow }
+                    if (shift == "lock") { bg = t.lock; bgG = t.grad["lock"]; fg = t.lockFg; shadow = emptyList() }
                 }
-                if (k.kind == "bksp") { icon = "backspace"; aria = "Delete" }
+                if (k.kind == "bksp") { icon = "backspace"; fill = t.bkspFill; aria = "Delete" }
                 if (k.kind == "fn") { icon = if (fnKeyKind == "globe") "language" else "mood"; aria = if (fnKeyKind == "globe") "Next language" else "Emoji" }
                 if (k.kind == "ret") {
                     val word = RET[ret]?.let { P.actionLabel?.takeIf { l -> l.isNotBlank() } ?: it }
                     if (word != null) {
-                        bg = t.act; fg = t.actFg; shadow = t.actShadow; aria = word
+                        bg = t.act; bgG = t.grad["actG"]; fg = t.actFg; shadow = t.actShadow; aria = word
                         // Kb:772
-                        if (P.actionOff) { bg = t.fn; fg = t.fnFg; shadow = t.fnShadow; aria = "$word, unavailable until you type" }
-                        // Panels:176 fits(): a word wider than the cap minus 8 dp a side shows the icon
-                        if (P.actionStyle == "word" && word.length * 8.6f <= w - mh * 2 - 16f) { label = word; fs = 15f; fw = 600 }
+                        if (P.actionOff) { bg = t.fn; bgG = t.grad["fnG"]; fg = t.actOffFg ?: t.fnFg; shadow = t.fnShadow; aria = "$word, unavailable until you type" }
+                        // Kb:774 (Gloss forces words); Panels:176 fits(): a word wider than the cap minus 8 dp a side shows the icon
+                        if ((P.actionStyle == "word" || t.forceWord) && word.length * 8.6f <= w - mh * 2 - 16f) { label = word; fs = 15f; fw = 600 }
                         else icon = RET_ICON[ret] ?: "arrow_forward"
-                    } else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; fg = t.fnFg; shadow = t.fnShadow; aria = "Return" }
+                    } else if (t.retText.isNotEmpty()) { // Kb:776
+                        label = t.retText; fs = 15f; fw = t.fw; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; aria = "Return"
+                    } else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; aria = "Return" }
                 }
-                if (k.id == pressed && !(k.kind == "ret" && RET[ret] != null)) bg = if (isFnTone || k.kind == "ret") t.pressFn else t.pressKey
+                if (k.id == pressed && !(k.kind == "ret" && RET[ret] != null)) {
+                    val fnPress = isFnTone || k.kind == "ret"
+                    bg = if (fnPress) t.pressFn else t.pressKey; bgG = t.grad[if (fnPress) "pressFn" else "pressKey"]
+                }
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + ri * rowH + mv
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
                 if (isFnTone && icon.isEmpty() && k.kind != "mode" && k.kind != "fnchar") fs = 15f
                 KbKey(
-                    gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
+                    gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, bgGradient = bgG, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
                     icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, sub = sub,
                     base = k.base.ifEmpty { k.id },
                 )

@@ -23,6 +23,16 @@ data class KbTokens(
     val actIsTransparent: Boolean,
     /** Kb:522-530: a gradient `bg` (Dusk, Lagoon, Peach); [bg] is then its first colour. */
     val bgGradient: CssGradient? = null,
+    /**
+     * Kb:550-551: gradient fills by token name (`keyG`, `fnG`, `actG`, `chipG`, and any colour token
+     * written as a gradient: Gloss's `pressKey`, `pressFn`, `lock`, `segCell`); the colour field then
+     * holds the gradient's first colour. Absent = the plain colour.
+     */
+    val grad: Map<String, CssGradient> = emptyMap(),
+    // Kb:506 (Gloss): filled delete icon, a word on plain return, words on the action key, the space
+    // bar's text and colour, the action key's label colour while unavailable
+    val bkspFill: Int = 0, val retText: String = "", val forceWord: Boolean = false,
+    val spaceText: String = "", val spaceFg: Color? = null, val actOffFg: Color? = null,
 )
 
 object KbThemes {
@@ -34,7 +44,7 @@ object KbThemes {
      * colours without its spots yet, Labrador / Chocolate Lab; Kb:522-530 the gradient Dusk, Lagoon and Peach), drawable in the gallery; not in the Look
      * list until the user decides the list (canvas 17 vs the designer's answer of nine).
      */
-    val moreIds = listOf("husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach")
+    val moreIds = listOf("gloss", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach")
 
     // Kb:364
     private val DEF = mapOf(
@@ -71,6 +81,57 @@ object KbThemes {
         "lab" to mapOf(
             "light" to m("bg" to "#e8dcc8", "key" to "#faf5ec", "keyFg" to "#2b2218", "fn" to "#d9c9ae", "fnFg" to "#4a3b28", "act" to "#7d5f36", "actFg" to "#ffffff", "chip" to "#eadcc2", "chipFg" to "#5a4321", "pop" to "#faf5ec", "popFg" to "#2b2218", "sel" to "#7d5f36", "selFg" to "#ffffff", "hint" to "#75664f", "div" to "#cdbd9f", "barFg" to "#2b2218", "barMuted" to "#54452f", "tile" to "#faf5ec", "tileFg" to "#2b2218", "pressKey" to "#efe6d6", "pressFn" to "#c9b795", "lock" to "#7d5f36", "lockFg" to "#ffffff"),
             "dark" to m("bg" to "#2b1d16", "key" to "#4a3427", "keyFg" to "#f3e6dc", "fn" to "#3a281e", "fnFg" to "#e3cdbd", "act" to "#c08b5c", "actFg" to "#1f130c", "chip" to "#5c3f2c", "chipFg" to "#f6dcc6", "pop" to "#5a4134", "popFg" to "#f3e6dc", "sel" to "#c08b5c", "selFg" to "#1f130c", "hint" to "#c9b2a2", "div" to "#5a4134", "barFg" to "#f3e6dc", "barMuted" to "#d4bfb0", "tile" to "#3a281e", "tileFg" to "#f3e6dc", "pressKey" to "#5c4334", "pressFn" to "#4a3427", "lock" to "#c08b5c", "lockFg" to "#1f130c", "linkFg" to "#e2b58c"),
+        ),
+        // Kb:499-508 (light only)
+        "gloss" to mapOf(
+            "light" to m(
+                "bg" to "linear-gradient(#a2a8b4, #6b7181)",
+                "key" to "#f1f1f4",
+                "keyG" to "linear-gradient(#ffffff, #f1f2f4 45%, #d6d9df)",
+                "keyFg" to "#26282d",
+                "fn" to "#6c7381",
+                "fnG" to "linear-gradient(#7a8290, #5d6473 55%, #4f5664)",
+                "fnFg" to "#ffffff",
+                "act" to "#3d74d4",
+                "actG" to "linear-gradient(#5d95ec, #3a72d6 50%, #2558c0)",
+                "actFg" to "#ffffff",
+                "chip" to "#ffffff",
+                "chipFg" to "#16181d",
+                "pop" to "#ffffff",
+                "popFg" to "#16181d",
+                "sel" to "#2655b3",
+                "selFg" to "#ffffff",
+                "hint" to "#5b606b",
+                "div" to "#8c929e",
+                "barFg" to "#1d1f24",
+                "barMuted" to "#3a3e46",
+                "tile" to "#f1f1f4",
+                "tileFg" to "#16181d",
+                "pressKey" to "linear-gradient(#c9ccd3, #e4e6ea)",
+                "pressFn" to "linear-gradient(#4a505d, #5d6473)",
+                "lock" to "linear-gradient(#5d95ec, #3a72d6 50%, #2558c0)",
+                "lockFg" to "#ffffff",
+                "radius" to "6",
+                "fw" to "600",
+                "keyShadow" to "0 2px 1px -0.5px rgba(0,0,0,0.7), 0 3px 3px -1px rgba(0,0,0,0.4), inset 0 1px 0 #ffffff, inset 0 -1px 1px rgba(0,0,0,0.14)",
+                "fnShadow" to "0 2px 1px -0.5px rgba(0,0,0,0.7), 0 3px 3px -1px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 1px rgba(0,0,0,0.25)",
+                "actShadow" to "0 2px 1px -0.5px rgba(0,0,0,0.7), 0 3px 3px -1px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 1px rgba(0,0,0,0.25)",
+                "keyTs" to "0 1px 0 rgba(255,255,255,0.95), 0 1.5px 2px rgba(255,255,255,0.7), 0 -0.5px 1.5px rgba(0,0,0,0.12)",
+                "fnTs" to "0 -1px 1px rgba(0,0,0,0.55), 0 -1px 3px rgba(0,0,0,0.3), 0 0 1px rgba(0,0,0,0.25)",
+                "actTs" to "0 -1px 1px rgba(0,0,0,0.45), 0 -1px 3px rgba(0,0,0,0.25)",
+                "glow" to "0 0 3px #ffffff, 0 0 7px rgba(255,255,255,0.95), 0 0 14px rgba(210,230,255,0.8)",
+                "glowFg" to "#ffffff",
+                "bkspFill" to "1",
+                "retText" to "return",
+                "forceWord" to "true",
+                "spaceText" to "space",
+                "spaceFg" to "#4f545e",
+                "actOffFg" to "rgba(255,255,255,0.45)",
+                "linkFg" to "#2655b3",
+                "seg" to "true",
+                "segCell" to "linear-gradient(#6aa2f2, #3b74d8 50%, #2a5cc4)",
+                "segCellFg" to "#ffffff",
+            ),
         ),
         // Kb:522
         "dusk" to mapOf(
@@ -116,10 +177,10 @@ object KbThemes {
             (if (dark) th["dark"] else th["light"]) ?: th["light"] ?: th.getValue("dark")
         }
         val t = DEF + raw
-        fun c(k: String) = css(t.getValue(k))
+        fun c(k: String) = t.getValue(k).let { v -> CssGradient.parse(v)?.stops?.first()?.first ?: css(v) }
         val linkFg = t["linkFg"]?.let { css(it) } ?: if (t["act"] == "transparent") c("actFg") else c("act")
         return KbTokens(
-            bg = CssGradient.parse(t.getValue("bg"))?.stops?.first()?.first ?: c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
+            bg = c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
             act = c("act"), actFg = c("actFg"), chip = c("chip"), chipFg = c("chipFg"), pop = c("pop"),
             popFg = c("popFg"), sel = c("sel"), selFg = c("selFg"), hint = c("hint"), div = c("div"),
             barFg = c("barFg"), barMuted = c("barMuted"), tile = c("tile"), tileFg = c("tileFg"),
@@ -131,6 +192,9 @@ object KbThemes {
             actShadow = CssShadow.parse(t.getValue("actShadow")), linkFg = linkFg,
             actIsTransparent = t["act"] == "transparent",
             bgGradient = CssGradient.parse(t.getValue("bg")),
+            grad = t.mapNotNull { (k, v) -> CssGradient.parse(v)?.let { k to it } }.toMap(),
+            bkspFill = t["bkspFill"]?.toInt() ?: 0, retText = t["retText"].orEmpty(), forceWord = t["forceWord"] == "true",
+            spaceText = t["spaceText"].orEmpty(), spaceFg = t["spaceFg"]?.let(::css), actOffFg = t["actOffFg"]?.let(::css),
         )
     }
 
@@ -183,7 +247,7 @@ fun css(value: String): Color {
 }
 
 /**
- * A CSS `linear-gradient(<angle>deg, <colour> [<pos>%], ...)` as the design writes it; stops without
+ * A CSS `linear-gradient([<angle>deg,] <colour> [<pos>%], ...)` as the design writes it; stops without
  * a position are spread evenly between their neighbours, as CSS does.
  */
 data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>) {
@@ -207,8 +271,8 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
             val v = value.trim()
             if (!v.startsWith("linear-gradient(")) return null
             val parts = splitTopLevel(v.removePrefix("linear-gradient(").removeSuffix(")")).map { it.trim() }
-            val angle = parts[0].removeSuffix("deg").toFloat()
-            val raw = parts.drop(1).map { p ->
+            val angle = parts[0].takeIf { it.endsWith("deg") }?.removeSuffix("deg")?.toFloat() // none = CSS's "to bottom"
+            val raw = parts.drop(if (angle != null) 1 else 0).map { p ->
                 val m = Regex("""^(.*?)(?:\s+([\d.]+)%)?$""").matchEntire(p)!!
                 css(m.groupValues[1]) to m.groupValues[2].takeIf { it.isNotEmpty() }?.let { it.toFloat() / 100 }
             }
@@ -225,7 +289,7 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
                 }
                 i++
             }
-            return CssGradient(angle, raw.indices.map { raw[it].first to pos[it]!! })
+            return CssGradient(angle ?: 180f, raw.indices.map { raw[it].first to pos[it]!! })
         }
     }
 }

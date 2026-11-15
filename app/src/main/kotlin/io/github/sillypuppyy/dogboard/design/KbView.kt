@@ -160,7 +160,8 @@ private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
     val inArea = Rect(k.x + r.mh, ri * r.rowH + r.mv, k.x + k.w - r.mh, (ri + 1) * r.rowH - r.mv)
     Box(Modifier.placeAt(inArea)) {
         Box(
-            Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape).background(k.bg, shape)
+            Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape)
+                .then(k.bgGradient?.let { Modifier.background(it.brush(), shape) } ?: Modifier.background(k.bg, shape))
                 .lint(capId, DesignLint.Kind.CAP, expected),
             contentAlignment = Alignment.Center,
         ) { LintParent(capId) {

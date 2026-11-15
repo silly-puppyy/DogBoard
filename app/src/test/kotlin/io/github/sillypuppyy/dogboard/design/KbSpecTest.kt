@@ -96,7 +96,7 @@ class KbSpecTest : FunSpec({
         KbSpec.render(KbProps(kstyle = "android")).rows[3].keys.map { it.id } shouldContainExactly listOf("mode-?123", ",", "fn", "space", ".", "ret")
         key(KbProps(kstyle = "android"), "space").label shouldBe ""
         // Kb:757 (current canvas): Auto is blank with one language, the language name with the globe key
-        key(KbProps(), "space").let { it.label shouldBe ""; it.fs shouldBe 14f; it.fg shouldBe css("#1a1b20") }
+        key(KbProps(), "space").let { it.label shouldBe ""; it.fs shouldBe 14f; it.fg shouldBe KbThemes.tokens("dogboard", false).hint } // Kb:757: spaceFg, else hint
         key(KbProps(spaceLabel = "space"), "space").label shouldBe "space"
         key(KbProps(spaceLabel = "lang", langName = "Deutsch"), "space").label shouldBe "Deutsch"
         key(KbProps(fnKey = "globe", langName = "English (US)"), "space").label shouldBe "English (US)"
@@ -160,5 +160,17 @@ class KbSpecTest : FunSpec({
         lead("Meet at the dog park at 6?") shouldBe null
         lead("e.g. this") shouldBe null
         lead("4B6EAF1") shouldBe null
+    }
+    test("re-sync batch H: Gloss keys (Kb:499-508, 740-776)") {
+        val g = KbProps(theme = "gloss")
+        key(g, "q").let { it.bgGradient!!.stops.map { s -> s.second } shouldContainExactly listOf(0f, 0.45f, 1f); it.bgGradient!!.angleDeg shouldBe 180f; it.bg shouldBe css("#f1f1f4") }
+        key(g, "bksp").let { it.fill shouldBe 1; it.bgGradient!!.stops.first().first shouldBe css("#7a8290") }
+        key(g, "ret").let { it.label shouldBe "return"; it.icon shouldBe ""; it.fw shouldBe 600 }
+        key(KbProps(theme = "gloss", ret = "send", actionStyle = "icon"), "ret").let { it.label shouldBe "Send"; it.bgGradient!!.stops.last().first shouldBe css("#2558c0") }
+        key(KbProps(theme = "gloss", ret = "send", actionOff = true), "ret").fg shouldBe css("rgba(255,255,255,0.45)")
+        key(KbProps(theme = "gloss", pressed = "q"), "q").bgGradient!!.stops.first().first shouldBe css("#c9ccd3")
+        key(g, "space").let { it.label shouldBe "space"; it.fg shouldBe css("#4f545e"); it.fs shouldBe 15f }
+        KbThemes.tokens("gloss", false).keyShadow.first().spread shouldBe -0.5f
+        key(KbProps(), "q").bgGradient shouldBe null
     }
 })
