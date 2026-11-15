@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
@@ -180,5 +183,32 @@ fun LiveKbBar(
             )
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
+    }
+}
+
+/**
+ * Landscape side strip (Kb:160-166, States: "Side areas (11 % each) hold undo / redo and cursor
+ * arrows instead of stretched keys"): the left one undo and redo, the right one the cursor arrows.
+ * [onAction] gets "undo", "redo", "left" or "right".
+ */
+@Composable
+fun LiveSideStrip(left: Boolean, onAction: (String) -> Unit, modifier: Modifier = Modifier) {
+    val dark = liveDark()
+    val themed = liveTheme().apply(KbProps(dark = dark, only = "bar"))
+    val t = remember(themed) { KbSpec.render(themed).t }
+    val items = if (left) listOf("undo" to "undo", "redo" to "redo") else listOf("arrow_back" to "left", "arrow_forward" to "right")
+    androidx.compose.foundation.layout.Column(
+        modifier,
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp, androidx.compose.ui.Alignment.CenterVertically),
+    ) {
+        for ((icon, action) in items) {
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(48.dp)
+                    .background(t.fn, androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                    .tap { onAction(action) },
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) { Symbol(icon, 22.sp, t.fnFg) }
+        }
     }
 }

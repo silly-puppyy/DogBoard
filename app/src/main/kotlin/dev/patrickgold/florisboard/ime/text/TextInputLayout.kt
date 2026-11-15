@@ -20,6 +20,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -136,7 +140,34 @@ fun TextInputLayout(
                         painter = painterResource(R.drawable.ic_incognito),
                     )
                 }
-                ImeKeyboardBox()
+                // DogBoard: phone landscape: the keys are a centred block and the side areas (11 %
+                // each) hold undo / redo and the cursor arrows (designer, States board)
+                val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+                val landscape = dogboardDesign && configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE &&
+                    configuration.smallestScreenWidthDp < 600
+                if (landscape) {
+                    val side = (configuration.screenWidthDp * 0.11f).dp
+                    Box {
+                        ImeKeyboardBox(Modifier.padding(horizontal = side))
+                        androidx.compose.foundation.layout.Row(Modifier.matchParentSize()) {
+                            val onAction = { a: String ->
+                                imeController.updateStateBlocking {
+                                    emit(when (a) {
+                                        "undo" -> dev.patrickgold.florisboard.ime.keyboard3.ImeActions.Undo
+                                        "redo" -> dev.patrickgold.florisboard.ime.keyboard3.ImeActions.Redo
+                                        "left" -> dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ArrowLeft
+                                        else -> dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ArrowRight
+                                    })
+                                }
+                            }
+                            io.github.sillypuppyy.dogboard.design.LiveSideStrip(true, onAction, Modifier.width(side).fillMaxHeight())
+                            androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+                            io.github.sillypuppyy.dogboard.design.LiveSideStrip(false, onAction, Modifier.width(side).fillMaxHeight())
+                        }
+                    }
+                } else {
+                    ImeKeyboardBox()
+                }
             }
         }
     }
