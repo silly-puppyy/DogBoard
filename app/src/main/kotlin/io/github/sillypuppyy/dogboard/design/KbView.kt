@@ -70,6 +70,8 @@ class KbActions(
     val onClip: (Int) -> Unit = {},
     /** A clipboard filter chip (0 All, 1 Links, 2 Media). */
     val onClipFilter: (Int) -> Unit = {},
+    /** The emoji header's Search pill. */
+    val onEmojiSearch: () -> Unit = {},
 )
 
 val LocalKbActions = androidx.compose.runtime.staticCompositionLocalOf<KbActions?> { null }

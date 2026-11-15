@@ -29,6 +29,8 @@ data class KbProps(
     val clips: List<KbClipData>? = null,
     /** The clipboard filter picked (0 All, 1 Links, 2 Media). */
     val clipFilter: Int = 0,
+    /** The emoji panel is searching (header: back + "Search emoji", as Gboard). */
+    val emojiSearch: Boolean = false,
     val skinPicker: Boolean = false,
     val devCtrl: String = "off", // off, armed, locked
     /** Kb:428, 730: the action key greyed, "unavailable until you type" (an empty field that can't be sent). */

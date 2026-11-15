@@ -44,6 +44,9 @@ import io.github.sillypuppyy.dogboard.design.LiveEmojiSection
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiCategory
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiPaletteView
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiSearchLayout
+import dev.patrickgold.florisboard.ime.media.emoji.getSurroundingText
+import dev.patrickgold.florisboard.ime.media.emoji.searchByInput
+import dev.patrickgold.florisboard.ime.media.emoji.toK3TextRange
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import org.florisboard.lib.snygg.ui.SnyggButton
@@ -125,6 +128,67 @@ fun MediaInputLayout(
     }
 }
 
+/**
+ * DogBoard: emoji search (Gboard, measured 2026-11-15): the results card with the search field, then
+ * the full keyboard, which types into the field through its own controller and editor (FlorisBoard's
+ * EmojiSearchLayout prototype); a result types the emoji into the app.
+ */
+@Composable
+private fun DogBoardEmojiSearch(
+    recents: List<dev.patrickgold.florisboard.ime.media.emoji.Emoji>,
+    skinTone: dev.patrickgold.florisboard.ime.media.emoji.EmojiSkinTone,
+    onEmoji: (dev.patrickgold.florisboard.ime.media.emoji.Emoji) -> Unit,
+) {
+    val context = LocalContext.current
+    val imeController = dev.patrickgold.florisboard.ime.keyboard3.LocalImeController.current
+    val storageController = dev.patrickgold.florisboard.ime.io.LocalStorageController.current
+    var searchData by remember { mutableStateOf(EmojiData.Fallback) }
+    LaunchedEffect(Unit) { searchData = EmojiData.get(context, dev.patrickgold.florisboard.lib.FlorisLocale.ENGLISH) }
+    val emojis = remember(searchData, skinTone) { searchData.bySkinTone[skinTone] ?: emptyList() }
+    val editor = remember {
+        object : dev.patrickgold.florisboard.ime.keyboard3.ImeEditor(java.lang.ref.WeakReference(null), dev.patrickgold.florisboard.ime.editor.FlorisEditorInfo.Unspecified) {
+            var value by mutableStateOf(androidx.compose.ui.text.input.TextFieldValue())
+            override fun replaceText(range: IntRange, text: String, newSelection: org.k3lp.runtime.K3TextRange, newComposition: org.k3lp.runtime.K3TextRange?) {
+                value = value.copy(
+                    text = value.text.replaceRange(range, text),
+                    selection = androidx.compose.ui.text.TextRange(newSelection.start, newSelection.end),
+                    composition = newComposition?.let { androidx.compose.ui.text.TextRange(it.start, it.end) },
+                )
+            }
+            override fun setComposition(newComposition: org.k3lp.runtime.K3TextRange?) {
+                value = value.copy(composition = newComposition?.let { androidx.compose.ui.text.TextRange(it.start, it.end) })
+            }
+        }
+    }
+    val inputMethod = remember {
+        dev.patrickgold.florisboard.ime.keyboard3.ImeController(
+            storageController, imeController.clipboardManager,
+            dev.patrickgold.florisboard.ime.keyboard3.ImeState(editor = editor), imeController.touchModelCache,
+        )
+    }
+    // the search keyboard follows the main keyboard's layout
+    LaunchedEffect(Unit) {
+        imeController.activeState.collect { s -> if (inputMethod.activeState.value.model !== s.model) inputMethod.updateState { switchModel(s.model) } }
+    }
+    val query = editor.value.text
+    var results by remember { mutableStateOf(emptyList<dev.patrickgold.florisboard.ime.media.emoji.Emoji>()) }
+    LaunchedEffect(emojis, query) {
+        results = if (query.isBlank()) emptyList()
+        else emojis.searchByInput(query.trim(), 48)
+    }
+    io.github.sillypuppyy.dogboard.design.LiveEmojiSearchCard(
+        query = query, results = results, recents = recents, onEmoji = onEmoji,
+        onClear = {
+            val empty = androidx.compose.ui.text.input.TextFieldValue()
+            editor.value = empty
+            inputMethod.updateStateBlocking { resetContent(newSelection = empty.selection.toK3TextRange(), newSurrounding = empty.getSurroundingText(50, 10)) }
+        },
+    )
+    androidx.compose.runtime.CompositionLocalProvider(dev.patrickgold.florisboard.ime.keyboard3.LocalImeController provides inputMethod) {
+        dev.patrickgold.florisboard.ime.keyboard3.ui.ImeKeyboardBox()
+    }
+}
+
 /** DogBoard: the design's emoji panel (header with back, live grid, bottom row) in media mode. */
 @Composable
 private fun DogBoardEmojiPanel(data: EmojiData, modifier: Modifier) {
@@ -151,11 +215,25 @@ private fun DogBoardEmojiPanel(data: EmojiData, modifier: Modifier) {
             LiveEmojiSection("Flags", 8, sets(EmojiCategory.FLAGS)),
         ).filter { it.sets.isNotEmpty() }
     }
-    androidx.compose.foundation.layout.Column(modifier.fillMaxWidth().height(FlorisImeSizing.imeUiHeight())) {
+    // emoji search, as Gboard: the header's Search pill swaps the grid for results + the keyboard
+    var searching by remember { mutableStateOf(false) }
+    val markUsed: (dev.patrickgold.florisboard.ime.media.emoji.Emoji) -> Unit = { emoji ->
+        scope.launch {
+            imeController.updateState { emitText(emoji.value.asK3String()) }
+            dev.patrickgold.florisboard.ime.media.emoji.EmojiHistoryHelper.markEmojiUsed(prefs, emoji)
+        }
+    }
+    // searching, the panel grows to hold the results card above a full keyboard (Gboard does too)
+    androidx.compose.foundation.layout.Column(if (searching) modifier.fillMaxWidth() else modifier.fillMaxWidth().height(FlorisImeSizing.imeUiHeight())) {
         io.github.sillypuppyy.dogboard.design.LiveKbBar(
             strip = emptyList(), onPick = {}, onLeft = {}, panel = "emoji",
-            onBack = { imeController.updateStateBlocking { emitDescriptor(ImeActions.ShowTextPanel) } },
+            emojiSearch = searching, onEmojiSearch = { searching = true },
+            onBack = { if (searching) searching = false else imeController.updateStateBlocking { emitDescriptor(ImeActions.ShowTextPanel) } },
         )
+        if (searching) {
+            DogBoardEmojiSearch(recents = sections.firstOrNull { it.category == 0 }?.sets?.map { it.base(skinTone) }.orEmpty(), skinTone = skinTone, onEmoji = markUsed)
+            return@Column
+        }
         io.github.sillypuppyy.dogboard.design.LiveEmojiPanel(
             sections = sections,
             skinTone = skinTone,

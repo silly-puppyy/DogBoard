@@ -146,3 +146,55 @@ fun LiveEmojiPanel(
         }
     }
 }
+
+/**
+ * Emoji search, as Gboard (measured 2026-11-15; user: "we listen to Gboard"): a rounded card with two
+ * rows of results that scroll sideways and, at its bottom, the search field (magnifier, the query
+ * with a caret, clear once something is typed); the full keyboard below types into the field.
+ * Drawn with the theme's tile tokens; an empty query shows [recents].
+ */
+@Composable
+fun LiveEmojiSearchCard(
+    query: String,
+    results: List<Emoji>,
+    recents: List<Emoji>,
+    onEmoji: (Emoji) -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dark = liveDark()
+    val theme = liveTheme()
+    val r = remember(dark, theme) { KbSpec.render(theme.apply(KbProps(dark = dark, panel = "emoji", only = "live"))) }
+    val t = r.t
+    val shown = if (query.isBlank()) recents else results
+    Column(
+        modifier.fillMaxWidth().themeBg(t).padding(horizontal = 8.dp, vertical = 4.dp)
+            .background(t.tile, RoundedCornerShape(16.dp)).padding(vertical = 4.dp),
+    ) {
+        // two rows, filled column by column so both rows scroll together
+        androidx.compose.foundation.lazy.grid.LazyHorizontalGrid(
+            androidx.compose.foundation.lazy.grid.GridCells.Fixed(2), Modifier.fillMaxWidth().height(104.dp),
+        ) {
+            items(shown.size) { i ->
+                val e = shown[i]
+                Box(Modifier.size(48.dp, 52.dp).clickable { onEmoji(e) }, contentAlignment = Alignment.Center) {
+                    DText(e.value, style = designTextStyle(28.sp, 400, Color.Black))
+                }
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Symbol("search", 22.sp, t.barMuted)
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                if (query.isEmpty()) DText("Search emoji", style = designTextStyle(16.sp, 400, t.barMuted))
+                else DText(query, style = designTextStyle(16.sp, 400, t.tileFg))
+                Box(Modifier.padding(start = 1.dp).size(2.dp, 20.dp).background(t.linkFg))
+            }
+            if (query.isNotEmpty()) Box(Modifier.size(36.dp).clickable(onClick = onClear), contentAlignment = Alignment.Center) {
+                Symbol("cancel", 22.sp, t.barMuted, fill = 1)
+            }
+        }
+    }
+}

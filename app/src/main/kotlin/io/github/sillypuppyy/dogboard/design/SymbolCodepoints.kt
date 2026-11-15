@@ -110,4 +110,5 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "widgets" to 0xE1BD,
     "work" to 0xE943,
     "public" to 0xE80B,
+    "cancel" to 0xE888,
 )

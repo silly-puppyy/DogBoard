@@ -166,6 +166,9 @@ fun LiveKbBar(
     chips: List<KbChipData> = emptyList(),
     onChip: (Int) -> Unit = {},
     onClip: () -> Unit = {},
+    /** The emoji panel's search state and its header's Search pill. */
+    emojiSearch: Boolean = false,
+    onEmojiSearch: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val dark = liveDark()
@@ -193,15 +196,16 @@ fun LiveKbBar(
             chips = if (chipBar) chips else null,
             clipLabel = clipLabel ?: "", clipMedia = clipMedia,
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
-            removedWord = removed ?: "", clipFilter = clipFilter,
+            removedWord = removed ?: "", clipFilter = clipFilter, emojiSearch = emojiSearch,
         )
         val themed = liveTheme().apply(props)
         val render = remember(themed) { KbSpec.render(themed) }
-        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic, onLongPick, onUndo, onClip, onChip) {
+        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic, onLongPick, onUndo, onClip, onChip, onEmojiSearch) {
             KbActions(
                 onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onSlotLong = { i -> strip.getOrNull(i)?.let(onLongPick) },
                 onUndo = onUndo, onRecentClip = onClip, onChip = onChip, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic,
                 onClipFilter = { i -> io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.value = i },
+                onEmojiSearch = onEmojiSearch,
             )
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }

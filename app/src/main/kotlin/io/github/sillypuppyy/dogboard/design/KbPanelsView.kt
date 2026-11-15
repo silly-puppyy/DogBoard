@@ -76,8 +76,14 @@ fun KbPanelHeader(r: KbRender) {
                 // Kb:50-56
                 Row(Modifier.fillMaxWidth().padding(end = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     BackButton(r)
+                    // searching (Gboard): the header is a title; the field sits above the keyboard
+                    if (x.emojiSearch) {
+                        DText("Search emoji", Modifier.weight(1f), style = text(16, 500, t.barFg).copy(textAlign = TextAlign.Start))
+                        return@Row
+                    }
+                    val actions = LocalKbActions.current
                     Row(
-                        Modifier.weight(1f).height(36.dp).background(t.tile, PILL).padding(horizontal = 12.dp),
+                        Modifier.weight(1f).height(36.dp).clip(PILL).tap(actions?.onEmojiSearch).background(t.tile, PILL).padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Symbol("search", 20.sp, t.barMuted)
