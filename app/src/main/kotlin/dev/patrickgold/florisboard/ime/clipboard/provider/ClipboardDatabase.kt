@@ -181,7 +181,12 @@ data class ClipboardItem(
                 }
             }
 
-            return ClipboardItem(0, type, text, uri, System.currentTimeMillis(), false, mimeTypes, isSensitive, isRemoteDevice)
+            // DogBoard: when the clip was really copied (the system's own time), not when we first saw
+            // it, so a keyboard restart that picks up an old clip doesn't offer it as just copied (the
+            // description timestamp is wall-clock time: checked on the emulator, 2026-11-15)
+            val now = System.currentTimeMillis()
+            val copied = data.description.timestamp.takeIf { it in (now - 7 * 24 * 3_600_000L)..now } ?: now
+            return ClipboardItem(0, type, text, uri, copied, false, mimeTypes, isSensitive, isRemoteDevice)
         }
     }
 
