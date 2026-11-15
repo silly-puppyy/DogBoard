@@ -78,6 +78,9 @@ class SetHomeActions(
     val numberRow: Boolean = false,
     val onNumberRow: (Boolean) -> Unit = {},
     val actionWords: Boolean = false,
+    /** Layout style: 0 Simple, 1 Comma & period, 2 Custom. */
+    val layoutPreset: Int = 0,
+    val onLayoutPreset: (Int) -> Unit = {},
     val onActionWords: (Boolean) -> Unit = {},
     val onSearch: (() -> Unit)? = null,
     val keyboardHeight: Int = 100,
@@ -116,10 +119,12 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 }
                 // SetHome:31-81 main choices
                 SetGroup("Main choices") {
-                    // live: hidden until the comma-and-period layout exists
-                    if (actions == null) SetBlockRow("main:layout") {
+                    // live: Simple and Comma & period set the presets; Custom (shown whenever the elements
+                    // are mixed) opens Settings › Layout (designer answers §1)
+                    SetBlockRow("main:layout") {
                         TitleSub("Layout style", "How the bottom row and long-press work")
-                        Segmented("seg:layout", listOf("Simple", "Comma & period", "Custom"), 0, listOf(1f, 1f, 0.8f))
+                        Segmented("seg:layout", listOf("Simple", "Comma & period", "Custom"), actions?.layoutPreset ?: 0, listOf(1f, 1f, 0.8f),
+                            onSelect = actions?.let { a -> { i: Int -> a.onLayoutPreset(i) } })
                     }
                     SetLinkRow("main:languages", actions?.onLanguages) {
                         TitleSub("Languages", "English (US) · QWERTY", Modifier.weight(1f))
@@ -162,7 +167,6 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         SetSwitchRow("main:sound", "Sound", "A click on each key", actions.sound, actions.onSound)
                         SetSwitchRow("main:vibration", "Vibration", "A tap on each key", actions.vibration, actions.onVibration)
                         SetSwitchRow("main:numrow", "Number row", "Digits above the letters", actions.numberRow, actions.onNumberRow)
-                        SetSwitchRow("main:actionword", "Action key as a word", "Send, Search, Go written out instead of their icons", actions.actionWords, actions.onActionWords)
                         SetSliderRow(
                             "main:height", "Keyboard height", "Taller keys are easier to hit; shorter ones leave more room for the app.",
                             actions.keyboardHeight.toFloat(), 100f, 80f..130f, 5f, { v -> "${v.toInt()} %" },

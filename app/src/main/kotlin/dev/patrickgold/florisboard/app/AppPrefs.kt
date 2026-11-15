@@ -445,6 +445,32 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__action_key_words",
             default = false,
         )
+        // DogBoard: the designer's other Layout elements (Settings › Layout, mix and match)
+        /** Number row "on long-press": q-p offer their digit first (numberRow stays the "On" choice). */
+        val numberRowLongPress = boolean(
+            key = "keyboard__number_row_long_press",
+            default = false,
+        )
+        /** Long-press hints in the key corner: off / accents / symbols. */
+        val hintKind = string(
+            key = "keyboard__hint_kind",
+            default = "off",
+        )
+        /** Space-bar label: auto (the language name with 2+ languages) / lang / space / blank. */
+        val spaceLabel = string(
+            key = "keyboard__space_label",
+            default = "auto",
+        )
+        /** Bottom row: simple (123, emoji, space, action) or classic (?123, comma, emoji, space, period, action). */
+        val bottomRow = string(
+            key = "keyboard__bottom_row",
+            default = "simple",
+        )
+        /** Letters on the keys always in capitals (else they follow shift). */
+        val capsLabels = boolean(
+            key = "keyboard__caps_labels",
+            default = false,
+        )
         // DogBoard: keyboard height as a percentage of the design's key area (settings layout v2)
         val heightPercent = int(
             key = "keyboard__height_percent",

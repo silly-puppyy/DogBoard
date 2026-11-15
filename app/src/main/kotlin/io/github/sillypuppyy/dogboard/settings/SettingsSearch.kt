@@ -13,7 +13,12 @@ object SettingsSearch {
         Entry("Sound", "Main choices", "feedback", "click audio noise volume"),
         Entry("Vibration", "Main choices", "feedback", "haptics haptic buzz tap feel"),
         Entry("Number row", "Main choices", "home", "digits numbers top row"),
-        Entry("Action key as a word", "Main choices", "home", "enter return send search go done icon label"),
+        Entry("Layout", "Main choices", "layout", "layout style simple classic comma period custom mix match"),
+        Entry("Bottom row", "Layout", "layout", "comma period 123 emoji action"),
+        Entry("Long-press hints", "Layout", "layout", "hint corner accents symbols"),
+        Entry("Space-bar label", "Layout", "layout", "space bar language name blank"),
+        Entry("Action key", "Layout", "layout", "enter return send search go done icon word label"),
+        Entry("Letter case", "Layout", "layout", "capitals uppercase caps labels"),
         // languages
         Entry("Languages", "Languages and layouts", "languages", "language layout qwerty add keyboard"),
         // look

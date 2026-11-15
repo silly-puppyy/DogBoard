@@ -32,6 +32,10 @@ data class TouchModelOptions(
     val flickKeyHintPlacement: FlickKeyHintPlacement,
     // DogBoard: field type, selects the email/URL bottom-row variants of the letter layers
     val keyVariation: KeyVariation = KeyVariation.NORMAL,
+    // DogBoard: number row "on long-press" (designer's Layout element): q-p offer their digit first
+    val numberRowLongPress: Boolean = false,
+    // DogBoard: long-press hints "Symbols": each letter's hinted symbol (KbSpec.AND_HINT) comes first
+    val symbolLongPress: Boolean = false,
 ) {
     companion object {
         val Default = TouchModelOptions(

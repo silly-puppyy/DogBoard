@@ -134,6 +134,14 @@ fun ImeKeyboardBox(
 
     val spaceBarMode by prefs.keyboard.spaceBarMode.collectAsState()
     val displayLanguageNamesIn by prefs.localization.displayLanguageNamesIn.collectAsState()
+    // DogBoard: the language name for the design's space-bar label (Layout element "Space-bar label")
+    val languageName = remember(model, displayLanguageNamesIn) {
+        val locale = FlorisLocale.from(model.locales.getOrElse(0) { "en" })
+        when (displayLanguageNamesIn) {
+            DisplayLanguageNamesIn.SYSTEM_LOCALE -> locale.displayName()
+            DisplayLanguageNamesIn.NATIVE_LOCALE -> locale.displayName(locale)
+        }
+    }
     val spaceBarDisplayOverride = remember(model, spaceBarMode, displayLanguageNamesIn) {
         when (spaceBarMode) {
             SpaceBarMode.NOTHING -> K3String.Empty
@@ -268,6 +276,11 @@ fun ImeKeyboardBox(
                     enterAction = enterAction,
                     numberRow = prefs.keyboard.numberRow.collectAsState().value || passwordField,
                     actionWords = prefs.keyboard.actionKeyWords.collectAsState().value,
+                    numberRowLongPress = prefs.keyboard.numberRowLongPress.collectAsState().value,
+                    hintKind = prefs.keyboard.hintKind.collectAsState().value,
+                    spaceLabel = prefs.keyboard.spaceLabel.collectAsState().value,
+                    langName = languageName,
+                    capsLabels = prefs.keyboard.capsLabels.collectAsState().value,
                     actionLabel = actionLabel,
                     // the touch model swaps the email/URL bottom row into "base"/"shift" itself
                     field = when (layoutVariation) {

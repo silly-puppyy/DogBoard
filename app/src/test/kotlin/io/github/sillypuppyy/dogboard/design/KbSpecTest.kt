@@ -37,6 +37,13 @@ class KbSpecTest : FunSpec({
         key(KbProps(), "ret").let { it.icon shouldBe "keyboard_return"; it.bg shouldBe css("#dbe2f9") }
         key(KbProps(theme = "dog"), "ret").let { it.icon shouldBe "pets"; it.fill shouldBe 1 }
     }
+    test("layout elements (Kb:569-573, 606, 747-751): letter case, hint kinds, digits on long-press") {
+        key(KbProps(caseMode = "caps"), "q").label shouldBe "Q"
+        key(KbProps(hintKind = "symbols"), "a").hint shouldBe "@"
+        key(KbProps(hintKind = "accents"), "a").hint shouldBe "à"
+        key(KbProps(numRow = "hints"), "q").hint shouldBe "1"
+        KbSpec.render(KbProps(numRow = "on")).rows[0].keys.map { it.label } shouldContainExactly "1234567890".map { it.toString() }
+    }
     test("key preview: held, then fading after release without the key looking pressed") {
         val held = KbSpec.render(KbProps(preview = "g"))
         held.pv!!.alpha shouldBe 1f
@@ -64,7 +71,11 @@ class KbSpecTest : FunSpec({
     test("Android-style bottom row (Kb:471) and labels") {
         KbSpec.render(KbProps(kstyle = "android")).rows[3].keys.map { it.id } shouldContainExactly listOf("mode-?123", ",", "fn", "space", ".", "ret")
         key(KbProps(kstyle = "android"), "space").label shouldBe ""
-        key(KbProps(), "space").let { it.label shouldBe "space"; it.fs shouldBe 14f; it.fg shouldBe css("#1a1b20") }
+        // Kb:757 (current canvas): Auto is blank with one language, the language name with the globe key
+        key(KbProps(), "space").let { it.label shouldBe ""; it.fs shouldBe 14f; it.fg shouldBe css("#1a1b20") }
+        key(KbProps(spaceLabel = "space"), "space").label shouldBe "space"
+        key(KbProps(spaceLabel = "lang", langName = "Deutsch"), "space").label shouldBe "Deutsch"
+        key(KbProps(fnKey = "globe", langName = "English (US)"), "space").label shouldBe "English (US)"
     }
     test("url row and .com (Kb:475, 532)") {
         key(KbProps(field = "url"), ".com").let { it.fs shouldBe 16f; it.fw shouldBe 500 }

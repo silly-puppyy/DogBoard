@@ -425,8 +425,20 @@ private fun computeTouchKeyboard(
                                 data = key,
                             )
                         }
-                        else -> key.longPressKeyIds?.let { longPressKeyIds ->
-                            val defaultKeyId = key.longPressDefaultKeyId ?: longPressKeyIds.first()
+                        else -> (key.longPressKeyIds ?: emptyList()).let { ids ->
+                            // DogBoard: digits on long-press of the top row (q→1 … p→0) come first
+                            val letter = (key.output as? org.k3lp.lib.text.K3String)?.toText()?.lowercase()?.takeIf { it.length == 1 }
+                            val digit = letter
+                                ?.takeIf { options.numberRowLongPress && it[0] in TOP_ROW }
+                                ?.let { K3KeyId("s-" + DIGITS[TOP_ROW.indexOf(it[0])]) }?.takeIf { model.keys.byKeyId[it] != null }
+                            // the hinted symbol as a key of the layout that types it (the symbol planes have them all)
+                            val symbol = letter?.takeIf { options.symbolLongPress && it[0] in 'a'..'z' }
+                                ?.let { io.github.sillypuppyy.dogboard.design.KbSpec.AND_HINT[it] }
+                                ?.let { sym -> symbolKeyIds(model)[sym] }
+                            listOfNotNull(digit ?: symbol) + ids to (digit ?: symbol)
+                        }.takeIf { it.first.isNotEmpty() }?.let { (longPressKeyIds, added) ->
+                            // an added digit or symbol is the default (it is what the hint shows)
+                            val defaultKeyId = added ?: key.longPressDefaultKeyId?.takeIf { it in longPressKeyIds } ?: longPressKeyIds.first()
                             val defaultKeyIndex = longPressKeyIds.indexOf(defaultKeyId)
                             buildList {
                                 longPressKeyIds.forEach { keyId ->
@@ -551,4 +563,22 @@ fun K3Key.isSuitableForSpaceBarDisplayOverride(display: K3StringOrDescriptor): B
 }
 fun K3Key.isSuitableForSimplePopup(): Boolean {
     return layerId == null && output is K3String && output != ASCII_SPACE
+}
+
+// DogBoard: the top letter row and its digits (number row on long-press)
+private const val TOP_ROW = "qwertyuiop"
+private const val DIGITS = "1234567890"
+
+/** DogBoard: a key id that types each single character, from the symbol planes (ids "s-…") first. */
+private val symbolKeyIdCache = java.util.WeakHashMap<Any, Map<String, K3KeyId>>()
+
+private fun symbolKeyIds(model: K3Model): Map<String, K3KeyId> = synchronized(symbolKeyIdCache) {
+    symbolKeyIdCache.getOrPut(model) {
+        val out = HashMap<String, K3KeyId>()
+        for ((id, key) in model.keys.byKeyId) {
+            val text = (key.output as? org.k3lp.lib.text.K3String)?.toText() ?: continue
+            if (text.length == 1 && (text !in out || id.toString().startsWith("s-"))) out[text] = id
+        }
+        out
+    }
 }

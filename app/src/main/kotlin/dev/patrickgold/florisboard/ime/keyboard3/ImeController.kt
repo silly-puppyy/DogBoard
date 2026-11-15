@@ -224,6 +224,8 @@ class ImeController(
         prefs.keyboard.multiTapHighlightEnabled.asFlow(),
         prefs.keyboard.flickKeyHintEnabled.asFlow(),
         prefs.keyboard.flickKeyHintPlacement.asFlow(),
+        prefs.keyboard.numberRowLongPress.asFlow(),
+        prefs.keyboard.hintKind.asFlow(),
     ) { values ->
         TouchModelOptions(
             showNumberRow = values[0] as Boolean,
@@ -234,6 +236,8 @@ class ImeController(
             multiTapHighlightEnabled = values[5] as Boolean,
             flickKeyHintEnabled = values[6] as Boolean,
             flickKeyHintPlacement = values[7] as FlickKeyHintPlacement,
+            numberRowLongPress = values[8] as Boolean,
+            symbolLongPress = values[9] == "symbols",
         )
     }.stateIn(scope, SharingStarted.Eagerly, TouchModelOptions.Default)
 

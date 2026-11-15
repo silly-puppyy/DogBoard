@@ -71,6 +71,11 @@ fun HomeScreen() {
         val vibration by prefs.inputFeedback.hapticEnabled.collectAsState()
         val numberRow by prefs.keyboard.numberRow.collectAsState()
         val actionWords by prefs.keyboard.actionKeyWords.collectAsState()
+        // the layout elements, followed through their flows, as the Layout style selector
+        prefs.keyboard.numberRow.collectAsState().value; prefs.keyboard.numberRowLongPress.collectAsState().value
+        prefs.keyboard.bottomRow.collectAsState().value; prefs.keyboard.hintKind.collectAsState().value
+        prefs.keyboard.spaceLabel.collectAsState().value; prefs.keyboard.capsLabels.collectAsState().value
+        val layoutPreset = io.github.sillypuppyy.dogboard.settings.LayoutPrefs.presetIndex(io.github.sillypuppyy.dogboard.settings.LayoutPrefs.read(prefs))
         val keyboardHeight by prefs.keyboard.heightPercent.collectAsState()
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
@@ -94,6 +99,14 @@ fun HomeScreen() {
                 numberRow = numberRow,
                 onNumberRow = { on -> scope.launch { prefs.keyboard.numberRow.set(on) } },
                 actionWords = actionWords,
+                layoutPreset = layoutPreset,
+                onLayoutPreset = { i ->
+                    when (i) {
+                        0 -> scope.launch { io.github.sillypuppyy.dogboard.settings.LayoutPrefs.write(prefs, io.github.sillypuppyy.dogboard.design.settings.LayoutElements.SIMPLE) }
+                        1 -> scope.launch { io.github.sillypuppyy.dogboard.settings.LayoutPrefs.write(prefs, io.github.sillypuppyy.dogboard.design.settings.LayoutElements.CLASSIC) }
+                        else -> navController.navigate(Routes.Settings.Layout)
+                    }
+                },
                 onActionWords = { on -> scope.launch { prefs.keyboard.actionKeyWords.set(on) } },
                 keyboardHeight = keyboardHeight,
                 onKeyboardHeight = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },

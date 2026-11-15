@@ -69,6 +69,8 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "play_circle" to 0xE1C4,
     "preview" to 0xF1C5,
     "push_pin" to 0xF10D,
+    "radio_button_checked" to 0xE837,
+    "radio_button_unchecked" to 0xE836,
     "redo" to 0xE15A,
     "restart_alt" to 0xF053,
     "restaurant" to 0xE56C,

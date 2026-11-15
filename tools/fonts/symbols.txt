@@ -65,6 +65,8 @@ pill
 play_circle
 preview
 push_pin
+radio_button_checked
+radio_button_unchecked
 redo
 restart_alt
 restaurant

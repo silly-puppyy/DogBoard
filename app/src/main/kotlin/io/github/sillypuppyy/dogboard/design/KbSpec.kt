@@ -66,6 +66,16 @@ data class KbProps(
      * instead; follow-up once the touch model supports a fixed row height.
      */
     val numberRow: Boolean = false,
+    /** Kb:432-436, 569-573 layout elements (Settings › Layout). numRow: off / on / hints (digits on long-press of the top row); null = Kb's default by key style (on if [numberRow]). */
+    val numRow: String? = null,
+    /** off / accents / symbols; null = Kb's default (from [hints] and the key style). */
+    val hintKind: String? = null,
+    /** auto / lang / space / blank (Kb:757: auto shows the language name only with the globe key, i.e. 2+ languages). */
+    val spaceLabel: String = "auto",
+    /** The language name for the space bar (Kb's langName). */
+    val langName: String = "English",
+    /** shift / caps: letters follow shift, or always show capitals (Kb:606). */
+    val caseMode: String = "shift",
     /**
      * The action key: "word" (the Kb canvas draws words) or "icon" (Panels: the live default); a word
      * that doesn't fit shows the icon (Panels:56).
@@ -308,6 +318,9 @@ object KbSpec {
         val kstyle = P.kstyle
         val ret = P.ret
         val hints = P.hints
+        // Kb:569-573
+        val numRow = P.numRow ?: if (P.numberRow) "on" else if (kstyle == "android") "hints" else "off"
+        val hintKind = P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
         val panel = P.panel
         val dev = P.dev && panel.isEmpty()
         val incognito = P.incognito
@@ -338,7 +351,7 @@ object KbSpec {
         val mh = KEY_MH
 
         // Kb:453-503 layouts
-        val upper = shift != "off"
+        val upper = shift != "off" || P.caseMode == "caps" // Kb:606
         fun ch(c: String, w: Float = 1f) = K(c, "char", w, label = c)
         fun letters(s: String) = s.map { c -> c.toString() }.map { c -> K(c, "char", 1f, label = if (upper) up(c) else c, base = c) }
         fun gap(w: Float) = K("", "gap", w)
@@ -401,7 +414,8 @@ object KbSpec {
                     ),
                 )
             }
-            else -> (if (P.numberRow) listOf("1234567890".map { ch(it.toString()) }) else emptyList()) + listOf(
+            // Kb:655: the number row (ours is a full-height row, the user's rule, not Kb's 44 dp)
+            else -> (if (numRow == "on" && plane == "base" && !landscape) listOf("1234567890".map { ch(it.toString()) }) else emptyList()) + listOf(
                 letters("qwertyuiop"),
                 listOf(gap(0.5f)) + letters("asdfghjkl") + listOf(gap(0.5f)),
                 listOf(shiftK, gap(0.2133f)) + letters("zxcvbnm") + listOf(gap(0.2267f), bksp()),
@@ -449,15 +463,25 @@ object KbSpec {
                     fs = (if (letterRe.matches(label.take(1)) && label.length == 1) 25 else 24) * scale
                     if (label == ".com") { fs = 16f; fw = 500 }
                     val base = k.base.ifEmpty { k.id }
-                    if (plane == "base" && hints) {
-                        if (kstyle == "android") hint = AND_HINT[base] ?: ""
+                    // Kb:747-751
+                    if (plane == "base" && hintKind != "off") {
+                        if (hintKind == "symbols") hint = AND_HINT[base] ?: ""
                         else if (base in LP && base != ".com") hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
-                    } else if (plane == "base" && kstyle == "android" && ri == 0) hint = AND_HINT[base] ?: ""
+                    }
+                    if (plane == "base" && numRow == "hints" && base in "qwertyuiop" && base.length == 1) hint = AND_HINT[base] ?: ""
                 }
                 if (k.kind == "pad") { fs = 26f; fw = 400 }
                 if (k.kind == "fnchar") { fs = if (k.label.length > 1) 15f else 22f; fw = if (k.label.length > 1) 500 else 400 }
                 if (k.kind == "mode") { fs = 15f; fw = 500 }
-                if (k.kind == "space") { label = if (landscape || kstyle == "android") "" else "space"; fs = 14f; fw = 400; aria = "Space" }
+                // Kb:757 (themes' own space text: not in our tokens yet)
+                if (k.kind == "space") {
+                    label = when {
+                        P.spaceLabel == "space" -> "space"
+                        P.spaceLabel == "lang" || (P.spaceLabel == "auto" && fnKeyKind == "globe") -> P.langName
+                        else -> ""
+                    }
+                    fs = 14f; fw = 400; aria = "Space"
+                }
                 if (k.kind == "spaceicon") { icon = "space_bar"; label = ""; aria = "Space" }
                 if (k.kind == "shift") {
                     aria = when (shift) { "lock" -> "Caps lock on"; "off" -> "Shift"; "auto" -> "Shift, auto-capital"; else -> "Shift on" }

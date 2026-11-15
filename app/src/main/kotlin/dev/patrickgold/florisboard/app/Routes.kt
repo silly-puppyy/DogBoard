@@ -108,6 +108,11 @@ object Routes {
         @Deeplink("settings/home")
         object Home
 
+        // DogBoard: Settings › Layout, the designer's mix-and-match page (SetLayout.dc.html)
+        @Serializable
+        @Deeplink("settings/layout")
+        object Layout
+
         @Serializable
         @Deeplink("settings/localization")
         object Localization
@@ -323,6 +328,7 @@ object Routes {
             composableWithDeepLink(Settings.Smartbar::class) { SmartbarScreen() }
 
             composableWithDeepLink(Settings.Typing::class) { TypingScreen() }
+            composableWithDeepLink(Settings.Layout::class) { io.github.sillypuppyy.dogboard.settings.LayoutScreen() }
 
             composableWithDeepLink(Settings.Dictionary::class) {
                 // DogBoard: the designed "Your words" screen (SetDict.dc.html) with the design on
@@ -349,6 +355,7 @@ object Routes {
                     nav.navigate(
                         when (route) {
                             "typing" -> Settings.Typing
+                            "layout" -> Settings.Layout
                             "feedback" -> Settings.Keyboard.InputFeedback
                             "languages" -> Settings.Localization
                             "theme" -> Settings.Theme
