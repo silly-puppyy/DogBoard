@@ -36,6 +36,8 @@ data class KbProps(
     val removedWord: String = "keyboards",
     /** bar "clip": the recent-copy chip's text (Kb:102-105; the canvas's sample is "Paste copied image"). */
     val clipLabel: String = "Paste copied image",
+    /** Smart-chip bars (Kb:840-848): the live chips (icon, label, sub); null shows the canvas's samples for [bar]. */
+    val chips: List<KbChipData>? = null,
     /** The chip's thumbnail (images and videos; a text clip has none). */
     val clipMedia: Boolean = true,
     val trackpad: Boolean = false,
@@ -125,6 +127,9 @@ data class KbRow(val keys: List<KbKey>)
 data class KbCapPos(val capX: Float, val capW: Float, val capTop: Float, val label: String, val base: String)
 
 data class KbPreview(val x: Float, val y: Float, val w: Float, val label: String, val fw: Int, val alpha: Float = 1f)
+/** A smart chip (Kb:840-851): Material Symbols icon, label, optional sub line. */
+data class KbChipData(val icon: String, val label: String, val sub: String = "")
+
 data class KbLongPress(
     val x: Float, val y: Float, val items: List<Triple<String, Color, Color>>,
     /** Each item's cell, in keyboard dp: [KbSpec.longPressCells]. */
@@ -280,6 +285,17 @@ object KbSpec {
         "go" to "arrow_forward", "search" to "search", "send" to "send", "next" to "keyboard_tab",
         "previous" to "keyboard_tab_rtl", "done" to "check", "join" to "arrow_forward", "route" to "arrow_forward",
         "continue" to "arrow_forward",
+    )
+
+    /** Kb:840-848 smart-chip bars: (icon, label, sub) per bar id. */
+    val CHIPS: Map<String, List<KbChipData>> = mapOf(
+        "otp" to listOf(KbChipData("sms", "482 913", "from Messages")),
+        "email" to listOf(KbChipData("person", "alex@example.com"), KbChipData("work", "alex@work.example")),
+        "phone" to listOf(KbChipData("call", "+1 555-0142", "yours")),
+        "address" to listOf(KbChipData("home", "12 Park Lane, Springfield")),
+        "birthday" to listOf(KbChipData("cake", "14 March 1994", "your birthday")),
+        "date" to listOf(KbChipData("today", "Today"), KbChipData("event", "Tomorrow"), KbChipData("date_range", "Fri 20 Nov")),
+        "contact" to listOf(KbChipData("person", "Sam Lee"), KbChipData("call", "+1 555-0142"), KbChipData("cake", "3 December")),
     )
 
     /** Kb:602-612 sample bars. */
@@ -545,7 +561,7 @@ object KbSpec {
         } else null
 
         // Kb:601-635 suggestion bar
-        val special = P.bar in listOf("tools", "clip", "autofill", "removed", "voice") && P.slots == null
+        val special = (P.bar in listOf("tools", "clip", "autofill", "removed", "voice") || P.bar in KbSpec.CHIPS) && P.slots == null
         val slotSrc = P.slots ?: BARS[P.bar]
         val mIncog = incognito && !special && (P.bar == "empty" || P.bar == "hi") && P.slots == null
         val mSlots = !special && !mIncog && slotSrc != null

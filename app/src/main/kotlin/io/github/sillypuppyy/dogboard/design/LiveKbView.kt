@@ -161,6 +161,9 @@ fun LiveKbBar(
     /** The recent-copy chip's text, shown in place of predictions while nothing is typed (null: none). */
     clipLabel: String? = null,
     clipMedia: Boolean = false,
+    /** Smart chips in place of the suggestions (Kb:840-851), and a tap on one. */
+    chips: List<KbChipData> = emptyList(),
+    onChip: (Int) -> Unit = {},
     onClip: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -179,21 +182,23 @@ fun LiveKbBar(
         // the tool row replaces the suggestions while open; a panel shows its header instead
         // incognito with nothing typed: the design's incognito note instead of predictions (Kb:131)
         val incognitoNote = incognito && !toolRow && strip.none { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
-        val clip = clipLabel != null && !toolRow && removed == null && strip.all { it.kind == io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
+        val chipBar = chips.isNotEmpty() && !toolRow && removed == null
+        val clip = !chipBar && clipLabel != null && !toolRow && removed == null && strip.all { it.kind == io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
         val trackpad by io.github.sillypuppyy.dogboard.ime.LiveUi.trackpad.collectAsState()
         val props = KbProps(
-            dark = dark, slots = if (toolRow || incognitoNote || removed != null || clip) null else slots,
-            bar = if (toolRow) "tools" else if (removed != null) "removed" else if (clip) "clip" else "empty",
+            dark = dark, slots = if (toolRow || incognitoNote || removed != null || clip || chipBar) null else slots,
+            bar = if (toolRow) "tools" else if (removed != null) "removed" else if (chipBar) "contact" else if (clip) "clip" else "empty",
+            chips = if (chipBar) chips else null,
             clipLabel = clipLabel ?: "", clipMedia = clipMedia,
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
             removedWord = removed ?: "",
         )
         val themed = liveTheme().apply(props)
         val render = remember(themed) { KbSpec.render(themed) }
-        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic, onLongPick, onUndo, onClip) {
+        val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic, onLongPick, onUndo, onClip, onChip) {
             KbActions(
                 onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onSlotLong = { i -> strip.getOrNull(i)?.let(onLongPick) },
-                onUndo = onUndo, onRecentClip = onClip, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic,
+                onUndo = onUndo, onRecentClip = onClip, onChip = onChip, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic,
             )
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }

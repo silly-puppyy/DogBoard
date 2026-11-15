@@ -973,6 +973,12 @@ class ImeController(
 
         private fun publishSuggestions() {
             val sink = suggestionSink ?: return
+            // the designer's contact chips: a contact's first name typed (opt-in contacts; never in
+            // incognito or password fields)
+            io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value =
+                if (!currentWord.isEmpty && learningAllowed() && state.content.selection.isCollapsed()) {
+                    io.github.sillypuppyy.dogboard.ime.LiveStrip.contactChips(currentWord.text)
+                } else emptyList()
             suggestionJob?.cancel()
             wordAroundCursor = null
             if (!suggestionsAllowed() || state.content.selection.isNotCollapsed()) {
@@ -1271,6 +1277,16 @@ class ImeController(
                     charsAfter = 1, // TODO
                 )
             }
+        }
+
+        /** DogBoard: a smart chip tapped: its text replaces the word being typed, then a space; nothing is learned. */
+        fun emitChip(text: String) {
+            val typed = currentWord.text
+            if (typed.isNotEmpty() && !replaceBeforeCursor(typed, "$text ")) return
+            if (typed.isEmpty()) emitText("$text ".asK3String())
+            currentWord.clear()
+            io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value = emptyList()
+            publishSuggestions()
         }
 
         fun emitCandidate(candidate: SuggestionCandidate) {

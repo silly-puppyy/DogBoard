@@ -298,6 +298,8 @@ class FlorisImeService : LifecycleInputMethodService() {
             // setting off takes them out again without a restart
             prefs.spelling.useContacts.asFlow().collectLatest { on ->
                 val names = if (on) io.github.sillypuppyy.dogboard.contacts.ContactNames.read(this@FlorisImeService) else emptySet()
+                io.github.sillypuppyy.dogboard.ime.LiveStrip.contactCards =
+                    if (on) io.github.sillypuppyy.dogboard.contacts.ContactCards.read(this@FlorisImeService) else emptyMap()
                 io.github.sillypuppyy.dogboard.engine.TypingEngine.setContactNames(names)
                 imeController.updateState { refreshSuggestions() }
             }

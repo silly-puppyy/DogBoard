@@ -95,8 +95,11 @@ fun TextInputLayout(
             val inlineAutofill by dev.patrickgold.florisboard.ime.nlp.NlpInlineAutofill.suggestions.collectAsState()
             val showAutofill = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && inlineAutofill.isNotEmpty() && !toolRow && panel.isEmpty()
             Box {
+            val chips by io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.collectAsState()
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
                 strip = if (showAutofill) emptyList() else strip,
+                chips = if (showAutofill) emptyList() else chips,
+                onChip = { i -> chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } } },
                 clipLabel = clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
                 onClip = {

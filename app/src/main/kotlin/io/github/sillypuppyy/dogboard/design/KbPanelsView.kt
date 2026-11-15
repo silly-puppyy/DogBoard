@@ -25,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -126,6 +128,27 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                 Modifier.size(44.dp, 48.dp).tap(actions?.let { a -> { a.onTool(b.icon) } }),
                 contentAlignment = Alignment.Center,
             ) { Symbol(b.icon, 24.sp, t.barFg) }
+        }
+        // Kb:134-140: chips 36 dp, 999 px radius, 12/10 padding, 18 dp icon, 14/500 label, 12/400 sub at 0.75
+        x.mChips -> Row(
+            Modifier.weight(1f).padding(horizontal = 4.dp).clipToBounds(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val actions = LocalKbActions.current
+            for ((i, c) in x.chips.withIndex()) {
+                val first = i == 0
+                val fg = if (first) t.chipFg else t.barFg
+                Row(
+                    Modifier.height(36.dp)
+                        .then(if (first) Modifier.background(t.chip, PILL) else Modifier.cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
+                        .clip(PILL).tap(actions?.let { a -> { a.onChip(i) } }).padding(start = 10.dp, end = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Symbol(c.icon, 18.sp, fg)
+                    DText(c.label, style = text(14, 500, fg))
+                    if (c.sub.isNotEmpty()) DText(c.sub, Modifier.alpha(0.75f), style = text(12, 400, fg))
+                }
+            }
         }
         x.mClip -> Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             // Kb:102-105

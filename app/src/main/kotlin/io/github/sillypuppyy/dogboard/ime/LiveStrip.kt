@@ -14,6 +14,26 @@ import kotlinx.coroutines.launch
 object LiveStrip {
     val strip = MutableStateFlow<List<Suggestion>>(emptyList())
 
+    /** Smart chips in place of the suggestions (contact chips while a contact's first name is typed). */
+    val chips = MutableStateFlow<List<io.github.sillypuppyy.dogboard.design.KbChipData>>(emptyList())
+
+    /** Contacts by lowercase first name ([io.github.sillypuppyy.dogboard.contacts.ContactCards]); empty unless allowed. */
+    @Volatile
+    var contactCards: Map<String, List<io.github.sillypuppyy.dogboard.contacts.ContactCard>> = emptyMap()
+
+    /** The chips for a typed word: one contact's name, number and birthday, or up to three names. */
+    fun contactChips(typed: String): List<io.github.sillypuppyy.dogboard.design.KbChipData> {
+        val cards = contactCards[typed.lowercase()].orEmpty()
+        if (typed.length < 2 || cards.isEmpty()) return emptyList()
+        if (cards.size > 1) return cards.take(3).map { io.github.sillypuppyy.dogboard.design.KbChipData("person", it.name) }
+        val c = cards[0]
+        return listOfNotNull(
+            io.github.sillypuppyy.dogboard.design.KbChipData("person", c.name),
+            c.phone?.let { io.github.sillypuppyy.dogboard.design.KbChipData("call", it) },
+            c.birthday?.let { io.github.sillypuppyy.dogboard.design.KbChipData("cake", it) },
+        )
+    }
+
     /** The word just removed from suggestions by a long-press, while its Undo shows (Kb:117-120). */
     val removed = MutableStateFlow<String?>(null)
 
