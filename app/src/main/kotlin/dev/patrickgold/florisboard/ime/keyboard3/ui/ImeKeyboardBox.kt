@@ -187,7 +187,7 @@ fun ImeKeyboardBox(
         // TODO this launched effect is a hack, there must be a better way
         LaunchedEffect(activeTouchKeyboard) {
             imeController.updateState {
-                state = state.copy(effRowCount = activeTouchKeyboard.rowCount)
+                state = state.copy(effRowCount = activeTouchKeyboard.rowCount, effRowUnits = activeTouchKeyboard.rowUnits)
             }
         }
         val activeTouchLayer = remember(activeTouchKeyboard, touchLayerId) {
@@ -218,7 +218,7 @@ fun ImeKeyboardBox(
                     val effConstraints = Constraints.fixed(
                         width = constraints.maxWidth,
                         height = with(density) {
-                            (keyboardRowHeightDp * activeTouchKeyboard.rowCount).roundToPx()
+                            (keyboardRowHeightDp * activeTouchKeyboard.rowUnits).roundToPx()
                         },
                     )
                     val placeable = measurable.measure(effConstraints)

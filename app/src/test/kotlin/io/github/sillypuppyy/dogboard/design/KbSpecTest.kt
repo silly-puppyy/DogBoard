@@ -203,4 +203,19 @@ class KbSpecTest : FunSpec({
         KbThemes.tokens("dalmatian", false).let { it.bg shouldBe css("#e6e3dc"); it.radius shouldBe 12f }
         KbThemes.tokens("greyhound", true).let { it.radius shouldBe 6f; it.fw shouldBe 300 }
     }
+    test("number row: Gboard's row heights (49.9 / 53.7 / 59 of 58.9 dp per plain row)") {
+        val w = io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(5, true)
+        (w[0] * 58.9f) shouldBe (49.9f plusOrMinus 0.01f)
+        (w[1] * 58.9f) shouldBe (53.7f plusOrMinus 0.01f)
+        w[4] shouldBe 1f
+        w.sum() shouldBe (4.58f plusOrMinus 0.01f) // the keyboard grows by 0.58 of a row, not 1
+        io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(4, false).toList() shouldContainExactly listOf(1f, 1f, 1f, 1f)
+        KbSpec.render(KbProps(numRow = "on")).let { r ->
+            r.rowHs.size shouldBe 5
+            (r.rowHs[0] / r.rowHs[4]) shouldBe (49.9f / 58.9f plusOrMinus 0.001f)
+            r.rowTops[1] shouldBe (r.rowHs[0] plusOrMinus 0.001f)
+            (r.rowTops.last() + r.rowHs.last()) shouldBe (r.keyAreaH plusOrMinus 0.01f)
+        }
+        KbSpec.render(KbProps()).rowHs.distinct().size shouldBe 1
+    }
 })

@@ -54,8 +54,10 @@ object FlorisImeSizing {
 
     @Composable
     fun keyboardUiHeight(): Dp {
-        val rowCount by rowCountAsState()
-        return keyboardRowBaseHeight * rowCount
+        // DogBoard: in plain rows (a number row adds 0.58 of a row, as Gboard)
+        val imeController = LocalImeController.current
+        val imeState by imeController.activeState.collectAsState()
+        return keyboardRowBaseHeight * imeState.effRowUnits
     }
 
     @Composable

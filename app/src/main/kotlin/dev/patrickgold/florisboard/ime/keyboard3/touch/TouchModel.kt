@@ -68,6 +68,8 @@ sealed interface TouchModel {
 class TouchKeyboard(
     val layers: Map<K3LayerId, TouchLayer>,
     val rowCount: Int,
+    /** DogBoard: the key area's height in plain rows (the number row and its letter rows are shorter, as Gboard). */
+    val rowUnits: Float = rowCount.toFloat(),
     val minDeviceWidthMm: Int,
 ) {
     fun findKey(layerId: K3LayerId, position: Offset): TouchKey? {
@@ -360,10 +362,13 @@ private fun computeTouchKeyboard(
                     add(row.withKeysResolved(model, keyPredicate))
                 }
             }
-            val keyHeight = 1f / rows.size
+            // DogBoard: with the number row, Gboard's row heights (Geometry.rowWeights); else equal rows
+            val weights = io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(rows.size, numberRow != null && rows.firstOrNull() === numberRow)
+            val weightSum = weights.sum()
             val touchKeys = mutableListOf<TouchKey>()
             var currentY = 0f
-            for (row in rows) {
+            for ((rowIndex, row) in rows.withIndex()) {
+                val keyHeight = weights[rowIndex] / weightSum
                 val desiredWeightSum = 10f
                 val fullWeightSum = row.fold(0f) { acc, key -> acc + key.width.toFloat() }
                 val stretchWeightSum = row.fold(0f) { acc, key -> acc + (if (key.stretch) key.width.toFloat() else 0f) }
@@ -524,6 +529,7 @@ private fun computeTouchKeyboard(
     return TouchKeyboard(
         layers = touchLayers,
         rowCount = rowCount,
+        rowUnits = if (numberRow != null) io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(rowCount, true).sum() else rowCount.toFloat(),
         minDeviceWidthMm = layersGroup.minDeviceWidth,
     )
 }

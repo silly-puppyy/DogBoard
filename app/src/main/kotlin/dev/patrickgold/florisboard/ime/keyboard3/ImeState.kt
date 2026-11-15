@@ -28,6 +28,8 @@ class ImeState(
     touchLayerId: K3LayerId = ImeLayerIds.Base,
     val effRowCount: Int = 4,
     val flags: ImeStateFlags = ImeStateFlags(),
+    /** DogBoard: the key area's height in plain rows (a number row adds 0.58 of a row, as Gboard). */
+    val effRowUnits: Float = effRowCount.toFloat(),
 ) : K3InputMethodState<ImeState, ImeEditor>(
     model, editor, content, touchLayerId,
 ) {
@@ -36,7 +38,7 @@ class ImeState(
         editor: ImeEditor,
         content: K3Content,
         touchLayerId: K3LayerId,
-    ) = ImeState(model, editor, content, touchLayerId, this.effRowCount, this.flags)
+    ) = ImeState(model, editor, content, touchLayerId, this.effRowCount, this.flags, this.effRowUnits)
 
     fun copy(
         model: K3Model = this.model,
@@ -45,5 +47,6 @@ class ImeState(
         touchLayerId: K3LayerId = this.touchLayerId,
         effRowCount: Int = this.effRowCount,
         flags: ImeStateFlags = this.flags,
-    ) = ImeState(model, editor, content, touchLayerId, effRowCount, flags)
+        effRowUnits: Float = this.effRowUnits,
+    ) = ImeState(model, editor, content, touchLayerId, effRowCount, flags, effRowUnits)
 }

@@ -160,10 +160,11 @@ private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
     val t = r.t
     val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
     // Kb:558: where the spec puts this cap, for the lint's spacing check
-    val capTop = r.floatH + r.barH + r.devH + ri * r.rowH + r.mv
+    val rowTop = r.rowTops.getOrElse(ri) { ri * r.rowH }; val rowH = r.rowHs.getOrElse(ri) { r.rowH }
+    val capTop = r.floatH + r.barH + r.devH + rowTop + r.mv
     val capId = "cap:$ri:${k.id}"
-    val expected = Rect(k.x + r.mh, capTop, k.x + k.w - r.mh, capTop + r.rowH - 2 * r.mv)
-    val inArea = Rect(k.x + r.mh, ri * r.rowH + r.mv, k.x + k.w - r.mh, (ri + 1) * r.rowH - r.mv)
+    val expected = Rect(k.x + r.mh, capTop, k.x + k.w - r.mh, capTop + rowH - 2 * r.mv)
+    val inArea = Rect(k.x + r.mh, rowTop + r.mv, k.x + k.w - r.mh, rowTop + rowH - r.mv)
     Box(Modifier.placeAt(inArea)) {
         Box(
             Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape)

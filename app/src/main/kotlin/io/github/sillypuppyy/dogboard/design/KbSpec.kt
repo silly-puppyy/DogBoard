@@ -178,6 +178,8 @@ data class KbRender(
     val radius: Float, // dp; 999 = pill
     val kbW: Float,
     val rowH: Float,
+    /** Each key row's top and height in the key area (Gboard's shorter rows with the number row). */
+    val rowTops: List<Float> = emptyList(), val rowHs: List<Float> = emptyList(),
     val mv: Float,
     val mh: Float,
     val keyAreaH: Float,
@@ -477,6 +479,10 @@ object KbSpec {
         val units = spec[0].sumOf { it.w.toDouble() }.toFloat()
         val u = kbW / units
         val rowH = keyAreaH / spec.size
+        // with the number row, Gboard's row heights (Geometry.rowWeights); else equal rows
+        val weights = io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(spec.size, numRow == "on" && plane == "base" && !landscape && spec.size > 4)
+        val rowHs = weights.map { it / weights.sum() * keyAreaH }
+        val rowTops = rowHs.runningFold(0f) { acc, h -> acc + h }.dropLast(1)
 
         // Kb:509-512
         val pressed = P.pressed.ifEmpty { if (P.previewFade != null) "" else P.preview }
@@ -577,7 +583,7 @@ object KbSpec {
                     bg = if (spot != null) spot.press else if (fnPress) t.pressFn else t.pressKey
                     bgG = if (spot != null) null else t.grad[if (fnPress) "pressFn" else "pressKey"]
                 }
-                val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + ri * rowH + mv
+                val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + rowTops[ri] + mv
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
                 if (isFnTone && icon.isEmpty() && k.kind != "mode" && k.kind != "fnchar") fs = 15f
                 KbKey(
@@ -656,7 +662,7 @@ object KbSpec {
         val H = hFloat + barH + devH + (if (only == "bar") 0f else keyAreaH) + (if (showNav) navH else 0f) + (if (floating) 8f else 0f)
 
         return KbRender(
-            only = only, t = t, W = W, H = H, radius = radius, kbW = kbW, rowH = rowH, mv = mv, mh = mh, keyAreaH = keyAreaH, navH = navH,
+            only = only, t = t, W = W, H = H, radius = radius, kbW = kbW, rowH = rowH, rowTops = rowTops, rowHs = rowHs, mv = mv, mh = mh, keyAreaH = keyAreaH, navH = navH,
             rows = rows, stripL = stripL, stripR = stripR, showBar = showBar, barH = barH, devH = devH, floatH = hFloat,
             showKeys = showKeys, showNav = showNav, navIcons = !landscape, labelOp = labelOp, capOp = capOp, pos = pos, pv = pv, lp = lp, lm = lm,
             mSlots = mSlots, slots = slots, barOp = if (trackpad) 0.35f else 1f,
@@ -675,7 +681,7 @@ object KbSpec {
             leftFill = if (toolsOpen || incognito) 1 else 0,
             micIcon = if (mVoice) "stop" else "mic", micAria = if (mVoice) "Stop dictation" else "Voice input",
             micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else t.barMuted, micFill = if (mVoice) 1 else 0,
-            trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowH / 2 - 28,
+            trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowHs.last() / 2 - 28,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
             x = KbExtrasSpec.extras(P, t, W),
             slotOverflow = P.slotOverflow, glass = P.theme == "glass" && P.backdrop, blurPx = P.blur, dimA = P.dim,

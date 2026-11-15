@@ -32,6 +32,23 @@ object Geometry {
         else -> 48.0.dp
     }
 
+    /**
+     * Row heights with the number row on, as Gboard draws them (measured 2026-11-15 at 411 dp: number
+     * row 49.9 dp, letter rows 53.7, bottom row 59, against 58.9 per row without it; user: "we listen to
+     * Gboard"), as shares of one plain row: the keyboard grows by 0.58 of a row instead of a whole one.
+     * Without the number row every row is 1.
+     */
+    fun rowWeights(rows: Int, numberRow: Boolean): FloatArray = FloatArray(rows) { i ->
+        when {
+            !numberRow -> 1f
+            i == 0 -> NUMBER_ROW_WEIGHT
+            i == rows - 1 -> 1f
+            else -> LETTER_ROW_WEIGHT_WITH_NUMBER_ROW
+        }
+    }
+    const val NUMBER_ROW_WEIGHT = 49.9f / 58.9f
+    const val LETTER_ROW_WEIGHT_WITH_NUMBER_ROW = 53.7f / 58.9f
+
     /** The user's keyboard height setting (Settings home, 80-130 %), as a factor on the key area. */
     @Volatile
     var heightScale: Float = 1f
