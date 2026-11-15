@@ -88,6 +88,7 @@ fun Symbol(
     modifier: Modifier = Modifier,
     fill: Int = 0,
     weight: Int = 400,
+    shadow: androidx.compose.ui.graphics.Shadow? = null,
 ) {
     val text = remember(name) {
         val cp = SymbolCodepoints[name] ?: error("icon \"$name\" is not bundled; add it to tools/fonts/symbols.txt")
@@ -102,6 +103,7 @@ fun Symbol(
             fontSize = size,
             lineHeight = size,
             color = color,
+            shadow = shadow,
             textAlign = TextAlign.Center,
             platformStyle = PlatformTextStyle(includeFontPadding = false),
             lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),

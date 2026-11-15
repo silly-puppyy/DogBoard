@@ -172,5 +172,10 @@ class KbSpecTest : FunSpec({
         key(g, "space").let { it.label shouldBe "space"; it.fg shouldBe css("#4f545e"); it.fs shouldBe 15f }
         KbThemes.tokens("gloss", false).keyShadow.first().spread shouldBe -0.5f
         key(KbProps(), "q").bgGradient shouldBe null
+        // Kb:551, 763-765: label shadows; shift on lights the label (glow) on the fn tone
+        key(g, "q").ts.size shouldBe 3
+        key(KbProps(theme = "gloss", shift = "on"), "shift").let { it.fg shouldBe css("#ffffff"); it.ts.size shouldBe 3; it.bgGradient!!.stops.first().first shouldBe css("#7a8290") }
+        key(KbProps(theme = "gloss", shift = "lock"), "shift").let { it.ts.first().blur shouldBe 3f; it.shadow.size shouldBe 4 }
+        key(KbProps(shift = "on"), "shift").let { it.ts shouldBe emptyList(); it.bg shouldBe KbThemes.tokens("dogboard", false).key }
     }
 })

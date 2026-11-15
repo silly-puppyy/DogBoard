@@ -101,7 +101,7 @@ class DesignGalleryActivity : ComponentActivity() {
         ) + io.github.sillypuppyy.dogboard.design.KbThemes.moreIds.map { id ->
             // Kb:509-530: the current canvas's extra themes (not in the Look list yet)
             Frame("Theme: $id", "From the current canvas; kept out of the Look list until the theme list is decided.", KbProps(theme = id, dark = id == "dusk" || id == "lagoon", bar = "teh", ret = "send"))
-        }
+        } + Frame("Theme: gloss, shift on", "Kb:763: glow themes light the shift label instead of turning the key white.", KbProps(theme = "gloss", shift = "on", bar = "teh", ret = "send"))
 
         // app pages (SetHome.dc.html etc.), drawn at the canvas width 390 dp
         val PAGES = listOf(

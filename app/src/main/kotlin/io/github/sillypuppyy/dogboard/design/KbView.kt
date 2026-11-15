@@ -169,9 +169,13 @@ private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
                 if (k.icon == "pets") {
                     PawIcon(22.dp, 21.dp, k.fg, Modifier.alpha(r.labelOp))  // Kb:202
                 } else if (k.icon.isNotEmpty()) {
-                    Symbol(k.icon, k.iconSize.sp, k.fg, Modifier.alpha(r.labelOp), fill = k.fill)
+                    TextShadows(k.ts) { sh, top -> Symbol(k.icon, k.iconSize.sp, k.fg, Modifier.alpha(r.labelOp), fill = k.fill, shadow = sh) }
                 } else if (k.label.isNotEmpty()) {
-                    DText(k.label, Modifier.alpha(r.labelOp), style = designTextStyle(k.fs.sp, k.fw, k.fg), id = "$capId/label", kind = DesignLint.Kind.LABEL)
+                    TextShadows(k.ts) { sh, top ->
+                        val style = designTextStyle(k.fs.sp, k.fw, k.fg).copy(shadow = sh)
+                        if (top) DText(k.label, Modifier.alpha(r.labelOp), style = style, id = "$capId/label", kind = DesignLint.Kind.LABEL)
+                        else DText(k.label, Modifier.alpha(r.labelOp), style = style)
+                    }
                 }
                 if (k.sub.isNotEmpty()) {
                     // Kb:177
@@ -440,3 +444,24 @@ private fun cssLinearGradient(deg: Float, size: androidx.compose.ui.geometry.Siz
 /** Kb:16 `background: t.bg`: the theme's colour, or its gradient (Kb:522-530). */
 fun Modifier.themeBg(t: KbTokens, shape: androidx.compose.ui.graphics.Shape = androidx.compose.ui.graphics.RectangleShape): Modifier =
     t.bgGradient?.let { background(it.brush(), shape) } ?: background(t.bg, shape)
+
+/**
+ * CSS `text-shadow` with several layers: a Compose text style takes one shadow, so each layer is a
+ * copy of the label under the next, the first (top) layer last, then the label itself on top.
+ */
+@Composable
+fun TextShadows(layers: List<CssShadow>, label: @Composable (shadow: androidx.compose.ui.graphics.Shadow?, top: Boolean) -> Unit) {
+    if (layers.isEmpty()) { label(null, true); return }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    Box(contentAlignment = Alignment.Center) {
+        for (l in layers.reversed()) label(l.textShadow(density), false)
+        label(null, true)
+    }
+}
+
+/** CSS blur b is a Gaussian of sigma b / 2; Android's shadow radius r gives sigma 0.57735 r + 0.5. */
+fun CssShadow.textShadow(density: Float) = androidx.compose.ui.graphics.Shadow(
+    color, androidx.compose.ui.geometry.Offset(x * density, y * density),
+    (((blur * density / 2) - 0.5f) / 0.57735f).coerceAtLeast(0f),
+)
+

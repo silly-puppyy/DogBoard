@@ -33,6 +33,9 @@ data class KbTokens(
     // bar's text and colour, the action key's label colour while unavailable
     val bkspFill: Int = 0, val retText: String = "", val forceWord: Boolean = false,
     val spaceText: String = "", val spaceFg: Color? = null, val actOffFg: Color? = null,
+    // Kb:551: label text-shadows (Gloss; `none` elsewhere) and the shift glow with its label colour
+    val keyTs: List<CssShadow> = emptyList(), val fnTs: List<CssShadow> = emptyList(), val actTs: List<CssShadow> = emptyList(),
+    val glow: List<CssShadow> = emptyList(), val glowFg: Color? = null,
 )
 
 object KbThemes {
@@ -195,6 +198,8 @@ object KbThemes {
             grad = t.mapNotNull { (k, v) -> CssGradient.parse(v)?.let { k to it } }.toMap(),
             bkspFill = t["bkspFill"]?.toInt() ?: 0, retText = t["retText"].orEmpty(), forceWord = t["forceWord"] == "true",
             spaceText = t["spaceText"].orEmpty(), spaceFg = t["spaceFg"]?.let(::css), actOffFg = t["actOffFg"]?.let(::css),
+            keyTs = CssShadow.parse(t["keyTs"] ?: "none"), fnTs = CssShadow.parse(t["fnTs"] ?: "none"), actTs = CssShadow.parse(t["actTs"] ?: "none"),
+            glow = CssShadow.parse(t["glow"] ?: "none"), glowFg = t["glowFg"]?.let(::css),
         )
     }
 
