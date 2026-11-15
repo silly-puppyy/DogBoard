@@ -38,7 +38,11 @@ data class KbTokens(
     val glow: List<CssShadow> = emptyList(), val glowFg: Color? = null,
     /** Kb:507: the segmented suggestion bar (Gloss), its chip cell (`grad["segCell"]`) label colour. */
     val seg: Boolean = false, val segCellFg: Color? = null,
+    /** Kb:516: Dalmatian's spots (seed, then the spotted keys' colours); null = no spots. */
+    val spots: KbSpots? = null,
 )
+
+data class KbSpots(val seed: Int, val bg: Color, val fg: Color, val hint: Color, val press: Color)
 
 object KbThemes {
     /** Kb:325 theme ids, in the design's order. */
@@ -72,20 +76,20 @@ object KbThemes {
         ),
         // Kb:509
         "husky" to mapOf(
-            "light" to m("bg" to "#dfe5ea", "key" to "#ffffff", "keyFg" to "#1b2128", "fn" to "#5c6670", "fnFg" to "#ffffff", "act" to "#2b6ea8", "actFg" to "#ffffff", "chip" to "#cfe2f3", "chipFg" to "#174a75", "pop" to "#ffffff", "popFg" to "#1b2128", "sel" to "#2b6ea8", "selFg" to "#ffffff", "hint" to "#5f6a74", "div" to "#b7c1ca", "barFg" to "#1b2128", "barMuted" to "#3d4650", "tile" to "#ffffff", "tileFg" to "#1b2128", "pressKey" to "#e6ebf0", "pressFn" to "#4a535c", "lock" to "#2b6ea8", "lockFg" to "#ffffff"),
+            "light" to m("bg" to "#dfe5ea", "key" to "#ffffff", "keyFg" to "#1b2128", "fn" to "#5c6670", "fnFg" to "#ffffff", "act" to "#2b6ea8", "actFg" to "#ffffff", "chip" to "#cfe2f3", "chipFg" to "#174a75", "pop" to "#ffffff", "popFg" to "#1b2128", "sel" to "#2b6ea8", "selFg" to "#ffffff", "hint" to "#5f6a74", "div" to "#b7c1ca", "barFg" to "#1b2128", "barMuted" to "#3d4650", "tile" to "#ffffff", "tileFg" to "#1b2128", "pressKey" to "#e6ebf0", "pressFn" to "#4a535c", "lock" to "#2b6ea8", "lockFg" to "#ffffff", "radius" to "10"),
         ),
         // Kb:512
         "greyhound" to mapOf(
-            "dark" to m("bg" to "#3a3e45", "key" to "#575c64", "keyFg" to "#f2f1ee", "fn" to "#484c53", "fnFg" to "#dfe1e5", "act" to "#d6b088", "actFg" to "#2a1d10", "chip" to "#5d5348", "chipFg" to "#f3e2cc", "pop" to "#62676f", "popFg" to "#f2f1ee", "sel" to "#d6b088", "selFg" to "#2a1d10", "hint" to "#d2d5da", "div" to "#5a5f67", "barFg" to "#f2f1ee", "barMuted" to "#c9ccd2", "tile" to "#454950", "tileFg" to "#f2f1ee", "pressKey" to "#676c74", "pressFn" to "#575c64", "lock" to "#d6b088", "lockFg" to "#2a1d10", "linkFg" to "#d6b088"),
+            "dark" to m("bg" to "#3a3e45", "key" to "#575c64", "keyFg" to "#f2f1ee", "fn" to "#484c53", "fnFg" to "#dfe1e5", "act" to "#d6b088", "actFg" to "#2a1d10", "chip" to "#5d5348", "chipFg" to "#f3e2cc", "pop" to "#62676f", "popFg" to "#f2f1ee", "sel" to "#d6b088", "selFg" to "#2a1d10", "hint" to "#d2d5da", "div" to "#5a5f67", "barFg" to "#f2f1ee", "barMuted" to "#c9ccd2", "tile" to "#454950", "tileFg" to "#f2f1ee", "pressKey" to "#676c74", "pressFn" to "#575c64", "lock" to "#d6b088", "lockFg" to "#2a1d10", "linkFg" to "#d6b088", "radius" to "6", "fw" to "300"),
         ),
         // Kb:515
         "dalmatian" to mapOf(
-            "light" to m("bg" to "#e6e3dc", "key" to "#ffffff", "keyFg" to "#1b1b1b", "fn" to "#cdc7bc", "fnFg" to "#1b1b1b", "act" to "#1b1b1b", "actFg" to "#ffffff", "chip" to "#1b1b1b", "chipFg" to "#ffffff", "pop" to "#ffffff", "popFg" to "#1b1b1b", "sel" to "#1b1b1b", "selFg" to "#ffffff", "hint" to "#66635c", "div" to "#c4c0b6", "barFg" to "#1b1b1b", "barMuted" to "#45433e", "tile" to "#ffffff", "tileFg" to "#1b1b1b", "pressKey" to "#ecebe6", "pressFn" to "#bab3a7", "lock" to "#1b1b1b", "lockFg" to "#ffffff", "bg" to "#1b1b1b", "fg" to "#ffffff", "hint" to "#a9a59c", "press" to "#3a3a3a"),
+            "light" to m("bg" to "#e6e3dc", "key" to "#ffffff", "keyFg" to "#1b1b1b", "fn" to "#cdc7bc", "fnFg" to "#1b1b1b", "act" to "#1b1b1b", "actFg" to "#ffffff", "chip" to "#1b1b1b", "chipFg" to "#ffffff", "pop" to "#ffffff", "popFg" to "#1b1b1b", "sel" to "#1b1b1b", "selFg" to "#ffffff", "hint" to "#66635c", "div" to "#c4c0b6", "barFg" to "#1b1b1b", "barMuted" to "#45433e", "tile" to "#ffffff", "tileFg" to "#1b1b1b", "pressKey" to "#ecebe6", "pressFn" to "#bab3a7", "lock" to "#1b1b1b", "lockFg" to "#ffffff", "radius" to "12", "spotSeed" to "3", "spotBg" to "#1b1b1b", "spotFg" to "#ffffff", "spotHint" to "#a9a59c", "spotPress" to "#3a3a3a"),
         ),
         // Kb:518
         "lab" to mapOf(
-            "light" to m("bg" to "#e8dcc8", "key" to "#faf5ec", "keyFg" to "#2b2218", "fn" to "#d9c9ae", "fnFg" to "#4a3b28", "act" to "#7d5f36", "actFg" to "#ffffff", "chip" to "#eadcc2", "chipFg" to "#5a4321", "pop" to "#faf5ec", "popFg" to "#2b2218", "sel" to "#7d5f36", "selFg" to "#ffffff", "hint" to "#75664f", "div" to "#cdbd9f", "barFg" to "#2b2218", "barMuted" to "#54452f", "tile" to "#faf5ec", "tileFg" to "#2b2218", "pressKey" to "#efe6d6", "pressFn" to "#c9b795", "lock" to "#7d5f36", "lockFg" to "#ffffff"),
-            "dark" to m("bg" to "#2b1d16", "key" to "#4a3427", "keyFg" to "#f3e6dc", "fn" to "#3a281e", "fnFg" to "#e3cdbd", "act" to "#c08b5c", "actFg" to "#1f130c", "chip" to "#5c3f2c", "chipFg" to "#f6dcc6", "pop" to "#5a4134", "popFg" to "#f3e6dc", "sel" to "#c08b5c", "selFg" to "#1f130c", "hint" to "#c9b2a2", "div" to "#5a4134", "barFg" to "#f3e6dc", "barMuted" to "#d4bfb0", "tile" to "#3a281e", "tileFg" to "#f3e6dc", "pressKey" to "#5c4334", "pressFn" to "#4a3427", "lock" to "#c08b5c", "lockFg" to "#1f130c", "linkFg" to "#e2b58c"),
+            "light" to m("bg" to "#e8dcc8", "key" to "#faf5ec", "keyFg" to "#2b2218", "fn" to "#d9c9ae", "fnFg" to "#4a3b28", "act" to "#7d5f36", "actFg" to "#ffffff", "chip" to "#eadcc2", "chipFg" to "#5a4321", "pop" to "#faf5ec", "popFg" to "#2b2218", "sel" to "#7d5f36", "selFg" to "#ffffff", "hint" to "#75664f", "div" to "#cdbd9f", "barFg" to "#2b2218", "barMuted" to "#54452f", "tile" to "#faf5ec", "tileFg" to "#2b2218", "pressKey" to "#efe6d6", "pressFn" to "#c9b795", "lock" to "#7d5f36", "lockFg" to "#ffffff", "radius" to "12"),
+            "dark" to m("bg" to "#2b1d16", "key" to "#4a3427", "keyFg" to "#f3e6dc", "fn" to "#3a281e", "fnFg" to "#e3cdbd", "act" to "#c08b5c", "actFg" to "#1f130c", "chip" to "#5c3f2c", "chipFg" to "#f6dcc6", "pop" to "#5a4134", "popFg" to "#f3e6dc", "sel" to "#c08b5c", "selFg" to "#1f130c", "hint" to "#c9b2a2", "div" to "#5a4134", "barFg" to "#f3e6dc", "barMuted" to "#d4bfb0", "tile" to "#3a281e", "tileFg" to "#f3e6dc", "pressKey" to "#5c4334", "pressFn" to "#4a3427", "lock" to "#c08b5c", "lockFg" to "#1f130c", "linkFg" to "#e2b58c", "radius" to "12"),
         ),
         // Kb:499-508 (light only)
         "gloss" to mapOf(
@@ -203,6 +207,7 @@ object KbThemes {
             keyTs = CssShadow.parse(t["keyTs"] ?: "none"), fnTs = CssShadow.parse(t["fnTs"] ?: "none"), actTs = CssShadow.parse(t["actTs"] ?: "none"),
             glow = CssShadow.parse(t["glow"] ?: "none"), glowFg = t["glowFg"]?.let(::css),
             seg = t["seg"] == "true", segCellFg = t["segCellFg"]?.let(::css),
+            spots = t["spotSeed"]?.let { KbSpots(it.toInt(), c("spotBg"), c("spotFg"), c("spotHint"), c("spotPress")) },
         )
     }
 

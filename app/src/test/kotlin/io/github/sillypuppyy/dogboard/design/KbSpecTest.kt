@@ -188,4 +188,19 @@ class KbSpecTest : FunSpec({
         KbSpec.render(KbProps(theme = "gloss", bar = "tools")).let { it.leftBg shouldBe androidx.compose.ui.graphics.Color.Transparent; it.bv.leftCell!!.stops.size shouldBe 2 }
         KbSpec.render(KbProps(bar = "teh")).let { it.bv shouldBe KbBarView(); it.slots[1].cellBg shouldBe null; it.slots[2].divH shouldBe 22f }
     }
+    test("re-sync batch I: Dalmatian spots, the canvas's coat key for key (Kb:675-729, 779-786)") {
+        // expected = the canvas's own JS run in node on the same layout (seeds 1-30, iOS and Android rows, all equal)
+        val r = KbSpec.render(KbProps(theme = "dalmatian"))
+        val spotted = r.rows.flatMapIndexed { ri, row -> row.keys.mapIndexedNotNull { ci, k -> "$ri:$ci".takeIf { !k.gap && k.bg == css("#1b1b1b") && k.kind != "ret" } } }
+        spotted.toSet() shouldBe setOf("2:6", "2:5", "2:3", "1:3", "1:2", "2:8", "1:8", "1:7", "0:7", "3:0", "2:0")
+        val spot = r.rows[2].keys[6]
+        spot.fg shouldBe css("#ffffff")
+        spot.shadow.size shouldBe 0
+        spot.hintFg shouldBe css("#a9a59c")
+        r.rows[0].keys[0].hintFg shouldBe css("#66635c")
+        KbSpec.render(KbProps(theme = "dalmatian", pressed = "i")).rows[0].keys[7].let { it.id shouldBe "i"; it.bg shouldBe css("#3a3a3a") }
+        DalmatianSpots.v8Sort(mutableListOf(0, 1, 2, 3)) { a, b -> (a - b).toDouble() } shouldContainExactly listOf(0, 1, 2, 3)
+        KbThemes.tokens("dalmatian", false).let { it.bg shouldBe css("#e6e3dc"); it.radius shouldBe 12f }
+        KbThemes.tokens("greyhound", true).let { it.radius shouldBe 6f; it.fw shouldBe 300 }
+    }
 })

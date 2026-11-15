@@ -72,6 +72,8 @@ data class KbProps(
     val numberRow: Boolean = false,
     /** Kb:432-436, 569-573 layout elements (Settings › Layout). numRow: off / on / hints (digits on long-press of the top row); null = Kb's default by key style (on if [numberRow]). */
     val numRow: String? = null,
+    /** Kb:430: another Dalmatian coat (0 = the theme's own seed). */
+    val spotSeed: Int = 0,
     /** off / accents / symbols; null = Kb's default (from [hints] and the key style). */
     val hintKind: String? = null,
     /** auto / lang / space / blank (Kb:757: auto shows the language name only with the globe key, i.e. 2+ languages). */
@@ -123,6 +125,8 @@ data class KbKey(
     val label: String = "",
     val aria: String = "",
     val hint: String = "",
+    /** Kb:786: the corner hint's colour (a Dalmatian spot's own, else the theme's). */
+    val hintFg: Color = Color.Transparent,
     val sub: String = "",
     val base: String = "",
 )
@@ -489,15 +493,20 @@ object KbSpec {
         val keyTop0 = hFloat + barH + devH
         val pos = HashMap<String, KbCapPos>()
 
+        // Kb:675-729 Dalmatian spots
+        val spotOf = t.spots?.let { sp ->
+            DalmatianSpots.of(spec.map { row -> row.map { DalmatianSpots.Key(it.kind, it.w.toDouble()) } }, kbW.toDouble(), keyAreaH.toDouble(), P.spotSeed.takeIf { it != 0 } ?: sp.seed)
+        } ?: emptyMap()
+
         // Kb:521-568 keys
         val letterRe = Regex("[a-zA-ZÀ-ɏ]")
         val rows = spec.mapIndexed { ri, row ->
             var x = stripL.w
-            KbRow(row.map { k ->
+            KbRow(row.mapIndexed { ci, k ->
                 val w = k.w * u
                 val kx = x
                 x += w
-                if (k.kind == "gap") return@map KbKey(gap = true, x = kx, w = w)
+                if (k.kind == "gap") return@mapIndexed KbKey(gap = true, x = kx, w = w)
                 var bg = t.key; var fg = t.keyFg; var shadow = t.keyShadow; var fs = 25 * scale; var fw = t.fw
                 var bgG = t.grad["keyG"]; var ts = t.keyTs // Kb:740: the G tokens, with their colour as the fallback
                 // designer 2026-11-14: letters 25 sp, numbers and symbols 24 sp; every function icon a
@@ -558,16 +567,20 @@ object KbSpec {
                         label = t.retText; fs = 15f; fw = t.fw; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return"
                     } else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return" }
                 }
+                // Kb:779-781
+                val spot = t.spots?.takeIf { "$ri:$ci" in spotOf }
+                if (spot != null) { bg = spot.bg; bgG = null; fg = spot.fg; shadow = emptyList(); ts = emptyList() }
                 if (k.id == pressed && !(k.kind == "ret" && RET[ret] != null)) {
                     val fnPress = isFnTone || k.kind == "ret"
-                    bg = if (fnPress) t.pressFn else t.pressKey; bgG = t.grad[if (fnPress) "pressFn" else "pressKey"]
+                    bg = if (spot != null) spot.press else if (fnPress) t.pressFn else t.pressKey
+                    bgG = if (spot != null) null else t.grad[if (fnPress) "pressFn" else "pressKey"]
                 }
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + ri * rowH + mv
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
                 if (isFnTone && icon.isEmpty() && k.kind != "mode" && k.kind != "fnchar") fs = 15f
                 KbKey(
                     gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, bgGradient = bgG, ts = ts, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
-                    icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, sub = sub,
+                    icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, hintFg = spot?.hint ?: t.hint, sub = sub,
                     base = k.base.ifEmpty { k.id },
                 )
             })

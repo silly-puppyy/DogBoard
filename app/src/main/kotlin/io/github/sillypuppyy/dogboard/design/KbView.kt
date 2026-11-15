@@ -194,7 +194,7 @@ private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
                 // Kb:178
                 DText(
                     k.hint, Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 4.dp).alpha(r.labelOp),
-                    style = designTextStyle(t.hintFs.sp, t.hintFw, t.hint),
+                    style = designTextStyle(t.hintFs.sp, t.hintFw, k.hintFg),
                     overflow = TextOverflow.Visible,
                 )
             }
