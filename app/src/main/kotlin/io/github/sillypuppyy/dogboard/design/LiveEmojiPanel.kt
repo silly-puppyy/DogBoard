@@ -171,14 +171,20 @@ fun LiveEmojiSearchCard(
         modifier.fillMaxWidth().themeBg(t).padding(horizontal = 8.dp, vertical = 4.dp)
             .background(t.tile, RoundedCornerShape(16.dp)).padding(vertical = 4.dp),
     ) {
-        // two rows, filled column by column so both rows scroll together
-        androidx.compose.foundation.lazy.grid.LazyHorizontalGrid(
+        // two rows that scroll sideways together, read as Gboard: the best 8 on the top row, the next
+        // 8 below, then the next page of 16 to the right (the grid itself fills column by column)
+        val cells = remember(shown) { searchGridOrder(shown.size).map { shown.getOrNull(it) } }
+        if (query.isNotBlank() && results.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(104.dp), contentAlignment = Alignment.Center) {
+                DText("No emoji found", style = designTextStyle(14.sp, 400, t.barMuted))
+            }
+        } else androidx.compose.foundation.lazy.grid.LazyHorizontalGrid(
             androidx.compose.foundation.lazy.grid.GridCells.Fixed(2), Modifier.fillMaxWidth().height(104.dp),
         ) {
-            items(shown.size) { i ->
-                val e = shown[i]
-                Box(Modifier.size(48.dp, 52.dp).clickable { onEmoji(e) }, contentAlignment = Alignment.Center) {
-                    DText(e.value, style = designTextStyle(28.sp, 400, Color.Black))
+            items(cells.size) { i ->
+                val e = cells[i]
+                Box(Modifier.size(48.dp, 52.dp).then(if (e != null) Modifier.clickable { onEmoji(e) } else Modifier), contentAlignment = Alignment.Center) {
+                    if (e != null) DText(e.value, style = designTextStyle(28.sp, 400, Color.Black))
                 }
             }
         }
@@ -198,3 +204,21 @@ fun LiveEmojiSearchCard(
         }
     }
 }
+
+/**
+ * The emoji search grid's cell order (column by column, two rows) for results read row by row in
+ * pages of [perRow]: cell i shows result [searchGridOrder]`[i]` (past the end: an empty cell).
+ */
+fun searchGridOrder(count: Int, perRow: Int = 8): List<Int> {
+    if (count == 0) return emptyList()
+    val pages = (count + 2 * perRow - 1) / (2 * perRow)
+    val lastPage = count - (pages - 1) * 2 * perRow
+    return buildList {
+        for (p in 0 until pages) {
+            // the last page is as wide as it needs to be, its top row filled first
+            val cols = if (p < pages - 1) perRow else minOf(perRow, lastPage)
+            for (c in 0 until cols) for (row in 0..1) add(p * 2 * perRow + row * cols + c)
+        }
+    }
+}
+

@@ -218,4 +218,11 @@ class KbSpecTest : FunSpec({
         }
         KbSpec.render(KbProps()).rowHs.distinct().size shouldBe 1
     }
+    test("emoji search grid: results read row by row in pages of 8 (Gboard)") {
+        // 10 results: top row 0-7, bottom row 8-9 then empty; the grid fills column by column
+        searchGridOrder(10).take(6) shouldContainExactly listOf(0, 8, 1, 9, 2, 10)
+        // 20 results: page 2 (16-19) all on its top row, the bottom row empty (indices past the end)
+        searchGridOrder(20).drop(16).take(4) shouldContainExactly listOf(16, 20, 17, 21)
+        searchGridOrder(0) shouldBe emptyList<Int>()
+    }
 })
