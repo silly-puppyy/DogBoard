@@ -178,4 +178,14 @@ class KbSpecTest : FunSpec({
         key(KbProps(theme = "gloss", shift = "lock"), "shift").let { it.ts.first().blur shouldBe 3f; it.shadow.size shouldBe 4 }
         key(KbProps(shift = "on"), "shift").let { it.ts shouldBe emptyList(); it.bg shouldBe KbThemes.tokens("dogboard", false).key }
     }
+    test("re-sync batch H: Gloss segmented bar (Kb:860-866, 966-969)") {
+        KbSpec.render(KbProps(theme = "gloss", bar = "teh")).let { r ->
+            r.slots.map { it.showDiv } shouldContainExactly listOf(false, true, true)
+            r.slots[1].let { it.kind shouldBe "ac"; it.cellBg!!.stops.first().first shouldBe css("#6aa2f2"); it.fg shouldBe css("#ffffff"); it.fs shouldBe 17f; it.divH shouldBe 48f }
+            r.slots[0].let { it.cellBg shouldBe null; it.wt shouldBe 500; it.ts.size shouldBe 2 }
+            r.bv.bg!!.stops.size shouldBe 3; r.bv.toolFlex shouldBe true
+        }
+        KbSpec.render(KbProps(theme = "gloss", bar = "tools")).let { it.leftBg shouldBe androidx.compose.ui.graphics.Color.Transparent; it.bv.leftCell!!.stops.size shouldBe 2 }
+        KbSpec.render(KbProps(bar = "teh")).let { it.bv shouldBe KbBarView(); it.slots[1].cellBg shouldBe null; it.slots[2].divH shouldBe 22f }
+    }
 })

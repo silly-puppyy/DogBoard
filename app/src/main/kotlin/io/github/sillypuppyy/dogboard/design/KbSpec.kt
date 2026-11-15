@@ -149,6 +149,16 @@ data class KbLangMenu(val x: Float, val y: Float, val items: List<KbLangItem>)
 data class KbSlot(
     val text: String, val kind: String, val aria: String, val bg: Color, val fg: Color,
     val wt: Int, val fs: Float, val ring: List<CssShadow>, val showDiv: Boolean,
+    // Kb:860-866: the segmented bar's cells and full-height dividers (Gloss); defaults = the plain bar
+    val ts: List<CssShadow> = emptyList(), val cellBg: CssGradient? = null, val cellSh: List<CssShadow> = emptyList(),
+    val divH: Float = 22f, val divBg: Color = Color.Transparent, val divSh: List<CssShadow> = emptyList(),
+)
+
+/** Kb:966-967 `bv`: the bar's own look; only the segmented (Gloss) bar differs from plain. */
+data class KbBarView(
+    val bg: CssGradient? = null, val shadow: List<CssShadow> = emptyList(),
+    val leftCell: CssGradient? = null, val leftSh: List<CssShadow> = emptyList(), val micSh: List<CssShadow> = emptyList(),
+    val ts: List<CssShadow> = emptyList(), val toolSh: List<CssShadow> = emptyList(), val toolFlex: Boolean = false, val iconFg: Color? = null,
 )
 
 data class KbStrip(val show: Boolean, val w: Float, val icons: List<Pair<String, String>>)
@@ -189,6 +199,7 @@ data class KbRender(
     val leftAria: String,
     val leftBg: Color,
     val leftFg: Color,
+    val bv: KbBarView = KbBarView(),
     val leftFill: Int,
     val micIcon: String,
     val micAria: String,
@@ -308,6 +319,12 @@ object KbSpec {
     val CTRLH: Map<String, String> = mapOf("a" to "all", "c" to "copy", "v" to "paste", "x" to "cut", "z" to "undo", "y" to "redo", "s" to "save", "f" to "find")
 
     /** Kb:602-612 sample bars. */
+    // Kb:862-864: the segmented bar's label shadows (chip cell / plain), chip cell bevel, divider
+    private val SEG_CHIP_TS = CssShadow.parse("0 -1px 1px rgba(0,0,0,0.45), 0 -1px 3px rgba(0,0,0,0.2)")
+    private val SEG_TS = CssShadow.parse("0 1px 0 rgba(255,255,255,0.95), 0 1.5px 2px rgba(255,255,255,0.6)")
+    private val SEG_CELL_SH = CssShadow.parse("inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.3), inset 0 0 0 1px rgba(20,50,120,0.35)")
+    private val SEG_DIV_SH = CssShadow.parse("1px 0 0 #ffffff")
+
     val BARS: Map<String, List<Pair<String, String>>> = mapOf(
         "empty" to listOf("I" to "p", "The" to "p", "He" to "p"),
         "hi" to listOf("to" to "p", "my" to "p", "I'm" to "p"),
@@ -594,12 +611,23 @@ object KbSpec {
         val slots = (slotSrc ?: emptyList()).mapIndexed { i, (text, kind) ->
             val isChip = kind == "ac"
             val prevChip = i > 0 && slotSrc!![i - 1].second == "ac"
+            // Kb:860-866
+            if (t.seg) return@mapIndexed KbSlot(
+                text = text, kind = kind, aria = if (kind == "lit") "Keep $text" else text,
+                bg = Color.Transparent, fg = if (isChip) t.segCellFg ?: t.chipFg else t.barFg,
+                wt = if (kind == "lit") 500 else 600, fs = if (kind == "emo") 22f else 17f,
+                ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else emptyList(),
+                showDiv = i > 0,
+                ts = if (isChip) SEG_CHIP_TS else SEG_TS,
+                cellBg = if (isChip) t.grad["segCell"] else null, cellSh = if (isChip) SEG_CELL_SH else emptyList(),
+                divH = 48f, divBg = css("#9aa0aa"), divSh = SEG_DIV_SH,
+            )
             KbSlot(
                 text = text, kind = kind, aria = if (kind == "lit") "Keep $text" else text,
                 bg = if (isChip) t.chip else Color.Transparent, fg = if (isChip) t.chipFg else t.barFg,
                 wt = if (isChip) 600 else 400, fs = if (kind == "emo") 22f else 16f,
                 ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else emptyList(),
-                showDiv = i > 0 && !isChip && !prevChip,
+                showDiv = i > 0 && !isChip && !prevChip, divBg = t.div,
             )
         }
         val toolsOpen = special && P.bar == "tools"
@@ -619,7 +647,16 @@ object KbSpec {
             mSlots = mSlots, slots = slots, barOp = if (trackpad) 0.35f else 1f,
             leftIcon = if (incognito) "domino_mask" else "widgets",
             leftAria = if (incognito) "Incognito is on" else if (toolsOpen) "Close tools" else "Tools",
-            leftBg = if (toolsOpen) t.fn else Color.Transparent, leftFg = if (toolsOpen) t.fnFg else t.barMuted,
+            leftBg = if (toolsOpen && !t.seg) t.fn else Color.Transparent, leftFg = if (toolsOpen && !t.seg) t.fnFg else t.barMuted,
+            // Kb:966-967
+            bv = if (!t.seg) KbBarView() else KbBarView(
+                bg = CssGradient.parse("linear-gradient(#f8f9fb, #e4e7ec 50%, #d0d4db)"),
+                shadow = CssShadow.parse("inset 0 1px 0 #ffffff, inset 0 -1px 0 #737985, 0 1px 2px rgba(0,0,0,0.35)"),
+                leftCell = if (toolsOpen) CssGradient.parse("linear-gradient(#bcc1ca, #dde0e5)") else null,
+                leftSh = CssShadow.parse((if (toolsOpen) "inset 0 2px 4px rgba(0,0,0,0.4), " else "") + "inset -1px 0 0 #ffffff, inset -2px 0 0 #9aa0aa"),
+                micSh = CssShadow.parse("inset 1px 0 0 #ffffff, inset 2px 0 0 #9aa0aa"), ts = CssShadow.parse("0 1px 0 #ffffff"),
+                toolSh = CssShadow.parse("inset -1px 0 0 #9aa0aa, inset -2px 0 0 #ffffff"), toolFlex = true, iconFg = css("#3a3e46"),
+            ),
             leftFill = if (toolsOpen || incognito) 1 else 0,
             micIcon = if (mVoice) "stop" else "mic", micAria = if (mVoice) "Stop dictation" else "Voice input",
             micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else t.barMuted, micFill = if (mVoice) 1 else 0,

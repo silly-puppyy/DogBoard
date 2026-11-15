@@ -36,6 +36,8 @@ data class KbTokens(
     // Kb:551: label text-shadows (Gloss; `none` elsewhere) and the shift glow with its label colour
     val keyTs: List<CssShadow> = emptyList(), val fnTs: List<CssShadow> = emptyList(), val actTs: List<CssShadow> = emptyList(),
     val glow: List<CssShadow> = emptyList(), val glowFg: Color? = null,
+    /** Kb:507: the segmented suggestion bar (Gloss), its chip cell (`grad["segCell"]`) label colour. */
+    val seg: Boolean = false, val segCellFg: Color? = null,
 )
 
 object KbThemes {
@@ -200,6 +202,7 @@ object KbThemes {
             spaceText = t["spaceText"].orEmpty(), spaceFg = t["spaceFg"]?.let(::css), actOffFg = t["actOffFg"]?.let(::css),
             keyTs = CssShadow.parse(t["keyTs"] ?: "none"), fnTs = CssShadow.parse(t["fnTs"] ?: "none"), actTs = CssShadow.parse(t["actTs"] ?: "none"),
             glow = CssShadow.parse(t["glow"] ?: "none"), glowFg = t["glowFg"]?.let(::css),
+            seg = t["seg"] == "true", segCellFg = t["segCellFg"]?.let(::css),
         )
     }
 

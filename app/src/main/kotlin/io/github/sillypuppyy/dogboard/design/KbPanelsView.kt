@@ -127,10 +127,12 @@ fun RowScope.KbBarSpecial(r: KbRender) {
     when {
         x.mTools -> Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceBetween) {
             val actions = LocalKbActions.current
+            val bv = r.bv // Kb:112: the segmented bar shares the row out in bevelled cells
             for (b in x.toolRow) Box(
-                Modifier.size(44.dp, 48.dp).tap(actions?.let { a -> { a.onTool(b.icon) } }),
+                (if (bv.toolFlex) Modifier.weight(1f).height(48.dp) else Modifier.size(44.dp, 48.dp))
+                    .cssShadow(bv.toolSh, androidx.compose.ui.graphics.RectangleShape).tap(actions?.let { a -> { a.onTool(b.icon) } }),
                 contentAlignment = Alignment.Center,
-            ) { Symbol(b.icon, 24.sp, t.barFg) }
+            ) { TextShadows(bv.ts) { sh, _ -> Symbol(b.icon, 24.sp, bv.iconFg ?: t.barFg, shadow = sh) } }
         }
         // Kb:134-140: chips 36 dp, 999 px radius, 12/10 padding, 18 dp icon, 14/500 label, 12/400 sub at 0.75
         // Kb clips the row; ours scrolls sideways and caps a chip's text, as Gboard's clip chips (measured

@@ -104,7 +104,11 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
                 }
             }
             // Kb:33-144 suggestion bar (panel header while a panel is open)
-            if (r.showBar) { if (r.x.panel.isNotEmpty()) KbPanelHeader(r) else KbBar(r) }
+            if (r.showBar) Box(
+                // Kb:34: the bar's own background and bevel (segmented bar only)
+                Modifier.fillMaxWidth().height(48.dp).cssShadow(r.bv.shadow, androidx.compose.ui.graphics.RectangleShape)
+                    .then(r.bv.bg?.let { Modifier.background(it.brush()) } ?: Modifier),
+            ) { if (r.x.panel.isNotEmpty()) KbPanelHeader(r) else KbBar(r) }
             // Kb:146-156 dev row
             if (r.x.dev) KbDevRow(r)
             // Kb:199-282 panels
@@ -221,9 +225,14 @@ private fun KbBar(r: KbRender) {
     val actions = LocalKbActions.current
     Row(Modifier.fillMaxWidth().height(48.dp).alpha(r.barOp), verticalAlignment = Alignment.CenterVertically) {
         // Kb:76-80
-        Box(Modifier.size(48.dp).tap(actions?.onLeft), contentAlignment = Alignment.Center) {
+        val bv = r.bv
+        Box(
+            Modifier.size(48.dp).tap(actions?.onLeft).then(bv.leftCell?.let { Modifier.background(it.brush()) } ?: Modifier)
+                .cssShadow(bv.leftSh, androidx.compose.ui.graphics.RectangleShape),
+            contentAlignment = Alignment.Center,
+        ) {
             Box(Modifier.size(36.dp).background(r.leftBg, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
-                Symbol(r.leftIcon, 22.sp, r.leftFg, fill = r.leftFill)
+                TextShadows(bv.ts) { sh, _ -> Symbol(r.leftIcon, 22.sp, r.leftFg, fill = r.leftFill, shadow = sh) }
             }
         }
         // Kb:81-90
@@ -232,9 +241,9 @@ private fun KbBar(r: KbRender) {
             if (r.mSlots) KbSlots(r)
         }
         // Kb:135-139
-        Box(Modifier.size(48.dp).tap(actions?.onMic), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(48.dp).tap(actions?.onMic).cssShadow(bv.micSh, androidx.compose.ui.graphics.RectangleShape), contentAlignment = Alignment.Center) {
             Box(Modifier.size(36.dp).background(r.micBg, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
-                Symbol(r.micIcon, 22.sp, r.micFg, fill = r.micFill)
+                TextShadows(bv.ts) { sh, _ -> Symbol(r.micIcon, 22.sp, r.micFg, fill = r.micFill, shadow = sh) }
             }
         }
     }
@@ -341,9 +350,12 @@ private fun RowScope.KbSlots(r: KbRender) {
         val actions = LocalKbActions.current
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             for ((i, s) in (if (centreAlone) listOf(1 to centre!!) else r.slots.withIndex().map { it.index to it.value })) {
-                if (s.showDiv && !centreAlone) Box(Modifier.size(1.dp, 22.dp).background(t.div))
+                // Kb:102: divider (22 dp, or the segmented bar's full-height groove)
+                if (s.showDiv && !centreAlone) Box(Modifier.size(1.dp, s.divH.dp).cssShadow(s.divSh, androidx.compose.ui.graphics.RectangleShape).background(s.divBg))
                 Box(
-                    Modifier.weight(1f).height(48.dp).lint("slot:${s.text}").tap(actions?.let { a -> { a.onSlot(i) } }, actions?.let { a -> { a.onSlotLong(i) } }),
+                    Modifier.weight(1f).height(48.dp)
+                        .then(s.cellBg?.let { Modifier.background(it.brush()) } ?: Modifier).cssShadow(s.cellSh, androidx.compose.ui.graphics.RectangleShape)
+                        .lint("slot:${s.text}").tap(actions?.let { a -> { a.onSlot(i) } }, actions?.let { a -> { a.onSlotLong(i) } }),
                     contentAlignment = Alignment.Center,
                 ) {
                     LintParent("slot:${s.text}") { SlotText(r, s) }
@@ -366,7 +378,8 @@ private fun SlotText(r: KbRender, s: KbSlot) {
         .background(s.bg, RoundedCornerShape(50))
         .padding(horizontal = SLOT_PADDING_H, vertical = 6.dp)
     if (r.slotOverflow != "fade") {
-        DText(s.text, chip, style = slotStyle(s), maxLines = 1, squash = true)
+        if (s.ts.isEmpty()) DText(s.text, chip, style = slotStyle(s), maxLines = 1, squash = true)
+        else Box(chip) { TextShadows(s.ts) { sh, _ -> DText(s.text, style = slotStyle(s).copy(shadow = sh), maxLines = 1, squash = true) } }
         return
     }
     // "fade": the word keeps its size; if it is wider than the slot, it starts at the left edge
