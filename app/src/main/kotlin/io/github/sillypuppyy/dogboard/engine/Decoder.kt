@@ -88,6 +88,11 @@ class Decoder(
          * 95.6 -> 95.9 / 94.9 -> 95.3, clean taps identical word for word).
          */
         val farTap: Double? = FAR_TAP,
+        /**
+         * Cost of the one key the user skipped after the last tap ("befor" -> "before"; iOS inserts a key
+         * only before a later touch, the space, at the same cost as any skipped key). null = INSERTION.
+         */
+        val endInsertion: Double? = null,
     )
 
     companion object {
@@ -364,7 +369,7 @@ class Decoder(
                             layer[key(s.prefix, child)]?.let { insertAfter(it, allowApostrophe = false) }
                         }
                     } else if (i > 0) { // no inserting before the first tap
-                        offer(layer, child, s.geometry + INSERTION + qi, s.edits + 1, s.prefix)
+                        offer(layer, child, s.geometry + (if (i == n) config.endInsertion ?: INSERTION else INSERTION) + qi, s.edits + 1, s.prefix)
                     }
                 }
             }
@@ -393,9 +398,18 @@ class Decoder(
         }
 
         val results = HashMap<String, Candidate>()
+        // One candidate per word. A word reached as a typo fix (skipped keys, incl. one after the
+        // last tap: iOS inserts a key before the space touch) keeps that reading over its completion
+        // reading, which may score higher but autocorrect never applies ("befor" -> "before" was
+        // hidden behind the completion "befor..." and left as typed).
         fun add(candidate: Candidate) {
             val old = results[candidate.word]
-            if (old == null || candidate.score > old.score) results[candidate.word] = candidate
+            val replace = when {
+                old == null -> true
+                old.isCompletion != candidate.isCompletion -> !candidate.isCompletion
+                else -> candidate.score > old.score
+            }
+            if (replace) results[candidate.word] = candidate
         }
         for (s in last!!.values) {
             val p = prefixes[s.prefix]

@@ -24,9 +24,21 @@ class RealTypoEvalTest : FunSpec({
         val ngrams = ngramFile!!.inputStream().use { NgramModel.readBinary(it) }!!
         val keys = QwertyGeometry.letterKeys(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-        val autocorrect = Autocorrect(lexicon)
-        val decoders = ThreadLocal.withInitial { Decoder(lexicon, bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)) }
+        // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
+        val autocorrect = Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(minStemEndOmission = System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull()))
+        val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
+        // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
+        val endInsertion = System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull()
+        val decoders = ThreadLocal.withInitial { Decoder(lexicon, Decoder.Config(endInsertion = endInsertion), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)) }
 
+        // DOGBOARD_PROBE_WORDS="befor,hav": top candidates and the decision for those typed words (no context)
+        System.getenv("DOGBOARD_PROBE_WORDS")?.split(',')?.forEach { typed ->
+            val taps = typed.map { c -> keys.getValue(c).let { Tap(it.centerX, it.centerY) } }
+            val cands = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(Bigrams.START), typed = typed)
+            println("PROBE $typed -> ${autocorrect.correction(typed, cands) ?: "(left)"}: " + cands.take(6).joinToString { c ->
+                "%s %.2f (geo %.2f lm %.2f%s%s)".format(c.word, c.score, c.geometry, c.languageModel, if (c.isCompletion) " compl" else "", if (c.isTypedString) " typed" else "")
+            })
+        }
         // a fixed sample of each kind (DOGBOARD_REAL_TYPOS_N per kind, default 3000)
         val n = System.getenv("DOGBOARD_REAL_TYPOS_N")?.toIntOrNull() ?: 3000
         // streamed with reservoir sampling: the file has over a million rows, too many to hold split
@@ -56,7 +68,14 @@ class RealTypoEvalTest : FunSpec({
                 val clean = { w: String -> w.trim('.', ',', '!', '?', ';', ':', '"', '(', ')').lowercase() }
                 val prev = raw.lastOrNull()?.takeUnless(ends)?.let(clean) ?: Bigrams.START
                 val prev2 = raw.getOrNull(raw.size - 2)?.takeIf { prev != Bigrams.START && !ends(it) }?.let(clean)
-                val taps = typed.map { c -> keys.getValue(c).let { Tap(it.centerX, it.centerY) } }
+                // taps at the key centres read as certain letters, which makes autocorrect shy;
+                // DOGBOARD_REAL_TYPOS_SIGMA=1.5x2.0 (mm) adds the touch noise the other evals use
+                val tapRng = Random(row[0].hashCode() * 31L + row[1].hashCode())
+                val taps = typed.map { c ->
+                    val k = keys.getValue(c)
+                    Tap((k.centerX + tapRng.nextGaussian() * sigma.first * GaussianTouch.POINTS_PER_MM).toFloat(),
+                        (k.centerY + tapRng.nextGaussian() * sigma.second * GaussianTouch.POINTS_PER_MM).toFloat())
+                }
                 val candidates = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(prev), typed = typed, previous2 = prev2?.let { bigrams.contextId(it) } ?: -1)
                 val got = autocorrect.correction(typed, candidates) ?: typed
                 val typo = !typed.equals(intended, ignoreCase = true)
@@ -71,8 +90,8 @@ class RealTypoEvalTest : FunSpec({
         pool.shutdown()
 
         fun pct(kind: Boolean, r: String) = outcomes.count { it.typo == kind && it.result == r } * 100.0 / outcomes.count { it.typo == kind }
-        println("REALTYPO %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
-            outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
+        println("REALTYPO end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
+            endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
         System.getenv("DOGBOARD_EVAL_ERRORS")?.let { path ->
             File(path).printWriter().use { w ->

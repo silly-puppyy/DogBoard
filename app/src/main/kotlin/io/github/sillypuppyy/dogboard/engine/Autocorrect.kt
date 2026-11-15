@@ -27,6 +27,12 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          * (iOS: 1.39, FilterNondominantCorrectionOfMoreWords with one typed word).
          */
         val leadOverTyped: Double = SORT_KEY_MATCH_BOOST_RATIO,
+        /**
+         * Beyond iOS: a non-word missing only its last letter ("befor" -> "before") may be fixed from
+         * this typed length on when the decoder read it as a skipped key, not as a completion (iOS's
+         * stem rule above looks only at the strings and keeps "befor"). null = off, as iOS.
+         */
+        val minStemEndOmission: Int? = null,
     ) {
         companion object {
             val STANDARD = Level(MIN_DOMINANCE_RATIO, 8, 6, 4)
@@ -107,7 +113,10 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             gain == 2 -> level.minStemTwoLetters
             else -> level.minStemMoreLetters
         }
-        val stemOk = specialEdit || (previousCorrection != null && t.equals(previousCorrection, ignoreCase = true)) ||
+        // a typed non-word one letter short of a word the decoder read as a skipped last key
+        val endOmission = gain == 1 && !top.isCompletion && !top.isTypedString && level.minStemEndOmission != null &&
+            typed.length >= level.minStemEndOmission && !lexicon.contains(typed)
+        val stemOk = specialEdit || endOmission || (previousCorrection != null && t.equals(previousCorrection, ignoreCase = true)) ||
             typed.length >= minStem
         if (!stemOk) return null
         val (second, s) = cased.getOrNull(1) ?: return t
