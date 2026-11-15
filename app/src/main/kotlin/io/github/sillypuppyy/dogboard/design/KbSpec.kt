@@ -128,7 +128,7 @@ data class KbCapPos(val capX: Float, val capW: Float, val capTop: Float, val lab
 
 data class KbPreview(val x: Float, val y: Float, val w: Float, val label: String, val fw: Int, val alpha: Float = 1f)
 /** A smart chip (Kb:840-851): Material Symbols icon, label, optional sub line. */
-data class KbChipData(val icon: String, val label: String, val sub: String = "")
+data class KbChipData(val icon: String, val label: String, val sub: String = "", val insert: String = label)
 
 data class KbLongPress(
     val x: Float, val y: Float, val items: List<Triple<String, Color, Color>>,

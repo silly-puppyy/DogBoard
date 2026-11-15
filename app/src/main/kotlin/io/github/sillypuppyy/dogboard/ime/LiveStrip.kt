@@ -21,6 +21,31 @@ object LiveStrip {
     @Volatile
     var contactCards: Map<String, List<io.github.sillypuppyy.dogboard.contacts.ContactCard>> = emptyMap()
 
+    /**
+     * The designer's date chips (More board, Smart chips: "Date field: today, tomorrow and the next
+     * weekday, in the field's format"): Today, Tomorrow and the day after by name ("Mon 17 Nov"), each
+     * typing the date in the phone's short date format (a field doesn't say its own format).
+     */
+    fun dateChips(today: java.time.LocalDate, locale: java.util.Locale = java.util.Locale.getDefault()): List<io.github.sillypuppyy.dogboard.design.KbChipData> {
+        val short = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.SHORT).withLocale(locale)
+        val named = java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", locale)
+        val d2 = today.plusDays(2)
+        return listOf(
+            io.github.sillypuppyy.dogboard.design.KbChipData("today", "Today", insert = today.format(short)),
+            io.github.sillypuppyy.dogboard.design.KbChipData("event", "Tomorrow", insert = today.plusDays(1).format(short)),
+            io.github.sillypuppyy.dogboard.design.KbChipData("date_range", d2.format(named), insert = d2.format(short)),
+        )
+    }
+
+    /** A field that asks for a date: the date input type, or a text field whose hint says "date" or "birth". */
+    fun isDateField(type: dev.patrickgold.florisboard.ime.editor.InputAttributes, hint: CharSequence?): Boolean {
+        if (type.type == dev.patrickgold.florisboard.ime.editor.InputAttributes.Type.DATETIME &&
+            type.variation == dev.patrickgold.florisboard.ime.editor.InputAttributes.Variation.DATE) return true
+        val h = hint?.toString()?.lowercase() ?: return false
+        return type.type == dev.patrickgold.florisboard.ime.editor.InputAttributes.Type.TEXT &&
+            Regex("\\b(date|dd/mm|mm/dd|day)\\b").containsMatchIn(h)
+    }
+
     /** The chips for a typed word: one contact's name, number and birthday, or up to three names. */
     fun contactChips(typed: String): List<io.github.sillypuppyy.dogboard.design.KbChipData> {
         val cards = contactCards[typed.lowercase()].orEmpty()

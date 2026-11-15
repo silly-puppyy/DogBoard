@@ -975,10 +975,16 @@ class ImeController(
             val sink = suggestionSink ?: return
             // the designer's contact chips: a contact's first name typed (opt-in contacts; never in
             // incognito or password fields)
-            io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value =
-                if (!currentWord.isEmpty && learningAllowed() && state.content.selection.isCollapsed()) {
+            val info = state.editor.info
+            io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value = when {
+                !currentWord.isEmpty && learningAllowed() && state.content.selection.isCollapsed() ->
                     io.github.sillypuppyy.dogboard.ime.LiveStrip.contactChips(currentWord.text)
-                } else emptyList()
+                // date fields, nothing typed yet: Today / Tomorrow / the day after
+                currentWord.isEmpty && state.content.surroundingText.textBefore.isEmpty() &&
+                    io.github.sillypuppyy.dogboard.ime.LiveStrip.isDateField(info.inputAttributes, info.base.hintText) ->
+                    io.github.sillypuppyy.dogboard.ime.LiveStrip.dateChips(java.time.LocalDate.now())
+                else -> emptyList()
+            }
             suggestionJob?.cancel()
             wordAroundCursor = null
             if (!suggestionsAllowed() || state.content.selection.isNotCollapsed()) {
@@ -1280,10 +1286,11 @@ class ImeController(
         }
 
         /** DogBoard: a smart chip tapped: its text replaces the word being typed, then a space; nothing is learned. */
-        fun emitChip(text: String) {
+        fun emitChip(text: String, space: Boolean = true) {
             val typed = currentWord.text
-            if (typed.isNotEmpty() && !replaceBeforeCursor(typed, "$text ")) return
-            if (typed.isEmpty()) emitText("$text ".asK3String())
+            val insert = if (space) "$text " else text
+            if (typed.isNotEmpty() && !replaceBeforeCursor(typed, insert)) return
+            if (typed.isEmpty()) emitText(insert.asK3String())
             currentWord.clear()
             io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value = emptyList()
             publishSuggestions()

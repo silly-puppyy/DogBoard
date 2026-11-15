@@ -121,7 +121,7 @@ fun TextInputLayout(
                             if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item) }
                             else clipChips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } }
                         }
-                    } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } }
+                    } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.insert, space = c.insert == c.label) } }
                 },
                 clipLabel = if (clipChipsShown) null else clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },

@@ -7,6 +7,12 @@ import io.kotest.matchers.shouldBe
 
 /** The designer's contact chips: one contact → name, number, birthday; several → up to three names. */
 class ContactChipsTest : FunSpec({
+    test("date chips: Today, Tomorrow, the day after by name, each typing the short date") {
+        val chips = LiveStrip.dateChips(java.time.LocalDate.of(2026, 11, 14), java.util.Locale.US)
+        chips.map { it.label } shouldBe listOf("Today", "Tomorrow", "Mon 16 Nov")
+        chips.map { it.insert } shouldBe listOf("11/14/26", "11/15/26", "11/16/26")
+    }
+
     test("one contact: full name, number and birthday; several: their names; nothing for other words") {
         LiveStrip.contactCards = mapOf(
             "sam" to listOf(ContactCard("Sam Lee", "+1 555-0142", "3 December")),
