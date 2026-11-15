@@ -125,7 +125,7 @@ object KbThemes {
      * chosen photo's measured luminance instead, so readability follows the real picture.
      */
     private fun glass(dim: Float, kop: Float, photoLuminance: Float = 0.3f): Map<String, String> {
-        val under = photoLuminance * (1 - dim)
+        val under = photoLuminance * (1.0 - dim).pow(2.2)  // Kb:538
         val capL = kop * 1 + (1 - kop) * under
         val cW = 1.05 / (capL + 0.05)
         val cB = (capL + 0.05) / (lumHex("#1b1c1e") + 0.05)
@@ -139,7 +139,10 @@ object KbThemes {
             "div" to if (light) "rgba(255,255,255,0.35)" else "rgba(0,0,0,0.25)", "barFg" to fgc, "barMuted" to fgc,
             "tile" to a(max(0.2, kop.toDouble())), "tileFg" to fgc, "pressKey" to a(min(1.0, kop + 0.25)), "pressFn" to a(min(1.0, kop + 0.15)),
             "lock" to "#ffffff", "lockFg" to "#1b1c1e", "linkFg" to if (light) "#ffffff" else "#1b1c1e",
-        )
+        ) + if (kop < 0.12f) {  // Kb:545: nearly clear keys keep a hairline ring
+            val ring = "inset 0 0 0 1px " + if (light) "rgba(255,255,255,0.45)" else "rgba(0,0,0,0.3)"
+            mapOf("keyShadow" to ring, "fnShadow" to ring)
+        } else emptyMap()
     }
 
     // Kb:396-397

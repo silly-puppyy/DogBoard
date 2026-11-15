@@ -122,8 +122,17 @@ class KbSpecTest : FunSpec({
         KbThemes.tokens("borderless", false).let { it.key shouldBe androidx.compose.ui.graphics.Color.Transparent; it.fnShadow.single().color shouldBe css("#c4c6d0") }
     }
     test("glass contrast rule (Themes:87-93): label colour and ratio") {
-        // capL = kop + (1 - kop) * 0.3 * (1 - dim); white if 1.05/(capL+.05) >= (capL+.05)/(lumInk+.05)
+        // capL = kop + (1 - kop) * 0.3 * (1 - dim)^2.2 (Kb:538); white if 1.05/(capL+.05) >= (capL+.05)/(lumInk+.05)
         KbThemes.tokens("glass", false, dim = 0.35f, keyOpacity = 0.3f).keyFg shouldBe css("#1b1c1e")
         KbThemes.tokens("glass", false, dim = 0.8f, keyOpacity = 0.0f).keyFg shouldBe css("#ffffff")
+        // dim 0.2, clear keys: under = 0.184 with the exponent (white), 0.24 without it (ink)
+        KbThemes.tokens("glass", false, dim = 0.2f, keyOpacity = 0.0f).keyFg shouldBe css("#ffffff")
+    }
+    test("glass ring (Kb:545): keys under 0.12 opacity get a hairline, others none") {
+        KbThemes.tokens("glass", false, dim = 0.8f, keyOpacity = 0.05f).let {
+            it.keyShadow.single().let { s -> s.inset shouldBe true; s.spread shouldBe 1f; s.color shouldBe css("rgba(255,255,255,0.45)") }
+            it.fnShadow shouldBe it.keyShadow
+        }
+        KbThemes.tokens("glass", false, dim = 0.35f, keyOpacity = 0.3f).keyShadow shouldBe emptyList()
     }
 })
