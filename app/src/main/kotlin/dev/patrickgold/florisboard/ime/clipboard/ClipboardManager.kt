@@ -111,7 +111,11 @@ class ClipboardManager(
         }
 
     init {
-        systemClipboardManager.addPrimaryClipChangedListener(this)
+        // DogBoard: only the keyboard's own process records clips; the debug test activity runs in a
+        // second process (:imetest) whose listener raced this one into duplicate history entries
+        if (android.os.Build.VERSION.SDK_INT < 28 || android.app.Application.getProcessName() == appContext.packageName) {
+            systemClipboardManager.addPrimaryClipChangedListener(this)
+        }
         cleanUpJob = ioScope.launch {
             while (isActive) {
                 delay(INTERVAL)
@@ -236,23 +240,28 @@ class ClipboardManager(
      */
     private fun insertOrMoveBeginning(newItem: ClipboardItem) {
         if (prefs.clipboard.historyEnabled.get()) {
-            val historyElement = currentHistory.all.firstOrNull { item ->
-                item.type == ItemType.TEXT && item.text == newItem.text && item.isSensitive == newItem.isSensitive
-            }
-            if (historyElement != null) {
-                moveToTheBeginning(
-                    oldItem = historyElement,
-                    newItem = if (historyElement.isPinned) {
-                        newItem.copy(isPinned = true)
-                    } else {
-                        newItem
+            // DogBoard: a repeat copy moves the clip to the top instead of adding a second tile
+            // (Gboard, measured 2026-11-15: copy a, b, a shows a, b). Looked up in the database, not
+            // the in-memory history, which is still loading right after the keyboard process starts
+            // and let syncFromSystem() add the current clip again on every restart.
+            ioScope.launch {
+                historyInsertGuard.withLock {
+                    val history = clipHistoryDao?.getAll() ?: currentHistory.all
+                    val historyElement = history.firstOrNull { item ->
+                        item.type == ItemType.TEXT && item.text == newItem.text && item.isSensitive == newItem.isSensitive
                     }
-                )
-            } else {
-                insertClip(newItem)
+                    if (historyElement != null) {
+                        clipHistoryDao?.delete(historyElement.id)
+                        clipHistoryDao?.insert(if (historyElement.isPinned) newItem.copy(isPinned = true) else newItem)
+                    } else {
+                        newItem.id = clipHistoryDao?.insert(newItem) ?: 0
+                    }
+                }
             }
         }
     }
+
+    private val historyInsertGuard = Mutex(locked = false)
 
     private fun enforceHistoryLimit(clipHistory: ClipboardHistory) {
         if (prefs.clipboard.historySizeLimitEnabled.get()) {
@@ -283,13 +292,6 @@ class ClipboardManager(
             ioScope.launch {
                 clipHistoryDao?.delete(itemsToRemove.toList())
             }
-        }
-    }
-
-    private fun moveToTheBeginning(oldItem: ClipboardItem, newItem: ClipboardItem) {
-        ioScope.launch {
-            clipHistoryDao?.delete(oldItem.id)
-            clipHistoryDao?.insert(newItem)
         }
     }
 
