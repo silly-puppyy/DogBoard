@@ -650,6 +650,7 @@ class ImeController(
                 val candidates = latestDecode?.takeIf { it.first == decodeKey(typed, context, context2) }?.second
                     ?: TypingEngine.candidates(word, context, previous2 = context2)
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
+                TypingEngine.adaptiveStrength = prefs.correction.adaptiveStrength.get()
                 val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)
                 if (BuildConfig.DEBUG) {
                     android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context, context2)} " +
@@ -819,6 +820,10 @@ class ImeController(
             val previous = wordContext()
             if (!replaceBeforeCursor(typed, suggestion.word + " ")) return false
             if (suggestion.kind == Suggestion.Kind.LITERAL) learnWord(suggestion.word)
+            // a fix picked for a typo autocorrect would have left: autocorrect may be bolder (not a
+            // completion of the typed letters, not the typed word itself)
+            if (suggestion.kind != Suggestion.Kind.LITERAL && suggestion.kind != Suggestion.Kind.PREDICTION && typed.isNotEmpty() &&
+                !suggestion.word.startsWith(typed, ignoreCase = true) && learningAllowed()) scope.launch { TypingEngine.fixPicked() }
             confirmKeptCorrection()
             confirmPendingRetro()
             confirmAcceptedWord()

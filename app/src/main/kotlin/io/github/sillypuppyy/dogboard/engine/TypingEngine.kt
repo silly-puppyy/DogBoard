@@ -47,6 +47,9 @@ object TypingEngine {
     /** Undone and deleted autocorrections, iOS rules ([Rejections]). */
     @Volatile
     private var rejections = Rejections()
+    /** Autocorrect that adapts to what the user keeps and undoes (off unless [adaptiveStrength]). */
+    private var strength = AutocorrectStrength()
+    @Volatile var adaptiveStrength = false
 
     /** Words the user removed from suggestions (lowercase); never suggested or corrected to. */
     private val blocked = HashSet<String>()
@@ -104,6 +107,7 @@ object TypingEngine {
         userWords: File? = null,
         blockedWords: File? = null,
         rejectedCorrections: File? = null,
+        autocorrectStrength: File? = null,
         openAbbreviations: (() -> BufferedReader)? = null,
         personalModel: File? = null,
         textReplacements: File? = null,
@@ -122,7 +126,7 @@ object TypingEngine {
         if (charModel == null) charModel = openCharModel?.let { open -> runCatching { open().use { CharModel.parse(it) } }.getOrNull() }
         reload = {
             load(
-                openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, openAbbreviations, personalModel,
+                openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, autocorrectStrength, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
                 openCharModel,
             )
@@ -160,6 +164,7 @@ object TypingEngine {
         userWordsFile = userWords
         blockedWordsFile = blockedWords
         rejections = Rejections(rejectedCorrections)
+        strength = AutocorrectStrength(autocorrectStrength)
         personal = PersonalModel(personalModel)
         replacements = TextReplacements(textReplacements)
         emojiUsage = EmojiUsage(emojiUsageFile)
@@ -501,7 +506,8 @@ object TypingEngine {
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
         if (vetoesCorrection(kept)) return null
-        val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), level.level)
+        val adjusted = if (adaptiveStrength) strength.adjust(level.level) else level.level
+        val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), adjusted)
             ?: return null
         return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
     }
@@ -530,16 +536,30 @@ object TypingEngine {
     fun neverCorrect(typed: String, correction: String) = rejections.neverCorrect(typed, correction)
 
     /** The user undid [typed] -> [correction] (or kept their word while it was offered): a hard rejection. */
-    fun reject(typed: String, correction: String) = rejections.recordHard(typed, correction)
+    fun reject(typed: String, correction: String) {
+        rejections.recordHard(typed, correction)
+        strength.reverted()
+    }
 
     /** Autocorrection just turned [typed] into [correction]. */
     fun noteCorrected(typed: String, correction: String) = rejections.noteCorrected(typed, correction)
 
     /** [typed] -> [correction] was made and the user typed on: earlier undos of it are forgiven. */
-    fun correctionKept(typed: String, correction: String) = rejections.recordKept(typed, correction)
+    fun correctionKept(typed: String, correction: String) {
+        rejections.recordKept(typed, correction)
+        strength.kept()
+    }
+
+    /** The user picked a correction from the bar for a word autocorrect left alone. */
+    fun fixPicked() = strength.fixPicked()
+
+    /** The adaptive score (> 0: more careful, < 0: bolder), for settings and tests. */
+    val strengthScore: Double get() = strength.score
 
     /** The user deleted the whole word [word] (a soft rejection if it was just autocorrected). */
-    fun noteDeleted(word: String) = rejections.noteDeleted(word)
+    fun noteDeleted(word: String) {
+        if (rejections.noteDeleted(word)) strength.deletedAfterCorrection()
+    }
 
     /** The [n] most likely next words after [previous] (stored casing), for the empty strip. */
     fun predictions(previous: String?, n: Int = SuggestionStrip.SLOTS): List<String> {
@@ -798,6 +818,7 @@ object TypingEngine {
         blockedWordsFile = null
         blocked.clear()
         rejections = Rejections()
+        strength = AutocorrectStrength()
         personal = PersonalModel()
         replacements = TextReplacements()
         emoji = null

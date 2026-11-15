@@ -37,7 +37,9 @@ class EngineContextEvalTest : FunSpec({
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // optional: a trigram model binary (DOGBOARD_NGRAMS=path, tools/data/arpa_to_dogboard.py)
         val ngrams = System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
-        val autocorrect = Autocorrect(lexicon)
+        // DOGBOARD_EVAL_LEAD: the lead over the typed letters (Standard 1.39; the adaptive range 1.17 - 1.65)
+        val autocorrect = System.getenv("DOGBOARD_EVAL_LEAD")?.toDoubleOrNull()
+            ?.let { Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(leadOverTyped = it)) } ?: Autocorrect(lexicon)
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
         // optional: the unknown-word letter model (DOGBOARD_CHARLM=path, tools/data/build_charlm.py) and its veto
         val charModel = System.getenv("DOGBOARD_CHARLM")?.let { File(it) }?.takeIf { it.isFile }?.bufferedReader()?.use { CharModel.parse(it) }

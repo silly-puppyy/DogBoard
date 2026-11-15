@@ -171,6 +171,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__autocorrect_level",
             default = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.STANDARD,
         )
+        // DogBoard: autocorrect adapts to what the user keeps and undoes (AutocorrectStrength); off until decided
+        val adaptiveStrength = boolean(
+            key = "correction__adaptive_strength",
+            default = false,
+        )
     }
 
     val devtools = Devtools()

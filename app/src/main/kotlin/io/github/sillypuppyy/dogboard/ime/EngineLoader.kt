@@ -37,6 +37,7 @@ object EngineLoader {
             userWords = File(files, "dogboard/user_words.txt"),
             blockedWords = File(files, "dogboard/blocked_words.txt"),
             rejectedCorrections = File(files, "dogboard/rejected_corrections.txt"),
+            autocorrectStrength = File(files, "dogboard/autocorrect_strength.txt"),
             openAbbreviations = { assets.open("dogboard/en.abbreviations.txt").bufferedReader() },
             openNoSuggest = { assets.open("dogboard/en.nosuggest.txt").bufferedReader() },
             personalModel = File(files, "dogboard/personal.tsv"),

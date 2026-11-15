@@ -69,16 +69,20 @@ class Rejections(private val file: File? = null, private val now: () -> Long = S
         while (recentCorrections.size > RECENT_CORRECTIONS) recentCorrections.removeFirst()
     }
 
-    /** The user deleted [word]; if it was just made by autocorrection, that correction is softly rejected. */
+    /**
+     * The user deleted [word]; if it was just made by autocorrection, that correction is softly
+     * rejected. Returns whether it was (a soft rejection was recorded).
+     */
     @Synchronized
-    fun noteDeleted(word: String) {
-        val (typed, correction) = recentCorrections.lastOrNull { it.second == word } ?: return
+    fun noteDeleted(word: String): Boolean {
+        val (typed, correction) = recentCorrections.lastOrNull { it.second == word } ?: return false
         if (deleted.size >= SOFT_MAX_DELETED) deleted.remove(deleted.minBy { it.time })
         deleted.add(Deleted(typed, correction, now()))
         val row = rows.getOrPut(typed to correction) { Row() }
         row.soft++
         row.lastSoft = now()
         save()
+        return true
     }
 
     /**
