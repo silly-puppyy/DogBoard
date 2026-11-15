@@ -27,6 +27,8 @@ data class KbProps(
     val panelVariant: String = "default", // default, select, locked, empty
     /** The live clipboard (stage 2); null shows the design's sample clips. */
     val clips: List<KbClipData>? = null,
+    /** The clipboard filter picked (0 All, 1 Links, 2 Media). */
+    val clipFilter: Int = 0,
     val skinPicker: Boolean = false,
     val devCtrl: String = "off", // off, armed, locked
     /** Kb:428, 730: the action key greyed, "unavailable until you type" (an empty field that can't be sent). */

@@ -25,6 +25,9 @@ object LiveUi {
     /** The space-bar trackpad is in use (the bar fades, Kb:511-512). */
     val trackpad = MutableStateFlow(false)
 
+    /** The clipboard panel's filter (Kb:41-43): 0 All, 1 Links, 2 Media; picked in the header, applied to the grid. */
+    val clipFilter = MutableStateFlow(0)
+
     /** Selection mode in the text-editing panel: the arrows extend the selection. */
     val selecting = MutableStateFlow(false)
     private var selAnchor = 0

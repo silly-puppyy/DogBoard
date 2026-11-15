@@ -77,7 +77,7 @@ fun TextInputLayout(
             val panel by ui.panel.collectAsState()
             val removed by io.github.sillypuppyy.dogboard.ime.LiveStrip.removed.collectAsState()
             val refresh = { imeController.updateStateBlocking { refreshSuggestions() } }
-            // the recent-copy chip: the current clip for 60 s after it was copied (RecentClip)
+            // the recent-copy chip: the current clip for 2 min after it was copied (RecentClip)
             val context = androidx.compose.ui.platform.LocalContext.current
             val clipboardManager = androidx.compose.runtime.remember(context) { context.clipboardManager().value }
             val primaryClip by clipboardManager.primaryClipFlow.collectAsState()
@@ -104,32 +104,42 @@ fun TextInputLayout(
             val showAutofill = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && inlineAutofill.isNotEmpty() && !toolRow && panel.isEmpty()
             Box {
             val contactChips by io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.collectAsState()
+            val undoShown by io.github.sillypuppyy.dogboard.ime.LiveStrip.undoShown.collectAsState()
             // contact chips while a name is typed; else, with nothing typed, a text clip's chips
             val typing = strip.any { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
             val clipChipsShown = contactChips.isEmpty() && !typing && clipShown != null && clipChips.isNotEmpty()
-            val chips = if (contactChips.isNotEmpty()) contactChips else if (clipChipsShown) clipChips else emptyList()
+            // Gboard: after a paste from the chip, or a held / swipe delete, the bar is one Undo chip
+            // (it goes as soon as anything else changes the text or the cursor, so it can take the bar)
+            val undoChip = undoShown
+            val chips = when {
+                undoChip -> listOf(io.github.sillypuppyy.dogboard.design.KbChipData("undo", "Undo"))
+                contactChips.isNotEmpty() -> contactChips
+                clipChipsShown -> clipChips
+                else -> emptyList()
+            }
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
                 strip = if (showAutofill) emptyList() else strip,
                 chips = if (showAutofill) emptyList() else chips,
                 onChip = { i ->
-                    if (clipChipsShown) {
+                    if (undoChip) imeController.updateStateBlocking { undoLastEdit() }
+                    else if (clipChipsShown) {
                         val item = clipShown
                         if (item != null) {
                             io.github.sillypuppyy.dogboard.ime.RecentClip.markUsed(item)
                             clipShown = null
                             // the whole clip pastes as itself; a piece of it as text
-                            if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item) }
-                            else clipChips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label) } }
+                            if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
+                            else clipChips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label, undoable = true) } }
                         }
                     } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.insert, space = c.insert == c.label) } }
                 },
-                clipLabel = if (clipChipsShown) null else clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
+                clipLabel = if (clipChipsShown || undoChip) null else clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
                 onClip = {
                     clipShown?.let { item ->
                         io.github.sillypuppyy.dogboard.ime.RecentClip.markUsed(item)
                         clipShown = null
-                        imeController.updateStateBlocking { emitClipboardItem(item) }
+                        imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
                     }
                 },
                 // a long-press removes a suggestion for good, with Undo for 4 s (design Panels:102)

@@ -61,9 +61,13 @@ fun KbPanelHeader(r: KbRender) {
                     BackButton(r)
                     DText("Clipboard", Modifier.padding(end = 6.dp), style = text(16, 500, t.barFg))
                     Row(Modifier.weight(1f).clip(RoundedCornerShape(0.dp)), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Chip("All", t.chip, t.chipFg, null)
-                        Chip("Text", Color.Transparent, t.barFg, t.div)
-                        Chip("Images", Color.Transparent, t.barFg, t.div)
+                        // Kb:41-43: the picked filter filled, the others ringed (ours filters the list)
+                        val actions = LocalKbActions.current
+                        for ((i, label) in listOf("All", "Links", "Media").withIndex()) {
+                            val on = i == x.clipFilter
+                            Chip(label, if (on) t.chip else Color.Transparent, if (on) t.chipFg else t.barFg, if (on) null else t.div,
+                                Modifier.tap(actions?.let { a -> { a.onClipFilter(i) } }))
+                        }
                     }
                     Box(Modifier.size(40.dp, 48.dp), contentAlignment = Alignment.Center) { Symbol("delete_sweep", 22.sp, t.barFg) }
                 }
@@ -111,9 +115,9 @@ fun KbPanelHeader(r: KbRender) {
 
 /** Kb:41-43: 32 dp pill chip, filled or outlined (inset 1 px ring). */
 @Composable
-private fun Chip(label: String, bg: Color, fg: Color, ring: Color?) {
+private fun Chip(label: String, bg: Color, fg: Color, ring: Color?, modifier: Modifier = Modifier) {
     Box(
-        Modifier.height(32.dp)
+        modifier.height(32.dp)
             .cssShadow(if (ring != null) listOf(CssShadow(true, 0f, 0f, 0f, 1f, ring)) else emptyList(), PILL)
             .background(bg, PILL).lint("chip:$label").padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,

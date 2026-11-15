@@ -63,6 +63,9 @@ fun clipLead(d: KbClipData, fn: Color, fnFg: Color): KbClipLead? {
     }
 }
 
+/** Kb:42: what the "Links" filter keeps: a clip that is a link (the link tile's test). */
+fun isLinkClip(text: String): Boolean = LINK.matchEntire(text.trim()) != null
+
 private val HEX = Regex("#?([0-9a-fA-F]{6})")
 private val LINK = Regex("(?i)(https?://)?(?:www\\.)?((?:[a-z0-9-]+\\.)+[a-z]{2,})(/\\S*)?")
 
@@ -83,6 +86,8 @@ data class KbExtras(
     val panel: String, val showPanel: Boolean,
     val pClip: Boolean, val pEmoji: Boolean, val pTools: Boolean, val pEdit: Boolean,
     val clips: List<KbClip>, val clipList: Boolean, val clipMsg: Boolean,
+    /** Kb:41-43: the clipboard filter picked: 0 All, 1 Links, 2 Media (ours filters; the canvas draws All). */
+    val clipFilter: Int = 0,
     val clipMsgIcon: String, val clipMsgTitle: String, val clipMsgBody: String, val clipMsgBtn: Boolean,
     val tools: List<KbTool>, val pad: List<KbPad>, val editOps: List<KbTool>,
     val emojiA: List<String>, val emojiB: List<String>, val emojiCats: List<KbEmojiCat>,
@@ -177,7 +182,7 @@ object KbExtrasSpec {
             dev = P.dev && panel.isEmpty(), devKeys = devKeys,
             panel = panel, showPanel = panel.isNotEmpty() && !barless,
             pClip = pClip, pEmoji = pEmoji, pTools = pTools, pEdit = pEdit,
-            clips = clips, clipList = pClip && (pvar == "default" || pvar == "select"), clipMsg = pClip && (pvar == "locked" || pvar == "empty"),
+            clips = clips, clipFilter = P.clipFilter, clipList = pClip && (pvar == "default" || pvar == "select"), clipMsg = pClip && (pvar == "locked" || pvar == "empty"),
             clipMsgIcon = if (pvar == "locked") "lock" else "content_paste_off",
             clipMsgTitle = if (pvar == "locked") "Unlock to see your clipboard" else "Clipboard history is off",
             clipMsgBody = if (pvar == "locked") "Clips stay hidden on the lock screen, pinned ones too." else "Keep what you copy for an hour, including images and videos. Pin a clip to keep it longer.",

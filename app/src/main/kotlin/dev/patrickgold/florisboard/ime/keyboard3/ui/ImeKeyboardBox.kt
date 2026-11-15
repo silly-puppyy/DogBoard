@@ -265,7 +265,15 @@ fun ImeKeyboardBox(
                 val clipboardManager = remember(context) { context.clipboardManager().value }
                 val history by clipboardManager.historyFlow.collectAsState()
                 val historyEnabled by prefs.clipboard.historyEnabled.collectAsState()
-                val clipItems = history.all
+                // the panel's filter (Kb:41-43): All, Links, Media
+                val clipFilter by io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.collectAsState()
+                val clipItems = remember(history, clipFilter) {
+                    when (clipFilter) {
+                        1 -> history.all.filter { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive && io.github.sillypuppyy.dogboard.design.isLinkClip(it.text.orEmpty()) }
+                        2 -> history.all.filter { it.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT }
+                        else -> history.all
+                    }
+                }
                 // asked when a panel opens, not on every redraw (a cross-process call per keystroke)
                 val phoneLocked = remember(livePanel) {
                     context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true
@@ -306,6 +314,7 @@ fun ImeKeyboardBox(
                             },
                         )
                     },
+                    clipFilter = clipFilter,
                     clips = remember(clipItems) { clipItems.map { item ->
                         val media = item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT
                         val video = item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO

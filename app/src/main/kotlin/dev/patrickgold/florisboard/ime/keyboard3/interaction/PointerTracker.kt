@@ -152,6 +152,10 @@ class PointerTracker(
     val trackedMultiTapSeq: StateFlow<TrackedMultiTapSeq?>
         field = MutableStateFlow(null)
 
+    /** DogBoard: the text before the cursor when the current delete hold began (null: no hold). */
+
+    private var heldDeleteStart: String? = null
+
     private var lastUpKeyState: LastUpKey? = null
     // DogBoard: caps lock timing is measured from the first shift press, not its release
     private var lastShiftDownUptime: Long = Long.MIN_VALUE
@@ -273,7 +277,10 @@ class PointerTracker(
                 } else LongPress.None,
                 repeatJob = if (downKey.isRepeatable) {
                     scope.launch {
+                        // DogBoard: the text before the hold, so Undo can bring back all it deletes
+                        val holdStart = imeController.snapshotState().content.surroundingText.textBefore
                         delay(keyRepeatTimeout)
+                        heldDeleteStart = holdStart
                         // DogBoard: a held delete accelerates from characters to whole words
                         val isBackspace = downKey.attrs.output == ImeActions.Backspace
                         var repeatIndex = 0
@@ -292,6 +299,7 @@ class PointerTracker(
                             if (!nothingToDelete) {
                                 imeController.updateState {
                                     output?.let { emit(it) }
+                                    if (isBackspace) recordHeldDelete(holdStart)
                                 }
                                 interactionController.performFeedback(InteractionKind.KeyRepeat, output)
                             }
@@ -474,7 +482,10 @@ class PointerTracker(
                     else -> trackedPointer.downKey.attrs.output
                 }
                 output?.let { emit(it) }
+                // the release deletes once more after a hold: Undo still brings back the whole hold
+                heldDeleteStart?.takeIf { output == ImeActions.Backspace }?.let { recordHeldDelete(it) }
             }
+            heldDeleteStart = null
             trackedPeekPointer.update { it?.copy(peekMustSwitchBack = true) }
             trackedOutputPointer.value = null
             lastUpKeyState = LastUpKey(trackedPointer.downKey, up.uptimeMillis)

@@ -17,6 +17,9 @@ object LiveStrip {
     /** Smart chips in place of the suggestions (contact chips while a contact's first name is typed). */
     val chips = MutableStateFlow<List<io.github.sillypuppyy.dogboard.design.KbChipData>>(emptyList())
 
+    /** Whether the bar shows Gboard's Undo chip (after a paste from the clip chip, a held or swipe delete). */
+    val undoShown = MutableStateFlow(false)
+
     /** Contacts by lowercase first name ([io.github.sillypuppyy.dogboard.contacts.ContactCards]); empty unless allowed. */
     @Volatile
     var contactCards: Map<String, List<io.github.sillypuppyy.dogboard.contacts.ContactCard>> = emptyMap()

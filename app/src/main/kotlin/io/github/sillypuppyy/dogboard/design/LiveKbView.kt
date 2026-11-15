@@ -50,6 +50,7 @@ fun LiveKbView(
     panel: String = "",
     actions: KbActions? = null,
     clips: List<KbClipData>? = null,
+    clipFilter: Int = 0,
     panelVariant: String = "default",
     /** "emoji" or "globe": what the fn key does (FlorisBoard's fn key setting). */
     fnKey: String = "emoji",
@@ -109,7 +110,7 @@ fun LiveKbView(
             keyH = maxHeight.value,
             only = "live",
             panel = panel,
-            clips = clips,
+            clips = clips, clipFilter = clipFilter,
             panelVariant = panelVariant,
             fnKey = fnKey,
             trackpad = trackpadX != null,
@@ -185,13 +186,14 @@ fun LiveKbBar(
         val chipBar = chips.isNotEmpty() && !toolRow && removed == null
         val clip = !chipBar && clipLabel != null && !toolRow && removed == null && strip.all { it.kind == io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
         val trackpad by io.github.sillypuppyy.dogboard.ime.LiveUi.trackpad.collectAsState()
+        val clipFilter by io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.collectAsState()
         val props = KbProps(
             dark = dark, slots = if (toolRow || incognitoNote || removed != null || clip || chipBar) null else slots,
             bar = if (toolRow) "tools" else if (removed != null) "removed" else if (chipBar) "contact" else if (clip) "clip" else "empty",
             chips = if (chipBar) chips else null,
             clipLabel = clipLabel ?: "", clipMedia = clipMedia,
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
-            removedWord = removed ?: "",
+            removedWord = removed ?: "", clipFilter = clipFilter,
         )
         val themed = liveTheme().apply(props)
         val render = remember(themed) { KbSpec.render(themed) }
@@ -199,6 +201,7 @@ fun LiveKbBar(
             KbActions(
                 onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onSlotLong = { i -> strip.getOrNull(i)?.let(onLongPick) },
                 onUndo = onUndo, onRecentClip = onClip, onChip = onChip, onLeft = onLeft, onTool = onTool, onBack = onBack, onMic = onMic,
+                onClipFilter = { i -> io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.value = i },
             )
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }

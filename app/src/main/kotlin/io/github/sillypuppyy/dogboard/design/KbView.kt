@@ -68,6 +68,8 @@ class KbActions(
     val onBack: () -> Unit = {},
     /** A clipboard tile, by its position in the list. */
     val onClip: (Int) -> Unit = {},
+    /** A clipboard filter chip (0 All, 1 Links, 2 Media). */
+    val onClipFilter: (Int) -> Unit = {},
 )
 
 val LocalKbActions = androidx.compose.runtime.staticCompositionLocalOf<KbActions?> { null }

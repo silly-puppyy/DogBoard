@@ -4,13 +4,14 @@ import dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem
 import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
 
 /**
- * The recent-copy chip (designer, Panels:103 and answers 2026-11-14): for 60 s after a copy, while
+ * The recent-copy chip (designer, Panels:103; lifetime as Gboard, measured 2026-11-15, user: "we
+ * listen to Gboard"): for 2 min after a copy, while
  * nothing is being typed, the bar offers to paste it instead of predictions; a clip marked sensitive
  * (passwords) says "Paste password" without showing it; none in incognito. Once pasted (or dismissed)
  * that clip isn't offered again.
  */
 object RecentClip {
-    const val WINDOW_MS = 60_000L
+    const val WINDOW_MS = 120_000L
 
     /** Creation time of the last clip pasted from the chip (clips have no stable id outside history). */
     @Volatile

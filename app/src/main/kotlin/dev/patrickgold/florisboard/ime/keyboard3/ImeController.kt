@@ -181,6 +181,10 @@ class ImeController(
     private class RecentCorrection(val original: String, val corrected: String, val anchor: String, val alternatives: List<String> = emptyList())
     private val recentCorrections = ArrayDeque<RecentCorrection>()
     private var deletingWord: String? = null
+
+    /** DogBoard: the edit the bar's Undo chip can take back (UpdateImeStateScope.undoLastEdit). */
+    private var undoEdit: UndoEdit? = null
+        set(v) { field = v; io.github.sillypuppyy.dogboard.ime.LiveStrip.undoShown.value = v != null }
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
     @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
@@ -577,6 +581,32 @@ class ImeController(
         }
 
         /** Replaces [old] right before the cursor with [new], if the text there is [old]. */
+        /**
+         * DogBoard: the last edit the bar's Undo chip can take back (Gboard, measured 2026-11-15: after
+         * a paste from the clipboard chip, and after a held delete, a delete swipe or deleting a
+         * selection). [after] is the text before the cursor right after the edit; any other change
+         * (typing, moving the cursor) drops it.
+         */
+
+        /**
+         * DogBoard: a held delete, called after each repeat with the text before the cursor when the
+         * hold began: everything the hold deleted so far comes back with Undo (Gboard).
+         */
+        fun recordHeldDelete(before: String) {
+            val after = state.content.surroundingText.textBefore
+            if (after.length < before.length && before.startsWith(after)) undoEdit = UndoEdit("", before.substring(after.length), after)
+        }
+
+        /** DogBoard: the Undo chip tapped: the pasted text goes, the deleted text comes back. */
+        fun undoLastEdit() {
+            val u = undoEdit ?: return
+            undoEdit = null
+            if (state.content.surroundingText.textBefore != u.after || !replaceBeforeCursor(u.inserted, u.removed)) return
+            expectedContentQueue.push(state.content)
+            currentWord.clear()
+            publishSuggestions()
+        }
+
         private fun replaceBeforeCursor(old: String, new: String): Boolean {
             if (state.content.selection.isNotCollapsed()) return false
             if (!state.content.surroundingText.textBefore.endsWith(old)) return false
@@ -972,6 +1002,7 @@ class ImeController(
         fun refreshSuggestions() = publishSuggestions()
 
         private fun publishSuggestions() {
+            undoEdit?.let { u -> if (state.content.surroundingText.textBefore != u.after || state.content.selection.isNotCollapsed()) undoEdit = null }
             val sink = suggestionSink ?: return
             // the designer's contact chips: a contact's first name typed (opt-in contacts; never in
             // incognito or password fields)
@@ -1178,6 +1209,12 @@ class ImeController(
         }
 
         override fun emitBackspace() {
+            // DogBoard: deleting a selection can be undone (Gboard: selection and swipe deletes)
+            val selected = state.content.surroundingText.textSelected.takeIf { state.content.selection.isNotCollapsed() }
+            if (!selected.isNullOrEmpty()) {
+                emitBackspaceSelection(selected)
+                return
+            }
             autoSpace = false
             lastSpaceUptime = null
             pendingTap = null
@@ -1204,6 +1241,20 @@ class ImeController(
                 currentWord.seedFrom(textBefore, currentWord.keys, currentWord.params)
             }
             publishSuggestions()
+        }
+
+        private fun emitBackspaceSelection(selected: String) {
+            autoSpace = false
+            lastSpaceUptime = null
+            pendingTap = null
+            lastRetro = null
+            super.emitBackspace()
+            expectedContentQueue.push(state.content)
+            val textBefore = state.content.surroundingText.textBefore
+            currentWord.clear()
+            currentWord.seedFrom(textBefore, currentWord.keys, currentWord.params)
+            publishSuggestions()
+            undoEdit = UndoEdit("", selected, textBefore)
         }
 
         // DogBoard
@@ -1286,7 +1337,7 @@ class ImeController(
         }
 
         /** DogBoard: a smart chip tapped: its text replaces the word being typed, then a space; nothing is learned. */
-        fun emitChip(text: String, space: Boolean = true) {
+        fun emitChip(text: String, space: Boolean = true, undoable: Boolean = false) {
             val typed = currentWord.text
             val insert = if (space) "$text " else text
             if (typed.isNotEmpty() && !replaceBeforeCursor(typed, insert)) return
@@ -1294,6 +1345,8 @@ class ImeController(
             currentWord.clear()
             io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value = emptyList()
             publishSuggestions()
+            // a piece of the clip pasted from its chip: Undo takes it back (the word it replaced returns)
+            if (undoable) state.content.surroundingText.textBefore.let { after -> if (after.endsWith(insert)) undoEdit = UndoEdit(insert, typed, after) }
         }
 
         fun emitCandidate(candidate: SuggestionCandidate) {
@@ -1306,12 +1359,17 @@ class ImeController(
             }
         }
 
-        fun emitClipboardItem(item: ClipboardItem?): Boolean {
+        fun emitClipboardItem(item: ClipboardItem?, undoable: Boolean = false): Boolean {
             return item != null && when (item.type) {
                 ItemType.TEXT -> {
                     val text = item.text?.asK3String()
                     if (text != null) {
+                        val selected = state.content.surroundingText.textSelected.takeIf { state.content.selection.isNotCollapsed() }.orEmpty()
                         emitText(text)
+                        // DogBoard: Gboard's Undo chip after a paste from the clipboard chip
+                        if (undoable) state.content.surroundingText.textBefore.let { after ->
+                            if (after.endsWith(item.text.orEmpty())) undoEdit = UndoEdit(item.text.orEmpty(), selected, after)
+                        }
                         true
                     } else {
                         false
@@ -1536,3 +1594,6 @@ fun K3Content.cursorCapsMode(inputAttributes: InputAttributes): InputAttributes.
         TextUtils.getCapsMode(surroundingText.textBefore, surroundingText.textBefore.length, inputAttributes.raw)
     )
 }
+
+/** DogBoard: an edit the bar's Undo chip can take back (see ImeController's undoEdit). */
+private data class UndoEdit(val inserted: String, val removed: String, val after: String)
