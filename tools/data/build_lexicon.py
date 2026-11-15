@@ -137,6 +137,38 @@ def load_other_region_spellings(final_dir: str, us_words) -> set:
     return other - {w.lower() for w in us_words}
 
 
+def load_commonwealth_spellings(final_dir: str) -> set:
+    """Lowercase words in at least three of the other regions' SCOWL lists (centre, colour): the
+    shared British-style spellings, not one region's slang (Australian "kylie")."""
+    regions = defaultdict(set)
+    for fn in os.listdir(final_dir):
+        m = re.match(r"(.+?)-(.+)\.(\d+)$", fn)
+        if not m or m.group(1).split("_variant_")[0] not in FOREIGN_REGIONS:
+            continue
+        with open(os.path.join(final_dir, fn), encoding="latin-1") as f:
+            for w in f.read().split("\n"):
+                if w and w == w.lower():
+                    regions[w].add(m.group(1))
+    return {w for w, r in regions.items() if len(r) >= 3}
+
+
+# British-to-US spelling patterns (centre/center, colour/color, sulphur/sulfur, sceptic/skeptic, ...)
+US_SPELLINGS = (("re", "er"), ("our", "or"), ("sulph", "sulf"), ("scep", "skep"), ("grey", "gray"),
+                ("tyre", "tire"), ("storey", "story"), ("ise", "ize"), ("isation", "ization"), ("lled", "led"),
+                ("ae", "e"), ("oe", "e"))
+
+
+def has_us_spelling(word: str, us_lower: set) -> bool:
+    """True if a US spelling of the British-style word is a US word (centre -> center)."""
+    for gb, us in US_SPELLINGS:
+        i = word.find(gb)
+        while i >= 0:
+            if word[:i] + us + word[i + len(gb):] in us_lower:
+                return True
+            i = word.find(gb, i + 1)
+    return False
+
+
 def load_extra_words():
     with open(EXTRA_WORDS, encoding="utf-8") as f:
         return [l.strip() for l in f if l.strip() and not l.startswith("#")]
@@ -267,6 +299,8 @@ def main():
     final_dir = os.path.join(args.data, "scowl/scowl-2020.12.07/final")
     scowl = load_scowl(final_dir, args.max_level)
     other_regions = load_other_region_spellings(final_dir, load_scowl(final_dir, 95))
+    us_lower = {w for w in scowl if w.islower()}
+    commonwealth = {w for w in load_commonwealth_spellings(final_dir) - us_lower if has_us_spelling(w, us_lower)}
     zipf = load_wordfreq(os.path.join(args.data, "wordfreq/whl/wordfreq/data/large_en.msgpack.gz"))
     wikidata = load_wikidata(os.path.join(args.data, "wikidata"))
     misspelled = load_misspellings(os.path.join(args.data, "wikipedia/common_misspellings.txt"))
@@ -292,12 +326,24 @@ def main():
     # words never seen in billions of words of text only give autocorrect wrong targets
     # ("abamperes", "abnub"); only plain lowercase words: names and forms our tokenizer splits stay
     seen = None
+    case_counts = {}  # case-sensitive counts of the British-style spellings and their capitals
     if args.seen_counts:
         seen = set()
         with open(args.seen_counts, encoding="utf-8") as f:
             for line in f:
                 if not line.startswith("#"):
-                    seen.add(line.split("\t", 1)[0].lower())
+                    w, n = line.rstrip("\n").split("\t", 1)
+                    seen.add(w.lower())
+                    if w.lower() in commonwealth:
+                        case_counts[w] = int(n)
+
+    # a name spelt like a British-style word ("Centre": a French region, and SCOWL's proper names)
+    # takes its own floor when text has the lowercase word at least as often: the web count is then
+    # mostly the word's and would make a typed "centre" come out as "Centre" (Welch keeps its count:
+    # "welch" 319 vs "Welch" 19205 in FineWeb)
+    def british_word(form):
+        key = form.lower()
+        return form != key and key in commonwealth and case_counts.get(key, 0) >= case_counts.get(form, 0)
     unseen_dropped = 0
     for w, (level, kind) in scowl.items():
         if not WORD_RE.match(w):
@@ -305,18 +351,22 @@ def main():
         if seen is not None and w.isalpha() and w.islower() and w not in seen:
             unseen_dropped += 1
             continue
-        add(w, zipf.get(w.lower(), zipf_floor(level)), "scowl", level)
+        add(w, zipf_floor(level) if british_word(w) else zipf.get(w.lower(), zipf_floor(level)), "scowl", level)
     for label, sitelinks in wikidata.items():
         floor = min(1.2, 0.5 + 0.3 * math.log10(max(sitelinks, 1)))
         add(label, zipf.get(label.lower(), floor), "wikidata")
     # names and places: wordfreq where it has the word (capped, since a lowercase count also holds
     # other uses and typos), else a floor from how common the name or how big the place is
+    def name_zipf(name, floor):
+        if british_word(name):
+            return floor
+        return min(zipf.get(name.lower(), floor), max(floor, NAME_ZIPF_CAP))
     for name, share in people.items():
         floor = min(1.5, max(0.5, 2.5 + math.log10(share)))  # 1% of people -> 0.5 + ... capped
-        add(name, min(zipf.get(name.lower(), floor), max(floor, NAME_ZIPF_CAP)), "census")
+        add(name, name_zipf(name, floor), "census")
     for name, pop in places.items():
         floor = min(1.5, max(0.5, 0.25 * math.log10(max(pop, 1))))
-        add(name, min(zipf.get(name.lower(), floor), max(floor, NAME_ZIPF_CAP)), "geonames")
+        add(name, name_zipf(name, floor), "geonames")
     for w, z in zipf.items():
         if z < args.min_zipf_web_only or w in forms or w in other_regions or not WORD_RE.match(w) or "." in w:
             continue
@@ -332,9 +382,10 @@ def main():
         z = zipf.get(w.lower())
         if z is not None and z >= MIN_ZIPF_US_VARIANT and WORD_RE.match(w) and w.lower() not in forms:
             add(w, z, "us-variant", level)
-    for w in load_extra_words():
+    extra = load_extra_words()
+    for w in extra:
         if w not in forms:
-            add(w, zipf.get(w, EXTRA_ZIPF_FLOOR), "extra")
+            add(w, zipf.get(w.lower(), EXTRA_ZIPF_FLOOR), "extra")
 
     # casings: when SCOWL lists a word in more than one casing (google/Google, may/May), keep each
     # casing that is at least MIN_CASING_SHARE of mid-sentence use in edited text, splitting the
@@ -365,7 +416,13 @@ def main():
             continue
         proper = [f for f in cands if f != key]
         lowercase_rare = key in cands and scowl.get(key, (0, ""))[0] >= LOWERCASE_RARE_LEVEL
-        if key in cands and not (proper and lowercase_rare):
+        # a lowercase spelling only web text has ("whatsapp") loses to a brand's inner capitals
+        # ("WhatsApp", "YouTube") or to a casing reviewed by hand in the extra words ("Gmail"): no
+        # dictionary lists the lowercase one
+        brand = [f for f in proper if any(c.isupper() for c in f[1:]) or f in extra]
+        if key in cands and key not in scowl and brand:
+            surface = max(brand, key=lambda f: (cands[f], f))
+        elif key in cands and not (proper and lowercase_rare):
             surface = key
         else:
             surface = max(proper or cands, key=lambda f: (cands[f], f))
