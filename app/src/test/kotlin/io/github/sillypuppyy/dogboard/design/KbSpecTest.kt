@@ -56,6 +56,18 @@ class KbSpecTest : FunSpec({
         KbThemes.tokens("husky", false).fn shouldBe css("#5c6670")
         KbThemes.tokens("lab", true).act shouldBe css("#c08b5c")
     }
+    test("re-sync batch G: gradient backgrounds (Kb:522-530)") {
+        CssGradient.parse("linear-gradient(160deg, #2b2350 0%, #6b2f6e 55%, #9e3b56 100%)")!!.let {
+            it.angleDeg shouldBe 160f
+            it.stops shouldContainExactly listOf(css("#2b2350") to 0f, css("#6b2f6e") to 0.55f, css("#9e3b56") to 1f)
+        }
+        CssGradient.parse("linear-gradient(135deg, #0b5563, #23408e)")!!.stops.map { it.second } shouldContainExactly listOf(0f, 1f)
+        CssGradient.parse("linear-gradient(90deg, #000000, #808080, #ffffff)")!!.stops.map { it.second } shouldContainExactly listOf(0f, 0.5f, 1f)
+        CssGradient.parse("#ffffff") shouldBe null
+        KbThemes.tokens("peach", false).let { it.bgGradient!!.stops.size shouldBe 2; it.bg shouldBe css("#ffe3d1"); it.key shouldBe css("rgba(255,255,255,0.75)") }
+        KbThemes.tokens("dusk", false).keyFg shouldBe css("#ffffff") // dark-only theme, also when light is asked
+        KbThemes.tokens("paper", false).bgGradient shouldBe null
+    }
     test("key preview: held, then fading after release without the key looking pressed") {
         val held = KbSpec.render(KbProps(preview = "g"))
         held.pv!!.alpha shouldBe 1f

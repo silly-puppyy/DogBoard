@@ -98,7 +98,10 @@ class DesignGalleryActivity : ComponentActivity() {
             Frame("Glass keys", "Dim 35% · blur 12 · key opacity 30%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.35f, blur = 12f, keyOpacity = 0.3f)),
             Frame("Too little dim", "Dim 5% · blur 4 · key opacity 12%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.05f, blur = 4f, keyOpacity = 0.12f)),
             Frame("Solid keys", "Dim 10% · blur 18 · key opacity 85%", KbProps(theme = "glass", bar = "teh", ret = "send", dim = 0.1f, blur = 18f, keyOpacity = 0.85f)),
-        )
+        ) + io.github.sillypuppyy.dogboard.design.KbThemes.moreIds.map { id ->
+            // Kb:509-530: the current canvas's extra themes (not in the Look list yet)
+            Frame("Theme: $id", "From the current canvas; kept out of the Look list until the theme list is decided.", KbProps(theme = id, dark = id == "dusk" || id == "lagoon", bar = "teh", ret = "send"))
+        }
 
         // app pages (SetHome.dc.html etc.), drawn at the canvas width 390 dp
         val PAGES = listOf(

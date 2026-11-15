@@ -76,7 +76,7 @@ fun LiveEmojiPanel(
     }
     var skinPicker by remember { mutableStateOf<EmojiSet?>(null) }
 
-    Column(modifier.fillMaxSize().background(t.bg)) {
+    Column(modifier.fillMaxSize().themeBg(t)) {
         Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp)) {
             LazyVerticalGrid(GridCells.Fixed(8), state = grid, modifier = Modifier.fillMaxSize()) {
                 for (s in sections) {

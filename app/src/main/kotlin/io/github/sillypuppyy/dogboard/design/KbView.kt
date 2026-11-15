@@ -92,7 +92,7 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
             .width(r.W.dp)
             .height(r.H.dp)
             .cssShadow(r.rootShadow, RoundedCornerShape(r.rootRadius.dp))
-            .background(t.bg, RoundedCornerShape(r.rootRadius.dp)) // no clip: popups overflow the root (Kb:16)
+            .themeBg(t, RoundedCornerShape(r.rootRadius.dp)) // no clip: popups overflow the root (Kb:16)
             .lint("kb"),
     ) { LintParent("kb") {
         if (r.glass) GlassBackdrop(r)
@@ -435,3 +435,7 @@ private fun cssLinearGradient(deg: Float, size: androidx.compose.ui.geometry.Siz
     val c = Offset(size.width / 2, size.height / 2)
     return Brush.linearGradient(listOf(a, b), start = c - Offset(dx, dy) * half, end = c + Offset(dx, dy) * half)
 }
+
+/** Kb:16 `background: t.bg`: the theme's colour, or its gradient (Kb:522-530). */
+fun Modifier.themeBg(t: KbTokens, shape: androidx.compose.ui.graphics.Shape = androidx.compose.ui.graphics.RectangleShape): Modifier =
+    t.bgGradient?.let { background(it.brush(), shape) } ?: background(t.bg, shape)

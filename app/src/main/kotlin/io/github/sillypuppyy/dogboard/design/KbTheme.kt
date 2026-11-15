@@ -21,6 +21,8 @@ data class KbTokens(
     val retIcon: String, val keyShadow: List<CssShadow>, val fnShadow: List<CssShadow>,
     val actShadow: List<CssShadow>, val linkFg: Color,
     val actIsTransparent: Boolean,
+    /** Kb:522-530: a gradient `bg` (Dusk, Lagoon, Peach); [bg] is then its first colour. */
+    val bgGradient: CssGradient? = null,
 )
 
 object KbThemes {
@@ -29,10 +31,10 @@ object KbThemes {
 
     /**
      * Kb:419, 509-521: more plain-token themes from the current canvas (Husky, Greyhound, Dalmatian
-     * colours without its spots yet, Labrador / Chocolate Lab), drawable in the gallery; not in the Look
+     * colours without its spots yet, Labrador / Chocolate Lab; Kb:522-530 the gradient Dusk, Lagoon and Peach), drawable in the gallery; not in the Look
      * list until the user decides the list (canvas 17 vs the designer's answer of nine).
      */
-    val moreIds = listOf("husky", "greyhound", "dalmatian", "lab")
+    val moreIds = listOf("husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach")
 
     // Kb:364
     private val DEF = mapOf(
@@ -70,6 +72,18 @@ object KbThemes {
             "light" to m("bg" to "#e8dcc8", "key" to "#faf5ec", "keyFg" to "#2b2218", "fn" to "#d9c9ae", "fnFg" to "#4a3b28", "act" to "#7d5f36", "actFg" to "#ffffff", "chip" to "#eadcc2", "chipFg" to "#5a4321", "pop" to "#faf5ec", "popFg" to "#2b2218", "sel" to "#7d5f36", "selFg" to "#ffffff", "hint" to "#75664f", "div" to "#cdbd9f", "barFg" to "#2b2218", "barMuted" to "#54452f", "tile" to "#faf5ec", "tileFg" to "#2b2218", "pressKey" to "#efe6d6", "pressFn" to "#c9b795", "lock" to "#7d5f36", "lockFg" to "#ffffff"),
             "dark" to m("bg" to "#2b1d16", "key" to "#4a3427", "keyFg" to "#f3e6dc", "fn" to "#3a281e", "fnFg" to "#e3cdbd", "act" to "#c08b5c", "actFg" to "#1f130c", "chip" to "#5c3f2c", "chipFg" to "#f6dcc6", "pop" to "#5a4134", "popFg" to "#f3e6dc", "sel" to "#c08b5c", "selFg" to "#1f130c", "hint" to "#c9b2a2", "div" to "#5a4134", "barFg" to "#f3e6dc", "barMuted" to "#d4bfb0", "tile" to "#3a281e", "tileFg" to "#f3e6dc", "pressKey" to "#5c4334", "pressFn" to "#4a3427", "lock" to "#c08b5c", "lockFg" to "#1f130c", "linkFg" to "#e2b58c"),
         ),
+        // Kb:522
+        "dusk" to mapOf(
+            "dark" to m("bg" to "linear-gradient(160deg, #2b2350 0%, #6b2f6e 55%, #9e3b56 100%)", "key" to "rgba(255,255,255,0.14)", "keyFg" to "#ffffff", "fn" to "rgba(255,255,255,0.07)", "fnFg" to "#f4e8f2", "act" to "#ffd1a8", "actFg" to "#3d1830", "chip" to "rgba(255,255,255,0.22)", "chipFg" to "#ffffff", "pop" to "#3a2b5c", "popFg" to "#ffffff", "sel" to "#ffd1a8", "selFg" to "#3d1830", "hint" to "rgba(255,255,255,0.72)", "div" to "rgba(255,255,255,0.22)", "barFg" to "#ffffff", "barMuted" to "rgba(255,255,255,0.8)", "tile" to "rgba(255,255,255,0.12)", "tileFg" to "#ffffff", "pressKey" to "rgba(255,255,255,0.26)", "pressFn" to "rgba(255,255,255,0.18)", "lock" to "#ffffff", "lockFg" to "#3d1830", "linkFg" to "#ffd1a8"),
+        ),
+        // Kb:525
+        "lagoon" to mapOf(
+            "dark" to m("bg" to "linear-gradient(135deg, #0b5563, #23408e)", "key" to "rgba(255,255,255,0.14)", "keyFg" to "#ffffff", "fn" to "rgba(255,255,255,0.07)", "fnFg" to "#e3f1f4", "act" to "#8ee3d0", "actFg" to "#00382f", "chip" to "rgba(255,255,255,0.2)", "chipFg" to "#ffffff", "pop" to "#173f6a", "popFg" to "#ffffff", "sel" to "#8ee3d0", "selFg" to "#00382f", "hint" to "rgba(255,255,255,0.72)", "div" to "rgba(255,255,255,0.22)", "barFg" to "#ffffff", "barMuted" to "rgba(255,255,255,0.8)", "tile" to "rgba(255,255,255,0.12)", "tileFg" to "#ffffff", "pressKey" to "rgba(255,255,255,0.26)", "pressFn" to "rgba(255,255,255,0.18)", "lock" to "#ffffff", "lockFg" to "#0b3a4a", "linkFg" to "#8ee3d0"),
+        ),
+        // Kb:528
+        "peach" to mapOf(
+            "light" to m("bg" to "linear-gradient(160deg, #ffe3d1, #f4c4d8)", "key" to "rgba(255,255,255,0.75)", "keyFg" to "#3b2430", "fn" to "rgba(255,255,255,0.4)", "fnFg" to "#3b2430", "act" to "#8a3d62", "actFg" to "#ffffff", "chip" to "rgba(255,255,255,0.85)", "chipFg" to "#6b2c4b", "pop" to "#ffffff", "popFg" to "#3b2430", "sel" to "#8a3d62", "selFg" to "#ffffff", "hint" to "#7a5565", "div" to "rgba(59,36,48,0.18)", "barFg" to "#3b2430", "barMuted" to "#5e3d4c", "tile" to "rgba(255,255,255,0.7)", "tileFg" to "#3b2430", "pressKey" to "rgba(255,255,255,0.5)", "pressFn" to "rgba(255,255,255,0.65)", "lock" to "#8a3d62", "lockFg" to "#ffffff"),
+        ),
         "paper" to mapOf(
             "light" to m("bg" to "#e3e4e6", "key" to "#fdfdfd", "keyFg" to "#1b1c1e", "fn" to "#c9cbcf", "fnFg" to "#232427", "act" to "#2d2f33", "actFg" to "#ffffff", "chip" to "#ffffff", "chipFg" to "#1b1c1e", "pop" to "#ffffff", "popFg" to "#1b1c1e", "sel" to "#2d2f33", "selFg" to "#ffffff", "hint" to "#66686d", "div" to "#b9bbbf", "barFg" to "#1b1c1e", "barMuted" to "#46484c", "tile" to "#fdfdfd", "tileFg" to "#1b1c1e", "pressKey" to "#d9dbde", "pressFn" to "#b5b8bd", "lock" to "#2d2f33", "lockFg" to "#ffffff", "radius" to "8", "keyShadow" to "0 1px 0 #a9abb0", "fnShadow" to "0 1px 0 #a9abb0", "linkFg" to "#1b1c1e"),
         ),
@@ -105,7 +119,7 @@ object KbThemes {
         fun c(k: String) = css(t.getValue(k))
         val linkFg = t["linkFg"]?.let { css(it) } ?: if (t["act"] == "transparent") c("actFg") else c("act")
         return KbTokens(
-            bg = c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
+            bg = CssGradient.parse(t.getValue("bg"))?.stops?.first()?.first ?: c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
             act = c("act"), actFg = c("actFg"), chip = c("chip"), chipFg = c("chipFg"), pop = c("pop"),
             popFg = c("popFg"), sel = c("sel"), selFg = c("selFg"), hint = c("hint"), div = c("div"),
             barFg = c("barFg"), barMuted = c("barMuted"), tile = c("tile"), tileFg = c("tileFg"),
@@ -116,6 +130,7 @@ object KbThemes {
             keyShadow = CssShadow.parse(t.getValue("keyShadow")), fnShadow = CssShadow.parse(t.getValue("fnShadow")),
             actShadow = CssShadow.parse(t.getValue("actShadow")), linkFg = linkFg,
             actIsTransparent = t["act"] == "transparent",
+            bgGradient = CssGradient.parse(t.getValue("bg")),
         )
     }
 
@@ -167,6 +182,54 @@ fun css(value: String): Color {
     }
 }
 
+/**
+ * A CSS `linear-gradient(<angle>deg, <colour> [<pos>%], ...)` as the design writes it; stops without
+ * a position are spread evenly between their neighbours, as CSS does.
+ */
+data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>) {
+    /** CSS geometry: the line runs through the centre at the angle (0 = up, clockwise), long enough that the corners get the end colours. */
+    fun brush(): androidx.compose.ui.graphics.Brush = object : androidx.compose.ui.graphics.ShaderBrush() {
+        override fun createShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader {
+            val a = Math.toRadians(angleDeg.toDouble())
+            val dx = kotlin.math.sin(a).toFloat(); val dy = -kotlin.math.cos(a).toFloat()
+            val half = (kotlin.math.abs(size.width * dx) + kotlin.math.abs(size.height * dy)) / 2
+            val c = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
+            return androidx.compose.ui.graphics.LinearGradientShader(
+                androidx.compose.ui.geometry.Offset(c.x - dx * half, c.y - dy * half),
+                androidx.compose.ui.geometry.Offset(c.x + dx * half, c.y + dy * half),
+                stops.map { it.first }, stops.map { it.second },
+            )
+        }
+    }
+
+    companion object {
+        fun parse(value: String): CssGradient? {
+            val v = value.trim()
+            if (!v.startsWith("linear-gradient(")) return null
+            val parts = splitTopLevel(v.removePrefix("linear-gradient(").removeSuffix(")")).map { it.trim() }
+            val angle = parts[0].removeSuffix("deg").toFloat()
+            val raw = parts.drop(1).map { p ->
+                val m = Regex("""^(.*?)(?:\s+([\d.]+)%)?$""").matchEntire(p)!!
+                css(m.groupValues[1]) to m.groupValues[2].takeIf { it.isNotEmpty() }?.let { it.toFloat() / 100 }
+            }
+            val pos = raw.map { it.second }.toMutableList()
+            if (pos.first() == null) pos[0] = 0f
+            if (pos.last() == null) pos[pos.lastIndex] = 1f
+            var i = 0
+            while (i < pos.size) {
+                if (pos[i] == null) {
+                    val j = (i until pos.size).first { pos[it] != null }
+                    val a = pos[i - 1]!!; val b = pos[j]!!
+                    for (k in i until j) pos[k] = a + (b - a) * (k - i + 1) / (j - i + 1)
+                    i = j
+                }
+                i++
+            }
+            return CssGradient(angle, raw.indices.map { raw[it].first to pos[it]!! })
+        }
+    }
+}
+
 /** One layer of a CSS box-shadow: `[inset] x y [blur [spread]] colour`, lengths in dp. */
 data class CssShadow(val inset: Boolean, val x: Float, val y: Float, val blur: Float, val spread: Float, val color: Color) {
     companion object {
@@ -180,20 +243,21 @@ data class CssShadow(val inset: Boolean, val x: Float, val y: Float, val blur: F
                 CssShadow(inset, n[0], n[1], n.getOrElse(2) { 0f }, n.getOrElse(3) { 0f }, color)
             }
         }
+    }
+}
 
-        private fun splitTopLevel(s: String): List<String> {
-            val out = ArrayList<String>()
-            var depth = 0
-            var start = 0
-            for ((i, ch) in s.withIndex()) {
-                when (ch) {
-                    '(' -> depth++
-                    ')' -> depth--
-                    ',' -> if (depth == 0) { out.add(s.substring(start, i)); start = i + 1 }
-                }
-            }
-            out.add(s.substring(start))
-            return out
+/** Splits at commas outside parentheses. */
+private fun splitTopLevel(s: String): List<String> {
+    val out = ArrayList<String>()
+    var depth = 0
+    var start = 0
+    for ((i, ch) in s.withIndex()) {
+        when (ch) {
+            '(' -> depth++
+            ')' -> depth--
+            ',' -> if (depth == 0) { out.add(s.substring(start, i)); start = i + 1 }
         }
     }
+    out.add(s.substring(start))
+    return out
 }
