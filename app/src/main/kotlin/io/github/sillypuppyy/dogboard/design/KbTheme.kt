@@ -27,6 +27,13 @@ object KbThemes {
     /** Kb:325 theme ids, in the design's order. */
     val ids = listOf("dogboard", "brand", "paper", "midnight", "ink", "borderless", "glass", "bold", "dog")
 
+    /**
+     * Kb:419, 509-521: more plain-token themes from the current canvas (Husky, Greyhound, Dalmatian
+     * colours without its spots yet, Labrador / Chocolate Lab), drawable in the gallery; not in the Look
+     * list until the user decides the list (canvas 17 vs the designer's answer of nine).
+     */
+    val moreIds = listOf("husky", "greyhound", "dalmatian", "lab")
+
     // Kb:364
     private val DEF = mapOf(
         "radius" to "10", "fw" to "400", "fsScale" to "1", "hintFs" to "10", "hintFw" to "500",
@@ -45,6 +52,23 @@ object KbThemes {
         "brand" to mapOf(
             "light" to m("bg" to "#fbebe1", "key" to "#ffffff", "keyFg" to "#221a14", "fn" to "#efe0d6", "fnFg" to "#51443b", "act" to "#88521c", "actFg" to "#ffffff", "chip" to "#ffdcc2", "chipFg" to "#6b3b05", "pop" to "#ffffff", "popFg" to "#221a14", "sel" to "#88521c", "selFg" to "#ffffff", "hint" to "#6f6157", "div" to "#d6c3b6", "barFg" to "#221a14", "barMuted" to "#51443b", "tile" to "#ffffff", "tileFg" to "#221a14", "pressKey" to "#f5e5db", "pressFn" to "#e2d0c4", "lock" to "#88521c", "lockFg" to "#ffffff"),
             "dark" to m("bg" to "#221a14", "key" to "#3c332c", "keyFg" to "#efe0d6", "fn" to "#2f2620", "fnFg" to "#d6c3b6", "act" to "#ffb77a", "actFg" to "#4c2700", "chip" to "#6b3b05", "chipFg" to "#ffdcc2", "pop" to "#4a4038", "popFg" to "#efe0d6", "sel" to "#ffb77a", "selFg" to "#4c2700", "hint" to "#c3b2a5", "div" to "#51443b", "barFg" to "#efe0d6", "barMuted" to "#d6c3b6", "tile" to "#312822", "tileFg" to "#efe0d6", "pressKey" to "#4a4038", "pressFn" to "#40352d", "lock" to "#ffb77a", "lockFg" to "#4c2700"),
+        ),
+        // Kb:509
+        "husky" to mapOf(
+            "light" to m("bg" to "#dfe5ea", "key" to "#ffffff", "keyFg" to "#1b2128", "fn" to "#5c6670", "fnFg" to "#ffffff", "act" to "#2b6ea8", "actFg" to "#ffffff", "chip" to "#cfe2f3", "chipFg" to "#174a75", "pop" to "#ffffff", "popFg" to "#1b2128", "sel" to "#2b6ea8", "selFg" to "#ffffff", "hint" to "#5f6a74", "div" to "#b7c1ca", "barFg" to "#1b2128", "barMuted" to "#3d4650", "tile" to "#ffffff", "tileFg" to "#1b2128", "pressKey" to "#e6ebf0", "pressFn" to "#4a535c", "lock" to "#2b6ea8", "lockFg" to "#ffffff"),
+        ),
+        // Kb:512
+        "greyhound" to mapOf(
+            "dark" to m("bg" to "#3a3e45", "key" to "#575c64", "keyFg" to "#f2f1ee", "fn" to "#484c53", "fnFg" to "#dfe1e5", "act" to "#d6b088", "actFg" to "#2a1d10", "chip" to "#5d5348", "chipFg" to "#f3e2cc", "pop" to "#62676f", "popFg" to "#f2f1ee", "sel" to "#d6b088", "selFg" to "#2a1d10", "hint" to "#d2d5da", "div" to "#5a5f67", "barFg" to "#f2f1ee", "barMuted" to "#c9ccd2", "tile" to "#454950", "tileFg" to "#f2f1ee", "pressKey" to "#676c74", "pressFn" to "#575c64", "lock" to "#d6b088", "lockFg" to "#2a1d10", "linkFg" to "#d6b088"),
+        ),
+        // Kb:515
+        "dalmatian" to mapOf(
+            "light" to m("bg" to "#e6e3dc", "key" to "#ffffff", "keyFg" to "#1b1b1b", "fn" to "#cdc7bc", "fnFg" to "#1b1b1b", "act" to "#1b1b1b", "actFg" to "#ffffff", "chip" to "#1b1b1b", "chipFg" to "#ffffff", "pop" to "#ffffff", "popFg" to "#1b1b1b", "sel" to "#1b1b1b", "selFg" to "#ffffff", "hint" to "#66635c", "div" to "#c4c0b6", "barFg" to "#1b1b1b", "barMuted" to "#45433e", "tile" to "#ffffff", "tileFg" to "#1b1b1b", "pressKey" to "#ecebe6", "pressFn" to "#bab3a7", "lock" to "#1b1b1b", "lockFg" to "#ffffff", "bg" to "#1b1b1b", "fg" to "#ffffff", "hint" to "#a9a59c", "press" to "#3a3a3a"),
+        ),
+        // Kb:518
+        "lab" to mapOf(
+            "light" to m("bg" to "#e8dcc8", "key" to "#faf5ec", "keyFg" to "#2b2218", "fn" to "#d9c9ae", "fnFg" to "#4a3b28", "act" to "#7d5f36", "actFg" to "#ffffff", "chip" to "#eadcc2", "chipFg" to "#5a4321", "pop" to "#faf5ec", "popFg" to "#2b2218", "sel" to "#7d5f36", "selFg" to "#ffffff", "hint" to "#75664f", "div" to "#cdbd9f", "barFg" to "#2b2218", "barMuted" to "#54452f", "tile" to "#faf5ec", "tileFg" to "#2b2218", "pressKey" to "#efe6d6", "pressFn" to "#c9b795", "lock" to "#7d5f36", "lockFg" to "#ffffff"),
+            "dark" to m("bg" to "#2b1d16", "key" to "#4a3427", "keyFg" to "#f3e6dc", "fn" to "#3a281e", "fnFg" to "#e3cdbd", "act" to "#c08b5c", "actFg" to "#1f130c", "chip" to "#5c3f2c", "chipFg" to "#f6dcc6", "pop" to "#5a4134", "popFg" to "#f3e6dc", "sel" to "#c08b5c", "selFg" to "#1f130c", "hint" to "#c9b2a2", "div" to "#5a4134", "barFg" to "#f3e6dc", "barMuted" to "#d4bfb0", "tile" to "#3a281e", "tileFg" to "#f3e6dc", "pressKey" to "#5c4334", "pressFn" to "#4a3427", "lock" to "#c08b5c", "lockFg" to "#1f130c", "linkFg" to "#e2b58c"),
         ),
         "paper" to mapOf(
             "light" to m("bg" to "#e3e4e6", "key" to "#fdfdfd", "keyFg" to "#1b1c1e", "fn" to "#c9cbcf", "fnFg" to "#232427", "act" to "#2d2f33", "actFg" to "#ffffff", "chip" to "#ffffff", "chipFg" to "#1b1c1e", "pop" to "#ffffff", "popFg" to "#1b1c1e", "sel" to "#2d2f33", "selFg" to "#ffffff", "hint" to "#66686d", "div" to "#b9bbbf", "barFg" to "#1b1c1e", "barMuted" to "#46484c", "tile" to "#fdfdfd", "tileFg" to "#1b1c1e", "pressKey" to "#d9dbde", "pressFn" to "#b5b8bd", "lock" to "#2d2f33", "lockFg" to "#ffffff", "radius" to "8", "keyShadow" to "0 1px 0 #a9abb0", "fnShadow" to "0 1px 0 #a9abb0", "linkFg" to "#1b1c1e"),

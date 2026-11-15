@@ -51,6 +51,11 @@ class KbSpecTest : FunSpec({
         KbThemes.tokens("brand", false).bg shouldBe css("#fbebe1")
         KbThemes.tokens("brand", true).act shouldBe css("#ffb77a")
     }
+    test("re-sync batch B: the plain-token themes resolve in both modes (Kb:509-521)") {
+        for (id in KbThemes.moreIds) for (dark in listOf(false, true)) KbThemes.tokens(id, dark)
+        KbThemes.tokens("husky", false).fn shouldBe css("#5c6670")
+        KbThemes.tokens("lab", true).act shouldBe css("#c08b5c")
+    }
     test("key preview: held, then fading after release without the key looking pressed") {
         val held = KbSpec.render(KbProps(preview = "g"))
         held.pv!!.alpha shouldBe 1f
