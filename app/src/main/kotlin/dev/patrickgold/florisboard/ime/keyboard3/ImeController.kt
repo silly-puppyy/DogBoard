@@ -163,6 +163,8 @@ class ImeController(
     private var unconfirmedWord: Pair<String?, String>? = null
     /** The word before [unconfirmedWord]'s previous one (the personal model's two-word context). */
     private var unconfirmedWord2: String? = null
+    /** DogBoard: the finished word's taps and key centres, recorded for personal key offsets once it is confirmed. */
+    private var unconfirmedTouches: Triple<String, List<io.github.sillypuppyy.dogboard.engine.Tap>, Map<Char, io.github.sillypuppyy.dogboard.touch.KeyTarget>>? = null
     // DogBoard: a word changed by retrocorrection, accepted only once the word after the one that
     // triggered it is finished (a backspace right after can still undo it)
     private var pendingRetroAccept: Pair<String?, String>? = null
@@ -864,6 +866,8 @@ class ImeController(
             if (!learningAllowed()) return
             unconfirmedWord = previous to word
             unconfirmedWord2 = previous2
+            // personal key offsets: only a word typed by tapping and kept exactly as typed
+            unconfirmedTouches = currentWord.tapsOrNull()?.takeIf { word == currentWord.text }?.let { Triple(word, it, currentWord.keys) }
         }
 
         /** The word finished before this one was not undone: accept it (personal model, learning). */
@@ -878,7 +882,12 @@ class ImeController(
             val (previous, word) = unconfirmedWord ?: return
             val previous2 = unconfirmedWord2
             unconfirmedWord = null
-            scope.launch { TypingEngine.accepted(previous, word, previous2) }
+            val touches = unconfirmedTouches?.takeIf { it.first == word }
+            unconfirmedTouches = null
+            scope.launch {
+                TypingEngine.accepted(previous, word, previous2)
+                touches?.let { (w, taps, keys) -> TypingEngine.recordTouches(w, taps, keys) }
+            }
         }
 
         /** The autocorrection before this word was not undone: record it as kept. */

@@ -49,6 +49,8 @@ object TypingEngine {
     private var rejections = Rejections()
     /** Autocorrect that adapts to what the user keeps and undoes (off unless [adaptiveStrength]). */
     private var strength = AutocorrectStrength()
+    /** Where this user really taps each key (Gboard's spatial personalization); applied when decoding. */
+    private var personalOffsets = PersonalOffsets()
     @Volatile var adaptiveStrength = false
 
     /** Words the user removed from suggestions (lowercase); never suggested or corrected to. */
@@ -108,6 +110,7 @@ object TypingEngine {
         blockedWords: File? = null,
         rejectedCorrections: File? = null,
         autocorrectStrength: File? = null,
+        personalOffsetsFile: File? = null,
         openAbbreviations: (() -> BufferedReader)? = null,
         personalModel: File? = null,
         textReplacements: File? = null,
@@ -126,7 +129,7 @@ object TypingEngine {
         if (charModel == null) charModel = openCharModel?.let { open -> runCatching { open().use { CharModel.parse(it) } }.getOrNull() }
         reload = {
             load(
-                openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, autocorrectStrength, openAbbreviations, personalModel,
+                openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, autocorrectStrength, personalOffsetsFile, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
                 openCharModel,
             )
@@ -165,6 +168,7 @@ object TypingEngine {
         blockedWordsFile = blockedWords
         rejections = Rejections(rejectedCorrections)
         strength = AutocorrectStrength(autocorrectStrength)
+        personalOffsets = PersonalOffsets(personalOffsetsFile)
         personal = PersonalModel(personalModel)
         replacements = TextReplacements(textReplacements)
         emojiUsage = EmojiUsage(emojiUsageFile)
@@ -352,7 +356,8 @@ object TypingEngine {
 
     /**
      * iOS "Reset Keyboard Dictionary": forgets every learned word, the personal model and the
-     * rejected corrections; text replacements, blocked words and emoji use stay. The word data is
+     * rejected corrections (DogBoard: also the adaptive autocorrect strength and personal key
+     * offsets); text replacements, blocked words and emoji use stay. The word data is
      * loaded again, as learned words live in the lexicon.
      */
     @Synchronized
@@ -360,6 +365,9 @@ object TypingEngine {
         loaded ?: return
         personal.clear()
         rejections.clear()
+        // DogBoard: what was learned from the user's typing goes too
+        strength.reset()
+        personalOffsets.reset()
         // iOS "Reset Keyboard Dictionary": every word the keyboard was taught goes, added ones too
         for (f in listOfNotNull(userWordsFile, addedWordsFile)) runCatching { f.delete() }
         lock.write { learnedWords.clear() }
@@ -407,7 +415,7 @@ object TypingEngine {
         val taps = word.tapsOrNull() ?: return emptyList()
         return lock.read {
             engine.decoder.decode(
-                taps, word.keys, word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
+                taps, personalOffsets.apply(word.keys), word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
                 previous = engine.contextId(previous), typed = word.decoderText,
                 personal = personalMix(engine, previous, previous2),
                 previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
@@ -455,7 +463,7 @@ object TypingEngine {
         return lock.read {
             val d = engine.retroDecoder
             val prevCandidates = (previousCandidates?.filter { !it.isCompletion }?.take(4) ?: d.decode(
-                prevTaps, previous.keys, previous.params!!, 4, includeCompletions = false,
+                prevTaps, personalOffsets.apply(previous.keys), previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
             )).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
                 .let { respectingContactNames(previous.text, it) }
@@ -465,7 +473,7 @@ object TypingEngine {
                 val best = if (curReadings != null) {
                     curReadings.maxOfOrNull { d.rescored(it, context).score }
                 } else {
-                    d.decode(curTaps, current.keys, current.params!!, 1, includeCompletions = false,
+                    d.decode(curTaps, personalOffsets.apply(current.keys), current.params!!, 1, includeCompletions = false,
                         previous = context, typed = current.text).firstOrNull()?.score
                 }
                 return prevScore + (best ?: return Double.NEGATIVE_INFINITY)
@@ -549,6 +557,23 @@ object TypingEngine {
         rejections.recordKept(typed, correction)
         strength.kept()
     }
+
+    /**
+     * A word typed by tapping and kept as typed: its taps' offsets from the key centres feed the
+     * personal key offsets ([PersonalOffsets]).
+     */
+    fun recordTouches(word: String, taps: List<Tap>, keys: Map<Char, io.github.sillypuppyy.dogboard.touch.KeyTarget>) {
+        if (word.length != taps.size) return
+        val samples = word.mapIndexedNotNull { i, c ->
+            val k = keys[c.lowercaseChar()] ?: keys[c.uppercaseChar()] ?: return@mapIndexedNotNull null
+            if (k.halfWidth <= 0f || k.halfHeight <= 0f) return@mapIndexedNotNull null
+            Triple(c.lowercaseChar(), ((taps[i].x - k.centerX) / k.halfWidth).toDouble(), ((taps[i].y - k.centerY) / k.halfHeight).toDouble())
+        }
+        if (samples.size == word.length) personalOffsets.record(samples)
+    }
+
+    /** Taps in the personal key-offset history (for settings and tests). */
+    val personalOffsetTaps: Int get() = personalOffsets.taps
 
     /** The user picked a correction from the bar for a word autocorrect left alone. */
     fun fixPicked() = strength.fixPicked()
@@ -834,6 +859,7 @@ object TypingEngine {
         blocked.clear()
         rejections = Rejections()
         strength = AutocorrectStrength()
+        personalOffsets = PersonalOffsets()
         personal = PersonalModel()
         replacements = TextReplacements()
         emoji = null
