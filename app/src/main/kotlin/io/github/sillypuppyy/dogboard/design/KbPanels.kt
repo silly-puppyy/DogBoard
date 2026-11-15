@@ -19,15 +19,52 @@ data class KbClipData(
      * design draws striped placeholders, which show until this returns, or if it returns null).
      */
     val thumbnail: (suspend (sizePx: Int) -> androidx.compose.ui.graphics.ImageBitmap?)? = null,
+    /** The source app marked it sensitive (a password): [text] is already masked. */
+    val sensitive: Boolean = false,
+)
+
+/**
+ * Kb:233-235, 892-906: a typed clip's 40 x 40 lead with a title and a grey sub-line. [bg] null =
+ * the striped placeholder (fn / pop, 5 px bands), which a media clip's preview replaces (DogBoard).
+ */
+data class KbClipLead(
+    val title: String, val sub: String = "", val icon: String = "", val letter: String = "",
+    val bg: Color? = null, val fg: Color, val round: Boolean = false, val mono: Boolean = false,
 )
 
 data class KbClip(
-    val media: Boolean, val icon: String, val label: String, val text: String, val pinned: Boolean,
-    val selected: Boolean, val bg: Color, val ring: List<CssShadow>,
-    /** Kb:658: media tiles are striped 135deg, fn 0-6 px, tile 6-12 px. */
-    val stripes: Pair<Color, Color>?,
+    val text: String, val pinned: Boolean, val selected: Boolean, val bg: Color, val ring: List<CssShadow>,
+    /** null = a plain text tile (two lines). */
+    val lead: KbClipLead?,
     val thumbnail: (suspend (sizePx: Int) -> androidx.compose.ui.graphics.ImageBitmap?)? = null,
 )
+
+/**
+ * The canvas's typed tiles (Kb:892-906) for a live clip: photo / video, password, colour, link; null
+ * for plain text. Links get the letter lead (the canvas's other link look needs the site's icon,
+ * which would take the internet). A password's sub-line is "Password": the canvas's "clears in 0:52"
+ * needs an auto-clear DogBoard doesn't have.
+ */
+fun clipLead(d: KbClipData, fn: Color, fnFg: Color): KbClipLead? {
+    val s = d.text.trim()
+    return when {
+        d.media -> KbClipLead(if (d.icon == "play_circle") "Video" else "Photo", icon = d.icon, fg = fnFg)
+        d.sensitive -> KbClipLead("••••••••", "Password", icon = "lock", bg = fn, fg = fnFg)
+        else -> HEX.matchEntire(s)?.let { m ->
+            val rgb = m.groupValues[1].toInt(16)
+            KbClipLead(
+                "#" + m.groupValues[1].uppercase(), "rgb ${rgb shr 16 and 255} ${rgb shr 8 and 255} ${rgb and 255}",
+                bg = Color(0xFF000000 or rgb.toLong()), fg = fnFg, round = true, mono = true,
+            )
+        } ?: LINK.matchEntire(s)?.let { m ->
+            val host = m.groupValues[2].lowercase()
+            KbClipLead(host, m.groupValues[3].trimEnd('/'), letter = host.take(1).uppercase(), bg = fn, fg = fnFg)
+        }
+    }
+}
+
+private val HEX = Regex("#?([0-9a-fA-F]{6})")
+private val LINK = Regex("(?i)(https?://)?(?:www\\.)?((?:[a-z0-9-]+\\.)+[a-z]{2,})(/\\S*)?")
 
 data class KbTool(val icon: String, val label: String, val pinned: Boolean = false)
 data class KbPad(val icon: String, val text: String, val label: String, val bg: Color, val fg: Color)
@@ -82,21 +119,21 @@ object KbExtrasSpec {
         // Kb:647-662
         val pClip = panel == "clipboard"; val pEmoji = panel == "emoji"; val pTools = panel == "tools"; val pEdit = panel == "edit"
         data class Raw(
-            val media: Boolean = false, val icon: String = "", val label: String = "", val text: String = "", val pinned: Boolean = false,
+            val lead: KbClipLead? = null, val text: String = "", val pinned: Boolean = false,
             val selected: Boolean = false, val thumbnail: (suspend (Int) -> androidx.compose.ui.graphics.ImageBitmap?)? = null,
         )
-        val clipsRaw = P.clips?.map { Raw(it.media, it.icon, it.label, it.text, it.pinned, thumbnail = it.thumbnail) } ?: listOf(
-            Raw(media = true, icon = "image", label = "Image", pinned = true),
-            Raw(text = "Meet at the dog park at 6?", pinned = true),
-            Raw(text = "github.com/silly-puppyy/DogBoard"),
-            Raw(media = true, icon = "play_circle", label = "Video · 0:12"),
-            Raw(text = "On my way!", selected = pvar == "select"),
-            Raw(text = "#4B6EAF"),
+        // Kb:892-899
+        val clipsRaw = P.clips?.map { Raw(clipLead(it, t.fn, t.fnFg), it.text, it.pinned, thumbnail = it.thumbnail) } ?: listOf(
+            Raw(KbClipLead("Photo", "1080 × 1350", icon = "image", fg = t.fnFg), pinned = true),
+            Raw(KbClipLead("#4B6EAF", "rgb 75 110 175", bg = Color(0xFF4B6EAF), fg = t.fnFg, round = true, mono = true)),
+            Raw(KbClipLead("silly-puppyy/DogBoard", "github.com", icon = "public", fg = t.fnFg)),
+            Raw(text = "Meet at the dog park at 6?", pinned = true, selected = pvar == "select"),
+            Raw(KbClipLead("example.org", "/recipes/dog-biscuits", letter = "E", bg = t.fn, fg = t.fnFg)),
+            Raw(KbClipLead("••••••••", "Password, clears in 0:52", icon = "lock", bg = t.fn, fg = t.fnFg)),
         )
         val clips = clipsRaw.map { c ->
             KbClip(
-                media = c.media, icon = c.icon, label = c.label, text = c.text, pinned = c.pinned, selected = c.selected,
-                bg = t.tile, stripes = if (c.media) t.fn to t.tile else null, thumbnail = c.thumbnail,
+                text = c.text, pinned = c.pinned, selected = c.selected, bg = t.tile, lead = c.lead, thumbnail = c.thumbnail,
                 ring = when {
                     c.selected -> listOf(CssShadow(true, 0f, 0f, 0f, 2f, t.linkFg))
                     t.tile == t.bg -> listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div))

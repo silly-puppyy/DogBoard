@@ -135,4 +135,18 @@ class KbSpecTest : FunSpec({
         }
         KbThemes.tokens("glass", false, dim = 0.35f, keyOpacity = 0.3f).keyShadow shouldBe emptyList()
     }
+    test("typed clip tiles (Kb:892-906): what a live clip turns into") {
+        val fn = css("#c9cbcf"); val fg = css("#232427")
+        fun lead(text: String, media: Boolean = false, icon: String = "", sensitive: Boolean = false) =
+            clipLead(KbClipData(media, icon, "", text, false, sensitive = sensitive), fn, fg)
+        lead("#4b6eaf")!!.let { it.title shouldBe "#4B6EAF"; it.sub shouldBe "rgb 75 110 175"; it.round shouldBe true; it.mono shouldBe true; it.bg shouldBe css("#4B6EAF") }
+        lead("https://www.example.org/recipes/dog-biscuits/")!!.let { it.letter shouldBe "E"; it.title shouldBe "example.org"; it.sub shouldBe "/recipes/dog-biscuits" }
+        lead("github.com")!!.let { it.title shouldBe "github.com"; it.sub shouldBe "" }
+        lead("••••", sensitive = true)!!.let { it.icon shouldBe "lock"; it.title shouldBe "••••••••" }
+        lead("", media = true, icon = "image")!!.let { it.title shouldBe "Photo"; it.bg shouldBe null }
+        lead("", media = true, icon = "play_circle")!!.title shouldBe "Video"
+        lead("Meet at the dog park at 6?") shouldBe null
+        lead("e.g. this") shouldBe null
+        lead("4B6EAF1") shouldBe null
+    }
 })

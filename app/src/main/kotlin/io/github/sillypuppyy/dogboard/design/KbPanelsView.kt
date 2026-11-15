@@ -330,55 +330,72 @@ fun KbPanelBody(r: KbRender) {
     }
 }
 
-/** Kb:205-209: one clipboard tile. */
+/** Kb:232-240: one clipboard tile: a typed clip (lead, title, sub-line) or two lines of text. */
 @Composable
 private fun RowScope.ClipTile(r: KbRender, c: KbClip, index: Int) {
     val t = r.t
     val actions = LocalKbActions.current
-    // DogBoard: media clips show a preview, like Gboard (the design's stripes until it loads)
+    // DogBoard: a media clip's preview fills the lead, like Gboard's thumbnails (stripes until it loads)
     val density = androidx.compose.ui.platform.LocalDensity.current
     val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, c.thumbnail) {
-        value = c.thumbnail?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 180.dp.roundToPx() }) } }
+        value = c.thumbnail?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 40.dp.roundToPx() }) } }
     }
+    val id = "clip:${c.text}${c.lead?.title.orEmpty()}"
     Box(
         Modifier.weight(1f).fillMaxHeight().clip(TILE).tap(actions?.let { a -> { a.onClip(index) } })
-            .then(if (c.stripes != null) Modifier.stripes(c.stripes.first, c.stripes.second, 6f) else Modifier.background(c.bg))
-            .cssShadow(c.ring, TILE)
-            .lint("clip:${c.text}${c.label}"),
-    ) { LintParent("clip:${c.text}${c.label}") {
-        thumb?.let { b ->
-            androidx.compose.foundation.Image(
-                b, contentDescription = c.label, modifier = Modifier.matchParentSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            )
-            if (c.icon == "play_circle") Symbol("play_circle", 32.sp, Color.White, Modifier.align(Alignment.Center), fill = 1)
-        }
-        Box(Modifier.matchParentSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
-        if (thumb == null) Row(Modifier.align(Alignment.CenterStart), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (c.media) {
-                Symbol(c.icon, 26.sp, t.fnFg)
-                DText(c.label, style = text(12, 500, t.fnFg))
+            .background(c.bg).cssShadow(c.ring, TILE).lint(id),
+    ) { LintParent(id) {
+        Row(
+            Modifier.matchParentSize().padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val l = c.lead
+            if (l != null) {
+                val shape = if (l.round) PILL else RoundedCornerShape(10.dp)
+                Box(
+                    Modifier.size(40.dp).clip(shape)
+                        .then(if (l.bg != null) Modifier.background(l.bg) else Modifier.stripes(t.fn, t.pop, 5f))
+                        .cssShadow(LEAD_RING, shape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val b = thumb
+                    when {
+                        b != null -> androidx.compose.foundation.Image(
+                            b, contentDescription = l.title, modifier = Modifier.matchParentSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        )
+                        l.icon.isNotEmpty() -> Symbol(l.icon, 22.sp, l.fg)
+                        l.letter.isNotEmpty() -> DText(l.letter, style = text(17, 600, l.fg))
+                    }
+                }
+                Column(Modifier.weight(1f).padding(end = 10.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    val title = text(14, 500, t.tileFg).let { if (l.mono) it.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) else it }
+                    DText(l.title, style = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (l.sub.isNotEmpty()) DText(l.sub, style = text(12, 400, t.barMuted), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             } else {
                 DText(
-                    c.text, Modifier.padding(end = 14.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    c.text, Modifier.padding(start = 4.dp, end = 14.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = text(14, 400, t.tileFg).copy(lineHeight = (14 * 1.3).sp, textAlign = TextAlign.Start),
                 )
             }
         }
-        if (c.pinned) Symbol("push_pin", 16.sp, t.linkFg, Modifier.align(Alignment.TopEnd).offset(6.dp, (-4).dp), fill = 1)
+        if (c.pinned) Symbol("push_pin", 16.sp, t.linkFg, Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp), fill = 1)
         if (c.selected) {
-            // Kb:209: pin / delete pill
+            // Kb:239: pin / delete pill
             Row(
-                Modifier.align(Alignment.BottomEnd).offset(6.dp, 4.dp)
+                Modifier.align(Alignment.BottomEnd).padding(end = 6.dp, bottom = 6.dp)
                     .cssShadow(CssShadow.parse("0 1px 3px rgba(0,0,0,0.2)"), PILL).background(t.pop, PILL).padding(2.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 for (icon in listOf("push_pin", "delete")) Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { Symbol(icon, 18.sp, t.popFg) }
             }
         }
-        }
     } }
 }
+
+/** Kb:233: the lead's hairline. */
+private val LEAD_RING = listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(127, 127, 127, (0.18f * 255).toInt())))
 
 /** Kb:224-248: emoji panel. */
 @Composable

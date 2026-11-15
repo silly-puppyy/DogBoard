@@ -316,6 +316,7 @@ fun ImeKeyboardBox(
                             // clips the source app marked sensitive (passwords) are never shown in clear
                             text = if (item.isSensitive) item.displayText(context) else item.text.orEmpty(),
                             pinned = item.isPinned,
+                            sensitive = item.isSensitive,
                             thumbnail = if (media) { px -> io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, px) } else null,
                         )
                     } },
