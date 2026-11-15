@@ -165,7 +165,9 @@ private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
             contentAlignment = Alignment.Center,
         ) { LintParent(capId) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                if (k.icon.isNotEmpty()) {
+                if (k.icon == "pets") {
+                    PawIcon(22.dp, 21.dp, k.fg, Modifier.alpha(r.labelOp))  // Kb:202
+                } else if (k.icon.isNotEmpty()) {
                     Symbol(k.icon, k.iconSize.sp, k.fg, Modifier.alpha(r.labelOp), fill = k.fill)
                 } else if (k.label.isNotEmpty()) {
                     DText(k.label, Modifier.alpha(r.labelOp), style = designTextStyle(k.fs.sp, k.fw, k.fg), id = "$capId/label", kind = DesignLint.Kind.LABEL)

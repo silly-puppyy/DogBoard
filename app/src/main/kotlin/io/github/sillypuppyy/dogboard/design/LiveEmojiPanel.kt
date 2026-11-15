@@ -134,7 +134,10 @@ fun LiveEmojiPanel(
                             if (target >= 0) scope.launch { grid.scrollToItem(headerIndex[target]) }
                         },
                         contentAlignment = Alignment.Center,
-                    ) { Symbol(c.icon, 20.sp, if (active) t.linkFg else t.barMuted, fill = if (active) 1 else 0) }
+                    ) {
+                        val fg = if (active) t.linkFg else t.barMuted
+                        if (c.icon == "pets") PawIcon(18.dp, 17.dp, fg) else Symbol(c.icon, 20.sp, fg, fill = if (active) 1 else 0)  // Kb:274
+                    }
                 }
             }
             Box(Modifier.size(44.dp, 36.dp).background(t.fn, shape).clickable(onClick = onDelete), contentAlignment = Alignment.Center) {

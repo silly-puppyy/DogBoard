@@ -413,7 +413,7 @@ private fun EmojiPanel(r: KbRender) {
         Row(Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.height(36.dp).background(t.fn, shape).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) { DText("ABC", style = text(14, 500, t.fnFg)) }
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceAround) {
-                for (c in x.emojiCats) Box(Modifier.size(28.dp, 36.dp), contentAlignment = Alignment.Center) { Symbol(c.icon, 20.sp, c.fg, fill = c.fill) }
+                for (c in x.emojiCats) Box(Modifier.size(28.dp, 36.dp), contentAlignment = Alignment.Center) { if (c.icon == "pets") PawIcon(18.dp, 17.dp, c.fg) else Symbol(c.icon, 20.sp, c.fg, fill = c.fill) }
             }
             Box(Modifier.size(44.dp, 36.dp).background(t.fn, shape), contentAlignment = Alignment.Center) { Symbol("backspace", 20.sp, t.fnFg) }
         }
