@@ -1070,7 +1070,7 @@ class ImeController(
                     return
                 }
                 suggestionJob = scope.launch {
-                    val words = TypingEngine.predictions(context)
+                    val words = TypingEngine.predictions(context, wordContext2())
                     // iOS: predictions are capitalised after a sentence end only with auto-capitalisation on
                     val cased = if (context == Bigrams.START && prefs.typing.autoCapitalization.get()) words.map { w -> w.replaceFirstChar { it.uppercaseChar() } } else words
                     if (isActive) sink(cased.map { Suggestion(it, Suggestion.Kind.PREDICTION) })
