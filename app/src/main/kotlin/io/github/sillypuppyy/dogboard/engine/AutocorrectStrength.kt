@@ -11,9 +11,11 @@ import kotlin.math.exp
  *
  * A score moves with each event: +1 for a reverted correction, +0.5 for a correction deleted right
  * away, -1/9 for a kept one (so a steady 10 % revert rate holds it still), -1 for a fix picked from
- * the bar. Clamped to ±[SCORE_LIMIT], it scales the chosen level's "lead over the typed letters"
- * by up to e^±[MAX_SHIFT] (±19 %): Standard 1.39 moves within 1.17 - 1.65, always between Strong
- * (1.0) and Gentle (2.0).
+ * the bar. Clamped to ±[SCORE_LIMIT]; nothing changes inside ±[DEAD_ZONE] (user, 2026-11-15: "don't
+ * make it overly sensitive, we want a clear signal that the user is being over corrected"): past it
+ * the chosen level's "lead over the typed letters" scales linearly up to e^±[MAX_SHIFT] (±19 %):
+ * Standard 1.39 moves within 1.17 - 1.65, always between Strong (1.0) and Gentle (2.0). With 30 %
+ * of corrections undone it starts after about 23 corrections and is at full effect after about 90.
  */
 class AutocorrectStrength(private val file: File? = null) {
     @Volatile
@@ -26,8 +28,12 @@ class AutocorrectStrength(private val file: File? = null) {
     fun fixPicked() = move(FIX_PICKED)
 
     /** [level] made more careful (score > 0) or bolder (score < 0). */
-    fun adjust(level: Autocorrect.Level): Autocorrect.Level =
-        if (score == 0.0) level else level.copy(leadOverTyped = level.leadOverTyped * exp(MAX_SHIFT * score / SCORE_LIMIT))
+    fun adjust(level: Autocorrect.Level): Autocorrect.Level {
+        val beyond = kotlin.math.abs(score) - DEAD_ZONE
+        if (beyond <= 0) return level
+        val shift = MAX_SHIFT * kotlin.math.sign(score) * beyond / (SCORE_LIMIT - DEAD_ZONE)
+        return level.copy(leadOverTyped = level.leadOverTyped * exp(shift))
+    }
 
     fun reset() {
         score = 0.0
@@ -45,7 +51,8 @@ class AutocorrectStrength(private val file: File? = null) {
     }
 
     companion object {
-        const val SCORE_LIMIT = 10.0
+        const val SCORE_LIMIT = 20.0
+        const val DEAD_ZONE = 5.0
         const val MAX_SHIFT = 0.17
         const val REVERTED = 1.0
         const val DELETED = 0.5
