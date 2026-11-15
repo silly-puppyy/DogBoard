@@ -90,8 +90,13 @@ fun TextInputLayout(
                     clipShown = null
                 }
             }
+            // the autofill service's chips (passwords, addresses, cards: Google's or any other), drawn
+            // by the service itself, over the bar's slot area between the tools button and the mic
+            val inlineAutofill by dev.patrickgold.florisboard.ime.nlp.NlpInlineAutofill.suggestions.collectAsState()
+            val showAutofill = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && inlineAutofill.isNotEmpty() && !toolRow && panel.isEmpty()
+            Box {
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
-                strip = strip,
+                strip = if (showAutofill) emptyList() else strip,
                 clipLabel = clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
                 onClip = {
@@ -116,11 +121,18 @@ fun TextInputLayout(
                 onBack = { ui.closePanel() },
                 // voice typing hands over to the system's voice keyboard (the design's own
                 // "Listening…" state needs in-keyboard speech recognition: later)
-                incognito = isIncognitoMode,
+                incognito = isIncognitoMode && !showAutofill, // the note gives way to autofill chips
                 onMic = {
                     imeController.updateStateBlocking { emitDescriptor(dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ExternalVoiceInput) }
                 },
             )
+            if (showAutofill) {
+                androidx.compose.foundation.layout.Box(
+                    Modifier.matchParentSize().padding(horizontal = 48.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) { dev.patrickgold.florisboard.ime.smartbar.InlineSuggestionsUi(inlineAutofill) }
+            }
+            }
         } else {
             Smartbar()
         }
