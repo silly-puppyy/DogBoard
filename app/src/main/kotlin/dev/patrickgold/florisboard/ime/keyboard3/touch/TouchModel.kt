@@ -222,7 +222,7 @@ private fun medianHalfWidth(targets: List<KeyTarget>): Double =
 fun TouchKey.isTextKey(): Boolean {
     val output = attrs.output
     return !attrs.gap && attrs.layerId == null && output is K3String && output != " ".asK3String() &&
-        attrs.id != TouchKey.FnKeyId
+        !attrs.id.isFnKeyId()
 }
 
 class TouchKey(
@@ -312,7 +312,7 @@ private fun FnKeyAction.asK3Key(): K3Key {
 }
 
 private fun K3LayerId.isFieldVariantLayer(): Boolean =
-    value.let { it.endsWith("-email") || it.endsWith("-url") }
+    value.let { it.endsWith("-email") || it.endsWith("-url") || it.endsWith("-classic") }
 
 private fun computeTouchKeyboard(
     model: K3Model,
@@ -320,7 +320,7 @@ private fun computeTouchKeyboard(
     options: TouchModelOptions,
 ): TouchKeyboard {
     val layers = layersGroup.layers
-    val keyPredicate = { key: K3Key -> options.fnKeyEnabled || key.id != TouchKey.FnKeyId }
+    val keyPredicate = { key: K3Key -> options.fnKeyEnabled || !key.id.isFnKeyId() }
 
     val numberRow = if (options.showNumberRow) {
         val numberRowLayer = layers[ImeLayerIds.Numrow]
@@ -333,11 +333,13 @@ private fun computeTouchKeyboard(
         if (numberRow != null) 1 else 0
 
     // DogBoard: email and URL fields use "<layer>-email" / "<layer>-url" rows for base and shift
-    val variantSuffix = when (options.keyVariation) {
+    val fieldSuffix = when (options.keyVariation) {
         KeyVariation.EMAIL_ADDRESS -> "-email"
         KeyVariation.URI -> "-url"
         else -> null
     }
+    // and the Classic bottom row: "-classic", "-classic-email", "-classic-url"
+    val variantSuffix = if (options.bottomRowClassic) "-classic" + fieldSuffix.orEmpty() else fieldSuffix
     val touchLayers = buildMap {
         for ((_, layer) in layers) {
             if (layer.id == ImeLayerIds.Numrow || layer.id.isFieldVariantLayer()) {
@@ -392,7 +394,7 @@ private fun computeTouchKeyboard(
                     else -> 0f
                 }
                 for ((i, key) in row.withIndex()) {
-                    val isFnKey = key.id == TouchKey.FnKeyId
+                    val isFnKey = key.id.isFnKeyId()
                     val keyWidthPx = keyWidths[i]
                     val keyBoundsPx = Rect(
                         offset = Offset(currentX, currentY),
@@ -564,6 +566,9 @@ fun K3Key.isSuitableForSpaceBarDisplayOverride(display: K3StringOrDescriptor): B
 fun K3Key.isSuitableForSimplePopup(): Boolean {
     return layerId == null && output is K3String && output != ASCII_SPACE
 }
+
+/** DogBoard: the fn (emoji / language) key, also as the Classic bottom row's narrower copy. */
+fun K3KeyId.isFnKeyId(): Boolean = this == TouchKey.FnKeyId || value == "fn-key-classic"
 
 // DogBoard: the top letter row and its digits (number row on long-press)
 private const val TOP_ROW = "qwertyuiop"

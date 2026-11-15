@@ -40,6 +40,8 @@ fun LiveKbView(
     spaceLabel: String = "auto",
     langName: String = "English",
     capsLabels: Boolean = false,
+    /** The Classic bottom row (?123, comma, emoji, space, period, action): the design's "android" key style. */
+    bottomClassic: Boolean = false,
     actionLabel: String? = null,
     shiftState: InputShiftState,
     enterAction: String,
@@ -88,6 +90,7 @@ fun LiveKbView(
             spaceLabel = spaceLabel,
             langName = langName,
             caseMode = if (capsLabels) "caps" else "shift",
+            kstyle = if (bottomClassic) "android" else "ios",
             actionStyle = if (actionWords) "word" else "icon",
             actionLabel = actionLabel,
             shift = LiveKb.shift(shiftState),

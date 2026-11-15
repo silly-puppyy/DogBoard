@@ -364,7 +364,8 @@ object KbSpec {
 
         val firstMode = if (plane == "base") (if (kstyle == "android") "?123" else "123") else "ABC"
         val bottom = when {
-            kstyle == "android" && field == "text" -> listOf(mode(firstMode, 1.24f), ch(",", 1f), fnK(1f), space(3.99f), ch(".", 1f), retK(1.77f))
+            // Kb:620-622: comma slot (@ for email, / for URLs), 1.5 · 1 · 1 · 4 · 1 · 1.5
+            kstyle == "android" -> listOf(mode(firstMode, 1.5f), ch(when (field) { "email" -> "@"; "url" -> "/"; else -> "," }, 1f), fnK(1f), space(4f), ch(".", 1f), retK(1.5f))
             field == "email" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK())
             field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), ch(".", 1.68f), ch("/", 1.6533f), ch(".com", 1.68f), retK())
             else -> listOf(mode(firstMode, 1.24f), fnK(), space(5.0133f), retK())

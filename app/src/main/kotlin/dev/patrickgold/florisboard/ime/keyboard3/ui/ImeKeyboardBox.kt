@@ -281,6 +281,7 @@ fun ImeKeyboardBox(
                     spaceLabel = prefs.keyboard.spaceLabel.collectAsState().value,
                     langName = languageName,
                     capsLabels = prefs.keyboard.capsLabels.collectAsState().value,
+                    bottomClassic = prefs.keyboard.bottomRow.collectAsState().value == "classic",
                     actionLabel = actionLabel,
                     // the touch model swaps the email/URL bottom row into "base"/"shift" itself
                     field = when (layoutVariation) {

@@ -123,6 +123,12 @@ def bottom_row(mode_key: str) -> str:
 FIELD_ROWS = {
     "email": "to-symbol-1 fn-key space-email at-email period-email enter",
     "url": "to-symbol-1 fn-key period-url slash-url dotcom enter",
+    # the designer's Classic bottom row (Layout element "Bottom row"): ?123 · comma · emoji · space ·
+    # period · action, 1.5 · 1 · 1 · 4 · 1 · 1.5 units; email puts @ in the comma slot, URLs /. The
+    # emoji key is its narrower copy fn-key-classic (TouchModel treats both ids as the fn key).
+    "classic": "to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic",
+    "classic-email": "to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic",
+    "classic-url": "to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic",
 }
 
 
@@ -145,6 +151,14 @@ def build() -> str:
         '<key id="newline" output="\\u{000A}" />',
         f'<key id="space" output="\\u{{0020}}" width="{SPACE}" />',
         f'<key id="space-email" output="\\u{{0020}}" width="{SPACE_EMAIL}" />',
+        f'<key id="to-symbol-1-classic" layerId="symbol-1" width="1.5" />',
+        '<key id="comma-classic" output="," width="1" />',
+        '<key id="at-classic" output="@" width="1" />',
+        '<key id="slash-classic" output="/" width="1" />',
+        '<key id="fn-key-classic" gap="true" width="1" />',
+        '<key id="space-classic" output="\\u{0020}" width="4" />',
+        '<key id="period-classic" output="." width="1" />',
+        '<key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />',
         f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
         f'<key id="period-email" output="." width="{EMAIL_KEY}" />',
         f'<key id="period-url" output="." width="{PERIOD_URL}" />',
@@ -213,6 +227,8 @@ def build() -> str:
         '        <display keyId="shift-to-base" display="@fl:icon/shift" />',
         '        <display keyId="to-symbol-1" display="123" />',
         '        <display keyId="to-symbol-1-row3" display="123" />',
+        '        <display keyId="to-symbol-1-classic" display="?123" />',
+        '        <display keyId="space-classic" display="space" />',
         '        <display keyId="to-symbol-2" display="#+=" />',
         '        <display keyId="to-base" display="ABC" />',
         '        <display keyId="space" display="space" />',

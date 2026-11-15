@@ -3,6 +3,7 @@ package io.github.sillypuppyy.dogboard.design
 import dev.patrickgold.florisboard.ime.keyboard3.ImeActions
 import dev.patrickgold.florisboard.ime.keyboard3.touch.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard3.touch.TouchKey
+import dev.patrickgold.florisboard.ime.keyboard3.touch.isFnKeyId
 import dev.patrickgold.florisboard.ime.keyboard3.touch.isTextKey
 import org.k3lp.lib.text.K3String
 
@@ -44,7 +45,8 @@ object LiveKb {
             key.isShiftKey -> "shift"
             output == ImeActions.Backspace -> "bksp"
             output == ImeActions.Enter -> "ret"
-            key.attrs.id == TouchKey.FnKeyId -> "fn"
+            key.attrs.id.isFnKeyId() -> "fn"
+            key.attrs.id.value == "to-symbol-1-classic" -> "mode-?123"
             key.isSuitableForSpaceBarDisplayOverride -> "space"
             target != null && target.startsWith("telpad") -> "mode-$target"
             target != null -> "mode-" + when {

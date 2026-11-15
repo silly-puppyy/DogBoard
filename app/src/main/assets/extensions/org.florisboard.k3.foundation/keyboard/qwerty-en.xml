@@ -7,6 +7,8 @@
         <display keyId="shift-to-base" display="@fl:icon/shift" />
         <display keyId="to-symbol-1" display="123" />
         <display keyId="to-symbol-1-row3" display="123" />
+        <display keyId="to-symbol-1-classic" display="?123" />
+        <display keyId="space-classic" display="space" />
         <display keyId="to-symbol-2" display="#+=" />
         <display keyId="to-base" display="ABC" />
         <display keyId="space" display="space" />
@@ -34,6 +36,14 @@
         <key id="newline" output="\u{000A}" />
         <key id="space" output="\u{0020}" width="5.0133" />
         <key id="space-email" output="\u{0020}" width="2.5133" />
+        <key id="to-symbol-1-classic" layerId="symbol-1" width="1.5" />
+        <key id="comma-classic" output="," width="1" />
+        <key id="at-classic" output="@" width="1" />
+        <key id="slash-classic" output="/" width="1" />
+        <key id="fn-key-classic" gap="true" width="1" />
+        <key id="space-classic" output="\u{0020}" width="4" />
+        <key id="period-classic" output="." width="1" />
+        <key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />
         <key id="at-email" output="@" width="1.25" />
         <key id="period-email" output="." width="1.25" />
         <key id="period-url" output="." width="1.68" />
@@ -418,6 +428,48 @@
             <row keys="A S D F G H J K L" />
             <row keys="shift-to-base gap-left Z X C V B N M gap-right bksp" />
             <row keys="to-symbol-1 fn-key period-url slash-url dotcom enter" />
+        </layer>
+
+        <layer id="base-classic">
+            <row keys="q w e r t y u i o p" />
+            <row keys="a s d f g h j k l" />
+            <row keys="base-to-shift gap-left z x c v b n m gap-right bksp" />
+            <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="shift-classic">
+            <row keys="Q W E R T Y U I O P" />
+            <row keys="A S D F G H J K L" />
+            <row keys="shift-to-base gap-left Z X C V B N M gap-right bksp" />
+            <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="base-classic-email">
+            <row keys="q w e r t y u i o p" />
+            <row keys="a s d f g h j k l" />
+            <row keys="base-to-shift gap-left z x c v b n m gap-right bksp" />
+            <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="shift-classic-email">
+            <row keys="Q W E R T Y U I O P" />
+            <row keys="A S D F G H J K L" />
+            <row keys="shift-to-base gap-left Z X C V B N M gap-right bksp" />
+            <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="base-classic-url">
+            <row keys="q w e r t y u i o p" />
+            <row keys="a s d f g h j k l" />
+            <row keys="base-to-shift gap-left z x c v b n m gap-right bksp" />
+            <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="shift-classic-url">
+            <row keys="Q W E R T Y U I O P" />
+            <row keys="A S D F G H J K L" />
+            <row keys="shift-to-base gap-left Z X C V B N M gap-right bksp" />
+            <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="numeric">

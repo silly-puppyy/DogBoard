@@ -36,6 +36,8 @@ data class TouchModelOptions(
     val numberRowLongPress: Boolean = false,
     // DogBoard: long-press hints "Symbols": each letter's hinted symbol (KbSpec.AND_HINT) comes first
     val symbolLongPress: Boolean = false,
+    // DogBoard: the Classic bottom row (?123, comma, emoji, space, period, action): "-classic" layers
+    val bottomRowClassic: Boolean = false,
 ) {
     companion object {
         val Default = TouchModelOptions(
