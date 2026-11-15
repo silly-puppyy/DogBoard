@@ -38,8 +38,11 @@ class EngineContextEvalTest : FunSpec({
         // optional: a trigram model binary (DOGBOARD_NGRAMS=path, tools/data/arpa_to_dogboard.py)
         val ngrams = System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
         // DOGBOARD_EVAL_LEAD: the lead over the typed letters (Standard 1.39; the adaptive range 1.17 - 1.65)
-        val autocorrect = System.getenv("DOGBOARD_EVAL_LEAD")?.toDoubleOrNull()
-            ?.let { Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(leadOverTyped = it)) } ?: Autocorrect(lexicon)
+        // DOGBOARD_END_OMISSION_STEM: Autocorrect.Level.minStemEndOmission ("befor" -> "before"; off as iOS)
+        val endOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)
+        val autocorrect = Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(
+            leadOverTyped = System.getenv("DOGBOARD_EVAL_LEAD")?.toDoubleOrNull() ?: Autocorrect.Level.STANDARD.leadOverTyped,
+            minStemEndOmission = endOmission))
         val token = Regex("[A-Za-z]+(?:'[A-Za-z]+)*|[.!?]")
         // optional: the unknown-word letter model (DOGBOARD_CHARLM=path, tools/data/build_charlm.py) and its veto
         val charModel = System.getenv("DOGBOARD_CHARLM")?.let { File(it) }?.takeIf { it.isFile }?.bufferedReader()?.use { CharModel.parse(it) }
@@ -50,7 +53,9 @@ class EngineContextEvalTest : FunSpec({
             // DOGBOARD_EVAL_FARTAP=cost: the trigram decoder reads taps beyond the pruning radius as any key at
             // that cost ("none": never, as iOS; unset: the default, Decoder.FAR_TAP)
             val farTap = System.getenv("DOGBOARD_EVAL_FARTAP").let { if (it == null) Decoder.FAR_TAP else it.toDoubleOrNull() }
-            val withTrigram = ngrams?.let { Decoder(lexicon, Decoder.Config(farTap = farTap), bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
+            // DOGBOARD_END_INSERTION: Decoder.Config.endInsertion (skipped key after the last tap)
+            val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
+            val withTrigram = ngrams?.let { Decoder(lexicon, Decoder.Config(farTap = farTap, endInsertion = endInsertion), bigrams = bigrams, context = NgramScorer(it, lexicon, bigrams.sentenceStart)) }
             init { for (d in listOfNotNull(plain, withContext, withTrigram)) d.unknownWords = charModel }
         }
         val decoders = ThreadLocal.withInitial { Decoders() }

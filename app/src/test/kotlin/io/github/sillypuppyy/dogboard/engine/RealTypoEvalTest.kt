@@ -25,10 +25,10 @@ class RealTypoEvalTest : FunSpec({
         val keys = QwertyGeometry.letterKeys(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
-        val autocorrect = Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(minStemEndOmission = System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull()))
+        val autocorrect = Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(minStemEndOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)))
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
-        val endInsertion = System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull()
+        val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
         val decoders = ThreadLocal.withInitial { Decoder(lexicon, Decoder.Config(endInsertion = endInsertion), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)) }
 
         // DOGBOARD_PROBE_WORDS="befor,hav": top candidates and the decision for those typed words (no context)

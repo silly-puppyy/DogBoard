@@ -91,8 +91,9 @@ class Decoder(
         /**
          * Cost of the one key the user skipped after the last tap ("befor" -> "before"; iOS inserts a key
          * only before a later touch, the space, at the same cost as any skipped key). null = INSERTION.
+         * -1.0 with Autocorrect.Level.minStemEndOmission (2026-11-16, RealTypoEvalTest sweep).
          */
-        val endInsertion: Double? = null,
+        val endInsertion: Double? = END_INSERTION,
     )
 
     companion object {
@@ -109,6 +110,7 @@ class Decoder(
         private const val INSERTION = -2.0 // a key the user did not tap
         private const val DELETION_REPEATED = -2.24 // an extra tap on the same key as the one before
         private const val DELETION = -3.2 // any other extra tap
+        const val END_INSERTION = -1.0 // the one key skipped after the last tap (Config.endInsertion)
         private val DELETION_LANGUAGE = 0.24 * ln(0.01) // extra language cost for an unrepeated extra tap
         private const val SUBSTITUTION = -3.2 // a tap read as a key outside its nearest keys
         private const val TRANSPOSITION = -2.0

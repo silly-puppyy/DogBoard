@@ -30,12 +30,14 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         /**
          * Beyond iOS: a non-word missing only its last letter ("befor" -> "before") may be fixed from
          * this typed length on when the decoder read it as a skipped key, not as a completion (iOS's
-         * stem rule above looks only at the strings and keeps "befor"). null = off, as iOS.
+         * stem rule above looks only at the strings and keeps "befor"). null = off (iOS); Standard: 3.
          */
         val minStemEndOmission: Int? = null,
     ) {
         companion object {
-            val STANDARD = Level(MIN_DOMINANCE_RATIO, 8, 6, 4)
+            // minStemEndOmission 3 (user 2026-11-16: "that counts as a typo"): real phone typos fixed 47.5 -> 47.9 %,
+            // correct words broken unchanged (0.6 %), control 98.5 % / unknown 95.8 % unchanged
+            val STANDARD = Level(MIN_DOMINANCE_RATIO, 8, 6, 4, minStemEndOmission = 3)
         }
     }
 
