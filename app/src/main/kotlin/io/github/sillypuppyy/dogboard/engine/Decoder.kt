@@ -162,6 +162,70 @@ class Decoder(
      */
     private class Prefix(val text: String, val languageModel: Double, val support: Double, val last: Int, val count: Int, val secondLast: Int = -1)
 
+    /**
+     * A search layer: states by (prefix, node) key, in insertion order. Primitive keys and open
+     * addressing: a HashMap boxed every key and made an entry object per state (a keystroke makes
+     * thousands), and iterating it made iterators.
+     */
+    private class LayerMap(capacity: Int = 64) {
+        private var keys = LongArray(capacity)
+        private var states = arrayOfNulls<State>(capacity)
+        private var table = IntArray(tableSizeFor(capacity)) // entry index + 1, 0 = empty
+        var size = 0
+            private set
+
+        fun state(i: Int): State = states[i]!!
+
+        operator fun get(k: Long): State? {
+            val mask = table.size - 1
+            var h = mix(k) and mask
+            while (true) {
+                val e = table[h]
+                if (e == 0) return null
+                if (keys[e - 1] == k) return states[e - 1]
+                h = (h + 1) and mask
+            }
+        }
+
+        operator fun set(k: Long, s: State) {
+            val mask = table.size - 1
+            var h = mix(k) and mask
+            while (true) {
+                val e = table[h]
+                if (e == 0) break
+                if (keys[e - 1] == k) { states[e - 1] = s; return }
+                h = (h + 1) and mask
+            }
+            if (size == keys.size) { keys = keys.copyOf(size * 2); states = states.copyOf(size * 2) }
+            keys[size] = k; states[size] = s; size++
+            table[h] = size
+            if (size * 2 > table.size) rehash()
+        }
+
+        fun clear() {
+            java.util.Arrays.fill(states, 0, size, null)
+            java.util.Arrays.fill(table, 0)
+            size = 0
+        }
+
+        fun copy(): LayerMap = LayerMap(maxOf(16, size)).also { c -> for (i in 0 until size) c[keys[i]] = states[i]!! }
+
+        private fun rehash() {
+            table = IntArray(table.size * 2)
+            val mask = table.size - 1
+            for (i in 0 until size) {
+                var h = mix(keys[i]) and mask
+                while (table[h] != 0) h = (h + 1) and mask
+                table[h] = i + 1
+            }
+        }
+
+        private companion object {
+            fun tableSizeFor(n: Int): Int = Integer.highestOneBit(maxOf(4, n) * 2 - 1) shl 1
+            fun mix(k: Long): Int { val x = k * -7046029254386353131L; return (x xor (x ushr 32)).toInt() }
+        }
+    }
+
     private class State(val node: Int, val geometry: Double, val edits: Int, val prefix: Int = 0) {
         /** prune's score for this state, worked out once (NaN until then). */
         var rank = Double.NaN
@@ -197,8 +261,8 @@ class Decoder(
     ) {
         val taps = ArrayList<Tap>()
         val info = ArrayList<TapInfo>()
-        val raw = ArrayList<HashMap<Long, State>>()
-        val interior = ArrayList<HashMap<Long, State>>()
+        val raw = ArrayList<LayerMap>()
+        val interior = ArrayList<LayerMap>()
         /** prefixes[0] is "no earlier word". */
         val prefixes = arrayListOf<Prefix?>(null)
         val prefixIds = HashMap<String, Int>()
@@ -252,7 +316,7 @@ class Decoder(
 
     private fun key(prefix: Int, node: Int) = (prefix.toLong() shl 32) or node.toLong()
 
-    private fun offer(layer: HashMap<Long, State>, node: Int, geometry: Double, edits: Int, prefix: Int, rank: Double = Double.NaN) {
+    private fun offer(layer: LayerMap, node: Int, geometry: Double, edits: Int, prefix: Int, rank: Double = Double.NaN) {
         val k = key(prefix, node)
         val old = layer[k]
         if (old == null || geometry > old.geometry) layer[k] = State(node, geometry, edits, prefix).also { it.rank = rank }
@@ -315,10 +379,16 @@ class Decoder(
 
         // keys beyond the touch model's pruning radius never match a tap (iOS key-match pruning)
         val prune = params.pruneThreshold
-        fun tapScore(c: Char, i: Int): Pair<Double, Int>? {
-            val ll = info[i].likelihood[c] ?: return null
-            if (ll < prune) return config.farTap?.let { (it + info[i].q + prune) to 1 }
-            return if (c in info[i].nearby) ll to 0 else (SUBSTITUTION + info[i].q + ll) to 1
+        // a tap read as key c: the score (NaN: no match) and whether it costs an edit, apart (no
+        // Pair: this runs for every child of every state on every keystroke)
+        fun tapCost(c: Char, i: Int): Double {
+            val ll = info[i].likelihood[c] ?: return Double.NaN
+            if (ll < prune) return config.farTap?.let { it + info[i].q + prune } ?: Double.NaN
+            return if (c in info[i].nearby) ll else SUBSTITUTION + info[i].q + ll
+        }
+        fun tapEdit(c: Char, i: Int): Int {
+            val ll = info[i].likelihood.getValue(c)
+            return if (ll >= prune && c in info[i].nearby) 0 else 1
         }
 
         fun context(prefix: Int) = prefixes[prefix]?.last ?: previous
@@ -356,16 +426,19 @@ class Decoder(
         var insertCut = Double.NEGATIVE_INFINITY
 
         /** Layer i as reached from layers i-1 (tap i-1) and i-2 (taps i-2 and i-1 swapped). */
-        fun pull(i: Int): HashMap<Long, State> {
-            val out = HashMap<Long, State>()
+        fun pull(i: Int): LayerMap {
+            val out = LayerMap()
             if (i == 0) {
                 out[key(0, Lexicon.ROOT)] = State(Lexicon.ROOT, 0.0, 0)
                 return out
             }
             val t = i - 1
-            for (s in sr.interior[t].values) {
+            val from = sr.interior[t]
+            for (j in 0 until from.size) {
+                val s = from.state(j)
                 lexicon.forEachChild(s.node) { c, child ->
-                    tapScore(c, t)?.let { (score, edit) -> offer(out, child, s.geometry + score, s.edits + edit, s.prefix) }
+                    val score = tapCost(c, t)
+                    if (!score.isNaN()) offer(out, child, s.geometry + score, s.edits + tapEdit(c, t), s.prefix)
                 }
                 // The tap was the space bar: a whole word ends here and the next begins (iOS: the space
                 // is one of the keys a touch may have meant, at its touch cost only; "donyou" -> "do you")
@@ -383,7 +456,9 @@ class Decoder(
             // Swapped pair: tap i-2 belongs to the next letter, tap i-1 to this one.
             if (i >= 2) {
                 val t2 = i - 2
-                for (s in sr.interior[t2].values) {
+                val from2 = sr.interior[t2]
+                for (j in 0 until from2.size) {
+                    val s = from2.state(j)
                     lexicon.forEachChild(s.node) { c, child ->
                         val ll1 = info[t2 + 1].likelihood[c]
                         if (ll1 != null && ll1 >= prune) {
@@ -401,7 +476,7 @@ class Decoder(
         }
 
         /** Skipped keys, word restarts (not after the last tap) and pruning, on layer i of n. */
-        fun process(layer: HashMap<Long, State>, i: Int) {
+        fun process(layer: LayerMap, i: Int) {
             val qi = info[minOf(i, n - 1)].q
             // Keys the user did not tap (and apostrophes) consume no tap, so they extend this layer:
             // one skipped key per position, optionally after an apostrophe (iOS compares words by
@@ -429,7 +504,7 @@ class Decoder(
             val count = layer.size
             if (iStates.size < count) iStates = arrayOfNulls(maxOf(count, iStates.size * 2))
             var c = 0
-            for (s in layer.values) iStates[c++] = s
+            for (j in 0 until count) iStates[c++] = layer.state(j)
             for (k in 0 until count) insertAfter(iStates[k]!!, allowApostrophe = true)
             java.util.Arrays.fill(iStates, 0, count, null)
             // a whole word may end here and the next tap begin another: the space key was not
@@ -440,7 +515,8 @@ class Decoder(
                 // layer of every keystroke); every word end still gets its prefix, as before
                 val topState = arrayOfNulls<State>(MAX_RESTARTS); val topPrefix = IntArray(MAX_RESTARTS); val topScore = DoubleArray(MAX_RESTARTS)
                 var count = 0
-                for (s in layer.values) {
+                for (j in 0 until layer.size) {
+                    val s = layer.state(j)
                     if (!lexicon.isWord(s.node) || (prefixes[s.prefix]?.count ?: 0) >= MAX_WORDS - 1) continue
                     val p = restart(s)
                     if (p < 0) continue
@@ -457,11 +533,11 @@ class Decoder(
             prune(layer, w, prefixes)
         }
 
-        var last: HashMap<Long, State>? = null
+        var last: LayerMap? = null
         for (i in 0..n) {
             if (i >= sr.raw.size) sr.raw.add(pull(i))
             if (i < n && i < sr.interior.size) continue
-            val layer = HashMap(sr.raw[i])
+            val layer = sr.raw[i].copy()
             process(layer, i)
             if (i < n) sr.interior.add(layer) else last = layer
         }
@@ -480,7 +556,9 @@ class Decoder(
             }
             if (replace) results[candidate.word] = candidate
         }
-        for (s in last!!.values) {
+        val lastLayer = last!!
+        for (j in 0 until lastLayer.size) {
+            val s = lastLayer.state(j)
             val p = prefixes[s.prefix]
             val prev = context(s.prefix)
             val prev2 = context2(s.prefix)
@@ -555,7 +633,7 @@ class Decoder(
     private var pKept = IntArray(0)
     private var iStates = arrayOfNulls<State>(0)
 
-    private fun prune(layer: HashMap<Long, State>, w: Double, prefixes: List<Prefix?>) {
+    private fun prune(layer: LayerMap, w: Double, prefixes: List<Prefix?>) {
         val n = layer.size
         val beam = config.beamWidth
         if (n <= beam) return
@@ -569,8 +647,9 @@ class Decoder(
         // the typing path's time), then the states above the beam's cut-off, ties in layer order,
         // put back best first: the same states in the same order as a stable sort
         var i = 0
-        for ((k, s) in layer) {
-            keys[i] = k; states[i] = s; scores[i] = rankOf(s, w, prefixes)
+        for (j in 0 until n) {
+            val s = layer.state(j)
+            keys[i] = key(s.prefix, s.node); states[i] = s; scores[i] = rankOf(s, w, prefixes)
             i++
         }
         System.arraycopy(scores, 0, pWork, 0, n)
@@ -601,13 +680,13 @@ class Decoder(
     }
 
     /** The prune cut-off of [layer] as it stands (the beam's lowest score), or -inf below a full beam. */
-    private fun beamCut(layer: HashMap<Long, State>, w: Double, prefixes: List<Prefix?>): Double {
+    private fun beamCut(layer: LayerMap, w: Double, prefixes: List<Prefix?>): Double {
         val n = layer.size
         val beam = config.beamWidth
         if (n < beam) return Double.NEGATIVE_INFINITY
         if (pWork.size < n) pWork = DoubleArray(maxOf(n, pWork.size * 2))
         var i = 0
-        for (s in layer.values) pWork[i++] = rankOf(s, w, prefixes)
+        for (j in 0 until n) pWork[i++] = rankOf(layer.state(j), w, prefixes)
         return kthSmallest(pWork, n, n - beam)
     }
 
