@@ -481,7 +481,9 @@ class ImeController(
             super.emit(value)
         }
 
-        override fun emitText(value: K3String) {
+        override fun emitText(value: K3String) = io.github.sillypuppyy.dogboard.perf.GcStats.track("key (main thread)") { emitTextTracked(value) }
+
+        private fun emitTextTracked(value: K3String) {
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             deletingWord = null
             lastRetro = null // set again by finishWord below when this input ends a word
@@ -1145,7 +1147,7 @@ class ImeController(
                     // a newer word end wants its own prediction: this one is skipped, also after waiting
                     // for the model (it runs one prediction at a time)
                     ensureActive()
-                    val words = TypingEngine.predictions(context, wordContext2(), textBefore = text, stillWanted = { isActive })
+                    val words = io.github.sillypuppyy.dogboard.perf.GcStats.track("predictions") { TypingEngine.predictions(context, wordContext2(), textBefore = text, stillWanted = { isActive }) }
                     TypingEngine.lastNeuralMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural predictions took ${it}ms") }
                     io.github.sillypuppyy.dogboard.perf.GcStats.logWord()
                     // iOS: predictions are capitalised after a sentence end only with auto-capitalisation on
@@ -1171,13 +1173,13 @@ class ImeController(
                 ?.let { t -> if (textBefore.length >= SURROUNDING_BEFORE) t.substringAfter(' ', t) else t }
             val back = lookBack
             suggestionJob = scope.launch {
-                val candidates = TypingEngine.candidates(word, context, previous2 = context2, textBefore = neuralContext)
+                val candidates = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2, textBefore = neuralContext) }
                 TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms") }
                 latestDecode = decodeKey(word.text, context, context2) to candidates
                 // a word split by a stray space ("goi g"): its rejoined reading, ready for the word end
                 latestJoin = back?.spaceTap?.let { tap ->
                     back.candidates?.let { prev ->
-                        Triple(back, word.text, TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, candidates, curlyApostrophes()))
+                        Triple(back, word.text, io.github.sillypuppyy.dogboard.perf.GcStats.track("join") { TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, candidates, curlyApostrophes()) })
                     }
                 }
                 if (BuildConfig.DEBUG && back != null) android.util.Log.d("DogBoardAc", "join check '${back.committed} ${word.text}': tap=${back.spaceTap} -> ${latestJoin?.third} ${TypingEngine.lastJoinDebug}")

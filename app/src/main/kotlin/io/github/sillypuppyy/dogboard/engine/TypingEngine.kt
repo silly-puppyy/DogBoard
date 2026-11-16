@@ -91,10 +91,14 @@ object TypingEngine {
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
         )
-        /** A third decoder for rejoining a word split by a stray space (decoded in the background). */
+        /**
+         * A third decoder for rejoining a word split by a stray space (decoded in the background, on
+         * every keystroke after a tapped space): one-word readings only, so no word breaks (they were
+         * the bulk of its work: 40 MB of garbage a word on the phone, the typing stalls).
+         */
         val joinDecoder = Decoder(
             lexicon,
-            Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
+            Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM, splitWords = false),
             bigrams,
         )
         /** Learned words get the probability of a moderately common word. */

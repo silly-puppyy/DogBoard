@@ -10,7 +10,7 @@ class SpaceJoinTest : FunSpec({
     val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
     val keys = QwertyGeometry.keysWithSpace(375f, 216f)
     val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-    fun decoder() = Decoder(lexicon, Decoder.Config(), bigrams)
+    fun decoder(split: Boolean = true) = Decoder(lexicon, Decoder.Config(splitWords = split), bigrams)
     fun taps(w: String, t0: Long) = w.mapIndexed { i, c -> keys.getValue(c).let { Tap(it.centerX, it.centerY, t0 + 250L * i) } }
 
     /** The joined word, or null when the two words stay apart. */
@@ -18,7 +18,7 @@ class SpaceJoinTest : FunSpec({
         val ta = taps(a, 0); val tb = taps(b, 250L * (a.length + 1))
         val first = decoder().decode(ta, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(before), typed = a).first()
         val second = decoder().decode(tb, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(first.word), typed = b).first()
-        val j = SpaceJoin.best(decoder(), ta, space, tb, keys, params, bigrams.contextId(before)) ?: return null
+        val j = SpaceJoin.best(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(before)) ?: return null
         return j.word.takeIf { SpaceJoin.wins(j, first.score + second.score) }
     }
     val rowH = 216f / 4
