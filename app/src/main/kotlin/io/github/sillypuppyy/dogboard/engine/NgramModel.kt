@@ -16,7 +16,7 @@ import kotlin.math.ln
  * are sorted keys (a << 42 | b << 21 | c), so ids must be below 2^21.
  */
 class NgramModel private constructor(
-    private val vocab: Array<String>,
+    private val vocab: Vocab,
     private val uniLogP: java.nio.FloatBuffer,
     private val uniBackoff: java.nio.FloatBuffer,
     private val biOffsets: java.nio.IntBuffer,
@@ -31,18 +31,14 @@ class NgramModel private constructor(
 ) {
     // The large tables are buffers, so the shipped file can be memory-mapped: nothing is copied
     // onto the heap and loading is near-instant ([fromBuffer]).
-    private val index: HashMap<String, Int> = HashMap<String, Int>(vocab.size * 2).also { m ->
-        vocab.forEachIndexed { i, w -> m[w] = i }
-    }
-
     val size: Int get() = vocab.size
     val pairCount: Int get() = biWords.limit()
     val tripleCount: Int get() = triKeys.limit()
 
     /** The model's id for [word] (lowercase), or -1. */
-    fun idOf(word: String): Int = index[word] ?: -1
+    fun idOf(word: String): Int = vocab.idOf(word)
 
-    fun word(id: Int): String = vocab[id]
+    fun word(id: Int): String = vocab.word(id)
 
     /** Index of the pair ([a], [b]), or -1. */
     private fun pairIndex(a: Int, b: Int): Int {
@@ -166,7 +162,7 @@ class NgramModel private constructor(
     fun writeBinary(out: java.io.OutputStream) {
         val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
         d.writeInt(MAGIC); d.writeInt(vocab.size); d.writeInt(pairCount); d.writeInt(tripleCount)
-        for (w in vocab) { val b = w.toByteArray(); d.writeShort(b.size); d.write(b) }
+        for (i in 0 until vocab.size) { val b = vocab.word(i).toByteArray(); d.writeShort(b.size); d.write(b) }
         // the tables start 8-byte aligned, so they can be viewed in place (d.size() counts bytes written)
         while (d.size() % 8 != 0) d.writeByte(0)
         for (i in 0 until vocab.size) d.writeFloat(uniLogP[i])
@@ -204,9 +200,12 @@ class NgramModel private constructor(
             val b = buf.duplicate().order(java.nio.ByteOrder.BIG_ENDIAN)
             if (b.int != MAGIC) return null
             val nv = b.int; val nb = b.int; val nt = b.int
-            val vocab = Array(nv) {
-                val bytes = ByteArray(b.short.toInt() and 0xffff); b.get(bytes); String(bytes, Charsets.UTF_8)
-            }
+            // the words stay in the buffer (a mapped file: off the heap), found through a hash table of ids
+            val start = b.position()
+            val offsets = IntArray(nv + 1)
+            for (i in 0 until nv) { offsets[i] = b.position() - start; val len = b.short.toInt() and 0xffff; b.position(b.position() + len) }
+            offsets[nv] = b.position() - start
+            val vocab = MappedVocab((b.duplicate().position(start) as java.nio.ByteBuffer).slice(), offsets)
             while (b.position() % 8 != 0) b.get()
             fun floats(n: Int) = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asFloatBuffer().limit(n) as java.nio.FloatBuffer).also { b.position(b.position() + 4 * n) }
             fun ints(n: Int) = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asIntBuffer().limit(n) as java.nio.IntBuffer).also { b.position(b.position() + 4 * n) }
@@ -281,7 +280,7 @@ class NgramModel private constructor(
             val (bBook, bCodes) = quantise(FloatArray(bi.size) { bi[it].third })
             val (tBook, tCodes) = quantise(FloatArray(tri.size) { tri[it].second })
             return NgramModel(
-                vocab.toTypedArray(), java.nio.FloatBuffer.wrap(uniP.toFloatArray()), java.nio.FloatBuffer.wrap(uniB.toFloatArray()),
+                ArrayVocab(vocab.toTypedArray()), java.nio.FloatBuffer.wrap(uniP.toFloatArray()), java.nio.FloatBuffer.wrap(uniB.toFloatArray()),
                 java.nio.IntBuffer.wrap(offsets), java.nio.IntBuffer.wrap(IntArray(bi.size) { (bi[it].first and 0xffffffffL).toInt() }),
                 java.nio.ByteBuffer.wrap(pCodes), java.nio.ByteBuffer.wrap(bCodes), pBook, bBook,
                 java.nio.LongBuffer.wrap(LongArray(tri.size) { tri[it].first }), java.nio.ByteBuffer.wrap(tCodes), tBook,
@@ -313,5 +312,79 @@ class NgramScorer(private val model: NgramModel, private val lexicon: Lexicon, p
         val b = contextToModel(prev)
         val a = if (b >= 0) contextToModel(prev2) else -1
         return model.logProb(a, b, w) ?: unigramLogProb
+    }
+}
+
+/** The model's words: by id, and an id by word. */
+internal interface Vocab {
+    val size: Int
+    fun word(id: Int): String
+    /** The id of [word], or -1. */
+    fun idOf(word: String): Int
+}
+
+/** Words held as strings (a model built in memory). */
+internal class ArrayVocab(private val words: Array<String>) : Vocab {
+    private val index = HashMap<String, Int>(words.size * 2).also { m -> words.forEachIndexed { i, w -> m[w] = i } }
+    override val size: Int get() = words.size
+    override fun word(id: Int): String = words[id]
+    override fun idOf(word: String): Int = index[word] ?: -1
+}
+
+/**
+ * Words left in the (memory-mapped) file: [offsets] of each word's UTF-8 bytes in [bytes], and an
+ * open-addressing table of ids by the bytes' hash. The string table and HashMap it replaces held
+ * 33 MB of heap for the shipped model; this holds about 12 bytes a word, and makes a string only
+ * when one is asked for.
+ */
+internal class MappedVocab(private val bytes: java.nio.ByteBuffer, private val offsets: IntArray) : Vocab {
+    override val size: Int get() = offsets.size - 1
+    private val table = IntArray(Integer.highestOneBit(maxOf(4, size) * 2) shl 1) // id + 1, 0 = empty
+
+    init {
+        val mask = table.size - 1
+        for (id in 0 until size) {
+            var h = hash(id) and mask
+            while (table[h] != 0) h = (h + 1) and mask
+            table[h] = id + 1
+        }
+    }
+
+    /** Each entry: a 2-byte length, then the bytes: [offsets] point at the length. */
+    private fun start(id: Int) = offsets[id] + 2
+    private fun length(id: Int) = offsets[id + 1] - offsets[id] - 2
+
+    private fun hash(id: Int): Int {
+        var h = -0x7ee3623b // FNV-1a
+        val s = start(id)
+        for (k in 0 until length(id)) h = (h xor (bytes[s + k].toInt() and 0xff)) * 0x01000193
+        return h
+    }
+
+    override fun word(id: Int): String {
+        val b = ByteArray(length(id))
+        val s = start(id)
+        for (k in b.indices) b[k] = bytes[s + k]
+        return String(b, Charsets.UTF_8)
+    }
+
+    override fun idOf(word: String): Int {
+        val w = word.toByteArray(Charsets.UTF_8)
+        var h = -0x7ee3623b
+        for (x in w) h = (h xor (x.toInt() and 0xff)) * 0x01000193
+        val mask = table.size - 1
+        h = h and mask
+        while (true) {
+            val e = table[h]
+            if (e == 0) return -1
+            val id = e - 1
+            if (length(id) == w.size) {
+                val s = start(id)
+                var k = 0
+                while (k < w.size && bytes[s + k] == w[k]) k++
+                if (k == w.size) return id
+            }
+            h = (h + 1) and mask
+        }
     }
 }
