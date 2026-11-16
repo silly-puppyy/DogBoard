@@ -208,7 +208,8 @@ class Decoder(
             size = 0
         }
 
-        fun copy(): LayerMap = LayerMap(maxOf(16, size)).also { c -> for (i in 0 until size) c[keys[i]] = states[i]!! }
+        /** A copy with room for [extra] times its states (it grows while processed: skipped keys). */
+        fun copy(extra: Int = 1): LayerMap = LayerMap(maxOf(16, size * extra)).also { c -> for (i in 0 until size) c[keys[i]] = states[i]!! }
 
         private fun rehash() {
             table = IntArray(table.size * 2)
@@ -427,7 +428,8 @@ class Decoder(
 
         /** Layer i as reached from layers i-1 (tap i-1) and i-2 (taps i-2 and i-1 swapped). */
         fun pull(i: Int): LayerMap {
-            val out = LayerMap()
+            // sized from the layer it grows from (each state reaches a few nearby keys' children)
+            val out = LayerMap(if (i == 0) 16 else maxOf(64, sr.interior[i - 1].size * 4))
             if (i == 0) {
                 out[key(0, Lexicon.ROOT)] = State(Lexicon.ROOT, 0.0, 0)
                 return out
@@ -537,7 +539,7 @@ class Decoder(
         for (i in 0..n) {
             if (i >= sr.raw.size) sr.raw.add(pull(i))
             if (i < n && i < sr.interior.size) continue
-            val layer = sr.raw[i].copy()
+            val layer = sr.raw[i].copy(extra = 4)
             process(layer, i)
             if (i < n) sr.interior.add(layer) else last = layer
         }
