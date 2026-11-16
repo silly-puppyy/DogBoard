@@ -8106,3 +8106,12 @@ PLandroidx/profileinstaller/ProfileTranscoder;->readHeader(Ljava/io/InputStream;
 PLandroidx/profileinstaller/ProfileTranscoder;->readMeta(Ljava/io/InputStream;[B[B[Landroidx/profileinstaller/DexProfileData;)[Landroidx/profileinstaller/DexProfileData;
 PLandroidx/profileinstaller/ProfileTranscoder;->readProfile(Ljava/io/InputStream;[BLjava/lang/String;)[Landroidx/profileinstaller/DexProfileData;
 PLandroidx/profileinstaller/ProfileVersion;-><clinit>()V
+# DogBoard (2026-11-16): the word engine, the neural layer and the keyboard's typing path, precompiled at
+# install (the FlorisBoard-era rules above cover none of it; on the emulator a fully compiled release-like
+# build compiles its layout 30-40 % faster)
+HSPLio/github/sillypuppyy/dogboard/**;->**(**)**
+Lio/github/sillypuppyy/dogboard/**;
+HSPLdev/patrickgold/florisboard/ime/keyboard3/**;->**(**)**
+Ldev/patrickgold/florisboard/ime/keyboard3/**;
+HSPLorg/k3lp/**;->**(**)**
+Lorg/k3lp/**;
