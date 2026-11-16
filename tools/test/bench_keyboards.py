@@ -321,6 +321,7 @@ def main():
     ap.add_argument("--keys-cache", default="build/bench_keys.json", help="key positions found by probing")
     ap.add_argument("--recalibrate", action="store_true", help="probe the keys again")
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--typos-file", help="TSV of typed<TAB>expected cases instead of the built-in TYPOS list")
     ap.add_argument("--out", default="build/bench_keyboards.json")
     args = ap.parse_args()
     def is_root():
@@ -337,6 +338,8 @@ def main():
                 re.fullmatch(r"[A-Za-z',.!? ’]+", p[2]) and not re.search(r"\b(Tom|Mary)\b", p[2]):
             sentences.append(p[2])
     sentences = random.Random(7).sample(sentences, args.sentences)
+    if args.typos_file:
+        TYPOS[:] = [tuple(l.rstrip("\n").split("\t")[:2]) for l in open(args.typos_file, encoding="utf-8") if "\t" in l]
     args.tail_offsets = [tuple(map(float, l.split("\t"))) for l in open(args.tail, encoding="utf-8")
                          if l.strip() and not l.startswith("#")] if args.tail else None
     dev = Device(args.serial)
