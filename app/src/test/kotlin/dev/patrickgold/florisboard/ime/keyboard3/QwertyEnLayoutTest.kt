@@ -99,6 +99,20 @@ class QwertyEnLayoutTest : FunSpec({
         referenced.filter { model.keys.byKeyId[it] == null }.map { it.toString() }.sorted().shouldBeEmpty()
     }
 
+    test("the decoder's key map: letters and the space bar where they are drawn") {
+        val result = compileLayout("keyboard/qwerty-en.xml")
+        result.shouldBeInstanceOf<K3CompileResult.Success>()
+        val touchModel = coroutineScope { computeTouchModel(result.model, TouchModelOptions.Default) }
+        val keyboard = touchModel.selectKeyboard(deviceWidthMm = 70)
+        val (keys, _) = keyboard.letterTargets(ImeLayerIds.Base, 375f, 216f, 0.3)
+        val space = keys.getValue(' ')
+        println("KEYMAP space centre (%.1f, %.1f) half %.1f x %.1f; e (%.1f, %.1f); b (%.1f, %.1f)".format(
+            space.centerX, space.centerY, space.halfWidth, space.halfHeight, keys.getValue('e').centerX, keys.getValue('e').centerY, keys.getValue('b').centerX, keys.getValue('b').centerY))
+        // the space bar is below the bottom letter row
+        (space.centerY > keys.getValue('b').centerY) shouldBe true
+        (space.centerY - space.halfHeight >= keys.getValue('b').centerY) shouldBe true
+    }
+
     test("taps resolve like the iOS touch model on the real layout") {
         val result = compileLayout("keyboard/qwerty-en.xml")
         result.shouldBeInstanceOf<K3CompileResult.Success>()

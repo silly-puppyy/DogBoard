@@ -498,9 +498,20 @@ object TypingEngine {
                 .let { onlyTypedUnderVulgarTop(word.text, it) }
                 .take(maxResults)
         }
-        val lm = neuralLm?.takeIf { textBefore != null && decoded.size > 1 } ?: return decoded
+        if (textBefore == null) return decoded
+        return refineWithNeural(decoded, textBefore) ?: decoded
+    }
+
+    /**
+     * [decoded] refined with the neural model (see [candidates]), or null when there is no model or
+     * nothing to refine. The keyboard runs it as a second stage after publishing the decoder's
+     * candidates, so a word end never waits for it.
+     */
+    fun refineWithNeural(decoded: List<Candidate>, textBefore: String): List<Candidate>? {
+        val engine = loaded ?: return null
+        val lm = neuralLm?.takeIf { decoded.size > 1 } ?: return null
         val t0 = System.nanoTime()
-        val scores = runCatching { lm.wordScores(textBefore!!, decoded.map { it.word }) }.getOrNull() ?: return decoded
+        val scores = runCatching { lm.wordScores(textBefore, decoded.map { it.word }) }.getOrNull() ?: return null
         lastNeuralScoreMillis = (System.nanoTime() - t0) / 1_000_000
         val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
         return withNeural(decoded, { scores[it] }, NEURAL_WEIGHT, power)

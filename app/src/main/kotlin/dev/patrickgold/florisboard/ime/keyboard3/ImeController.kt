@@ -1182,24 +1182,38 @@ class ImeController(
                 ?.let { t -> if (textBefore.length >= SURROUNDING_BEFORE) t.substringAfter(' ', t) else t }
             val back = lookBack
             suggestionJob = scope.launch {
-                val candidates = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2, textBefore = neuralContext) }
-                TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms") }
-                latestDecode = decodeKey(word.text, context, context2) to candidates
+                val key = decodeKey(word.text, context, context2)
+                // stage 1: the decoder's candidates, published at once (the word end uses them: it never
+                // waits for the neural model, user 2026-11-17: "pausing right before it autocorrects")
+                val decoded = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
+                latestDecode = key to decoded
+                fun publish(candidates: List<io.github.sillypuppyy.dogboard.engine.Candidate>) {
+                    val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
+                    val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
+                    latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
+                    latestCorrection = word.text to correction
+                    val emoji = TypingEngine.emojiFor(textBefore, app, emojiMode, prefs.emoji.preferredSkinTone.get().id)
+                    val strip = SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word, curlyApostrophes()), emoji)
+                    if (isActive) {
+                        sink(if (predictive) strip else strip.filter { it.kind == Suggestion.Kind.LITERAL || it.kind == Suggestion.Kind.AUTOCORRECT })
+                    }
+                }
+                publish(decoded)
                 // a word split by a stray space ("goi g"): its rejoined reading, ready for the word end
                 latestJoin = back?.spaceTap?.let { tap ->
                     back.candidates?.let { prev ->
-                        Triple(back, word.text, io.github.sillypuppyy.dogboard.perf.GcStats.track("join") { TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, candidates, curlyApostrophes()) })
+                        Triple(back, word.text, io.github.sillypuppyy.dogboard.perf.GcStats.track("join") { TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, decoded, curlyApostrophes()) })
                     }
                 }
                 if (BuildConfig.DEBUG && back != null) android.util.Log.d("DogBoardAc", "join check '${back.committed} ${word.text}': tap=${back.spaceTap} -> ${latestJoin?.third} ${TypingEngine.lastJoinDebug}")
-                val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
-                val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
-                latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }
-                latestCorrection = word.text to correction
-                val emoji = TypingEngine.emojiFor(textBefore, app, emojiMode, prefs.emoji.preferredSkinTone.get().id)
-                val strip = SuggestionStrip.build(word.text, candidates, correction, TypingEngine.caseFor(word, curlyApostrophes()), emoji)
-                if (isActive) {
-                    sink(if (predictive) strip else strip.filter { it.kind == Suggestion.Kind.LITERAL || it.kind == Suggestion.Kind.AUTOCORRECT })
+                // stage 2: refined by the neural model, when it finishes before the next key
+                if (neuralContext != null && isActive) {
+                    val refined = io.github.sillypuppyy.dogboard.perf.GcStats.track("neural") { TypingEngine.refineWithNeural(decoded, neuralContext) }
+                    TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms") }
+                    if (refined != null && isActive && latestDecode?.first == key) {
+                        latestDecode = key to refined
+                        publish(refined)
+                    }
                 }
             }
         }

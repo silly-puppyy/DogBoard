@@ -69,7 +69,7 @@ class RealTypoEvalTest : FunSpec({
 
         // DOGBOARD_DUMP_CANDIDATES=file: each case's top decoder candidates (word, score, geometry,
         // language score), for rescoring experiments with the neural model (tmp/llm)
-        data class Outcome(val typo: Boolean, val result: String, val row: List<String>, val dump: String = "")
+        data class Outcome(val typo: Boolean, val result: String, val row: List<String>, val dump: String = "", val got: String = "")
         val dumpCandidates = System.getenv("DOGBOARD_DUMP_CANDIDATES")
         // DOGBOARD_NEURAL_SCORES=file (context, typed, word, ln P from the neural model; tmp/llm
         // neural_scores.py over a dump): candidates refined with the neural model as iOS does, weight
@@ -110,7 +110,7 @@ class RealTypoEvalTest : FunSpec({
                 val dump = if (dumpCandidates == null) "" else candidates.take(8).joinToString("|") {
                     "%s,%.3f,%.3f,%.3f".format(it.word.replace(",", ""), it.score, it.geometry, it.languageModel)
                 }
-                Outcome(typo, result, row, dump)
+                Outcome(typo, result, row, dump, got)
             }.toList()
         }).get()
         pool.shutdown()
@@ -126,7 +126,7 @@ class RealTypoEvalTest : FunSpec({
         }
         System.getenv("DOGBOARD_EVAL_ERRORS")?.let { path ->
             File(path).printWriter().use { w ->
-                for (o in outcomes) if (o.result != "fixed" && o.result != "kept") w.println("${o.result}\t${o.row[3]}\t${o.row[4]}\t${o.row[2].takeLast(40)}")
+                for (o in outcomes) if (o.result != "fixed" && o.result != "kept") w.println("${o.result}\t${o.row[3]}\t${o.row[4]}\t${o.got}\t${o.row[2].takeLast(40)}")
             }
         }
     }
