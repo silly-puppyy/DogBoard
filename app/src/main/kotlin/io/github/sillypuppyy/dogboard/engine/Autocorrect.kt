@@ -184,6 +184,20 @@ internal fun ranked(candidates: List<Candidate>, level: Autocorrect.Level): List
         candidates.map { it.copy(score = it.geometry + w * it.languageModel) }.sortedByDescending { it.score }
     } ?: candidates
 
+/**
+ * iOS refines the candidates with its neural model at the word level (all candidates in one batch,
+ * decompile 2026-11-16): each candidate's language score is mixed with the neural ln P(candidate |
+ * text before) as (1 - [weight]) x n-gram + [weight] x neural, and the score is geometry + [power] x
+ * that; a candidate the model has no score for keeps its n-gram score.
+ */
+internal fun withNeural(candidates: List<Candidate>, neural: (String) -> Double?, weight: Double, power: Double): List<Candidate> =
+    candidates.map { c ->
+        neural(c.word)?.let { n ->
+            val l = (1 - weight) * c.languageModel + weight * n
+            c.copy(score = c.geometry + power * l, languageModel = l)
+        } ?: c
+    }.sortedByDescending { it.score }
+
 internal fun typedStringVeto(candidates: List<Candidate>): Boolean {
     val typed = candidates.firstOrNull { it.isTypedString } ?: return false
     val top = candidates.maxByOrNull { it.score } ?: return false

@@ -63,6 +63,13 @@ class RealTypoEvalTest : FunSpec({
         // language score), for rescoring experiments with the neural model (tmp/llm)
         data class Outcome(val typo: Boolean, val result: String, val row: List<String>, val dump: String = "")
         val dumpCandidates = System.getenv("DOGBOARD_DUMP_CANDIDATES")
+        // DOGBOARD_NEURAL_SCORES=file (context, typed, word, ln P from the neural model; tmp/llm
+        // neural_scores.py over a dump): candidates refined with the neural model as iOS does, weight
+        // DOGBOARD_NEURAL_WEIGHT (default 0.75)
+        val neuralScores = System.getenv("DOGBOARD_NEURAL_SCORES")?.let { path ->
+            File(path).useLines { lines -> lines.associate { l -> l.split('\t').let { (c, t, w, p) -> "$c\t$t\t$w" to p.toDouble() } } }
+        }
+        val neuralWeight = System.getenv("DOGBOARD_NEURAL_WEIGHT")?.toDouble() ?: 0.75
         val pool = java.util.concurrent.ForkJoinPool(System.getenv("DOGBOARD_EVAL_THREADS")?.toIntOrNull() ?: 3)
         val outcomes = pool.submit(java.util.concurrent.Callable {
             sample.parallelStream().map { row ->
@@ -81,7 +88,10 @@ class RealTypoEvalTest : FunSpec({
                     Tap((k.centerX + tapRng.nextGaussian() * sigma.first * GaussianTouch.POINTS_PER_MM).toFloat(),
                         (k.centerY + tapRng.nextGaussian() * sigma.second * GaussianTouch.POINTS_PER_MM).toFloat())
                 }
-                val candidates = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(prev), typed = typed, previous2 = prev2?.let { bigrams.contextId(it) } ?: -1)
+                val decoded = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(prev), typed = typed, previous2 = prev2?.let { bigrams.contextId(it) } ?: -1)
+                val candidates = neuralScores?.let { m ->
+                    withNeural(decoded, { w -> m["${row[2]}\t$typed\t${w.replace(",", "")}"] }, neuralWeight, Decoder.LANGUAGE_POWER_CONTEXT)
+                } ?: decoded
                 val got = autocorrect.correction(typed, candidates) ?: typed
                 val typo = !typed.equals(intended, ignoreCase = true)
                 val result = when {
@@ -98,7 +108,7 @@ class RealTypoEvalTest : FunSpec({
         pool.shutdown()
 
         fun pct(kind: Boolean, r: String) = outcomes.count { it.typo == kind && it.result == r } * 100.0 / outcomes.count { it.typo == kind }
-        println("REALTYPO level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
+        println("REALTYPO ${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
             endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
         dumpCandidates?.let { path ->
