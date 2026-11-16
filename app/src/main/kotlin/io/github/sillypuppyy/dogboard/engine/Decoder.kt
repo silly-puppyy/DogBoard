@@ -226,19 +226,28 @@ class Decoder(
      * same place, so typing them on purpose isn't taken for a rare word. Node of the short word
      * -> node of its long form, looked up again when the lexicon changes.
      */
-    private var shortWords: Map<Int, Int> = emptyMap()
+    // short-word pairs (node of the short form -> node of the long form) as plain arrays: looked up
+    // for every word scored, a map lookup boxed the node each time
+    private var shortKeys = IntArray(0)
+    private var shortVals = IntArray(0)
     private var shortWordsVersion = -1
 
-    private fun shortWordMap(): Map<Int, Int> {
+    private fun refreshShortWords() {
         if (shortWordsVersion != lexicon.version) {
-            shortWords = SHORT_WORDS.mapNotNull { (short, long) ->
+            val pairs = SHORT_WORDS.mapNotNull { (short, long) ->
                 val a = lexicon.find(short)
                 val b = lexicon.find(long)
                 if (a != Lexicon.NONE && b != Lexicon.NONE && lexicon.isWord(a) && lexicon.isWord(b)) a to b else null
-            }.toMap()
+            }.toMap() // one long form per short form, the last listed wins (as before)
+            shortKeys = pairs.keys.toIntArray(); shortVals = pairs.values.toIntArray()
             shortWordsVersion = lexicon.version
         }
-        return shortWords
+    }
+
+    /** The long form's node for a short form's [node] ("u" -> "you"), or [Lexicon.NONE]. */
+    private fun shortWordFor(node: Int): Int {
+        for (i in shortKeys.indices) if (shortKeys[i] == node) return shortVals[i]
+        return Lexicon.NONE
     }
 
     private fun key(prefix: Int, node: Int) = (prefix.toLong() shl 32) or node.toLong()
@@ -314,7 +323,7 @@ class Decoder(
 
         fun context(prefix: Int) = prefixes[prefix]?.last ?: previous
         fun context2(prefix: Int) = prefixes[prefix]?.secondLast ?: previous2
-        val shortWords = shortWordMap()
+        refreshShortWords()
         fun lm(node: Int, prev: Int, prev2: Int = -1): Double {
             fun of(n: Int): Double {
                 val base = sr.context?.logProb(prev2, prev, lexicon.wordId(n), lexicon.logProb(n))
@@ -323,7 +332,8 @@ class Decoder(
                 return personal?.invoke(n, base) ?: base
             }
             val own = of(node)
-            return shortWords[node]?.let { maxOf(own, of(it)) } ?: own
+            val long = shortWordFor(node)
+            return if (long == Lexicon.NONE) own else maxOf(own, of(long))
         }
         /** The prefix for [s]'s words plus the word at [s]'s node. */
         fun newRestart(s: State): Int {
@@ -415,7 +425,13 @@ class Decoder(
                 }
             }
             insertCut = beamCut(layer, w, prefixes)
-            for (s in layer.values.toList()) insertAfter(s, allowApostrophe = true)
+            // the layer grows while it is extended: a snapshot first (a reused array, no list per step)
+            val count = layer.size
+            if (iStates.size < count) iStates = arrayOfNulls(maxOf(count, iStates.size * 2))
+            var c = 0
+            for (s in layer.values) iStates[c++] = s
+            for (k in 0 until count) insertAfter(iStates[k]!!, allowApostrophe = true)
+            java.util.Arrays.fill(iStates, 0, count, null)
             // a whole word may end here and the next tap begin another: the space key was not
             // tapped, which costs what any skipped key does (iOS prices a missed space as a key
             // error); only the most likely few, which keeps the search near its one-word size
@@ -476,7 +492,10 @@ class Decoder(
                 val support = if (p == null) 0.0 else p.support + (l - lexicon.logProb(s.node))
                 // each casing of the word ("google", "Google") with its share of the word's probability
                 val nodeLp = lexicon.logProb(s.node)
-                for ((form, formLp) in lexicon.forms(s.node)) {
+                if (!lexicon.hasCasings(s.node)) { // one casing (most words): no list of forms
+                    val lf = before + l
+                    add(Candidate(words(lexicon.word(s.node)!!), s.geometry + w * lf, s.geometry, lf, s.edits, isCompletion = false, words = count, contextSupport = support))
+                } else for ((form, formLp) in lexicon.forms(s.node)) {
                     val lf = before + l + (formLp - nodeLp)
                     add(Candidate(words(form), s.geometry + w * lf, s.geometry, lf, s.edits, isCompletion = false, words = count, contextSupport = support))
                 }
@@ -534,6 +553,7 @@ class Decoder(
     private var pScores = DoubleArray(0)
     private var pWork = DoubleArray(0)
     private var pKept = IntArray(0)
+    private var iStates = arrayOfNulls<State>(0)
 
     private fun prune(layer: HashMap<Long, State>, w: Double, prefixes: List<Prefix?>) {
         val n = layer.size

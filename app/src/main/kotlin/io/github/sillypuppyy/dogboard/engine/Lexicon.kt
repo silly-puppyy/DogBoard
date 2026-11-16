@@ -76,9 +76,24 @@ class Lexicon private constructor(capacity: Int) {
     /** Node of the word with id [id]. */
     fun nodeOfWord(id: Int): Int = wordNode[id]
 
+    // each word's string once made (by word id): the decoder asks for the same few hundred words on
+    // every keystroke, and rebuilding them was the typing path's largest garbage. Readers share the
+    // engine's lock, so two may fill an entry at once: harmless, strings are immutable
+    @Volatile private var wordCache = arrayOfNulls<String>(0)
+
     /** The word ending at [node] in its stored casing, or null. */
     fun word(node: Int): String? {
-        if (wordId[node] == NONE) return null
+        val id = wordId[node]
+        if (id == NONE) return null
+        val cache = wordCache
+        if (id < cache.size) cache[id]?.let { return it }
+        return buildWord(node).also { w ->
+            val c = if (id < cache.size) cache else cache.copyOf(maxOf(id + 1, wordCount, cache.size * 2)).also { wordCache = it }
+            c[id] = w
+        }
+    }
+
+    private fun buildWord(node: Int): String {
         if (hasSurface.get(node)) surface[node]?.let { return it }
         val chars = CharArray(depth[node].toInt())
         var n = node
@@ -88,6 +103,9 @@ class Lexicon private constructor(capacity: Int) {
         }
         return String(chars)
     }
+
+    /** The word at [node] has several casings ([forms] lists them); otherwise its one form is [word]. */
+    fun hasCasings(node: Int): Boolean = hasCasings.get(node)
 
     /** Every casing of the word at [node] with its own ln P, most likely first. */
     fun forms(node: Int): List<Pair<String, Double>> {
