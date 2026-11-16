@@ -247,6 +247,18 @@ object TypingEngine {
         neuralLm = model
     }
 
+    val hasNeuralLm: Boolean get() = neuralLm != null
+
+    /**
+     * Lets the neural model go when the system is short of memory (iOS releases its language model
+     * buffers under memory pressure); the keyboard loads it again when typing resumes.
+     */
+    fun releaseNeuralLm() {
+        val lm = neuralLm ?: return
+        neuralLm = null
+        runCatching { lm.close() }
+    }
+
     fun attachNgrams(model: NgramModel?) {
         if (model != null) ngramModel = model
         val engine = loaded ?: return

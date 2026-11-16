@@ -679,15 +679,17 @@ class ImeController(
                 val context = wordContext()
                 val context2 = wordContext2()
                 // Gboard: the commit waits up to 40 ms for the pending suggestion decode
-                // (delay_to_wait_for_suggestions_before_commit_ms), so a space typed right after the
-                // last letter doesn't decode the word again here, on the main thread (phone: 16 MB of
-                // garbage in one key event, after waiting for the background decode's lock anyway)
+                // (delay_to_wait_for_suggestions_before_commit_ms); the decode is published before
+                // the neural refinement, so this is short
                 val key = decodeKey(typed, context, context2)
                 if (latestDecode?.first != key) suggestionJob?.takeIf { it.isActive }?.let { job ->
                     runBlocking { withTimeoutOrNull(WAIT_FOR_DECODE_MS) { job.join() } }
                 }
-                val candidates = latestDecode?.takeIf { it.first == key }?.second
-                    ?: TypingEngine.candidates(word, context, previous2 = context2)
+                // iOS never computes at the word end: it applies the correction already found, or keeps
+                // the typed word when none is ready ("avoided autocorrect deadlock"); no decode here
+                val ready = latestDecode?.takeIf { it.first == key }?.second
+                if (ready == null && BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept")
+                val candidates = ready ?: emptyList()
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
                 TypingEngine.adaptiveStrength = prefs.correction.adaptiveStrength.get()
                 val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)

@@ -53,6 +53,12 @@ object EngineLoader {
 
     private const val NEURAL_MIN_RAM_BYTES = 5_000_000_000L
 
+    /** The neural model again after a memory-pressure release, when this phone runs it (call off the main thread). */
+    fun ensureNeural(context: Context) {
+        if (!TypingEngine.isReady || TypingEngine.hasNeuralLm || !neuralTier(context)) return
+        TypingEngine.attachNeuralLm(loadNeuralLm(context.applicationContext))
+    }
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
         val t0 = android.os.SystemClock.uptimeMillis()

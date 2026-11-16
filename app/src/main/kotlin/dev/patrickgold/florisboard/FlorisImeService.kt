@@ -391,8 +391,21 @@ class FlorisImeService : LifecycleInputMethodService() {
         if (info == null) return
     }
 
+    // DogBoard: under memory pressure the neural model goes (iOS releases its language model buffers),
+    // and comes back when the keyboard is shown again
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level in android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW..android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL ||
+            level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND
+        ) {
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.releaseNeuralLm()
+            android.util.Log.i("DogBoardPerf", "memory pressure (level $level): neural model released")
+        }
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onStartInputView") // DogBoard: startup timing
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureNeural(this@FlorisImeService) }
         flogInfo { "info=${info?.debugSummarize()} restarting=$restarting" }
         super.onStartInputView(info, restarting)
         if (info == null) return
