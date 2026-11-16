@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.florisboard.lib.kotlin.collectIn
@@ -1079,7 +1080,12 @@ class ImeController(
                     return
                 }
                 suggestionJob = scope.launch {
-                    val words = TypingEngine.predictions(context, wordContext2(), textBefore = textBefore.toString())
+                    // a full window starts mid-word: its first word is dropped (a fragment misleads the model)
+                    val text = textBefore.toString().let { t -> if (t.length >= SURROUNDING_BEFORE) t.substringAfter(' ', t) else t }
+                    // a newer word end wants its own prediction: this one is skipped, also after waiting
+                    // for the model (it runs one prediction at a time)
+                    ensureActive()
+                    val words = TypingEngine.predictions(context, wordContext2(), textBefore = text, stillWanted = { isActive })
                     TypingEngine.lastNeuralMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural predictions took ${it}ms") }
                     io.github.sillypuppyy.dogboard.perf.GcStats.logWord()
                     // iOS: predictions are capitalised after a sentence end only with auto-capitalisation on

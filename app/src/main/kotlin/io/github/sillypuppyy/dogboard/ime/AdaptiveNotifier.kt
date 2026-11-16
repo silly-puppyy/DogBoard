@@ -28,13 +28,14 @@ import kotlinx.coroutines.launch
  */
 object AdaptiveNotifier {
     private const val CHANNEL = "dogboard_adaptive"
-    private const val ID = 4207
+    const val ID = 4207
     const val ACTION_STOP = "io.github.sillypuppyy.dogboard.ADAPTIVE_STOP"
 
     /** Hooks the engine's step changes to notifications (once per process). */
     fun install(context: Context) {
         val app = context.applicationContext
-        TypingEngine.onStrengthStepChange = { step -> notify(app, step) }
+        // heard on the typing thread inside the strength's lock: posted from the background
+        TypingEngine.onStrengthStepChange = { step -> kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { notify(app, step) } }
     }
 
     fun notify(context: Context, step: Int) {
@@ -81,7 +82,7 @@ class AdaptiveStopReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != AdaptiveNotifier.ACTION_STOP) return
         TypingEngine.adaptiveStrength = false
-        context.getSystemService(NotificationManager::class.java)?.cancel(4207)
+        context.getSystemService(NotificationManager::class.java)?.cancel(AdaptiveNotifier.ID)
         // preference writes suspend: finish the broadcast once it is stored
         val pending = goAsync()
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {

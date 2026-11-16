@@ -181,6 +181,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__adaptive_notify",
             default = true,
         )
+        /** The notification permission was asked for once (the typing settings ask again only when the switch is turned on). */
+        val adaptiveNotifyAsked = boolean(
+            key = "correction__adaptive_notify_asked",
+            default = false,
+        )
     }
 
     val devtools = Devtools()

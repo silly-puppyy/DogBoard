@@ -137,18 +137,26 @@ fun TypingScreen() {
             }
 
             // DogBoard: the adaptive-autocorrect notification needs POST_NOTIFICATIONS (Android 13+): asked
-            // here once while both switches are on (a keyboard cannot ask)
+            // here (a keyboard cannot ask): once while both switches are on, and again when the user turns
+            // 'Tell me when it adapts' on
             val notifyContext = androidx.compose.ui.platform.LocalContext.current
             val askNotifications = androidx.activity.compose.rememberLauncherForActivityResult(
                 androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
             ) { }
             val adaptiveOn by prefs.correction.adaptiveStrength.collectAsState()
             val notifyOn by prefs.correction.adaptiveNotify.collectAsState()
+            val notifyWas = remember { mutableStateOf(notifyOn) }
             androidx.compose.runtime.LaunchedEffect(adaptiveOn, notifyOn) {
-                if (adaptiveOn && notifyOn && android.os.Build.VERSION.SDK_INT >= 33 &&
+                val turnedOn = notifyOn && !notifyWas.value
+                notifyWas.value = notifyOn
+                if (adaptiveOn && notifyOn && (turnedOn || !prefs.correction.adaptiveNotifyAsked.get()) &&
+                    android.os.Build.VERSION.SDK_INT >= 33 &&
                     androidx.core.content.ContextCompat.checkSelfPermission(notifyContext, android.Manifest.permission.POST_NOTIFICATIONS) !=
                     android.content.pm.PackageManager.PERMISSION_GRANTED
-                ) askNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                ) {
+                    prefs.correction.adaptiveNotifyAsked.set(true)
+                    askNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
             SegmentedListColumn(title = stringRes(R.string.pref__correction__title)) {
                 val count = 4

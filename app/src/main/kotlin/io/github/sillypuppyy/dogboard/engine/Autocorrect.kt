@@ -96,9 +96,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     ): String? {
         // iOS apply_case_changes: each candidate takes the typed capitals; ones the case rules
         // don't accept for this input are filtered out
-        val ranked = level.languagePower?.let { w ->
-            candidates.map { it.copy(score = it.geometry + w * it.languageModel) }.sortedByDescending { it.score }
-        } ?: candidates
+        val ranked = ranked(candidates, level)
         val cased = ranked
             .filter { it.words == 1 || it.contextSupport >= MIN_CONTEXT_SUPPORT } // Rule 3
             .mapNotNull { c -> case(c.word)?.let { c to it } }
@@ -177,6 +175,15 @@ internal fun sortKey(word: String): String =
  * the lexicon lacks it) is at least as likely, by the language-model terms alone, as the top
  * candidate: no autocorrection.
  */
+/**
+ * [candidates] ranked with [level]'s own language weight (geometry + weight x language score), or as
+ * the decoder ranked them; the correction and the typed-string veto both use this ranking.
+ */
+internal fun ranked(candidates: List<Candidate>, level: Autocorrect.Level): List<Candidate> =
+    level.languagePower?.let { w ->
+        candidates.map { it.copy(score = it.geometry + w * it.languageModel) }.sortedByDescending { it.score }
+    } ?: candidates
+
 internal fun typedStringVeto(candidates: List<Candidate>): Boolean {
     val typed = candidates.firstOrNull { it.isTypedString } ?: return false
     val top = candidates.maxByOrNull { it.score } ?: return false

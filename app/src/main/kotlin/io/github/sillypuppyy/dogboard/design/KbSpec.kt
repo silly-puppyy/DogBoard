@@ -289,6 +289,8 @@ object KbSpec {
     private val CLASSIC_TOOLS_CELL = CssGradient.parse("linear-gradient(#bcc1ca, #dde0e5)")
 
     /** Kb:454 long-press sets; `.com` has a list. */
+    const val URL_DOT = ".url"
+
     val LP: Map<String, List<String>> = mapOf(
         "w" to "ŵ", "e" to "èéêëěẽēėę", "r" to "ř", "t" to "țťþ", "y" to "ýŷÿ", "u" to "ùúûüǔũūűůų",
         "i" to "ìíîïǐĩīıį", "o" to "òóôöǒœøõōő", "a" to "àáâäǎæãåāăą", "s" to "ßşșśš", "d" to "ďð",
@@ -296,7 +298,8 @@ object KbSpec {
         "0" to "°", "-" to "–—•", "/" to "\\", "$" to "€£¥₩₽", "&" to "§", "\"" to "„“”«»", "." to "…",
         "?" to "¿", "!" to "¡", "'" to "’‘`", "%" to "‰", "=" to "≠≈",
     ).mapValues { (_, v) -> v.codePoints().toArray().map { String(Character.toChars(it)) } } +
-        (".com" to listOf(".org", ".edu", ".net"))
+        // the URL row's '.': domains on a long press (qwerty-en.xml period-url), no corner hint
+        (URL_DOT to listOf(".com", ".org", ".net", ".edu"))
 
     /** Kb:455 Android-style corner hints. */
     val AND_HINT: Map<String, String> = mapOf(
@@ -427,7 +430,7 @@ object KbSpec {
             kstyle == "android" -> listOf(mode(firstMode, 1.5f), ch(when (field) { "email" -> "@"; "url" -> "/"; else -> "," }, 1f), fnK(1f), space(4f), ch(".", 1f), retK(1.5f))
             field == "email" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK())
             // a space bar in URL fields too (address bars take searches; Gboard keeps one), .com etc. on a long press of .
-            field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), ch(".", 1.25f), retK())
+            field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK())
             else -> listOf(mode(firstMode, 1.24f), fnK(), space(5.0133f), retK())
         }
         fun symRow3(m: String) = listOf(mode(m, 1.28f), gap(0.2133f), ch(".", 1.4f), ch(",", 1.4f), ch("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), gap(0.2267f), bksp())
@@ -537,7 +540,7 @@ object KbSpec {
                     // Kb:747-751
                     if (plane == "base" && hintKind != "off") {
                         if (hintKind == "symbols") hint = AND_HINT[base] ?: ""
-                        else if (base in LP && base != ".com") hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
+                        else if (base in LP && base != URL_DOT) hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
                     }
                     if (plane == "base" && numRow == "hints" && base in "qwertyuiop" && base.length == 1) hint = AND_HINT[base] ?: ""
                 }

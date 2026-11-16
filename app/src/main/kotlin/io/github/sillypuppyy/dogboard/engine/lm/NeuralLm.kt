@@ -93,10 +93,25 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
      * predictions then cost the new context tokens and one capital step (a phone runs ~10 ms a step).
      */
     @Synchronized
-    fun predict(textBefore: String, n: Int = 3, isWord: (String) -> Boolean = { false }, first: Int = 6, maxPieces: Int = 3): List<Pair<String, Double>> {
+    fun predict(
+        textBefore: String, n: Int = 3, isWord: (String) -> Boolean = { false }, first: Int = 6, maxPieces: Int = 3,
+        stillWanted: () -> Boolean = { true },
+    ): List<Pair<String, Double>> {
+        // a call that waited for an older one may no longer be wanted (a newer word end)
+        if (!stillWanted()) return emptyList()
         // the context: BOS + the text's tokens, the newest that leave room for the tries after it
         val room = ctx - 2 - maxPieces - 2
-        val tokens = tokenizer.encode(textBefore).let { t -> t.copyOfRange(maxOf(0, t.size - room), t.size) }
+        val all = tokenizer.encode(textBefore)
+        // a text that slid on (the editor's window starts later each word) continues the cache when
+        // the cached tokens end inside the new ones: only the new tokens run (the cache keeps the
+        // older context too)
+        val more = if (haveContext) continuation(all) else null
+        if (more != null && cached.size + more.size <= room + 1) {
+            for (t in more) { step(t, cached.size, pBuf); cached.add(t) }
+            return candidates(n, isWord, first, maxPieces)
+        }
+        // otherwise from BOS; a text too long keeps its newest two thirds, so the next words continue it
+        val tokens = if (all.size <= room) all else all.copyOfRange(all.size - room * 2 / 3, all.size)
         val want = ArrayList<Int>(tokens.size + 1).apply { add(PieceTokenizer.BOS); tokens.forEach { add(it) } }
         // keep the cached prefix, run the rest
         var same = 0
@@ -107,6 +122,27 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
             for (i in same until want.size) { step(want[i], i, pBuf); cached.add(want[i]) }
             haveContext = true
         }
+        return candidates(n, isWord, first, maxPieces)
+    }
+
+    /**
+     * The tokens of [all] after the cached ones (empty: nothing new), when the cached tokens after BOS
+     * end as a prefix of [all] (the whole cache, or at least [MIN_OVERLAP] of its newest tokens).
+     */
+    private fun continuation(all: IntArray): IntArray? {
+        val c = cached.size - 1
+        for (j in 0 until c) {
+            val len = c - j
+            if (len < MIN_OVERLAP && j > 0) return null
+            if (len > all.size) continue
+            var k = 0
+            while (k < len && cached[1 + j + k] == all[k]) k++
+            if (k == len) return all.copyOfRange(len, all.size)
+        }
+        return null
+    }
+
+    private fun candidates(n: Int, isWord: (String) -> Boolean, first: Int, maxPieces: Int): List<Pair<String, Double>> {
         val p = pBuf
         val pos = cached.size
         // the capitalised path: CAP at pos, then the word
@@ -148,4 +184,9 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
 
     @Synchronized
     fun close() = interpreter.close()
+
+    private companion object {
+        /** Cached tokens that must line up before a slid text continues the cache (fewer: a chance match). */
+        const val MIN_OVERLAP = 4
+    }
 }

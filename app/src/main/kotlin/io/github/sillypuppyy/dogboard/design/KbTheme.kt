@@ -266,16 +266,23 @@ fun css(value: String): Color {
 data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>) {
     /**
      * CSS geometry: the line runs through the centre at the angle (0 = up, clockwise), long enough that the corners get the end colours.
-     * One brush per gradient: a ShaderBrush keeps its native shader per size, so a new brush on every
-     * redraw made new native shaders per key per frame (native-allocation garbage collections that
-     * stall typing, user 2026-11-16).
+     * One brush per gradient, its shaders kept per size: a ShaderBrush remembers only the last size,
+     * and keys of different widths share a gradient, so each key drawn made a new native shader per
+     * frame (native-allocation garbage collections that stall typing, user 2026-11-16).
      */
     fun brush(): androidx.compose.ui.graphics.Brush = cachedBrush
 
     private val cachedBrush: androidx.compose.ui.graphics.Brush by lazy { shaderBrush() }
 
+    private val shaders = HashMap<androidx.compose.ui.geometry.Size, androidx.compose.ui.graphics.Shader>()
+
     private fun shaderBrush(): androidx.compose.ui.graphics.Brush = object : androidx.compose.ui.graphics.ShaderBrush() {
-        override fun createShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader {
+        override fun createShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader = synchronized(shaders) {
+            shaders[size] ?: makeShader(size).also { if (shaders.size >= MAX_SHADERS) shaders.clear(); shaders[size] = it }
+        }
+    }
+
+    private fun makeShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader {
             val a = Math.toRadians(angleDeg.toDouble())
             val dx = kotlin.math.sin(a).toFloat(); val dy = -kotlin.math.cos(a).toFloat()
             val half = (kotlin.math.abs(size.width * dx) + kotlin.math.abs(size.height * dy)) / 2
@@ -285,10 +292,12 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
                 androidx.compose.ui.geometry.Offset(c.x + dx * half, c.y + dy * half),
                 stops.map { it.first }, stops.map { it.second },
             )
-        }
     }
 
     companion object {
+        /** Key sizes per gradient kept (a keyboard has a handful; a resize starts over). */
+        private const val MAX_SHADERS = 32
+
         fun parse(value: String): CssGradient? {
             val v = value.trim()
             if (!v.startsWith("linear-gradient(")) return null

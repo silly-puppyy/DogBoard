@@ -482,10 +482,14 @@ object TypingEngine {
         if (rejections.isBlocked(previous.text, previousCommitted)) return null
         return lock.read {
             val d = engine.retroDecoder
-            val prevCandidates = (previousCandidates?.filter { !it.isCompletion }?.take(4) ?: d.decode(
+            // a typed word the lexicon knows isn't turned into itself plus a letter ("the" -> "they"):
+            // the decoder reads a skipped last key as a typo fix for autocorrect's missing-last-letter fix
+            val typedIsWord = engine.lexicon.contains(previous.text)
+            fun extendsTyped(w: String) = typedIsWord && w.length == previous.text.length + 1 && w.startsWith(previous.text, ignoreCase = true)
+            val prevCandidates = (previousCandidates?.filter { !it.isCompletion && !extendsTyped(it.word) }?.take(4) ?: d.decode(
                 prevTaps, personalOffsets.apply(previous.keys), previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
-            )).filter { it.words == 1 && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
+            )).filter { it.words == 1 && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
                 .let { respectingContactNames(previous.text, it) }
             val curReadings = currentCandidates?.filter { !it.isCompletion && it.words == 1 }
             fun joint(prevWord: String, prevScore: Double): Double {
@@ -533,8 +537,8 @@ object TypingEngine {
             }
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
-        if (vetoesCorrection(kept)) return null
         val adjusted = if (adaptiveStrength) strength.adjust(level.level) else level.level
+        if (vetoesCorrection(ranked(kept, adjusted))) return null
         val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), adjusted)
             ?: return null
         return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
@@ -566,7 +570,7 @@ object TypingEngine {
     /** The user undid [typed] -> [correction] (or kept their word while it was offered): a hard rejection. */
     fun reject(typed: String, correction: String) {
         rejections.recordHard(typed, correction)
-        strength.reverted()
+        if (adaptiveStrength) strength.reverted() // off: it neither learns nor changes step
     }
 
     /** Autocorrection just turned [typed] into [correction]. */
@@ -575,7 +579,7 @@ object TypingEngine {
     /** [typed] -> [correction] was made and the user typed on: earlier undos of it are forgiven. */
     fun correctionKept(typed: String, correction: String) {
         rejections.recordKept(typed, correction)
-        strength.kept()
+        if (adaptiveStrength) strength.kept()
     }
 
     /**
@@ -596,14 +600,14 @@ object TypingEngine {
     val personalOffsetTaps: Int get() = personalOffsets.taps
 
     /** The user picked a correction from the bar for a word autocorrect left alone. */
-    fun fixPicked() = strength.fixPicked()
+    fun fixPicked() { if (adaptiveStrength) strength.fixPicked() }
 
     /** The adaptive score (> 0: more careful, < 0: bolder), for settings and tests. */
     val strengthScore: Double get() = strength.score
 
     /** The user deleted the whole word [word] (a soft rejection if it was just autocorrected). */
     fun noteDeleted(word: String) {
-        if (rejections.noteDeleted(word)) strength.deletedAfterCorrection()
+        if (rejections.noteDeleted(word) && adaptiveStrength) strength.deletedAfterCorrection()
     }
 
     /**
@@ -612,7 +616,10 @@ object TypingEngine {
      * bigram followers on the control set, 22.0 % vs 14.8 % on chat; PredictionBenchTest), topped up
      * from the bigram followers.
      */
-    fun predictions(previous: String?, previous2: String? = null, n: Int = SuggestionStrip.SLOTS, textBefore: String? = null): List<String> {
+    fun predictions(
+        previous: String?, previous2: String? = null, n: Int = SuggestionStrip.SLOTS, textBefore: String? = null,
+        stillWanted: () -> Boolean = { true },
+    ): List<String> {
         val engine = loaded ?: return emptyList()
         val bigrams = engine.bigrams ?: return emptyList()
         val want = n + blocked.size.coerceAtMost(4) + 4
@@ -620,7 +627,7 @@ object TypingEngine {
         // takes milliseconds), its words kept to ones the lexicon knows, in the lexicon's casing
         val fromNeural = neuralLm?.takeIf { textBefore != null }?.let { lm ->
             val t0 = System.nanoTime()
-            val words = runCatching { lm.predict(textBefore!!, n = want, isWord = { w -> engine.lexicon.contains(w) }) }.getOrDefault(emptyList())
+            val words = runCatching { lm.predict(textBefore!!, n = want, isWord = { w -> lock.read { engine.lexicon.contains(w) } }, stillWanted = stillWanted) }.getOrDefault(emptyList())
             lastNeuralMillis = (System.nanoTime() - t0) / 1_000_000
             lock.read {
                 words.mapNotNull { (w, _) ->
