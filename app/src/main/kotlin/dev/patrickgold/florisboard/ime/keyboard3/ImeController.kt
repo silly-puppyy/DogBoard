@@ -474,6 +474,16 @@ class ImeController(
             val text = value.toText()
             // DogBoard: punctuation right after the keyboard's own space (a picked suggestion) goes
             // before it: "word ," -> "word, "; closing quotes and brackets just take its place
+            // DogBoard (user, 2026-11-16, beyond iOS, which keeps a typed space: "hello ?" stays): a
+            // sentence or clause mark typed right after a space the user typed at a word end goes
+            // before it, "word ?" -> "word? " (only , . ? !: a typed space before ":)" or ";)" is kept);
+            // not ? ! in France / Belgium French, whose typography keeps the space (iOS keeps it too)
+            if (!autoSpace && lastSpaceUptime != null && text in SWAP_AFTER_TYPED_SPACE && wordEngineAllowed() &&
+                !(text in FRENCH_SPACED && keepsSpaceBeforeMarks())
+            ) {
+                val tb = state.content.surroundingText.textBefore
+                if (tb.length >= 2 && tb.last() == ' ' && tb[tb.length - 2].isLetterOrDigit()) autoSpace = true
+            }
             if (autoSpace) {
                 autoSpace = false
                 if (text in SWAP_WITH_AUTO_SPACE || text in REPLACE_AUTO_SPACE) {
@@ -986,6 +996,15 @@ class ImeController(
         private fun suggestionsAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
             return attrs.type == InputAttributes.Type.TEXT && attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS
+        }
+
+        /** DogBoard: the layout's language tag (from the model, as composition uses it). */
+        private var languageTag = ""
+
+        /** France and Belgium French keep a space before ? ! : ; (fr_CA and fr_CH don't, as on iOS). */
+        private fun keepsSpaceBeforeMarks(): Boolean {
+            val t = languageTag.replace('_', '-').lowercase()
+            return t == "fr" || t.startsWith("fr-fr") || t.startsWith("fr-be")
         }
 
         private fun wordEngineAllowed(): Boolean {
@@ -1523,7 +1542,8 @@ class ImeController(
                 return null
             }
             // TODO rework how we get the primary locale
-            val locale = FlorisLocale.fromTag(model.locales.getOrElse(0) { "" })
+            languageTag = model.locales.getOrElse(0) { "" }
+            val locale = FlorisLocale.fromTag(languageTag)
             return breakIterators.word(locale) {
                 it.setText(surroundingText.textBefore)
                 val end = it.last()
@@ -1556,6 +1576,12 @@ class ImeController(
 
         /** DogBoard: marks that replace an automatic space (closing quotes and brackets). */
         private val REPLACE_AUTO_SPACE = setOf(")", "]", "}", "”", "’", "»") // not straight quotes: they may open one
+
+        /** DogBoard: marks that also go before a space the user typed (not : ; which start emoticons). */
+        private val SWAP_AFTER_TYPED_SPACE = setOf(".", ",", "!", "?")
+
+        /** DogBoard: marks French typography spaces off (iOS fr_FR / fr_BE keep the space before them). */
+        private val FRENCH_SPACED = setOf("?", "!", ":", ";")
     }
 }
 

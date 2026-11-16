@@ -32,11 +32,15 @@ MODE_CENTER_X = 1.24 / 2
 DIGITS = "1234567890"
 DP_PER_MM = 6.3
 
+WIDE_PUNCT = ".,?!'"
+
 CASES = [
     ("hello world", "Hello world"),
     ("the quick brown fox", "The quick brown fox"),
     ("jumps over the lazy dog", "Jumps over the lazy dog"),
     ("see you  soon", "See you. Soon"),  # double-space period, then auto-shift
+    ("hello {123}?x", "Hello? X"),  # a mark typed after a typed space goes before it, and the space returns to letters (user, 2026-11-16)
+    ("ok {123},x", "OK, x"),
     # neighbouring-key typos: adb taps are slow (0.4+ s apart), and iOS-rule edit costs such as a
     # swapped pair grow with the time between taps, so timing-dependent typos are unit-tested instead
     ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
@@ -122,6 +126,8 @@ def key_center_units(ch):
         return DIGITS.index(ch) + 0.5, 0
     if ch == "<":
         return BACKSPACE_CENTER_X, 2
+    if ch in WIDE_PUNCT:  # third row of the 123 plane, after the #+= key and a gap (gen_qwerty_en.py)
+        return 1.28 + 0.2133 + WIDE_PUNCT.index(ch) * 1.4 + 0.7, 2
     for row, letters in enumerate(ROWS):
         i = letters.find(ch)
         if i >= 0:
