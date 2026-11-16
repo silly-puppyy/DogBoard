@@ -25,6 +25,20 @@ object EngineLoader {
         }
     }.getOrNull()
 
+    private fun loadNeuralLm(app: Context): io.github.sillypuppyy.dogboard.engine.lm.NeuralLm? = runCatching {
+        val t0 = android.os.SystemClock.uptimeMillis()
+        val tokenizer = app.assets.open("dogboard/lm/v3.pieces.tsv").bufferedReader().use {
+            io.github.sillypuppyy.dogboard.engine.lm.PieceTokenizer.parse(it)
+        }
+        app.assets.openFd("dogboard/lm/v3.tflite").use { fd ->
+            java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
+                io.github.sillypuppyy.dogboard.engine.lm.NeuralLm(
+                    ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), tokenizer,
+                )
+            }
+        }.also { android.util.Log.i("DogBoardPerf", "neural model: ${android.os.SystemClock.uptimeMillis() - t0} ms") }
+    }.onFailure { android.util.Log.i("DogBoardPerf", "neural model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
         val t0 = android.os.SystemClock.uptimeMillis()
@@ -56,6 +70,9 @@ object EngineLoader {
         // startup isn't slowed: memory-mapped from the package, which stores it uncompressed
         // (build.gradle.kts noCompress), so nothing is copied to the heap
         TypingEngine.attachNgrams(loadNgrams(app))
+        // the neural language model for next-word predictions, when its files are in this build
+        // (assets/dogboard/lm: built privately, not in git yet): memory-mapped like the trigram
+        TypingEngine.attachNeuralLm(loadNeuralLm(app))
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
         TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.bin").use { CharModel.read(it) } }.getOrNull())

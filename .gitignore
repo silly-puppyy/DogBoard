@@ -71,3 +71,6 @@ __pycache__/
 tools/test/taptype/taptype
 .kotlin/
 app/src/main/assets/dogboard/en.ngrams.bin
+
+# DogBoard neural LM files: built privately (tmp/llm), not distributed until the training-data licences are reviewed
+app/src/main/assets/dogboard/lm/

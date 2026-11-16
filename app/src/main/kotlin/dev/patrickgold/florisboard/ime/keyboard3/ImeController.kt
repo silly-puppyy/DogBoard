@@ -1079,7 +1079,8 @@ class ImeController(
                     return
                 }
                 suggestionJob = scope.launch {
-                    val words = TypingEngine.predictions(context, wordContext2())
+                    val words = TypingEngine.predictions(context, wordContext2(), textBefore = textBefore.toString())
+                    TypingEngine.lastNeuralMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural predictions took ${it}ms") }
                     // iOS: predictions are capitalised after a sentence end only with auto-capitalisation on
                     val cased = if (context == Bigrams.START && prefs.typing.autoCapitalization.get()) words.map { w -> w.replaceFirstChar { it.uppercaseChar() } } else words
                     if (isActive) sink(cased.map { Suggestion(it, Suggestion.Kind.PREDICTION) })

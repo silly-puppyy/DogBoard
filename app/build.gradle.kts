@@ -94,6 +94,7 @@ configure<ApplicationExtension> {
     // DogBoard: the trigram model is memory-mapped straight from the APK, so it must be stored uncompressed
     androidResources {
         noCompress += "bin"
+        noCompress += "tflite" // the neural model, memory-mapped from the package
     }
 
     buildFeatures {
@@ -178,6 +179,8 @@ kover {
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
+    // LiteRT (Apache-2.0): runs the neural language model (engine/lm)
+    implementation("com.google.ai.edge.litert:litert:2.3.2")
     // testImplementation(composeBom)
     // androidTestImplementation(composeBom)
     // My connection security code is: 9 8 5 0, check that you see the same numbers in my connection approval dialog.

@@ -200,6 +200,18 @@ object TypingEngine {
         engine.retroDecoder.unknownWords = charModel
     }
 
+    @Volatile
+    private var neuralLm: io.github.sillypuppyy.dogboard.engine.lm.NeuralLm? = null
+
+    /** Milliseconds the last neural prediction took (-1: none yet), logged by the keyboard. */
+    @Volatile
+    var lastNeuralMillis = -1L
+
+    /** The neural language model for next-word predictions (EngineLoader, when its files are in the app). */
+    fun attachNeuralLm(model: io.github.sillypuppyy.dogboard.engine.lm.NeuralLm?) {
+        neuralLm = model
+    }
+
     fun attachNgrams(model: NgramModel?) {
         if (model != null) ngramModel = model
         val engine = loaded ?: return
@@ -592,10 +604,23 @@ object TypingEngine {
      * bigram followers on the control set, 22.0 % vs 14.8 % on chat; PredictionBenchTest), topped up
      * from the bigram followers.
      */
-    fun predictions(previous: String?, previous2: String? = null, n: Int = SuggestionStrip.SLOTS): List<String> {
+    fun predictions(previous: String?, previous2: String? = null, n: Int = SuggestionStrip.SLOTS, textBefore: String? = null): List<String> {
         val engine = loaded ?: return emptyList()
         val bigrams = engine.bigrams ?: return emptyList()
         val want = n + blocked.size.coerceAtMost(4) + 4
+        // the neural model first (the whole text before the cursor, run outside the engine lock: it
+        // takes milliseconds), its words kept to ones the lexicon knows, in the lexicon's casing
+        val fromNeural = neuralLm?.takeIf { textBefore != null }?.let { lm ->
+            val t0 = System.nanoTime()
+            val words = runCatching { lm.predict(textBefore!!, n = want, isWord = { w -> engine.lexicon.contains(w) }) }.getOrDefault(emptyList())
+            lastNeuralMillis = (System.nanoTime() - t0) / 1_000_000
+            lock.read {
+                words.mapNotNull { (w, _) ->
+                    val node = engine.lexicon.find(w).takeIf { it != Lexicon.NONE && engine.lexicon.isWord(it) }
+                    node?.let { engine.lexicon.word(it) }
+                }
+            }
+        }.orEmpty()
         return lock.read {
             val fromTrigram = ngramModel?.let { m ->
                 val b = m.idOf(previous ?: NgramModel.START)
@@ -607,7 +632,7 @@ object TypingEngine {
             }.orEmpty()
             val fromBigram = bigrams.followers(engine.contextId(previous), want)
                 .map { (id, _) -> engine.lexicon.word(engine.lexicon.nodeOfWord(id))!! }
-            (fromTrigram + fromBigram).distinct()
+            (fromNeural + fromTrigram + fromBigram).distinct()
                 .filter { !isBlocked(it) && !isNotSuggestible(it) }
                 .take(n)
                 .map { if (dictionaryCapitals()) it else it.lowercase() }
