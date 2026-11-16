@@ -200,6 +200,11 @@ class PointerTracker(
             imeController.notePendingTap(Tap(normalized.x * widthDp, normalized.y * heightDp, down.uptimeMillis), letterKeys, params)
         } else {
             imeController.notePendingTap(null, emptyMap(), null)
+            // DogBoard: where the space bar was tapped (a word split by a stray space may be rejoined)
+            if ((downKey.attrs.output as? org.k3lp.lib.text.K3String)?.toText() == " ") {
+                val normalized = down.position.normalized(size)
+                imeController.noteSpaceTap(Tap(normalized.x * size.width / density, normalized.y * size.height / density, down.uptimeMillis))
+            }
         }
 
         val timingOptions = interactionController.activeTimingOptions.value

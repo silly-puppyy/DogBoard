@@ -144,8 +144,14 @@ class ImeController(
         val context: String?,
         /** The word's candidates as decoded when it was finished (retrocorrection reuses them). */
         val candidates: List<io.github.sillypuppyy.dogboard.engine.Candidate>? = null,
+        /** Where the space after it was tapped (a word split by a stray space may be rejoined). */
+        val spaceTap: Tap? = null,
     )
     private var lookBack: LookBack? = null
+
+    /** DogBoard: the rejoined reading of [lookBack]'s word and the word being typed (look back, typed, word or null). */
+    @Volatile
+    private var latestJoin: Triple<LookBack, String, String?>? = null
 
     /** DogBoard: the last retrocorrection ([old] -> [new], followed by [tail]), undone by a backspace right after. */
     private class LastRetro(val old: String, val new: String, val typedOld: String, val tail: String)
@@ -213,9 +219,17 @@ class ImeController(
         return TypingEngine.keyPrior(prefix, previousContext(textBefore.substring(0, textBefore.length - prefix.length)))
     }
 
+    /** DogBoard: where the space bar was last tapped (set on touch down, kept with the finished word). */
+    private var spaceTap: Tap? = null
+
+    fun noteSpaceTap(tap: Tap) {
+        spaceTap = tap
+    }
+
     /** DogBoard: where the next letter key was tapped (set on touch down, used when it emits). */
     fun notePendingTap(tap: Tap?, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
         pendingTap = PendingTap(tap, keys, params)
+        spaceTap = null
         if (keys.isNotEmpty() && params != null) {
             lastLetterKeys = keys
             lastLetterParams = params
@@ -635,6 +649,7 @@ class ImeController(
         private fun finishWord(separator: String) {
             lastCorrection = null
             confirmPendingRetro() // the retrocorrection before the last word wasn't undone
+            if (joinAcrossSpace(separator)) { spaceTap = null; return }
             val retro = retrocorrect()
             confirmKeptCorrection()
             if (retro != null) {
@@ -685,15 +700,16 @@ class ImeController(
                         scope.launch { TypingEngine.noteCorrected(typed, corrected) }
                     }
                     noteFinishedWord(context, corrected, context2)
-                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context, candidates)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context, candidates, spaceTap)
                 } else {
                     noteFinishedWord(context, typed, context2)
-                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context, candidates)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context, candidates, spaceTap)
                 }
             } else if (!word.isEmpty && separator == " " && word.text != rejectedWord) {
                 lookBack = null // autocorrect off or the user insisted on this word: nothing to look back at
             }
             if (separator != " ") lookBack = null
+            spaceTap = null
             // a backspace right after this word's separator undoes the retrocorrection (once this
             // word's own correction, if any, has been undone first)
             if (retro != null) {
@@ -708,6 +724,31 @@ class ImeController(
          * gives it context ("I lobe you" -> "I love you"). Runs before this word is corrected, so
          * its correction sees the fixed context.
          */
+        /**
+         * DogBoard (iOS retrocorrection across a plain space): the previous word and this one were one
+         * word split by a stray space ("goi g" -> "going"): replaced by it, as decoded in the
+         * background; a backspace right after puts the two back. True when it happened.
+         */
+        private fun joinAcrossSpace(separator: String): Boolean {
+            val back = lookBack ?: return false
+            val word = currentWord
+            if (word.isEmpty || !correctionAllowed() || cursorInsideWord()) return false
+            val typed = word.text
+            val (forBack, forTyped, joined) = latestJoin ?: return false
+            if (forBack !== back || forTyped != typed || joined == null) return false
+            val old = "${back.committed} $typed"
+            if (!replaceBeforeCursor(old, joined)) return false
+            lookBack = null
+            latestJoin = null
+            unconfirmedWord = null // the earlier word isn't a word to learn any more
+            noteFinishedWord(back.context, joined, null)
+            lastRetro = LastRetro(old, joined, "${back.word.text} $typed", separator)
+            if (BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "join '$old' -> $joined")
+            currentWord.clear()
+            rejectedWord = null
+            return true
+        }
+
         /** Returns (old, new, old as typed) when the previous word was changed. */
         private fun retrocorrect(): Triple<String, String, String>? {
             val back = lookBack ?: return null
@@ -1128,10 +1169,18 @@ class ImeController(
             // the text before the word, for the neural model (a full window starts mid-word: cut, as for predictions)
             val neuralContext = textBefore.takeIf { it.endsWith(word.text) }?.dropLast(word.text.length)
                 ?.let { t -> if (textBefore.length >= SURROUNDING_BEFORE) t.substringAfter(' ', t) else t }
+            val back = lookBack
             suggestionJob = scope.launch {
                 val candidates = TypingEngine.candidates(word, context, previous2 = context2, textBefore = neuralContext)
                 TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms") }
                 latestDecode = decodeKey(word.text, context, context2) to candidates
+                // a word split by a stray space ("goi g"): its rejoined reading, ready for the word end
+                latestJoin = back?.spaceTap?.let { tap ->
+                    back.candidates?.let { prev ->
+                        Triple(back, word.text, TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, candidates, curlyApostrophes()))
+                    }
+                }
+                if (BuildConfig.DEBUG && back != null) android.util.Log.d("DogBoardAc", "join check '${back.committed} ${word.text}': tap=${back.spaceTap} -> ${latestJoin?.third} ${TypingEngine.lastJoinDebug}")
                 val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
                 val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
                 latestCorrection?.takeIf { it.first != word.text }?.let { previousKeystrokeCorrection = it }

@@ -91,6 +91,12 @@ object TypingEngine {
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
         )
+        /** A third decoder for rejoining a word split by a stray space (decoded in the background). */
+        val joinDecoder = Decoder(
+            lexicon,
+            Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
+            bigrams,
+        )
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
 
@@ -166,6 +172,7 @@ object TypingEngine {
         val engine = Loaded(lexicon, bigrams)
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
+        engine.joinDecoder.unknownWords = charModel
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
@@ -206,6 +213,7 @@ object TypingEngine {
         val engine = loaded ?: return
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
+        engine.joinDecoder.unknownWords = charModel
     }
 
     @Volatile
@@ -234,6 +242,7 @@ object TypingEngine {
         val scorer = model?.let { NgramScorer(it, engine.lexicon, bigrams.sentenceStart) } ?: return
         engine.decoder.context = scorer
         engine.retroDecoder.context = scorer
+        engine.joinDecoder.context = scorer
     }
 
     /**
@@ -530,6 +539,42 @@ object TypingEngine {
                 .maxByOrNull { it.second } ?: return@read null
             if (best.second - base < RETRO_RATIO) return@read null
             caseFor(previous, curly)(best.first.word)?.takeIf { !rejections.isBlocked(previous.text, it) }
+        }
+    }
+
+    /**
+     * iOS retrocorrection across a plain space ([SpaceJoin]): the previous word ([previous], committed
+     * as [previousCommitted]), the space tap and the [current] word read as one word ("goi g" ->
+     * "going"), cased as the previous word was typed, when it beats the two words by 1.65x; else
+     * null. Decodes: call it off the main thread (the keyboard does, while the next word is typed).
+     */
+    /** The last [spaceJoin] comparison, for the debug log. */
+    @Volatile
+    var lastJoinDebug = ""
+
+    fun spaceJoin(
+        previous: CurrentWord, previousCommitted: String, beforeContext: String?, spaceTap: Tap,
+        current: CurrentWord, previousCandidates: List<Candidate>, currentCandidates: List<Candidate>, curly: Boolean = false,
+    ): String? {
+        val engine = loaded ?: return null
+        val bigrams = engine.bigrams ?: return null
+        val prevTaps = previous.tapsOrNull() ?: return null
+        val curTaps = current.tapsOrNull() ?: return null
+        if (previous.typedApostrophes > 0 || current.typedApostrophes > 0) return null
+        if (previousCommitted.any { it.isDigit() } || current.text.any { it.isDigit() }) return null
+        return lock.read {
+            val committed = previousCandidates.firstOrNull { it.word.equals(previousCommitted, ignoreCase = true) } ?: return@read null
+            val after = bigrams.contextId(previousCommitted.lowercase())
+            val second = currentCandidates.filter { !it.isCompletion && it.words == 1 }.maxOfOrNull { engine.joinDecoder.rescored(it, after).score }
+                ?: return@read null
+            val join = SpaceJoin.best(
+                engine.joinDecoder, prevTaps, spaceTap, curTaps, personalOffsets.apply(previous.keys), previous.params!!,
+                engine.contextId(beforeContext),
+            ) ?: return@read null
+            lastJoinDebug = "%s %.2f vs %s %.2f + %.2f".format(join.word, join.score, committed.word, committed.score, second)
+            if (!SpaceJoin.wins(join, committed.score + second)) return@read null
+            if (isBlocked(join.word) || isNotSuggestible(join.word) || rejections.isBlocked(previous.text + " " + current.text, join.word)) return@read null
+            caseFor(previous, curly)(join.word)
         }
     }
 
