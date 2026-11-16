@@ -27,7 +27,12 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     private val posBuf = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
     /** Tokens whose keys/values sit in the cache (BOS first), and the logits after the last of them. */
     private val cached = ArrayList<Int>()
-    private var lastLogits = FloatArray(0)
+    // probability buffers, reused (a prediction allocates nothing per vocabulary entry: the
+    // typing thread stalls on garbage collection when background work allocates fast)
+    private lateinit var pBuf: FloatArray // after the context
+    private lateinit var qBuf: FloatArray // after the capital token
+    private lateinit var nBuf: FloatArray // after a word's pieces
+    private var haveContext = false
     private val isWordStart: BooleanArray
     private val isLetters: BooleanArray
 
@@ -47,26 +52,38 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         fun cache() = ByteBuffer.allocateDirect(cacheBytes).order(ByteOrder.nativeOrder())
         kA = cache(); vA = cache(); kB = cache(); vB = cache()
         logits = ByteBuffer.allocateDirect(4 * vocab).order(ByteOrder.nativeOrder())
+        pBuf = FloatArray(vocab); qBuf = FloatArray(vocab); nBuf = FloatArray(vocab)
         isWordStart = BooleanArray(vocab) { val p = tokenizer.piece(it); p.length > 1 && p[0] == PieceTokenizer.SPACE && p[1].isLetter() }
         isLetters = BooleanArray(vocab) { val p = tokenizer.piece(it); p.isNotEmpty() && p.all { c -> c.isLetter() || c == '\'' } }
     }
 
-    /** Runs [token] at position [pos] (cache in A, out to B, then swapped); returns the next-token probabilities. */
-    private fun step(token: Int, pos: Int): FloatArray {
+    /** Runs [token] at position [pos] (cache in A, out to B, then swapped); next-token probabilities into [out]. */
+    private fun step(token: Int, pos: Int, out: FloatArray): FloatArray {
         idBuf.rewind(); idBuf.putInt(token); idBuf.rewind()
         posBuf.rewind(); posBuf.putInt(pos); posBuf.rewind()
         kA.rewind(); vA.rewind(); kB.rewind(); vB.rewind(); logits.rewind()
-        val inputs = arrayOfNulls<Any>(4)
         inputs[idIn] = idBuf; inputs[posIn] = posBuf; inputs[kIn] = kA; inputs[vIn] = vA
-        interpreter.runForMultipleInputsOutputs(inputs, mapOf(logitsOut to logits, kOut to kB, vOut to vB))
+        outputs[logitsOut] = logits; outputs[kOut] = kB; outputs[vOut] = vB
+        interpreter.runForMultipleInputsOutputs(inputs, outputs)
         kA = kB.also { kB = kA }; vA = vB.also { vB = vA }
         logits.rewind()
-        val lg = FloatArray(vocab) { logits.float }
-        val max = lg.max()
+        logits.asFloatBuffer().get(out)
+        var max = Float.NEGATIVE_INFINITY
+        for (x in out) if (x > max) max = x
         var sum = 0.0
-        for (i in lg.indices) { val e = exp((lg[i] - max).toDouble()); lg[i] = e.toFloat(); sum += e }
-        for (i in lg.indices) lg[i] = (lg[i] / sum).toFloat()
-        return lg
+        for (i in out.indices) { val e = exp((out[i] - max).toDouble()); out[i] = e.toFloat(); sum += e }
+        val inv = (1.0 / sum).toFloat()
+        for (i in out.indices) out[i] *= inv
+        return out
+    }
+
+    private val inputs = arrayOfNulls<Any>(4)
+    private val outputs = HashMap<Int, Any>(4)
+
+    private fun argmax(a: FloatArray): Int {
+        var best = 0
+        for (i in 1 until a.size) if (a[i] > a[best]) best = i
+        return best
     }
 
     /**
@@ -84,33 +101,43 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         // keep the cached prefix, run the rest
         var same = 0
         while (same < cached.size && same < want.size && cached[same] == want[same]) same++
-        if (same < want.size || same < cached.size || lastLogits.isEmpty()) {
+        if (same < want.size || same < cached.size || !haveContext) {
             while (cached.size > same) cached.removeAt(cached.size - 1)
             if (same == want.size) { cached.removeAt(cached.size - 1); same-- } // rerun the last token for its logits
-            for (i in same until want.size) { lastLogits = step(want[i], i); cached.add(want[i]) }
+            for (i in same until want.size) { step(want[i], i, pBuf); cached.add(want[i]) }
+            haveContext = true
         }
-        val p = lastLogits
+        val p = pBuf
         val pos = cached.size
         // the capitalised path: CAP at pos, then the word
-        val q = step(PieceTokenizer.CAP, pos)
+        val q = step(PieceTokenizer.CAP, pos, qBuf)
         val pCap = p[PieceTokenizer.CAP].toDouble()
-        val score = DoubleArray(vocab) { i -> if (isWordStart[i]) p[i] + pCap * q[i] else 0.0 }
-        val starts = score.indices.sortedByDescending { score[it] }.take(first)
+        // the [first] best word starts, without sorting or boxing the vocabulary
+        val starts = IntArray(first) { -1 }; val startScore = DoubleArray(first) { -1.0 }
+        for (i in 0 until vocab) {
+            if (!isWordStart[i]) continue
+            val sc = p[i] + pCap * q[i]
+            if (sc <= startScore[first - 1]) continue
+            var k = first - 1
+            while (k > 0 && startScore[k - 1] < sc) { startScore[k] = startScore[k - 1]; starts[k] = starts[k - 1]; k-- }
+            startScore[k] = sc; starts[k] = i
+        }
         val words = LinkedHashMap<String, Double>()
-        for (t in starts) {
+        for ((si, t) in starts.withIndex()) {
+            if (t < 0) continue
             val capFirst = pCap * q[t] > p[t]
             val seq = ArrayList<Int>().apply { if (capFirst) add(PieceTokenizer.CAP); add(t) }
-            var prob = score[t]
+            var prob = startScore[si]
             if (!isWord(tokenizer.piece(t).substring(1))) {
                 // the word may go on: follow the likeliest letter pieces
                 var at = pos
-                if (capFirst) { step(PieceTokenizer.CAP, at); at++ } // slot pos may hold another try's token
-                var next = step(t, at); at++
+                if (capFirst) { step(PieceTokenizer.CAP, at, nBuf); at++ } // slot pos may hold another try's token
+                var next = step(t, at, nBuf); at++
                 for (k in 0 until maxPieces) {
-                    val j = next.indices.maxBy { next[it] }
+                    val j = argmax(next)
                     if (!isLetters[j] || at >= ctx - 1) break
                     seq.add(j); prob *= next[j]
-                    next = step(j, at); at++
+                    next = step(j, at, nBuf); at++
                 }
             }
             val word = tokenizer.decode(seq.toIntArray()).trim()

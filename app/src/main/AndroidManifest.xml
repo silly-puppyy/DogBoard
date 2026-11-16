@@ -167,6 +167,10 @@
                 tools:node="remove"/>
         </provider>
 
+        <!-- DogBoard: "Stop adjusting" on the adaptive-autocorrect notification -->
+        <receiver
+            android:name="io.github.sillypuppyy.dogboard.ime.AdaptiveStopReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

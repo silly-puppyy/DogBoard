@@ -500,6 +500,18 @@
     <string name="pref__correction__autocorrect__label" comment="Preference title">Autocorrect</string>
     <string name="pref__correction__autocorrect__summary" comment="Preference summary">Fixes mistyped words when you type a space or punctuation. Backspace right after undoes it.</string>
     <string name="pref__correction__autocorrect_level__label" comment="Preference title">How readily</string>
+    <string name="pref__correction__adaptive_strength__label" comment="Preference title">Adapt to how I type</string>
+    <string name="pref__correction__adaptive_strength__summary" comment="Preference summary">Gets more careful if you often undo its changes, bolder if you keep them.</string>
+    <string name="pref__correction__adaptive_notify__label" comment="Preference title">Tell me when it adapts</string>
+    <string name="pref__correction__adaptive_notify__summary" comment="Preference summary">A notification each time autocorrect adjusts itself. It happens rarely.</string>
+    <string name="adaptive_notify__channel" comment="Notification channel name">Autocorrect adjustments</string>
+    <string name="adaptive_notify__careful__title" comment="Notification title">Autocorrect is a little more careful now</string>
+    <string name="adaptive_notify__careful__text" comment="Notification text">You\'ve been undoing some of its changes, so it now needs to be surer before changing a word.</string>
+    <string name="adaptive_notify__bolder__title" comment="Notification title">Autocorrect is a little bolder now</string>
+    <string name="adaptive_notify__bolder__text" comment="Notification text">You keep most of its changes and fix typos it missed, so it now corrects a bit more readily.</string>
+    <string name="adaptive_notify__back__title" comment="Notification title">Autocorrect is back to your setting</string>
+    <string name="adaptive_notify__back__text" comment="Notification text">It no longer needs to adjust to how you type.</string>
+    <string name="adaptive_notify__stop" comment="Notification action">Stop adjusting</string>
     <string name="enum__autocorrect_level__gentle">Gentle</string>
     <string name="enum__autocorrect_level__standard">Standard</string>
     <string name="enum__autocorrect_level__strong">Strong</string>

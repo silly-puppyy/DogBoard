@@ -264,8 +264,17 @@ fun css(value: String): Color {
  * a position are spread evenly between their neighbours, as CSS does.
  */
 data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>) {
-    /** CSS geometry: the line runs through the centre at the angle (0 = up, clockwise), long enough that the corners get the end colours. */
-    fun brush(): androidx.compose.ui.graphics.Brush = object : androidx.compose.ui.graphics.ShaderBrush() {
+    /**
+     * CSS geometry: the line runs through the centre at the angle (0 = up, clockwise), long enough that the corners get the end colours.
+     * One brush per gradient: a ShaderBrush keeps its native shader per size, so a new brush on every
+     * redraw made new native shaders per key per frame (native-allocation garbage collections that
+     * stall typing, user 2026-11-16).
+     */
+    fun brush(): androidx.compose.ui.graphics.Brush = cachedBrush
+
+    private val cachedBrush: androidx.compose.ui.graphics.Brush by lazy { shaderBrush() }
+
+    private fun shaderBrush(): androidx.compose.ui.graphics.Brush = object : androidx.compose.ui.graphics.ShaderBrush() {
         override fun createShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader {
             val a = Math.toRadians(angleDeg.toDouble())
             val dx = kotlin.math.sin(a).toFloat(); val dy = -kotlin.math.cos(a).toFloat()

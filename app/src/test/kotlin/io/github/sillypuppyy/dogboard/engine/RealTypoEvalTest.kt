@@ -25,7 +25,9 @@ class RealTypoEvalTest : FunSpec({
         val keys = QwertyGeometry.letterKeys(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
-        val autocorrect = Autocorrect(lexicon, Autocorrect.Level.STANDARD.copy(minStemEndOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)))
+        // DOGBOARD_LEVEL=GENTLE|STANDARD|STRONG (default STANDARD), DOGBOARD_LANGUAGE_POWER overrides its power
+        val base = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD").level
+        val autocorrect = Autocorrect(lexicon, base.copy(languagePower = System.getenv("DOGBOARD_LANGUAGE_POWER")?.toDoubleOrNull() ?: base.languagePower,minStemEndOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)))
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
@@ -57,7 +59,10 @@ class RealTypoEvalTest : FunSpec({
         }
         val sample = typos + correct
 
-        data class Outcome(val typo: Boolean, val result: String, val row: List<String>)
+        // DOGBOARD_DUMP_CANDIDATES=file: each case's top decoder candidates (word, score, geometry,
+        // language score), for rescoring experiments with the neural model (tmp/llm)
+        data class Outcome(val typo: Boolean, val result: String, val row: List<String>, val dump: String = "")
+        val dumpCandidates = System.getenv("DOGBOARD_DUMP_CANDIDATES")
         val pool = java.util.concurrent.ForkJoinPool(System.getenv("DOGBOARD_EVAL_THREADS")?.toIntOrNull() ?: 3)
         val outcomes = pool.submit(java.util.concurrent.Callable {
             sample.parallelStream().map { row ->
@@ -84,15 +89,23 @@ class RealTypoEvalTest : FunSpec({
                     got.equals(typed, ignoreCase = true) -> "left"
                     else -> if (typo) "wrong" else "broken"
                 }
-                Outcome(typo, result, row)
+                val dump = if (dumpCandidates == null) "" else candidates.take(8).joinToString("|") {
+                    "%s,%.3f,%.3f,%.3f".format(it.word.replace(",", ""), it.score, it.geometry, it.languageModel)
+                }
+                Outcome(typo, result, row, dump)
             }.toList()
         }).get()
         pool.shutdown()
 
         fun pct(kind: Boolean, r: String) = outcomes.count { it.typo == kind && it.result == r } * 100.0 / outcomes.count { it.typo == kind }
-        println("REALTYPO end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
+        println("REALTYPO level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
             endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
+        dumpCandidates?.let { path ->
+            File(path).printWriter().use { w ->
+                for (o in outcomes) w.println("${o.row[2]}\t${o.row[3]}\t${o.row[4]}\t${o.result}\t${o.dump}")
+            }
+        }
         System.getenv("DOGBOARD_EVAL_ERRORS")?.let { path ->
             File(path).printWriter().use { w ->
                 for (o in outcomes) if (o.result != "fixed" && o.result != "kept") w.println("${o.result}\t${o.row[3]}\t${o.row[4]}\t${o.row[2].takeLast(40)}")

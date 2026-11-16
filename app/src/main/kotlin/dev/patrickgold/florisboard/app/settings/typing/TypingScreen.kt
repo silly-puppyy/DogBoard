@@ -136,8 +136,22 @@ fun TypingScreen() {
                 )
             }
 
+            // DogBoard: the adaptive-autocorrect notification needs POST_NOTIFICATIONS (Android 13+): asked
+            // here once while both switches are on (a keyboard cannot ask)
+            val notifyContext = androidx.compose.ui.platform.LocalContext.current
+            val askNotifications = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+            ) { }
+            val adaptiveOn by prefs.correction.adaptiveStrength.collectAsState()
+            val notifyOn by prefs.correction.adaptiveNotify.collectAsState()
+            androidx.compose.runtime.LaunchedEffect(adaptiveOn, notifyOn) {
+                if (adaptiveOn && notifyOn && android.os.Build.VERSION.SDK_INT >= 33 &&
+                    androidx.core.content.ContextCompat.checkSelfPermission(notifyContext, android.Manifest.permission.POST_NOTIFICATIONS) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) askNotifications.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
             SegmentedListColumn(title = stringRes(R.string.pref__correction__title)) {
-                val count = 2
+                val count = 4
                 // DogBoard
                 SwitchPreference(
                     prefs.correction.autocorrect,
@@ -155,6 +169,21 @@ fun TypingScreen() {
                         entry(AutocorrectLevel.STRONG, stringRes(R.string.enum__autocorrect_level__strong))
                     },
                     enabledIf = { prefs.correction.autocorrect isEqualTo true },
+                )
+                // DogBoard: autocorrect that adapts to the user, and the notification when it does
+                SwitchPreference(
+                    prefs.correction.adaptiveStrength,
+                    shapes = ListItemDefaults.segmentedShapes(2, count),
+                    title = stringRes(R.string.pref__correction__adaptive_strength__label),
+                    summary = stringRes(R.string.pref__correction__adaptive_strength__summary),
+                    enabledIf = { prefs.correction.autocorrect isEqualTo true },
+                )
+                SwitchPreference(
+                    prefs.correction.adaptiveNotify,
+                    shapes = ListItemDefaults.segmentedShapes(3, count),
+                    title = stringRes(R.string.pref__correction__adaptive_notify__label),
+                    summary = stringRes(R.string.pref__correction__adaptive_notify__summary),
+                    enabledIf = { prefs.correction.autocorrect isEqualTo true && prefs.correction.adaptiveStrength isEqualTo true },
                 )
             }
 

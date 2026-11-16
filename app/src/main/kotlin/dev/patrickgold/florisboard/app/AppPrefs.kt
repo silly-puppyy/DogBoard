@@ -176,6 +176,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__adaptive_strength",
             default = true,
         )
+        // DogBoard: a notification each time the adaptive strength changes step (user, 2026-11-16)
+        val adaptiveNotify = boolean(
+            key = "correction__adaptive_notify",
+            default = true,
+        )
     }
 
     val devtools = Devtools()

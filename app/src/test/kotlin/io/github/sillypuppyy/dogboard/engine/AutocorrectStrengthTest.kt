@@ -61,4 +61,27 @@ class AutocorrectStrengthTest : FunSpec({
         AutocorrectStrength(f).score shouldBe 2.0
         f.delete()
     }
+
+    test("the step the user is told about: halfway to full effect, back only inside the dead zone, no flicker") {
+        val s = AutocorrectStrength()
+        val heard = ArrayList<Int>()
+        s.onStepChange = { heard.add(it) }
+        repeat(12) { s.reverted() }            // score 12: past the dead zone, not yet halfway
+        heard shouldBe emptyList()
+        s.reverted()                            // 13 >= 12.5: more careful
+        heard shouldBe listOf(1); s.step shouldBe 1
+        repeat(60) { s.kept() }                 // 13 - 6.7 = 6.3: still adjusting, no message
+        heard shouldBe listOf(1)
+        repeat(20) { s.kept() }                 // 6.3 - 2.2 = 4.1: inside the dead zone: back
+        heard shouldBe listOf(1, 0); s.step shouldBe 0
+        repeat(18) { s.fixPicked() }            // to -13.9: bolder
+        heard shouldBe listOf(1, 0, -1)
+    }
+
+    test("the step is kept across restarts") {
+        val f = kotlin.io.path.createTempFile("strength", ".txt").toFile()
+        AutocorrectStrength(f).apply { repeat(13) { reverted() } }
+        AutocorrectStrength(f).let { it.step shouldBe 1; it.score shouldBe 13.0 }
+        f.delete()
+    }
 })

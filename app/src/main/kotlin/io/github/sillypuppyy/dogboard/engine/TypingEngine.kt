@@ -48,7 +48,15 @@ object TypingEngine {
     @Volatile
     private var rejections = Rejections()
     /** Autocorrect that adapts to what the user keeps and undoes (off unless [adaptiveStrength]). */
-    private var strength = AutocorrectStrength()
+    private var strength = AutocorrectStrength().also { hookStep(it) }
+
+    /** Hears when the adaptive strength moves to another step (+1 more careful, -1 bolder, 0 back), only while it adapts. */
+    @Volatile
+    var onStrengthStepChange: ((Int) -> Unit)? = null
+
+    private fun hookStep(s: AutocorrectStrength) {
+        s.onStepChange = { step -> if (adaptiveStrength) onStrengthStepChange?.invoke(step) }
+    }
     /** Where this user really taps each key (Gboard's spatial personalization); applied when decoding. */
     private var personalOffsets = PersonalOffsets()
     @Volatile var adaptiveStrength = false
@@ -167,7 +175,7 @@ object TypingEngine {
         userWordsFile = userWords
         blockedWordsFile = blockedWords
         rejections = Rejections(rejectedCorrections)
-        strength = AutocorrectStrength(autocorrectStrength)
+        strength = AutocorrectStrength(autocorrectStrength).also { hookStep(it) }
         personalOffsets = PersonalOffsets(personalOffsetsFile)
         personal = PersonalModel(personalModel)
         replacements = TextReplacements(textReplacements)

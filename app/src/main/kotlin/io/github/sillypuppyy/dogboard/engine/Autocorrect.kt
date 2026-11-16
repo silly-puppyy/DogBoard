@@ -33,6 +33,13 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          * stem rule above looks only at the strings and keeps "befor"). null = off (iOS); Standard: 3.
          */
         val minStemEndOmission: Int? = null,
+        /**
+         * How much context outweighs the taps: candidates are re-ranked by geometry + this x their
+         * language score (the decoder's own power is iOS's 0.24). null = the decoder's ranking.
+         * Real phone typos (ranking, 2026-11-16): 0.40 puts the intended word on top 59.2 % vs 52.1 %
+         * of typos, at 98.8 % vs 99.0 % of correct words kept (Strong's trade).
+         */
+        val languagePower: Double? = null,
     ) {
         companion object {
             // minStemEndOmission 3 (user 2026-11-16: "that counts as a typo"): real phone typos fixed 47.5 -> 47.9 %,
@@ -89,7 +96,10 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     ): String? {
         // iOS apply_case_changes: each candidate takes the typed capitals; ones the case rules
         // don't accept for this input are filtered out
-        val cased = candidates
+        val ranked = level.languagePower?.let { w ->
+            candidates.map { it.copy(score = it.geometry + w * it.languageModel) }.sortedByDescending { it.score }
+        } ?: candidates
+        val cased = ranked
             .filter { it.words == 1 || it.contextSupport >= MIN_CONTEXT_SUPPORT } // Rule 3
             .mapNotNull { c -> case(c.word)?.let { c to it } }
             .let(::boostPlainer)
@@ -101,7 +111,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         // iOS filter 20 (keep more typed words when nearly as likely), and Gentle's larger margin;
         // a correction with the typed letters ("dont" -> "don't") keeps the typed word already
         if (sortKey(t) != sortKey(typed)) {
-            val asTyped = candidates.firstOrNull { it.isTypedString || it.word.equals(typed, ignoreCase = true) }
+            val asTyped = ranked.firstOrNull { it.isTypedString || it.word.equals(typed, ignoreCase = true) }
             if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return null
         }
         // Rule 4: a correction that is not a completion of what was typed is taken as is.

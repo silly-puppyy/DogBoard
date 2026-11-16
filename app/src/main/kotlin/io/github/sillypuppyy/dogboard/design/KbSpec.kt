@@ -284,6 +284,10 @@ object KbSpec {
         return max(2f, min(w - pw - 2, x))
     }
 
+    // parsed once: a gradient parsed per render made a new brush (and native shader) every frame
+    private val CLASSIC_BAR_BG = CssGradient.parse("linear-gradient(#f8f9fb, #e4e7ec 50%, #d0d4db)")
+    private val CLASSIC_TOOLS_CELL = CssGradient.parse("linear-gradient(#bcc1ca, #dde0e5)")
+
     /** Kb:454 long-press sets; `.com` has a list. */
     val LP: Map<String, List<String>> = mapOf(
         "w" to "ŵ", "e" to "èéêëěẽēėę", "r" to "ř", "t" to "țťþ", "y" to "ýŷÿ", "u" to "ùúûüǔũūűůų",
@@ -674,9 +678,9 @@ object KbSpec {
             leftBg = if (toolsOpen && !t.seg) t.fn else Color.Transparent, leftFg = if (toolsOpen && !t.seg) t.fnFg else t.barMuted,
             // Kb:966-967
             bv = if (!t.seg) KbBarView() else KbBarView(
-                bg = CssGradient.parse("linear-gradient(#f8f9fb, #e4e7ec 50%, #d0d4db)"),
+                bg = CLASSIC_BAR_BG,
                 shadow = CssShadow.parse("inset 0 1px 0 #ffffff, inset 0 -1px 0 #737985, 0 1px 2px rgba(0,0,0,0.35)"),
-                leftCell = if (toolsOpen) CssGradient.parse("linear-gradient(#bcc1ca, #dde0e5)") else null,
+                leftCell = if (toolsOpen) CLASSIC_TOOLS_CELL else null,
                 leftSh = CssShadow.parse((if (toolsOpen) "inset 0 2px 4px rgba(0,0,0,0.4), " else "") + "inset -1px 0 0 #ffffff, inset -2px 0 0 #9aa0aa"),
                 micSh = CssShadow.parse("inset 1px 0 0 #ffffff, inset 2px 0 0 #9aa0aa"), ts = CssShadow.parse("0 1px 0 #ffffff"),
                 toolSh = CssShadow.parse("inset -1px 0 0 #9aa0aa, inset -2px 0 0 #ffffff"), toolFlex = true, iconFg = css("#3a3e46"),
