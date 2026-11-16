@@ -39,6 +39,20 @@ object EngineLoader {
         }.also { android.util.Log.i("DogBoardPerf", "neural model: ${android.os.SystemClock.uptimeMillis() - t0} ms") }
     }.onFailure { android.util.Log.i("DogBoardPerf", "neural model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
+    /**
+     * Whether this phone runs the neural model: not a low-RAM device, and more than
+     * [NEURAL_MIN_RAM_BYTES] of memory (phones sold as 6 GB report about 5.5 GB: they run it; 4 GB
+     * phones and below keep the trigram).
+     */
+    fun neuralTier(context: Context): Boolean {
+        val am = context.getSystemService(android.app.ActivityManager::class.java) ?: return false
+        if (am.isLowRamDevice) return false
+        val info = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
+        return info.totalMem > NEURAL_MIN_RAM_BYTES
+    }
+
+    private const val NEURAL_MIN_RAM_BYTES = 5_000_000_000L
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
         val t0 = android.os.SystemClock.uptimeMillis()
@@ -72,8 +86,12 @@ object EngineLoader {
         // (build.gradle.kts noCompress), so nothing is copied to the heap
         TypingEngine.attachNgrams(loadNgrams(app))
         // the neural language model for next-word predictions, when its files are in this build
-        // (assets/dogboard/lm: built privately, not in git yet): memory-mapped like the trigram
-        TypingEngine.attachNeuralLm(loadNeuralLm(app))
+        // (assets/dogboard/lm: built privately, not in git yet): memory-mapped like the trigram.
+        // Only on phones with room for it (iOS runs its transformer only where the Neural Engine is,
+        // older devices use the n-gram model): ~50 MB (mapped weights + the runtime's copy) and most
+        // of the typing path's CPU; without it the trigram alone predicts and scores
+        if (neuralTier(app)) TypingEngine.attachNeuralLm(loadNeuralLm(app))
+        else android.util.Log.i("DogBoardPerf", "neural model skipped on this device (memory)")
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
         TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.bin").use { CharModel.read(it) } }.getOrNull())
