@@ -108,6 +108,8 @@ data class KbProps(
 )
 
 /** One key cap (Kb:561-565) or a gap (Kb:526). x/w are dp from the keyboard's left edge. */
+/** Compared by value, so a key cap whose spec didn't change skips recomposition (one key redraws per press). */
+@androidx.compose.runtime.Immutable
 data class KbKey(
     val gap: Boolean,
     val id: String = "",

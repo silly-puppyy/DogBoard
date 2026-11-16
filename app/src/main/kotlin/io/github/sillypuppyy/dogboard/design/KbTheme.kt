@@ -10,6 +10,7 @@ import kotlin.math.pow
  * the `linkFg` fallback). Values stay as the design writes them (CSS colour and box-shadow
  * strings) and are parsed by [css] / [CssShadow], so each entry can be checked against the file.
  */
+@androidx.compose.runtime.Immutable
 data class KbTokens(
     val bg: Color, val key: Color, val keyFg: Color, val fn: Color, val fnFg: Color,
     val act: Color, val actFg: Color, val chip: Color, val chipFg: Color, val pop: Color,
@@ -263,6 +264,7 @@ fun css(value: String): Color {
  * A CSS `linear-gradient([<angle>deg,] <colour> [<pos>%], ...)` as the design writes it; stops without
  * a position are spread evenly between their neighbours, as CSS does.
  */
+@androidx.compose.runtime.Immutable
 data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>) {
     /**
      * CSS geometry: the line runs through the centre at the angle (0 = up, clockwise), long enough that the corners get the end colours.
@@ -326,6 +328,7 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
 }
 
 /** One layer of a CSS box-shadow: `[inset] x y [blur [spread]] colour`, lengths in dp. */
+@androidx.compose.runtime.Immutable
 data class CssShadow(val inset: Boolean, val x: Float, val y: Float, val blur: Float, val spread: Float, val color: Color) {
     companion object {
         fun parse(value: String): List<CssShadow> {

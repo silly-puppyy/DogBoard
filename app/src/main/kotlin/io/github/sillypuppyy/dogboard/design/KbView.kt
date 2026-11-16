@@ -124,8 +124,12 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
                     if (r.stripR.show) Box(Modifier.align(Alignment.CenterEnd)) { KbSideStrip(r, r.stripR) }
                     // Each cap at its spec rectangle (Kb:558), edges snapped to pixels one by one: a row
                     // of fixed widths would add up each key's rounding (1.5 dp by the end of a row).
+                    // the caps get only what they draw with, compared by value: a press redraws one cap,
+                    // not the keyboard (every press, release and preview-fade frame recomposed all of
+                    // them: 5 ms of recomposition + 4 ms of layout a frame on the phone)
+                    val frame = CapFrame(r.radius, r.rowTops, r.rowHs, r.rowH, r.floatH + r.barH + r.devH, r.mv, r.mh, r.capOp, r.labelOp)
                     for ((ri, row) in r.rows.withIndex()) {
-                        for (k in row.keys) if (!k.gap) KbKeyCap(r, k, ri)
+                        for (k in row.keys) if (!k.gap) KbKeyCap(frame, t, k, ri)
                     }
                     // Kb:193-195 trackpad puck: drawn in the design gallery only; on the live keyboard the
                     // user asked for it to go (2026-11-14: "remove the blue circle, it clips")
@@ -157,13 +161,19 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
 }
 
 /** Kb:173-180: one key; the cap is inset by mv/mh inside its touch cell. */
+/** What every cap shares from the render (geometry and opacities), compared by value. */
+@androidx.compose.runtime.Immutable
+private data class CapFrame(
+    val radius: Float, val rowTops: List<Float>, val rowHs: List<Float>, val rowH: Float, val top: Float,
+    val mv: Float, val mh: Float, val capOp: Float, val labelOp: Float,
+)
+
 @Composable
-private fun KbKeyCap(r: KbRender, k: KbKey, ri: Int) {
-    val t = r.t
+private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
     val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
     // Kb:558: where the spec puts this cap, for the lint's spacing check
     val rowTop = r.rowTops.getOrElse(ri) { ri * r.rowH }; val rowH = r.rowHs.getOrElse(ri) { r.rowH }
-    val capTop = r.floatH + r.barH + r.devH + rowTop + r.mv
+    val capTop = r.top + rowTop + r.mv
     val capId = "cap:$ri:${k.id}"
     val expected = Rect(k.x + r.mh, capTop, k.x + k.w - r.mh, capTop + rowH - 2 * r.mv)
     val inArea = Rect(k.x + r.mh, rowTop + r.mv, k.x + k.w - r.mh, rowTop + rowH - r.mv)
