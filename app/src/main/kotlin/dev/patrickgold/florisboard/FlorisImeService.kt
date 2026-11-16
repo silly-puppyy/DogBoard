@@ -281,6 +281,8 @@ class FlorisImeService : LifecycleInputMethodService() {
         io.github.sillypuppyy.dogboard.perf.Perf.mark("service onCreate") // DogBoard: startup timing
         FlorisImeServiceReference = WeakReference(this)
         systemLocalesFlow.value = resources.configuration.locales
+        // DogBoard: debug builds log main-thread stalls (DogBoardJank) and disk access on it (StrictMode)
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG) io.github.sillypuppyy.dogboard.perf.JankWatch.install()
         // DogBoard: a notification when adaptive autocorrect changes step (user, 2026-11-16)
         io.github.sillypuppyy.dogboard.ime.AdaptiveNotifier.install(this)
 
