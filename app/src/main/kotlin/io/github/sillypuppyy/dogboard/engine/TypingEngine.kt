@@ -140,6 +140,7 @@ object TypingEngine {
     ) {
         if (loaded != null) return
         addedWordsFile = addedWords
+        lock.write { this.addedWords.clear(); readLines(addedWords).forEach { this.addedWords.add(it.trim().lowercase()) } }
         if (charModel == null) charModel = openCharModel?.let { open -> runCatching { open().use { CharModel.parse(it) } }.getOrNull() }
         reload = {
             load(
@@ -312,6 +313,21 @@ object TypingEngine {
     /** Words the user added in settings (a subset of the learned words, listed apart). */
     private var addedWordsFile: File? = null
 
+    /** The added words, lowercase (iOS user dictionary entries: FilterInvalidTextReplacement). */
+    private val addedWords = HashSet<String>()
+
+    /**
+     * iOS FilterInvalidTextReplacement (#24): a word from the user's own list may only correct a typed
+     * word with the same non-letter core (the string with letters trimmed from both ends: "c++" isn't
+     * offered for "cpp"); words from the lexicon or learned from typing are not affected.
+     */
+    private fun isInvalidUserEntry(typed: String, candidate: String): Boolean {
+        if (candidate.lowercase() !in addedWords) return false
+        if (candidate.isEmpty()) return true
+        val core = candidate.trim { it.isLetter() }
+        return core.isNotEmpty() && core != typed.trim { it.isLetter() }
+    }
+
     /** The settings screen's word lists (design SetDict: Learned, Added, Blocked, Undone). */
     data class DictionaryLists(
         /** Learned from typing: (word as stored, why). */
@@ -342,6 +358,7 @@ object TypingEngine {
         if (readLines(addedWordsFile).none { it.equals(w, ignoreCase = true) }) {
             addedWordsFile?.let { f -> runCatching { f.parentFile?.mkdirs(); f.appendText(w + "\n") } }
         }
+        lock.write { addedWords.add(w.lowercase()) }
     }
 
     /**
@@ -357,7 +374,7 @@ object TypingEngine {
             runCatching { if (f.exists()) f.writeTextAtomically(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }
         }
         personal.remove(word)
-        lock.write { learnedWords.remove(key) }
+        lock.write { learnedWords.remove(key); addedWords.remove(key) }
         lastMix = null
         loaded = null
         reload?.invoke()
@@ -406,7 +423,7 @@ object TypingEngine {
         personalOffsets.reset()
         // iOS "Reset Keyboard Dictionary": every word the keyboard was taught goes, added ones too
         for (f in listOfNotNull(userWordsFile, addedWordsFile)) runCatching { f.delete() }
-        lock.write { learnedWords.clear() }
+        lock.write { learnedWords.clear(); addedWords.clear() }
         lastMix = null
         loaded = null
         reload?.invoke()
@@ -597,7 +614,7 @@ object TypingEngine {
             .filter {
                 keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) &&
                     keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
-                    !isCommonLearnedTypo(word.text, it.word)
+                    !isCommonLearnedTypo(word.text, it.word) && !isInvalidUserEntry(word.text, it.word)
             }
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")

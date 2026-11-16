@@ -210,4 +210,23 @@ class DictionaryListsTest : FunSpec({
             dir.deleteRecursively()
         }
     }
+
+    test("iOS #24: an added word isn't offered for typing whose non-letter core differs") {
+        val dir = Files.createTempDirectory("dogboard-added").toFile()
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+                userWords = File(dir, "user_words.txt"), addedWords = File(dir, "added_words.txt"),
+            )
+            TypingEngine.addWord("zork'ql")
+            // the added word has an apostrophe the typing lacks: never the correction
+            (finished("zorkql") == "zork'ql") shouldBe false
+            TypingEngine.addWord("blorptastic")
+            finished("blorptastuc") shouldBe "blorptastic" // same core (none): a slip is still fixed
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
 })
