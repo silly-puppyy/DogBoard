@@ -156,24 +156,26 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         save()
     }
 
+    /**
+     * The whole model as text, built under the lock (in memory, quick) and written on the background
+     * writer: saving every [SAVE_EVERY] words on the typing thread rewrote the file there and grew with
+     * it (short freezes at word ends, user 2026-11-16).
+     */
     @Synchronized
     fun save() {
         dirty = 0
         val f = file ?: return
-        runCatching {
-            f.parentFile?.mkdirs()
-            val tmp = File(f.path + ".tmp")
-            tmp.bufferedWriter().use { out ->
-                out.write("#dogboard-personal 1\ttyped\t$typed\n")
-                for ((w, c) in words) out.write("w\t$w\t${c.value}\t${c.day}\t${uses[w] ?: 0}\n")
-                for ((k, c) in pairs) out.write("p\t${k.first}\t${k.second}\t${c.value}\t${c.day}\n")
-                for ((k, c) in triples) out.write("t\t${k.first}\t${k.second}\t${k.third}\t${c.value}\t${c.day}\n")
-            }
-            tmp.renameTo(f)
-        }
+        val text = StringBuilder().apply {
+            append("#dogboard-personal 1\ttyped\t").append(typed).append('\n')
+            for ((w, c) in words) append("w\t").append(w).append('\t').append(c.value).append('\t').append(c.day).append('\t').append(uses[w] ?: 0).append('\n')
+            for ((k, c) in pairs) append("p\t").append(k.first).append('\t').append(k.second).append('\t').append(c.value).append('\t').append(c.day).append('\n')
+            for ((k, c) in triples) append("t\t").append(k.first).append('\t').append(k.second).append('\t').append(k.third).append('\t').append(c.value).append('\t').append(c.day).append('\n')
+        }.toString()
+        f.writeTextLater(text)
     }
 
     private fun load() {
+        awaitPendingWrites()
         val f = file ?: return
         if (!f.exists()) return
         f.forEachLine { line ->

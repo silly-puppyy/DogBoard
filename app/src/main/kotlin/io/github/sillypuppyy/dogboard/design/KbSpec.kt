@@ -422,7 +422,8 @@ object KbSpec {
             // Kb:620-622: comma slot (@ for email, / for URLs), 1.5 · 1 · 1 · 4 · 1 · 1.5
             kstyle == "android" -> listOf(mode(firstMode, 1.5f), ch(when (field) { "email" -> "@"; "url" -> "/"; else -> "," }, 1f), fnK(1f), space(4f), ch(".", 1f), retK(1.5f))
             field == "email" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK())
-            field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), ch(".", 1.68f), ch("/", 1.6533f), ch(".com", 1.68f), retK())
+            // a space bar in URL fields too (address bars take searches; Gboard keeps one), .com etc. on a long press of .
+            field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), ch(".", 1.25f), retK())
             else -> listOf(mode(firstMode, 1.24f), fnK(), space(5.0133f), retK())
         }
         fun symRow3(m: String) = listOf(mode(m, 1.28f), gap(0.2133f), ch(".", 1.4f), ch(",", 1.4f), ch("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), gap(0.2267f), bksp())

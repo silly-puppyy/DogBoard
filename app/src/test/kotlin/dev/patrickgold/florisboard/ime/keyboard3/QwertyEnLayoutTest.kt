@@ -134,7 +134,10 @@ class QwertyEnLayoutTest : FunSpec({
             listOf("to-symbol-1", "fn-key", "space-email", "at-email", "period-email", "enter")
         bottomRow(KeyVariation.EMAIL_ADDRESS, ImeLayerIds.Shift) shouldBe
             listOf("to-symbol-1", "fn-key", "space-email", "at-email", "period-email", "enter")
+        // URL fields keep a space bar (address bars take searches too)
         bottomRow(KeyVariation.URI, ImeLayerIds.Base) shouldBe
-            listOf("to-symbol-1", "fn-key", "period-url", "slash-url", "dotcom", "enter")
+            listOf("to-symbol-1", "fn-key", "space-email", "slash-url", "period-url", "enter")
+        bottomRow(KeyVariation.URI, ImeLayerIds.Shift) shouldBe
+            listOf("to-symbol-1", "fn-key", "space-email", "slash-url", "period-url", "enter")
     }
 })

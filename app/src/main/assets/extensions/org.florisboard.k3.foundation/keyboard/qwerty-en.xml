@@ -46,9 +46,11 @@
         <key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />
         <key id="at-email" output="@" width="1.25" />
         <key id="period-email" output="." width="1.25" />
-        <key id="period-url" output="." width="1.68" />
-        <key id="slash-url" output="/" width="1.6533" />
-        <key id="dotcom" output=".com" width="1.68" longPressKeyIds="tld-org tld-edu tld-net" />
+        <!-- URL fields keep a space bar (Android address bars are search boxes too; Gboard keeps one):
+             the email row's widths, with / and . ; the domains on a long press of . -->
+        <key id="period-url" output="." width="1.25" longPressKeyIds="tld-com tld-org tld-net tld-edu" longPressDefaultKeyId="tld-com" />
+        <key id="slash-url" output="/" width="1.25" />
+        <key id="tld-com" output=".com" />
         <key id="tld-org" output=".org" />
         <key id="tld-edu" output=".edu" />
         <key id="tld-net" output=".net" />
@@ -420,14 +422,14 @@
             <row keys="q w e r t y u i o p" />
             <row keys="a s d f g h j k l" />
             <row keys="base-to-shift gap-left z x c v b n m gap-right bksp" />
-            <row keys="to-symbol-1 fn-key period-url slash-url dotcom enter" />
+            <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P" />
             <row keys="A S D F G H J K L" />
             <row keys="shift-to-base gap-left Z X C V B N M gap-right bksp" />
-            <row keys="to-symbol-1 fn-key period-url slash-url dotcom enter" />
+            <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">

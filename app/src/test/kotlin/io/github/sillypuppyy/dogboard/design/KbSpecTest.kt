@@ -101,8 +101,9 @@ class KbSpecTest : FunSpec({
         key(KbProps(spaceLabel = "lang", langName = "Deutsch"), "space").label shouldBe "Deutsch"
         key(KbProps(fnKey = "globe", langName = "English (US)"), "space").label shouldBe "English (US)"
     }
-    test("url row and .com (Kb:475, 532)") {
-        key(KbProps(field = "url"), ".com").let { it.fs shouldBe 16f; it.fw shouldBe 500 }
+    test("url row: a space bar, / and . (.com and friends on a long press of .)") {
+        val row = KbSpec.render(KbProps(field = "url")).rows.last().keys.filter { !it.gap }.map { it.id }
+        row shouldBe listOf("mode-123", "fn", "space", "/", ".", "ret")
     }
     test("key preview geometry (Kb:574-575)") {
         val pv = KbSpec.render(KbProps(preview = "g")).pv!!
