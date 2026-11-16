@@ -25,7 +25,11 @@ class SpaceJoinEvalTest : FunSpec({
         val rowH = 216f / 4
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         val px = GaussianTouch.POINTS_PER_MM
+        // as shipped: the unknown-word letter model and the known misspellings
+        val charModel = File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) }
+        val misspellings = File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
         fun decoder() = Decoder(lexicon, Decoder.Config(), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
+            .also { it.unknownWords = charModel; it.knownMisspellings = misspellings }
         val ratio = System.getenv("DOGBOARD_JOIN_RATIO")?.toDouble()?.let { kotlin.math.ln(it) } ?: SpaceJoin.RATIO
         fun ctxIds(ctx: String): Pair<String, String?> {
             val raw = ctx.split(' ').filter { it.isNotEmpty() }
