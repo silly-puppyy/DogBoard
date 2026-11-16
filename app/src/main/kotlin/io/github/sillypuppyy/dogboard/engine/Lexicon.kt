@@ -39,6 +39,11 @@ class Lexicon private constructor(capacity: Int) {
      */
     private val casings = HashMap<Int, List<Pair<String, Float>>>()
 
+    // which nodes have an entry in [surface] / [casings]: most don't, and a map lookup boxes the
+    // node (the decoder asks for every word state on every keystroke)
+    private val hasSurface = java.util.BitSet()
+    private val hasCasings = java.util.BitSet()
+
     init {
         newNode(NONE, '\u0000')
     }
@@ -74,7 +79,7 @@ class Lexicon private constructor(capacity: Int) {
     /** The word ending at [node] in its stored casing, or null. */
     fun word(node: Int): String? {
         if (wordId[node] == NONE) return null
-        surface[node]?.let { return it }
+        if (hasSurface.get(node)) surface[node]?.let { return it }
         val chars = CharArray(depth[node].toInt())
         var n = node
         for (i in chars.indices.reversed()) {
@@ -87,7 +92,7 @@ class Lexicon private constructor(capacity: Int) {
     /** Every casing of the word at [node] with its own ln P, most likely first. */
     fun forms(node: Int): List<Pair<String, Double>> {
         if (wordId[node] == NONE) return emptyList()
-        casings[node]?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
+        if (hasCasings.get(node)) casings[node]?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
         return listOf(word(node)!! to logProb[node].toDouble())
     }
 
@@ -212,7 +217,7 @@ class Lexicon private constructor(capacity: Int) {
         wordId[node] = wordCount
         wordNode[wordCount++] = node
         logProb[node] = lp.toFloat()
-        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() }) surface[node] = word
+        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() }) { surface[node] = word; hasSurface.set(node) }
     }
 
     private fun newNode(parentNode: Int, c: Char): Int {
@@ -283,10 +288,10 @@ class Lexicon private constructor(capacity: Int) {
             lex.nodeCount = n
             lex.wordCount = words
             val d = java.io.DataInputStream(java.io.ByteArrayInputStream(bytes, b.position(), bytes.size - b.position()))
-            repeat(d.readInt()) { lex.surface[d.readInt()] = d.readUTF() }
+            repeat(d.readInt()) { val node = d.readInt(); lex.surface[node] = d.readUTF(); lex.hasSurface.set(node) }
             repeat(d.readInt()) {
                 val node = d.readInt()
-                lex.casings[node] = List(d.readInt()) { d.readUTF() to d.readFloat() }
+                lex.casings[node] = List(d.readInt()) { d.readUTF() to d.readFloat() }; lex.hasCasings.set(node)
             }
             lex
         }.getOrNull()
@@ -324,7 +329,7 @@ class Lexicon private constructor(capacity: Int) {
                 val best = forms[0]
                 val lp = if (forms.size == 1) best.second else ln(forms.sumOf { kotlin.math.exp(it.second) })
                 lexicon.setWord(node, best.first, lp)
-                if (forms.size > 1) lexicon.casings[node] = forms.map { (w, l) -> w to l.toFloat() }
+                if (forms.size > 1) { lexicon.casings[node] = forms.map { (w, l) -> w to l.toFloat() }; lexicon.hasCasings.set(node) }
             }
             lexicon.computeSubtrees()
             lexicon.resize(lexicon.nodeCount + 1024) // room for learned words

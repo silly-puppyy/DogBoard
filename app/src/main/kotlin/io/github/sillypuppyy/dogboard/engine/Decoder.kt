@@ -162,7 +162,10 @@ class Decoder(
      */
     private class Prefix(val text: String, val languageModel: Double, val support: Double, val last: Int, val count: Int, val secondLast: Int = -1)
 
-    private class State(val node: Int, val geometry: Double, val edits: Int, val prefix: Int = 0)
+    private class State(val node: Int, val geometry: Double, val edits: Int, val prefix: Int = 0) {
+        /** prune's score for this state, worked out once (NaN until then). */
+        var rank = Double.NaN
+    }
 
     /** What one tap says: each key's touch likelihood, its nearest keys, and its time terms. */
     private class TapInfo(
@@ -199,6 +202,8 @@ class Decoder(
         /** prefixes[0] is "no earlier word". */
         val prefixes = arrayListOf<Prefix?>(null)
         val prefixIds = HashMap<String, Int>()
+        /** restart's result per (prefix, node) key: the text is built once per new word pair. */
+        val restartIds = HashMap<Long, Int>()
 
         /** Keeps what the first [m] taps decide. */
         fun truncate(m: Int) {
@@ -209,6 +214,7 @@ class Decoder(
             if (m == 0) { // a new word: no state refers to an earlier word any more
                 while (prefixes.size > 1) prefixes.removeAt(prefixes.size - 1)
                 prefixIds.clear()
+                restartIds.clear()
             }
         }
     }
@@ -237,10 +243,10 @@ class Decoder(
 
     private fun key(prefix: Int, node: Int) = (prefix.toLong() shl 32) or node.toLong()
 
-    private fun offer(layer: HashMap<Long, State>, node: Int, geometry: Double, edits: Int, prefix: Int) {
+    private fun offer(layer: HashMap<Long, State>, node: Int, geometry: Double, edits: Int, prefix: Int, rank: Double = Double.NaN) {
         val k = key(prefix, node)
         val old = layer[k]
-        if (old == null || geometry > old.geometry) layer[k] = State(node, geometry, edits, prefix)
+        if (old == null || geometry > old.geometry) layer[k] = State(node, geometry, edits, prefix).also { it.rank = rank }
     }
 
     /**
@@ -320,7 +326,7 @@ class Decoder(
             return shortWords[node]?.let { maxOf(own, of(it)) } ?: own
         }
         /** The prefix for [s]'s words plus the word at [s]'s node. */
-        fun restart(s: State): Int {
+        fun newRestart(s: State): Int {
             val p = prefixes[s.prefix]
             val form = lexicon.forms(s.node).firstOrNull()?.first ?: return -1
             val text = if (p == null) form else p.text + " " + form
@@ -330,6 +336,14 @@ class Decoder(
             prefixes.add(Prefix(text, (p?.languageModel ?: 0.0) + l, support, lexicon.wordId(s.node), (p?.count ?: 0) + 1, context(s.prefix)))
             return (prefixes.size - 1).also { sr.prefixIds[text] = it }
         }
+        fun restart(s: State): Int = sr.restartIds.getOrPut(key(s.prefix, s.node)) { newRestart(s) }
+
+        /** The score prune ranks a state by. */
+        fun pruneScore(node: Int, geometry: Double, prefix: Int): Double {
+            val best = lexicon.bestWord(node)
+            return geometry + w * ((prefixes[prefix]?.languageModel ?: 0.0) + (if (best == Lexicon.NONE) -50.0 else lexicon.logProb(best)))
+        }
+        var insertCut = Double.NEGATIVE_INFINITY
 
         /** Layer i as reached from layers i-1 (tap i-1) and i-2 (taps i-2 and i-1 swapped). */
         fun pull(i: Int): HashMap<Long, State> {
@@ -391,21 +405,38 @@ class Decoder(
                             layer[key(s.prefix, child)]?.let { insertAfter(it, allowApostrophe = false) }
                         }
                     } else if (i > 0) { // no inserting before the first tap
-                        offer(layer, child, s.geometry + (if (i == n) config.endInsertion ?: INSERTION else INSERTION) + qi, s.edits + 1, s.prefix)
+                        val g = s.geometry + (if (i == n) config.endInsertion ?: INSERTION else INSERTION) + qi
+                        // a state below the beam's cut-off before the insertions can't survive the
+                        // prune (insertions only raise the cut): not made at all, unless it ends a word
+                        // (a word end may start the next word); same result, far fewer states
+                        val r = if (insertCut == Double.NEGATIVE_INFINITY) Double.NaN else pruneScore(child, g, s.prefix)
+                        if (r.isNaN() || r >= insertCut || lexicon.isWord(child)) offer(layer, child, g, s.edits + 1, s.prefix, r)
                     }
                 }
             }
+            insertCut = beamCut(layer, w, prefixes)
             for (s in layer.values.toList()) insertAfter(s, allowApostrophe = true)
             // a whole word may end here and the next tap begin another: the space key was not
             // tapped, which costs what any skipped key does (iOS prices a missed space as a key
             // error); only the most likely few, which keeps the search near its one-word size
             if (config.splitWords && i in 1 until n) {
-                layer.values
-                    .filter { lexicon.isWord(it.node) && (prefixes[it.prefix]?.count ?: 0) < MAX_WORDS - 1 }
-                    .mapNotNull { s -> restart(s).takeIf { it >= 0 }?.let { s to it } }
-                    .sortedByDescending { (s, p) -> s.geometry + w * prefixes[p]!!.languageModel }
-                    .take(MAX_RESTARTS)
-                    .forEach { (s, p) -> offer(layer, Lexicon.ROOT, s.geometry + INSERTION + qi, s.edits + 1, p) }
+                // the best MAX_RESTARTS by score, ties in layer order (no boxing: this runs on every
+                // layer of every keystroke); every word end still gets its prefix, as before
+                val topState = arrayOfNulls<State>(MAX_RESTARTS); val topPrefix = IntArray(MAX_RESTARTS); val topScore = DoubleArray(MAX_RESTARTS)
+                var count = 0
+                for (s in layer.values) {
+                    if (!lexicon.isWord(s.node) || (prefixes[s.prefix]?.count ?: 0) >= MAX_WORDS - 1) continue
+                    val p = restart(s)
+                    if (p < 0) continue
+                    val sc = s.geometry + w * prefixes[p]!!.languageModel
+                    if (count == MAX_RESTARTS && sc <= topScore[count - 1]) continue
+                    var at = if (count < MAX_RESTARTS) count++ else count - 1
+                    while (at > 0 && topScore[at - 1] < sc) {
+                        topState[at] = topState[at - 1]; topPrefix[at] = topPrefix[at - 1]; topScore[at] = topScore[at - 1]; at--
+                    }
+                    topState[at] = s; topPrefix[at] = p; topScore[at] = sc
+                }
+                for (t in 0 until count) offer(layer, Lexicon.ROOT, topState[t]!!.geometry + INSERTION + qi, topState[t]!!.edits + 1, topPrefix[t])
             }
             prune(layer, w, prefixes)
         }
@@ -496,16 +527,83 @@ class Decoder(
     }
 
     /** Keeps the best states, ranked by geometry plus the best word reachable below each node. */
+    // prune's scratch arrays, reused across calls (decode is synchronized): a keystroke prunes a
+    // few layers of thousands of states, and fresh arrays were a third of the typing path's garbage
+    private var pKeys = LongArray(0)
+    private var pStates = arrayOfNulls<State>(0)
+    private var pScores = DoubleArray(0)
+    private var pWork = DoubleArray(0)
+    private var pKept = IntArray(0)
+
     private fun prune(layer: HashMap<Long, State>, w: Double, prefixes: List<Prefix?>) {
-        if (layer.size <= config.beamWidth) return
-        val keep = layer.entries
-            .sortedByDescending { (_, s) ->
-                val best = lexicon.bestWord(s.node)
-                s.geometry + w * ((prefixes[s.prefix]?.languageModel ?: 0.0) + (if (best == Lexicon.NONE) -50.0 else lexicon.logProb(best)))
+        val n = layer.size
+        val beam = config.beamWidth
+        if (n <= beam) return
+        if (pKeys.size < n) {
+            val c = maxOf(n, pKeys.size * 2)
+            pKeys = LongArray(c); pStates = arrayOfNulls(c); pScores = DoubleArray(c); pWork = DoubleArray(c)
+        }
+        if (pKept.size < beam) pKept = IntArray(beam)
+        val keys = pKeys; val states = pStates; val scores = pScores
+        // each state's score once (a sort by a selector recomputed it in every comparison: 58 % of
+        // the typing path's time), then the states above the beam's cut-off, ties in layer order,
+        // put back best first: the same states in the same order as a stable sort
+        var i = 0
+        for ((k, s) in layer) {
+            keys[i] = k; states[i] = s; scores[i] = rankOf(s, w, prefixes)
+            i++
+        }
+        System.arraycopy(scores, 0, pWork, 0, n)
+        val cut = kthSmallest(pWork, n, n - beam)
+        var above = 0
+        for (j in 0 until n) if (scores[j] > cut) above++
+        var ties = beam - above
+        val kept = pKept
+        var m = 0
+        for (j in 0 until n) {
+            if (scores[j] > cut || (scores[j] == cut && ties-- > 0)) {
+                // insertion by score, best first; equal scores keep layer order (stable)
+                var at = m
+                while (at > 0 && scores[kept[at - 1]] < scores[j]) { kept[at] = kept[at - 1]; at-- }
+                kept[at] = j; m++
             }
-            .take(config.beamWidth)
-            .map { it.key to it.value }
+        }
         layer.clear()
-        for ((k, s) in keep) layer[k] = s
+        for (t in 0 until m) layer[keys[kept[t]]] = states[kept[t]]!!
+        java.util.Arrays.fill(states, 0, n, null)
+    }
+
+    private fun rankOf(s: State, w: Double, prefixes: List<Prefix?>): Double {
+        if (!s.rank.isNaN()) return s.rank
+        val best = lexicon.bestWord(s.node)
+        return (s.geometry + w * ((prefixes[s.prefix]?.languageModel ?: 0.0) + (if (best == Lexicon.NONE) -50.0 else lexicon.logProb(best))))
+            .also { s.rank = it }
+    }
+
+    /** The prune cut-off of [layer] as it stands (the beam's lowest score), or -inf below a full beam. */
+    private fun beamCut(layer: HashMap<Long, State>, w: Double, prefixes: List<Prefix?>): Double {
+        val n = layer.size
+        val beam = config.beamWidth
+        if (n < beam) return Double.NEGATIVE_INFINITY
+        if (pWork.size < n) pWork = DoubleArray(maxOf(n, pWork.size * 2))
+        var i = 0
+        for (s in layer.values) pWork[i++] = rankOf(s, w, prefixes)
+        return kthSmallest(pWork, n, n - beam)
+    }
+
+    /** The [k]-th smallest of a[0 until n] (0-based), reordering a: quickselect, O(n) on average. */
+    private fun kthSmallest(a: DoubleArray, n: Int, k: Int): Double {
+        var lo = 0; var hi = n - 1
+        while (lo < hi) {
+            val pivot = a[(lo + hi) ushr 1]
+            var l = lo; var r = hi
+            while (l <= r) {
+                while (a[l] < pivot) l++
+                while (a[r] > pivot) r--
+                if (l <= r) { val t = a[l]; a[l] = a[r]; a[r] = t; l++; r-- }
+            }
+            if (k <= r) hi = r else if (k >= l) lo = l else return a[k]
+        }
+        return a[k]
     }
 }
