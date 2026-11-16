@@ -137,7 +137,7 @@ class TouchKeyboard(
         val textKeys: List<TouchKey>,
         val targets: List<KeyTarget>,
         val medianHalfWidth: Double,
-        /** Lowercase letter -> target, for the word decoder (the same map object for every tap). */
+        /** Lowercase letter -> target, and ' ' -> the space bar, for the word decoder (the same map object for every tap). */
         val letters: Map<Char, KeyTarget>,
         val letterMedianHalfWidth: Double,
     )
@@ -155,23 +155,29 @@ class TouchKeyboard(
                     if (text.length == 1 && text[0].isLetter()) put(text[0].lowercaseChar(), target)
                 }
             }
+            // the space bar too, as ' ': iOS reads a touch near it as a possible space between words
+            // ("donyou" -> "do you"); the decoder keeps it apart from the letters
+            val space = keysOf(layerId).firstOrNull { (it.attrs.output as? K3String)?.toText() == " " }
+                ?.target(widthDp, heightDp)
             if (targetsCache.size > 16) targetsCache.clear() // sizes change rarely (rotation, resizing)
             Targets(
                 textKeys, targets,
                 if (targets.isEmpty()) 0.0 else medianHalfWidth(targets),
-                letters,
+                if (space != null && letters.isNotEmpty()) letters + (' ' to space) else letters,
                 if (letters.isEmpty()) 0.0 else medianHalfWidth(letters.values.toList()),
             )
         }
     }
 
-    private fun textKeysOf(layerId: K3LayerId): List<TouchKey> {
+    private fun textKeysOf(layerId: K3LayerId): List<TouchKey> = keysOf(layerId).filter { it.isTextKey() }
+
+    private fun keysOf(layerId: K3LayerId): List<TouchKey> {
         val layer = if (layerId == ImeLayerIds.Caps) {
             layers[layerId] ?: layers[ImeLayerIds.Shift] ?: layers[ImeLayerIds.Base]
         } else {
             layers[layerId] ?: layers[ImeLayerIds.Base]
         } ?: return emptyList()
-        return layer.keys.filter { it.isTextKey() }
+        return layer.keys
     }
 
     /**

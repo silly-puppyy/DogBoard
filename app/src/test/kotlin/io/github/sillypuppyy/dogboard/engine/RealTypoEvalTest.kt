@@ -22,7 +22,8 @@ class RealTypoEvalTest : FunSpec({
         val lexicon = File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val ngrams = ngramFile!!.inputStream().use { NgramModel.readBinary(it) }!!
-        val keys = QwertyGeometry.letterKeys(375f, 216f)
+        // DOGBOARD_SPACE_KEY=1: the space bar among the keys a tap may have meant (word breaks at a tap)
+        val keys = if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f) else QwertyGeometry.letterKeys(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
         // DOGBOARD_LEVEL=GENTLE|STANDARD|STRONG (default STANDARD), DOGBOARD_LANGUAGE_POWER overrides its power
@@ -31,7 +32,7 @@ class RealTypoEvalTest : FunSpec({
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
-        val decoders = ThreadLocal.withInitial { Decoder(lexicon, Decoder.Config(endInsertion = endInsertion), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)) }
+        val decoders = ThreadLocal.withInitial { Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)) }
 
         // DOGBOARD_PROBE_WORDS="befor,hav": top candidates and the decision for those typed words (no context)
         System.getenv("DOGBOARD_PROBE_WORDS")?.split(',')?.forEach { typed ->
@@ -108,7 +109,7 @@ class RealTypoEvalTest : FunSpec({
         pool.shutdown()
 
         fun pct(kind: Boolean, r: String) = outcomes.count { it.typo == kind && it.result == r } * 100.0 / outcomes.count { it.typo == kind }
-        println("REALTYPO ${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
+        println("REALTYPO ${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
             endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
         dumpCandidates?.let { path ->

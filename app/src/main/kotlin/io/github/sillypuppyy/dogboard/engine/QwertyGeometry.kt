@@ -24,4 +24,13 @@ object QwertyGeometry {
             }
         }
     }
+
+    /** [letterKeys] plus the space bar as ' ' (bottom row after ?123 46.5 and fn 47 of 375, 188 wide). */
+    fun keysWithSpace(widthDp: Float, heightDp: Float): Map<Char, KeyTarget> {
+        val unit = widthDp / 10f
+        val rowHeight = heightDp / ROW_COUNT
+        return letterKeys(widthDp, heightDp) + (' ' to KeyTarget(5.0f * unit, 3.5f * rowHeight, SPACE_UNITS / 2 * unit, rowHeight / 2))
+    }
+
+    private const val SPACE_UNITS = 188f / 37.5f
 }

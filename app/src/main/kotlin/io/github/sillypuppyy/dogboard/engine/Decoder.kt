@@ -94,6 +94,13 @@ class Decoder(
          * -1.0 with Autocorrect.Level.minStemEndOmission (2026-11-16, RealTypoEvalTest sweep).
          */
         val endInsertion: Double? = END_INSERTION,
+        /**
+         * Added to a tap read as the space bar (iOS: none, the touch cost only). -1.0 (2026-11-16, 831
+         * real run-together words from Aalto first attempts, fixed / wrong word: no space key 42.1 / 44.9,
+         * 0.0 72.7 / 15.3, -1.0 73.4 / 13.8, -2.0 70.8 / 16.4; single-word real typos 47.9 / 12.4 without,
+         * 47.7 / 12.6 at -1.0, correct words broken 0.6 throughout).
+         */
+        val spaceTap: Double = SPACE_TAP,
     )
 
     companion object {
@@ -111,6 +118,7 @@ class Decoder(
         private const val DELETION_REPEATED = -2.24 // an extra tap on the same key as the one before
         private const val DELETION = -3.2 // any other extra tap
         const val END_INSERTION = -1.0 // the one key skipped after the last tap (Config.endInsertion)
+        const val SPACE_TAP = -1.0 // a tap read as the space bar (Config.spaceTap)
         private val DELETION_LANGUAGE = 0.24 * ln(0.01) // extra language cost for an unrepeated extra tap
         private const val SUBSTITUTION = -3.2 // a tap read as a key outside its nearest keys
         private const val TRANSPOSITION = -2.0
@@ -165,6 +173,8 @@ class Decoder(
         val q: Double,
         /** The same, unclamped (transpositions). */
         val qRaw: Double,
+        /** The tap read as the space bar (log-likelihood), when the keys include it (' '). */
+        val space: Double? = null,
     )
 
     /**
@@ -274,13 +284,15 @@ class Decoder(
             val dtS = if (i > 0 && taps[i].timeMs > 0 && taps[i - 1].timeMs > 0) {
                 (taps[i].timeMs - taps[i - 1].timeMs) / 1000.0
             } else DEFAULT_INTERVAL_S
-            val likelihood = keys.mapValues { (_, k) -> GaussianTouch.logLikelihood(k, taps[i].x, taps[i].y, params) }
+            // letters only; the space bar (' ') is scored apart, for a word break at this tap
+            val likelihood = keys.filterKeys { it != ' ' }.mapValues { (_, k) -> GaussianTouch.logLikelihood(k, taps[i].x, taps[i].y, params) }
             sr.info.add(TapInfo(
                 likelihood,
                 likelihood.entries.sortedByDescending { it.value }.take(NEARBY_KEYS).map { it.key }.toSet(),
                 likelihood.maxBy { it.value }.key,
                 QUADRATIC * dtS.coerceIn(T_MIN, T_MAX).let { it * it },
                 QUADRATIC * dtS * dtS,
+                keys[' ']?.let { GaussianTouch.logLikelihood(it, taps[i].x, taps[i].y, params) },
             ))
         }
         val info = sr.info
@@ -330,6 +342,14 @@ class Decoder(
             for (s in sr.interior[t].values) {
                 lexicon.forEachChild(s.node) { c, child ->
                     tapScore(c, t)?.let { (score, edit) -> offer(out, child, s.geometry + score, s.edits + edit, s.prefix) }
+                }
+                // The tap was the space bar: a whole word ends here and the next begins (iOS: the space
+                // is one of the keys a touch may have meant, at its touch cost only; "donyou" -> "do you")
+                info[t].space?.let { ls ->
+                    if (ls >= prune && config.splitWords && t > 0 && lexicon.isWord(s.node) && (prefixes[s.prefix]?.count ?: 0) < MAX_WORDS - 1) {
+                        val p = restart(s)
+                        if (p >= 0) offer(out, Lexicon.ROOT, s.geometry + ls + config.spaceTap, s.edits + 1, p)
+                    }
                 }
                 // An extra tap that belongs to no letter, the first one included (iOS: "ghello" → "hello")
                 val repeated = t > 0 && info[t].nearest == info[t - 1].nearest
