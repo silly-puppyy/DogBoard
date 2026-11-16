@@ -67,12 +67,21 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         val w = word.lowercase()
         words[w] = bump(words[w], day)
         uses[w] = (uses[w] ?: 0) + 1
+        // the decayed totals move by exactly 1 (bump: decayed value + 1, dated today), so they are
+        // updated in place: rebuilding them after every word allocated per learned pair and triple
+        // (tens of MB a word with a well-used model: the typing stalls on garbage collection, 2026-11-16)
+        val keep = cacheDay == day
+        if (keep) totalCache += 1.0
         previous?.lowercase()?.let { p ->
             pairs[p to w] = bump(pairs[p to w], day)
-            previous2?.lowercase()?.let { p2 -> Triple(p2, p, w).let { t -> triples[t] = bump(triples[t], day) } }
+            if (keep) afterCache[p] = (afterCache[p] ?: 0.0) + 1.0
+            previous2?.lowercase()?.let { p2 ->
+                Triple(p2, p, w).let { t -> triples[t] = bump(triples[t], day) }
+                if (keep) (p2 to p).let { k -> after2Cache[k] = (after2Cache[k] ?: 0.0) + 1.0 }
+            }
         }
         typed++
-        cacheDay = -1
+        if (!keep) cacheDay = -1
         if (++dirty >= SAVE_EVERY) save()
     }
 

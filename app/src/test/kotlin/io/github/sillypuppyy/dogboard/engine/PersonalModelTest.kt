@@ -86,4 +86,21 @@ class PersonalModelTest : FunSpec({
         loaded.remove("want")
         loaded.probability("to", "see", "want") shouldBe (loaded.probability("to", "see") plusOrMinus 1e-12)
     }
+
+    test("totals updated in place after each word match a rebuild from the saved file") {
+        val f = kotlin.io.path.createTempFile("personal", ".tsv").toFile()
+        val m = fresh(f)
+        val text = "see you at the game tonight see you at the park see you soon at the game".split(' ')
+        // query between accepts so the totals are built, then kept up to date in place
+        for (i in text.indices) {
+            m.accept(text.getOrNull(i - 1), text[i], text.getOrNull(i - 2))
+            m.mix(0.01, "you", "at")
+        }
+        m.save(); awaitPendingWrites()
+        val rebuilt = fresh(f)
+        for ((prev, w, prev2) in listOf(Triple("you", "at", "see"), Triple("the", "game", "at"), Triple(null, "see", null), Triple("at", "the", "you"))) {
+            m.mix(0.01, prev, w, prev2) shouldBe (rebuilt.mix(0.01, prev, w, prev2) plusOrMinus 1e-9)
+        }
+        f.delete()
+    }
 })
