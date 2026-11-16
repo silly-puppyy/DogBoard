@@ -215,6 +215,13 @@ object TypingEngine {
     @Volatile
     var lastNeuralMillis = -1L
 
+    /** How long the last candidate refinement by the neural model took (ms), for the perf log. */
+    @Volatile
+    var lastNeuralScoreMillis = -1L
+
+    /** The neural model's share of a candidate's language score (RealTypoEvalTest: 0.5 best of 0.5 / 0.75 / 1.0). */
+    const val NEURAL_WEIGHT = 0.5
+
     /** The neural language model for next-word predictions (EngineLoader, when its files are in the app). */
     fun attachNeuralLm(model: io.github.sillypuppyy.dogboard.engine.lm.NeuralLm?) {
         neuralLm = model
@@ -430,10 +437,16 @@ object TypingEngine {
      * [previous] is the word before it ([previousContext]), or null.
      */
     /** [previous2]: the word before [previous] (or [Bigrams.START]), for the two-word-context model. */
-    fun candidates(word: CurrentWord, previous: String?, maxResults: Int = 8, previous2: String? = null): List<Candidate> {
+    /**
+     * [textBefore]: the text before the word, when known: the candidates are then refined with the
+     * neural model as iOS does (each candidate's language score mixed with the model's, [NEURAL_WEIGHT];
+     * real phone typos: fixed 47.9 -> 49.3 %, correct words broken 0.6 -> 0.4 %, RealTypoEvalTest).
+     * Runs the model: call it off the main thread.
+     */
+    fun candidates(word: CurrentWord, previous: String?, maxResults: Int = 8, previous2: String? = null, textBefore: String? = null): List<Candidate> {
         val engine = loaded ?: return emptyList()
         val taps = word.tapsOrNull() ?: return emptyList()
-        return lock.read {
+        val decoded = lock.read {
             engine.decoder.decode(
                 taps, personalOffsets.apply(word.keys), word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
                 previous = engine.contextId(previous), typed = word.decoderText,
@@ -445,6 +458,12 @@ object TypingEngine {
                 .let { onlyTypedUnderVulgarTop(word.text, it) }
                 .take(maxResults)
         }
+        val lm = neuralLm?.takeIf { textBefore != null && decoded.size > 1 } ?: return decoded
+        val t0 = System.nanoTime()
+        val scores = runCatching { lm.wordScores(textBefore!!, decoded.map { it.word }) }.getOrNull() ?: return decoded
+        lastNeuralScoreMillis = (System.nanoTime() - t0) / 1_000_000
+        val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
+        return withNeural(decoded, { scores[it] }, NEURAL_WEIGHT, power)
     }
 
     /**

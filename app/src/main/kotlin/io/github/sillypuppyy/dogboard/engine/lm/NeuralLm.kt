@@ -1,5 +1,6 @@
 package io.github.sillypuppyy.dogboard.engine.lm
 
+import kotlin.math.ln
 import org.tensorflow.lite.Interpreter
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -99,6 +100,23 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     ): List<Pair<String, Double>> {
         // a call that waited for an older one may no longer be wanted (a newer word end)
         if (!stillWanted()) return emptyList()
+        ensureContext(textBefore, maxPieces)
+        return candidates(n, isWord, first, maxPieces)
+    }
+
+    /** The text whose tokens the cache holds (and [pBuf] the distribution after), for word scores. */
+    private var contextText: String? = null
+    private var capReady = false
+    /** ln P(word | [contextText]) already worked out. */
+    private val wordCache = HashMap<String, Double>()
+
+    private fun contextChanged(text: String) {
+        if (text != contextText) { contextText = text; capReady = false; wordCache.clear() }
+    }
+
+    /** Brings the cache (and [pBuf]) to [textBefore]: continues it, or runs what differs. */
+    private fun ensureContext(textBefore: String, maxPieces: Int) {
+        if (haveContext && textBefore == contextText) return
         // the context: BOS + the text's tokens, the newest that leave room for the tries after it
         val room = ctx - 2 - maxPieces - 2
         val all = tokenizer.encode(textBefore)
@@ -108,7 +126,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         val more = if (haveContext) continuation(all) else null
         if (more != null && cached.size + more.size <= room + 1) {
             for (t in more) { step(t, cached.size, pBuf); cached.add(t) }
-            return candidates(n, isWord, first, maxPieces)
+            return contextChanged(textBefore)
         }
         // otherwise from BOS; a text too long keeps its newest two thirds, so the next words continue it
         val tokens = if (all.size <= room) all else all.copyOfRange(all.size - room * 2 / 3, all.size)
@@ -122,7 +140,48 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
             for (i in same until want.size) { step(want[i], i, pBuf); cached.add(want[i]) }
             haveContext = true
         }
-        return candidates(n, isWord, first, maxPieces)
+        contextChanged(textBefore)
+    }
+
+    /**
+     * ln P(word | [textBefore]) for each of [words] (capitalised ones through the capital token, as the
+     * model was trained), for refining autocorrect's candidates (iOS scores every candidate with its
+     * neural model at the word level). Words of one piece cost nothing once the context is in the
+     * cache; longer ones run their extra pieces, at most [maxSteps] new steps a call (results are kept
+     * for the context, so the next keystroke goes on); words not reached are left out.
+     */
+    @Synchronized
+    fun wordScores(textBefore: String, words: Collection<String>, maxSteps: Int = 6): Map<String, Double> {
+        ensureContext(textBefore, 3)
+        val pos = cached.size
+        var steps = 0
+        val out = HashMap<String, Double>()
+        for (w in words) {
+            wordCache[w]?.let { out[w] = it; continue }
+            val seq = tokenizer.encode(w)
+            if (seq.isEmpty()) continue
+            if (seq[0] == PieceTokenizer.CAP && !capReady) {
+                if (steps >= maxSteps) continue
+                step(PieceTokenizer.CAP, pos, qBuf); steps++; capReady = true
+            }
+            // the first piece from the context's distribution (or after the capital token)
+            var lp = if (seq[0] == PieceTokenizer.CAP) ln(pBuf[PieceTokenizer.CAP].toDouble()) else 0.0
+            val i = if (seq[0] == PieceTokenizer.CAP) 1 else 0
+            if (i >= seq.size) continue
+            lp += ln((if (i == 1) qBuf else pBuf)[seq[i]].toDouble().coerceAtLeast(1e-30))
+            // the rest piece by piece
+            val extra = seq.size - i - 1
+            if (extra > 0) {
+                if (steps + i + extra > maxSteps || pos + seq.size >= ctx) continue
+                var at = pos
+                for (k in 0 until seq.size - 1) {
+                    val next = step(seq[k], at, nBuf); at++; steps++
+                    if (k + 1 > i) lp += ln(next[seq[k + 1]].toDouble().coerceAtLeast(1e-30))
+                }
+            }
+            wordCache[w] = lp; out[w] = lp
+        }
+        return out
     }
 
     /**
@@ -147,6 +206,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         val pos = cached.size
         // the capitalised path: CAP at pos, then the word
         val q = step(PieceTokenizer.CAP, pos, qBuf)
+        capReady = true
         val pCap = p[PieceTokenizer.CAP].toDouble()
         // the [first] best word starts, without sorting or boxing the vocabulary
         val starts = IntArray(first) { -1 }; val startScore = DoubleArray(first) { -1.0 }

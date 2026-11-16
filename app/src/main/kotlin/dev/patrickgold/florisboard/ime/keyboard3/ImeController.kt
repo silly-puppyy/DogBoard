@@ -1106,8 +1106,12 @@ class ImeController(
             val emojiMode = if (state.flags.isIncognitoMode || !prefs.emoji.suggestionEnabled.get()) {
                 io.github.sillypuppyy.dogboard.engine.EmojiSuggestionMode.OFF
             } else prefs.suggestion.emojiMode.get()
+            // the text before the word, for the neural model (a full window starts mid-word: cut, as for predictions)
+            val neuralContext = textBefore.takeIf { it.endsWith(word.text) }?.dropLast(word.text.length)
+                ?.let { t -> if (textBefore.length >= SURROUNDING_BEFORE) t.substringAfter(' ', t) else t }
             suggestionJob = scope.launch {
-                val candidates = TypingEngine.candidates(word, context, previous2 = context2)
+                val candidates = TypingEngine.candidates(word, context, previous2 = context2, textBefore = neuralContext)
+                TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms") }
                 latestDecode = decodeKey(word.text, context, context2) to candidates
                 val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
                 val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
