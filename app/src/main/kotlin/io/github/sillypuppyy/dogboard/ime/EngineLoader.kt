@@ -61,6 +61,7 @@ object EngineLoader {
             openEmojiTones = { assets.open("dogboard/en.emoji-tones.tsv").bufferedReader() },
             emojiUsageFile = File(files, "dogboard/emoji_usage.tsv"),
             addedWords = File(files, "dogboard/added_words.txt"),
+            openMisspellings = { assets.open("dogboard/en.misspellings.txt").bufferedReader() },
             // parsed word data, rebuilt when the app (and so its assets) changes
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
             snapshotKey = app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },

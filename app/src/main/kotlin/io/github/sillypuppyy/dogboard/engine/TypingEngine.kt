@@ -137,8 +137,13 @@ object TypingEngine {
         addedWords: File? = null,
         /** The unknown-word letter model (en.charlm.tsv, [CharModel]); parsed once. */
         openCharModel: (() -> BufferedReader)? = null,
+        /** Known misspellings (en.misspellings.txt): never scored as plausible unknown words. */
+        openMisspellings: (() -> BufferedReader)? = null,
     ) {
         if (loaded != null) return
+        misspellings = openMisspellings?.let { open ->
+            runCatching { open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toHashSet() } }.getOrNull()
+        } ?: misspellings
         addedWordsFile = addedWords
         lock.write { this.addedWords.clear(); readLines(addedWords).forEach { this.addedWords.add(it.trim().lowercase()) } }
         if (charModel == null) charModel = openCharModel?.let { open -> runCatching { open().use { CharModel.parse(it) } }.getOrNull() }
@@ -146,7 +151,7 @@ object TypingEngine {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, autocorrectStrength, personalOffsetsFile, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
-                openCharModel,
+                openCharModel, openMisspellings,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -174,6 +179,7 @@ object TypingEngine {
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
         engine.joinDecoder.unknownWords = charModel
+        for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
@@ -215,6 +221,7 @@ object TypingEngine {
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
         engine.joinDecoder.unknownWords = charModel
+        for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
     }
 
     @Volatile
@@ -309,6 +316,9 @@ object TypingEngine {
 
     /** How much the user uses [emoji], by the iOS recents score (EmojiUsage), for ordering recents. */
     fun emojiScore(emoji: String): Double = emojiUsage.score(emoji)
+
+    /** Known misspellings (Decoder.knownMisspellings), kept across reloads. */
+    private var misspellings: Set<String> = emptySet()
 
     /** Words the user added in settings (a subset of the learned words, listed apart). */
     private var addedWordsFile: File? = null

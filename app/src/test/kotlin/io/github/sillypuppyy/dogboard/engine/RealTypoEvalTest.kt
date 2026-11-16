@@ -32,7 +32,14 @@ class RealTypoEvalTest : FunSpec({
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
-        val decoders = ThreadLocal.withInitial { Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)) }
+        // DOGBOARD_CHARLM=1: the unknown-word letter model attached, as the app ships (assets en.charlm.bin)
+        // DOGBOARD_MISSPELLINGS=1: known misspellings never scored by the letter model (assets en.misspellings.txt)
+        val misspellings = File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
+        val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) } else null
+        val decoders = ThreadLocal.withInitial {
+            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
+                .also { it.unknownWords = charModel; if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") it.knownMisspellings = misspellings }
+        }
 
         // DOGBOARD_PROBE_WORDS="befor,hav": top candidates and the decision for those typed words (no context)
         System.getenv("DOGBOARD_PROBE_WORDS")?.split(',')?.forEach { typed ->
@@ -109,7 +116,7 @@ class RealTypoEvalTest : FunSpec({
         pool.shutdown()
 
         fun pct(kind: Boolean, r: String) = outcomes.count { it.typo == kind && it.result == r } * 100.0 / outcomes.count { it.typo == kind }
-        println("REALTYPO ${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
+        println("REALTYPO ${if (charModel != null) "charlm " else ""}${if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") "misspellings " else ""}${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
             endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
         dumpCandidates?.let { path ->

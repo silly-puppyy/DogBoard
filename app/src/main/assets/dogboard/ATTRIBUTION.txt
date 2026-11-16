@@ -30,6 +30,12 @@ en.charlm.tsv (tools/data/build_charlm.py) and en.ngrams.bin (built by tools/dat
   (https://opendatacommons.org/licenses/by/1-0/); FineWeb is built from Common Crawl, whose
   terms of use also apply.
 
+en.misspellings.txt (built by tools/data/build_misspellings.py)
+  Misspelled forms from Wikipedia's "Lists of common misspellings/For machines",
+  https://en.wikipedia.org/wiki/Wikipedia:Lists_of_common_misspellings/For_machines, by Wikipedia
+  contributors, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); so this file is
+  CC BY-SA 4.0. Only the misspelled forms our lexicon lacks are kept.
+
 lm/v3.tflite, lm/v3.pieces.tsv (the neural language model and its word pieces)
   A small transformer (12 layers, width 384) trained by the DogBoard project on public text only;
   never on anything typed on a keyboard by DogBoard's users. It holds learned weights, not text.

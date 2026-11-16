@@ -41,6 +41,8 @@ CASES = [
     ("see you  soon", "See you. Soon"),  # double-space period, then auto-shift
     ("hello {123}?x", "Hello? X"),  # a mark typed after a typed space goes before it, and the space returns to letters (user, 2026-11-16)
     ("ok {123},x", "OK, x"),
+    ("teh x", "The x"),  # classic misspellings at the start of a field are corrected
+    ("i think seperate x", "I think separate x"),
     # neighbouring-key typos: adb taps are slow (0.4+ s apart), and iOS-rule edit costs such as a
     # swapped pair grow with the time between taps, so timing-dependent typos are unit-tested instead
     ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital

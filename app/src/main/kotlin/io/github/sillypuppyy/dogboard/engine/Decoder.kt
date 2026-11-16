@@ -67,6 +67,12 @@ class Decoder(
     @Volatile
     var unknownWords: CharModel? = null
 
+    /**
+     * Known misspellings, lowercase: a typed string on this list is not scored by [unknownWords] (it
+     * looks like a word because it is one, misspelled: "seperate"), so the correction it means wins.
+     */
+    var knownMisspellings: Set<String> = emptySet()
+
     /** Can be attached after loading (TypingEngine.attachNgrams), so startup isn't slowed. */
     @Volatile
     var context: ContextScorer? = context
@@ -614,7 +620,7 @@ class Decoder(
      */
     fun typedStringLogProb(typed: String): Double {
         // a word the lexicon lacks, scored by how much it looks like one (names, slang, brands)
-        unknownWords?.let { m -> m.logProb(typed)?.let { return m.unknownLogProb + it } }
+        unknownWords?.takeIf { typed.lowercase() !in knownMisspellings }?.let { m -> m.logProb(typed)?.let { return m.unknownLogProb + it } }
         var node = Lexicon.ROOT
         var score = 0.0
         for (c in typed) {
