@@ -30,6 +30,28 @@ en.charlm.tsv (tools/data/build_charlm.py) and en.ngrams.bin (built by tools/dat
   (https://opendatacommons.org/licenses/by/1-0/); FineWeb is built from Common Crawl, whose
   terms of use also apply.
 
+lm/v3.tflite, lm/v3.pieces.tsv (the neural language model and its word pieces)
+  A small transformer (12 layers, width 384) trained by the DogBoard project on public text only;
+  never on anything typed on a keyboard by DogBoard's users. It holds learned weights, not text.
+  The training text, with thanks:
+  Webis TLDR-17 (Reddit posts), Webis / Völske et al. 2017,
+    https://huggingface.co/datasets/webis/tldr-17, CC BY 4.0.
+  FineWeb (sample-10BT), Hugging Face, https://huggingface.co/datasets/HuggingFaceFW/fineweb,
+    Open Data Commons Attribution License (ODC-By) v1.0; built from Common Crawl, whose terms of use
+    also apply.
+  SODA, Allen Institute for AI, https://huggingface.co/datasets/allenai/soda, CC BY 4.0.
+  WildChat-1M (people's turns only), Allen Institute for AI,
+    https://huggingface.co/datasets/allenai/WildChat-1M, ODC-By v1.0.
+  Synthetic-Persona-Chat, Google, https://huggingface.co/datasets/google/Synthetic-Persona-Chat,
+    CC BY 4.0.
+  Leipzig Corpora Collection (English news 2024, English web 2018), Universität Leipzig,
+    https://wortschatz.uni-leipzig.de, CC BY.
+  Mozilla Common Voice sentences, CC0.
+  Ubuntu IRC logs (irclogs.ubuntu.com), public domain.
+  Made-up text messages and group chats written for this purpose by SmolLM2-1.7B-Instruct
+    (Hugging Face, Apache License 2.0) from invented prompts, without real people's messages.
+  It runs on LiteRT (Google AI Edge, Apache License 2.0).
+
 Fonts (res/font, subsets made by tools/fonts/subset_fonts.py)
   roboto_flex.ttf: Roboto Flex, Copyright 2017 The Roboto Flex Project Authors, SIL Open Font
     License 1.1, included in licenses/RobotoFlex-OFL.txt.
