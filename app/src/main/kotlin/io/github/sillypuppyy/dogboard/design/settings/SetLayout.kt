@@ -160,8 +160,8 @@ fun SetLayout(state: SetLayoutState) {
             }
             // :43-78 Mix and match
             SetGroup("Mix and match") {
-                ElementRow("Number row", "A row of digits above the letters, or digits on long-press of the top row.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
-                    ElementSeg("numrow", listOf("off" to "Off", "on" to "On", "hints" to "Long-press"), st.numRow) { state.onChange(st.copy(numRow = it)) }
+                ElementRow("Number row", "A row of digits above the letters, or each digit when you hold its top-row letter.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
+                    ElementSeg("numrow", listOf("off" to "Off", "on" to "Always", "hints" to "On hold"), st.numRow) { state.onChange(st.copy(numRow = it)) }
                 }
                 ElementRow("Bottom row", "Where comma and period live. Email fields put @ in the comma slot, web addresses /.", st.bottom != LayoutElements.SIMPLE.bottom, { state.onChange(st.copy(bottom = LayoutElements.SIMPLE.bottom)) }) {
                     BottomRowCard(st.bottom == "simple", "123, emoji, space, action", listOf(Mk("123", 1.24f, 'f'), Mk("emo", 1.25f, 'f'), Mk("", 5f, 'k'), Mk("ret", 2.5f, 'a'))) { state.onChange(st.copy(bottom = "simple")) }
@@ -173,8 +173,8 @@ fun SetLayout(state: SetLayoutState) {
                 ElementRow("Round keys", "123 and the action key as round pills, as on Android.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {
                     ElementSeg("pill", listOf("off" to "Off", "on" to "On"), if (st.pill) "on" else "off") { state.onChange(st.copy(pill = it == "on")) }
                 }
-                ElementRow("Long-press hints", "A small character in the key corner showing what a long-press types.", st.hints != LayoutElements.SIMPLE.hints, { state.onChange(st.copy(hints = LayoutElements.SIMPLE.hints)) }) {
-                    ElementSeg("hints", listOf("off" to "Off", "accents" to "Accents", "symbols" to "Symbols"), st.hints) { state.onChange(st.copy(hints = it)) }
+                ElementRow("Hold for symbols", "“Whole page” puts the symbols page on the letters: each key shows a symbol in its corner, and holding it types that symbol. “Accents” shows each letter’s first accent in its corner.", st.hints != LayoutElements.SIMPLE.hints, { state.onChange(st.copy(hints = LayoutElements.SIMPLE.hints)) }) {
+                    ElementSeg("hints", listOf("off" to "Off", "accents" to "Accents", "symbols" to "Whole page"), st.hints) { state.onChange(st.copy(hints = it)) }
                 }
                 ElementRow("Space-bar label", "Auto shows the language name only when you have more than one.", st.space != LayoutElements.SIMPLE.space, { state.onChange(st.copy(space = LayoutElements.SIMPLE.space)) }) {
                     ElementSeg("space", listOf("auto" to "Auto", "lang" to "Language", "space" to "“space”", "blank" to "Blank"), st.space) { state.onChange(st.copy(space = it)) }

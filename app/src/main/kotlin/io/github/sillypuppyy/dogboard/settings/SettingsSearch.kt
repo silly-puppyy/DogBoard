@@ -15,7 +15,7 @@ object SettingsSearch {
         Entry("Number row", "Main choices", "home", "digits numbers top row"),
         Entry("Layout", "Main choices", "layout", "layout style simple classic comma period custom mix match"),
         Entry("Bottom row", "Layout", "layout", "comma period 123 emoji action"),
-        Entry("Long-press hints", "Layout", "layout", "hint corner accents symbols"),
+        Entry("Hold for symbols", "Layout", "layout", "long-press hints hint corner accents symbols whole page"),
         Entry("Space-bar label", "Layout", "layout", "space bar language name blank"),
         Entry("Action key", "Layout", "layout", "enter return send search go done icon word label"),
         Entry("Letter case", "Layout", "layout", "capitals uppercase caps labels"),

@@ -306,7 +306,7 @@ fun KbPanelBody(r: KbRender) {
                     }
                 }
                 Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
-                    DText("Drag to reorder · Pinned tools show in the bar", style = text(12, 400, t.barMuted))
+                    DText("Drag to reorder. Pinned tools show in the bar.", style = text(12, 400, t.barMuted))
                 }
             }
         }

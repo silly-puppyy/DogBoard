@@ -132,7 +132,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                             onSelect = actions?.let { a -> { i: Int -> a.onLayoutPreset(i) } })
                     }
                     SetLinkRow("main:languages", actions?.onLanguages) {
-                        TitleSub("Languages", "English (US) · QWERTY", Modifier.weight(1f))
+                        TitleSub("Languages", "English (US), QWERTY", Modifier.weight(1f))
                         // SetHome:46 outlined Add button
                         Row(
                             Modifier.height(40.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(20.dp)).padding(horizontal = 16.dp),
