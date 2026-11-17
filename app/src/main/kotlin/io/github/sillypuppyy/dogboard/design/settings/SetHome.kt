@@ -45,18 +45,19 @@ object SetHomeSpec {
     private fun s(icon: String, title: String, sub: String, c: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>, target: String = "") =
         Section(icon, title, sub, c.first, c.second, target)
 
-    // settings layout v2 (approved by the user 2026-11-14, notes/design/settings-layout-proposal.md):
-    // sections in order of how often people need them; titles and subs from that proposal
+    // settings tree v3 (user, 2026-11-17: "remove the main section and sort everything Gboard style";
+    // notes/design/settings-tree-v3.md): one list in Gboard's order, pages a few levels deep
     val sections = listOf(
-        s("translate", "Languages and layouts", "Your languages, QWERTY or another layout", P),
-        s("palette", "Look", "Theme, photo background, key height", T, "SetLook"),
-        s("spellcheck", "Typing and correction", "Autocorrect, capitals, punctuation", S),
-        s("vibration", "Sound and vibration", "Volume, vibration style, feedback per key", P, "SetFeel"),
-        s("swipe", "Gestures", "Space-bar trackpad, swipe to delete", T),
-        s("widgets", "Clipboard and toolbar", "Clipboard history, how long clips are kept", S),
-        s("menu_book", "Your words", "Learned, added and blocked words", P, "SetDict"),
-        s("shield_person", "Privacy", "Incognito, what’s stored, delete your data", T),
-        s("tune", "Advanced", "Fine-tuning, developer options, backup", S),
+        s("translate", "Languages", "English (US), QWERTY", P),
+        s("keyboard", "Layout", "Style, number row, bottom row, keyboard height", S),
+        s("palette", "Theme", "Day and night themes, photo background", T),
+        s("spellcheck", "Autocorrect and typing", "Autocorrect, suggestions, your words", P),
+        s("vibration", "Sound and vibration", "Vibration style, volume, when they play", S),
+        s("swipe", "Gestures", "Space-bar cursor, swipe to delete", T),
+        s("mood", "Emoji and GIFs", "Skin tone, recent emoji", P),
+        s("content_paste", "Clipboard", "History, how long clips are kept", S),
+        s("shield_person", "Privacy", "Incognito, contact names, your data", T),
+        s("tune", "Advanced", "Timings, developer options, backup", S),
         s("info", "About", "Version, licenses, credits", P),
     )
 }
@@ -122,67 +123,12 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     Symbol("search", 24.sp, SetColors.onSurfaceVariant)
                     DText("Search settings", Modifier.weight(1f), style = setText(16f, color = SetColors.onSurfaceVariant))
                 }
-                // SetHome:31-81 main choices
-                SetGroup("Main choices") {
-                    // live: Simple and Comma & period set the presets; Custom (shown whenever the elements
-                    // are mixed) opens Settings › Layout (designer answers §1)
-                    SetBlockRow("main:layout") {
-                        TitleSub("Layout style", "How the bottom row and long-press work")
-                        Segmented("seg:layout", listOf("iPhone-style", "Android-style", "Custom"), actions?.layoutPreset ?: 0, listOf(1f, 1f, 0.8f),
-                            onSelect = actions?.let { a -> { i: Int -> a.onLayoutPreset(i) } })
-                    }
-                    SetLinkRow("main:languages", actions?.onLanguages) {
-                        TitleSub("Languages", "English (US), QWERTY", Modifier.weight(1f))
-                        // SetHome:46 outlined Add button
-                        Row(
-                            Modifier.height(40.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(20.dp)).padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Symbol("add", 18.sp, SetColors.primary)
-                            DText("Add", style = setText(14f, 500, SetColors.primary))
-                        }
-                    }
-                    SetLinkRow("main:look", actions?.onLook) {
-                        MiniKeyboard()
-                        TitleSub("Look", actions?.lookSub ?: "DogBoard, follows your wallpaper", Modifier.weight(1f))
-                        Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
-                    }
-                    SetBlockRow("main:autocorrect") {
-                        TitleSub("Autocorrect", "How readily typos are fixed when you press space")
-                        Segmented(
-                            "seg:autocorrect", listOf("Off", "Gentle", "Standard", "Strong"), actions?.autocorrect ?: 2,
-                            listOf(1f, 1f, 1.3f, 1f), checkGap = 4, onSelect = actions?.onAutocorrect,
-                        )
-                        // SetHome:67
-                        BasicText(
-                            buildAnnotatedString {
-                                append("Most people never need to change this. ")
-                                withStyle(SpanStyle(color = SetColors.primary, fontWeight = FontWeight(500))) { append("Customize…") }
-                            },
-                            style = setText(13f, color = SetColors.onSurfaceVariant),
-                            modifier = actions?.let { a -> Modifier.clickable { a.onSection("Typing and correction") } } ?: Modifier,
-                        )
-                    }
-                    // live: no presets until they are designed; the row opens the vibration and sound settings
-                    if (actions == null) SetBlockRow("main:feel") {
-                        TitleSub("Feel", "Vibration and sound on each key")
-                        Segmented("seg:feel", listOf("Quiet", "Default", "Crisp", "Custom"), 1, listOf(1f, 1.3f, 1f, 1f), checkGap = 4)
-                    } else {
-                        // settings layout v2: plain switches; the full page is under All settings
-                        SetSwitchRow("main:sound", "Sound", "A click on each key", actions.sound, actions.onSound)
-                        SetSwitchRow("main:vibration", "Vibration", "A tap on each key", actions.vibration, actions.onVibration)
-                        SetSwitchRow("main:numrow", "Number row", "Digits above the letters", actions.numberRow, actions.onNumberRow)
-                        SetSliderRow(
-                            "main:height", "Keyboard height", "Taller keys are easier to hit; shorter ones leave more room for the app.",
-                            actions.keyboardHeight.toFloat(), 100f, 80f..130f, 5f, { v -> "${v.toInt()} %" },
-                        ) { v -> actions.onKeyboardHeight(v.toInt()) }
-                    }
-                }
-                // SetHome:83-93 all settings
-                SetGroup("All settings") {
+                // settings tree v3: every section in one list, no "Main choices" (Gboard's home)
+                SetRows(Modifier.fillMaxWidth()) {
                     for (s in SetHomeSpec.sections) {
                         val (bg, fg) = SetColors.container(s.bg, s.fg)
-                        SetSectionRow(s.icon, s.title, s.sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
+                        val sub = if (s.title == "Theme") actions?.lookSub ?: s.sub else s.sub
+                        SetSectionRow(s.icon, s.title, sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
                     }
                 }
             }

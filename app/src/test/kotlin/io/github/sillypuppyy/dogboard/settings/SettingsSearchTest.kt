@@ -8,13 +8,13 @@ import io.kotest.matchers.shouldBe
 class SettingsSearchTest : FunSpec({
     fun titles(q: String) = SettingsSearch.search(q).map { it.title }
     test("synonyms find settings (vibration finds Feel settings, quotes finds Punctuation)") {
-        titles("vibration") shouldContain "Vibration style"
+        titles("vibration") shouldContain "Vibration"
         titles("quotes") shouldContain "Smart quotes"
         titles("long press") shouldContain "Hold to show accents"
         titles("haptic") shouldContain "Vibration"
     }
     test("word starts match, all words must match, empty finds nothing") {
-        titles("capit") shouldContain "Capitalize sentence starts"
+        titles("capit") shouldContain "Sentence starts"
         titles("smart dash").size shouldBe 1
         titles("   ").shouldBeEmpty()
         titles("zzzz").shouldBeEmpty()

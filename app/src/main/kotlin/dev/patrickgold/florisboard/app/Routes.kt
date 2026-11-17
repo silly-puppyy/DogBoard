@@ -213,6 +213,23 @@ object Routes {
         @Deeplink("settings/sound-vibration")
         object SoundVibration
 
+        // settings tree v3: Autocorrect and typing's pages
+        @Serializable
+        @Deeplink("settings/typing-correction/autocorrect")
+        object AutocorrectPage
+
+        @Serializable
+        @Deeplink("settings/typing-correction/suggestions")
+        object SuggestionsPage
+
+        @Serializable
+        @Deeplink("settings/typing-correction/capitals")
+        object CapitalsPage
+
+        @Serializable
+        @Deeplink("settings/typing-correction/punctuation")
+        object PunctuationPage
+
         // DogBoard: About › Data licenses (the attribution of the shipped word data)
         @Serializable
         @Deeplink("settings/about/data-licenses")
@@ -376,19 +393,29 @@ object Routes {
             composableWithDeepLink(Settings.TypingCorrection::class) { io.github.sillypuppyy.dogboard.settings.TypingCorrectionScreen() }
             composableWithDeepLink(Settings.Privacy::class) { io.github.sillypuppyy.dogboard.settings.PrivacyScreen() }
             composableWithDeepLink(Settings.SoundVibration::class) { io.github.sillypuppyy.dogboard.settings.SoundVibrationScreen() }
+            composableWithDeepLink(Settings.AutocorrectPage::class) { io.github.sillypuppyy.dogboard.settings.AutocorrectScreen() }
+            composableWithDeepLink(Settings.SuggestionsPage::class) { io.github.sillypuppyy.dogboard.settings.SuggestionsScreen() }
+            composableWithDeepLink(Settings.CapitalsPage::class) { io.github.sillypuppyy.dogboard.settings.CapitalsScreen() }
+            composableWithDeepLink(Settings.PunctuationPage::class) { io.github.sillypuppyy.dogboard.settings.PunctuationScreen() }
             composableWithDeepLink(Settings.DataLicenses::class) { io.github.sillypuppyy.dogboard.settings.DataLicensesScreen() }
             composableWithDeepLink(Settings.Search::class) {
                 val nav = LocalNavController.current
                 io.github.sillypuppyy.dogboard.settings.SettingsSearchScreen { route ->
                     nav.navigate(
                         when (route) {
-                            "typing" -> Settings.Typing
+                            "typing" -> Settings.TypingCorrection
+                            "autocorrect" -> Settings.AutocorrectPage
+                            "suggestions" -> Settings.SuggestionsPage
+                            "capitals" -> Settings.CapitalsPage
+                            "punctuation" -> Settings.PunctuationPage
+                            "privacy" -> Settings.Privacy
                             "layout" -> Settings.Layout
-                            "feedback" -> Settings.Keyboard.InputFeedback
+                            "feedback" -> Settings.SoundVibration
                             "languages" -> Settings.Localization
-                            "theme" -> Settings.Theme
+                            "theme" -> Settings.Themes
                             "gestures" -> Settings.Gestures
                             "clipboard" -> Settings.Clipboard
+                            "emoji" -> Settings.Media
                             "dictionary" -> Settings.Dictionary
                             "finetuning" -> Settings.FineTuning
                             "advanced" -> Settings.Other

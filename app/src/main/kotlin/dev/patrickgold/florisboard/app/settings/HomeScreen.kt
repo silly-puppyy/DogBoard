@@ -124,15 +124,18 @@ fun HomeScreen() {
                 lookSub = lookSub,
                 onSection = { title ->
                     navController.navigate(
+                        // settings tree v3 (notes/design/settings-tree-v3.md); Languages, Gestures, Emoji,
+                        // Clipboard, Advanced and About open FlorisBoard's screens until they are rebuilt
                         when (title) {
-                            "Languages and layouts" -> Routes.Settings.Localization
-                            "Look" -> Routes.Settings.Theme
-                            "Typing and correction" -> Routes.Settings.TypingCorrection
-                            "Privacy" -> Routes.Settings.Privacy
-                            "Your words" -> Routes.Settings.Dictionary
+                            "Languages" -> Routes.Settings.Localization
+                            "Layout" -> Routes.Settings.Layout
+                            "Theme" -> Routes.Settings.Themes
+                            "Autocorrect and typing" -> Routes.Settings.TypingCorrection
                             "Sound and vibration" -> Routes.Settings.SoundVibration
                             "Gestures" -> Routes.Settings.Gestures
-                            "Clipboard and toolbar" -> Routes.Settings.Clipboard
+                            "Emoji and GIFs" -> Routes.Settings.Media
+                            "Clipboard" -> Routes.Settings.Clipboard
+                            "Privacy" -> Routes.Settings.Privacy
                             "Advanced" -> Routes.Settings.Other
                             else -> Routes.Settings.About
                         }

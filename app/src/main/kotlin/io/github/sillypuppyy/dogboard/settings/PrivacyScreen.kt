@@ -63,12 +63,7 @@ fun PrivacyScreen() {
                 }
             }
             SetGroup("Suggestions") {
-                SetSwitchRow("pv:contacts", "Contact names", "Suggest the names in your contacts. They stay on this phone.", contacts) { v ->
-                    if (!v) scope.launch { prefs.spelling.useContacts.set(false) }
-                    else if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                        scope.launch { prefs.spelling.useContacts.set(true) }
-                    } else ask.launch(Manifest.permission.READ_CONTACTS)
-                }
+                ContactNamesRow("pv:contacts")
             }
             SetGroup("Your data") {
                 SetLinkRow("pv:words", { nav.navigate(Routes.Settings.Dictionary) }) {

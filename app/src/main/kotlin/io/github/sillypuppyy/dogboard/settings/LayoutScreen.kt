@@ -64,5 +64,7 @@ fun LayoutScreen() {
         onBack = { navController.popBackStack() },
         layoutId = prefs.keyboard.layoutId.collectAsState().value,
         onLayoutId = { id -> scope.launch { prefs.keyboard.layoutId.set(id) } },
+        heightPercent = prefs.keyboard.heightPercent.collectAsState().value,
+        onHeightPercent = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },
     ))
 }

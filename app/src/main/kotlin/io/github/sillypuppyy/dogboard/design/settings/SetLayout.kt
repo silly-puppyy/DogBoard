@@ -74,6 +74,9 @@ class SetLayoutState(
     /** The letter layout (gen_layouts.py ids); null hides the choice (previews). */
     val layoutId: String? = null,
     val onLayoutId: (String) -> Unit = {},
+    /** Keyboard height in percent (moved here from the home page, settings tree v3); null hides it. */
+    val heightPercent: Int? = null,
+    val onHeightPercent: (Int) -> Unit = {},
 )
 
 /** SetLayout.dc.html:107-112: the note under the preset selector. */
@@ -184,6 +187,15 @@ fun SetLayout(state: SetLayoutState) {
                 }
                 ElementRow("Letter case", "Whether letters on keys follow shift or always show capitals.", st.caseMode != LayoutElements.SIMPLE.caseMode, { state.onChange(st.copy(caseMode = LayoutElements.SIMPLE.caseMode)) }) {
                     ElementSeg("case", listOf("shift" to "Follows shift", "caps" to "Always capitals"), st.caseMode) { state.onChange(st.copy(caseMode = it)) }
+                }
+            }
+            // settings tree v3: keyboard height (was on the home page)
+            state.heightPercent?.let { h ->
+                SetGroup("Size") {
+                    SetSliderRow(
+                        "layout:height", "Keyboard height", "Taller keys are easier to hit; shorter ones leave more room for the app.",
+                        h.toFloat(), 100f, 80f..130f, 5f, { v -> "${v.toInt()} %" },
+                    ) { v -> state.onHeightPercent(v.toInt()) }
                 }
             }
             // :80-83 per-language note
