@@ -43,14 +43,14 @@ class HapticPlayer(context: Context) {
     val isAvailable: Boolean get() = vibrator?.hasVibrator() == true
 
     /** Plays the feedback for a key press of [feedbackClass]. Returns false if nothing was played. */
-    fun play(feedbackClass: KeyFeedbackClass): Boolean {
+    fun play(feedbackClass: KeyFeedbackClass, crisp: Boolean = false): Boolean {
         val now = SystemClock.uptimeMillis()
         val sinceLast = lastPressUptime?.let { now - it }
         lastPressUptime = now
         val tap = Haptics.tapFor(feedbackClass, sinceLast) ?: return false
         // haptics must never take the keyboard down: on any failure, fall back to the system haptic
         return try {
-            val effect = effectFor(tap) ?: return false
+            val effect = (if (crisp) clickFor(tap) else effectFor(tap)) ?: return false
             val v = vibrator ?: return false
             // tagged as touch feedback, so the system's touch-vibration setting and intensity apply
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -64,6 +64,16 @@ class HapticPlayer(context: Context) {
             android.util.Log.w("DogBoardPerf", "haptic effect failed, falling back: $e")
             false
         }
+    }
+
+    /**
+     * [HapticStyle.CRISP]: the click primitive, iOS's strengths relative to its letter tap (0.51) at
+     * 0.85 of the motor's click (letters 0.85, space and return 0.72, delete 0.75, held delete 0.58).
+     */
+    private fun clickFor(tap: HapticTap): VibrationEffect? {
+        if (!supportsClick || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        val scale = (tap.intensity / 0.51f * 0.85f).coerceIn(0.2f, 1f)
+        return VibrationEffect.startComposition().addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, scale).compose()
     }
 
     private fun effectFor(tap: HapticTap): VibrationEffect? {

@@ -199,8 +199,9 @@ private class AndroidInteractionController(
         // DogBoard: no haptic on key release; presses and repeats use the DogBoard profile
         if (kind == InteractionKind.KeyRelease) return
         val feedbackClass = feedbackClassFor(kind, output)
-        val soft = prefs.inputFeedback.hapticStyle.get() == io.github.sillypuppyy.dogboard.feel.HapticStyle.SOFT
-        if (soft && feedbackClass != null && hapticPlayer?.play(feedbackClass) == true) return
+        val style = prefs.inputFeedback.hapticStyle.get()
+        val own = style == io.github.sillypuppyy.dogboard.feel.HapticStyle.SOFT || style == io.github.sillypuppyy.dogboard.feel.HapticStyle.CRISP
+        if (own && feedbackClass != null && hapticPlayer?.play(feedbackClass, crisp = style == io.github.sillypuppyy.dogboard.feel.HapticStyle.CRISP) == true) return
         val hfc = when (kind) {
             InteractionKind.KeyPress -> HFC_KEYBOARD_PRESS
             InteractionKind.KeyRelease -> HFC_KEYBOARD_RELEASE

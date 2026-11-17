@@ -114,6 +114,7 @@ fun InputFeedbackScreen() {
                     entries = listPrefEntries {
                         entry(HapticStyle.PHONE, stringRes(R.string.enum__haptic_style__phone))
                         entry(HapticStyle.SOFT, stringRes(R.string.enum__haptic_style__soft))
+                        entry(HapticStyle.CRISP, stringRes(R.string.enum__haptic_style__crisp))
                     },
                     enabledIf = { prefs.inputFeedback.hapticEnabled isEqualTo true },
                 )

@@ -523,6 +523,7 @@
     <string name="pref__input_feedback__haptic_style__label" comment="Preference title">Vibration style</string>
     <string name="enum__haptic_style__phone">Your phone’s key click</string>
     <string name="enum__haptic_style__soft">Soft tap</string>
+    <string name="enum__haptic_style__crisp" comment="Enum value label">Crisp clicks (iPhone-like)</string>
     <string name="pref__typing__punctuation_group__title" comment="Preference group title">Punctuation</string>
     <string name="pref__typing__smart_quotes__label" comment="Preference title">Smart quotes</string>
     <string name="pref__typing__smart_quotes__summary" comment="Preference summary">Turns straight quotes into curly ones and apostrophes into ’</string>
