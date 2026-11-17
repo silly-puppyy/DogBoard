@@ -66,6 +66,28 @@ class RealTypoEvalTest : FunSpec({
             }
         }
         val sample = typos + correct
+        // DOGBOARD_RETRO=1: retrocorrection as the keyboard runs it when the next word is finished (the
+        // next word as typed, from the same sentence); DOGBOARD_RETRO_DUMP=file writes the two-word
+        // readings for the neural model (tmp/llm retro_scores.py), DOGBOARD_RETRO_NEURAL=file uses its
+        // scores (ln P(previous + next | text before)) blended by DOGBOARD_RETRO_WEIGHT (default 0.5)
+        val retro = System.getenv("DOGBOARD_RETRO") == "1"
+        val nextTyped = HashMap<String, String>()
+        if (retro) {
+            val want = sample.map { "${it[0]}\t${it[1].toInt() + 1}" }.toHashSet()
+            pairs.bufferedReader().useLines { lines ->
+                for (line in lines) {
+                    val row = line.split('\t')
+                    if (row.size == 5 && "${row[0]}\t${row[1]}" in want && row[3].isNotEmpty() && row[3].all { c -> c.lowercaseChar() in keys && c != ' ' }) nextTyped["${row[0]}\t${row[1]}"] = row[3].lowercase()
+                }
+            }
+        }
+        val retroDump = System.getenv("DOGBOARD_RETRO_DUMP")?.let { java.util.Collections.synchronizedList(ArrayList<String>()) }
+        val retroNeural = System.getenv("DOGBOARD_RETRO_NEURAL")?.let { path ->
+            File(path).useLines { lines -> lines.associate { l -> l.split('\t').let { (c, w, p) -> "$c\t$w" to p.toDouble() } } }
+        }
+        val retroWeight = System.getenv("DOGBOARD_RETRO_WEIGHT")?.toDouble() ?: 0.5
+        val retroRatio = kotlin.math.ln(1.65)
+        var retroChanged = java.util.concurrent.atomic.AtomicInteger()
 
         // DOGBOARD_DUMP_CANDIDATES=file: each case's top decoder candidates (word, score, geometry,
         // language score), for rescoring experiments with the neural model (tmp/llm)
@@ -100,7 +122,30 @@ class RealTypoEvalTest : FunSpec({
                 val candidates = neuralScores?.let { m ->
                     withNeural(decoded, { w -> m["${row[2]}\t$typed\t${w.replace(",", "")}"] }, neuralWeight, Decoder.LANGUAGE_POWER_CONTEXT)
                 } ?: decoded
-                val got = autocorrect.correction(typed, candidates) ?: typed
+                var got = autocorrect.correction(typed, candidates) ?: typed
+                val next = if (retro) nextTyped["${row[0]}\t${row[1].toInt() + 1}"] else null
+                if (next != null) {
+                    // as TypingEngine.retrocorrection: the previous word's top single words (decoder scores), each
+                    // followed by the best reading of the next word in its context; a change must win by 1.65x
+                    val d = decoders.get()
+                    val prevCands = decoded.filter { !it.isCompletion && it.words == 1 }.take(4)
+                    val committed = prevCands.firstOrNull { it.word.equals(got, ignoreCase = true) }
+                    if (committed != null && prevCands.size > 1) {
+                        val nTaps = next.map { c -> keys.getValue(c).let { k -> Tap((k.centerX + tapRng.nextGaussian() * sigma.first * GaussianTouch.POINTS_PER_MM).toFloat(), (k.centerY + tapRng.nextGaussian() * sigma.second * GaussianTouch.POINTS_PER_MM).toFloat()) } }
+                        val cur = d.decode(nTaps, keys, params, maxResults = 4, includeCompletions = false, previous = bigrams.contextId(got.lowercase()), typed = next)
+                            .filter { it.words == 1 && !it.isTypedString }.take(2)
+                        fun joint(pc: Candidate): Double = cur.maxOfOrNull { c ->
+                            val r = d.rescored(c, bigrams.contextId(pc.word.lowercase()), bigrams.contextId(prev))
+                            val n = retroNeural?.get("${row[2]}\t${pc.word} ${c.word}")
+                            if (n == null) pc.score + r.score
+                            else pc.geometry + r.geometry + Decoder.LANGUAGE_POWER_CONTEXT * ((1 - retroWeight) * (pc.languageModel + r.languageModel) + retroWeight * n)
+                        } ?: Double.NEGATIVE_INFINITY
+                        retroDump?.let { out -> for (pc in prevCands) for (c in cur) out.add("${row[2]}\t${pc.word} ${c.word}") }
+                        val base = joint(committed)
+                        val best = prevCands.filter { it !== committed && !it.isTypedString }.map { it to joint(it) }.maxByOrNull { it.second }
+                        if (best != null && best.second - base >= retroRatio) { got = best.first.word; retroChanged.incrementAndGet() }
+                    }
+                }
                 val typo = !typed.equals(intended, ignoreCase = true)
                 val result = when {
                     got.equals(intended, ignoreCase = true) -> if (typo) "fixed" else "kept"
@@ -119,6 +164,14 @@ class RealTypoEvalTest : FunSpec({
         println("REALTYPO ${if (System.getenv("DOGBOARD_MISSED_SPACE") == "0") "no-missed-space " else ""}${if (charModel != null) "charlm " else ""}${if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") "misspellings " else ""}${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
             endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
+        if (retro) println("RETRO %d words had a next word, %d changed%s".format(outcomes.count { nextTyped.containsKey("${it.row[0]}\t${it.row[1].toInt() + 1}") }, retroChanged.get(),
+            if (retroNeural != null) ", neural weight $retroWeight" else ""))
+        retroDump?.let { File(System.getenv("DOGBOARD_RETRO_DUMP")).writeText(it.toSet().joinToString("\n", postfix = "\n")) }
+        // real-word slips: the typo is itself a word ("form" for "from"), only context can tell
+        val realWord = outcomes.filter { it.typo && lexicon.contains(it.row[3].lowercase()) }
+        if (realWord.isNotEmpty()) println("REALWORD %d real-word slips: fixed %.1f%%, left %.1f%%, wrong word %.1f%%".format(realWord.size,
+            realWord.count { it.result == "fixed" } * 100.0 / realWord.size, realWord.count { it.result == "left" } * 100.0 / realWord.size,
+            realWord.count { it.result == "wrong" } * 100.0 / realWord.size))
         dumpCandidates?.let { path ->
             File(path).printWriter().use { w ->
                 for (o in outcomes) w.println("${o.row[2]}\t${o.row[3]}\t${o.row[4]}\t${o.result}\t${o.dump}")
