@@ -45,6 +45,8 @@ class HumanParams:
     over_median: float = 0.2    # run-on past the last key: median length (key widths)
     over_spread: float = 1.0    # its log-normal spread
     over_curl: float = 0.9      # how much the run-on bends (radians, at most)
+    along_ratio: float = 0.0    # > 0: target spread along the travel direction = this x the sideways one
+                                # (sideways = the sigma); 0: the older x / y spread (y = 0.8 x)
 
 
 # named versions, for comparisons (h2 = the defaults)
@@ -72,7 +74,16 @@ def path(word: str, centres: dict, rng: random.Random, p: HumanParams = HumanPar
     for i, (x, y) in enumerate(keys):
         s = sl * (p.sigma_start if i == 0 else p.sigma_end if i == n - 1 else p.sigma_mid)
         dy = p.start_dy if i == 0 else 0.0
-        tx, ty = x + rng.gauss(0, s), y + dy + rng.gauss(0, s * 0.8)
+        if p.along_ratio > 0:
+            # spread relative to the way the finger travels through the key
+            a = keys[max(i - 1, 0)]; b = keys[min(i + 1, n - 1)]
+            ux, uy = b[0] - a[0], b[1] - a[1]
+            un = math.hypot(ux, uy) or 1.0
+            ux, uy = ux / un, uy / un
+            al, ac = rng.gauss(0, s * p.along_ratio), rng.gauss(0, s)
+            tx, ty = x + al * ux - ac * uy, y + dy + al * uy + ac * ux
+        else:
+            tx, ty = x + rng.gauss(0, s), y + dy + rng.gauss(0, s * 0.8)
         if 0 < i < n - 1 and p.corner_along:
             # at a turn the finger overshoots or cuts short along its way in (more, the sharper)
             ax, ay = x - keys[i - 1][0], y - keys[i - 1][1]
