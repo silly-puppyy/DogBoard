@@ -10,6 +10,7 @@ or a power-off loses at most one epoch (machine notes: checkpoints, at most 2-3 
 import argparse
 import glob
 import os
+import sys
 import random
 import time
 
@@ -17,6 +18,9 @@ import torch
 import torch.nn as nn
 
 from model import SwipeNet, encode, greedy
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import track  # noqa: E402
 
 
 def batches(items, size, shuffle):
@@ -80,6 +84,10 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--resume", default="")
     ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--lang", default="en")
+    ap.add_argument("--layout", default="qwerty")
+    ap.add_argument("--name", default="", help="version name for tracking (default: the --out folder's name)")
+    ap.add_argument("--data-name", default="", help="what it trains on, for tracking (default: the --data folder's name)")
     a = ap.parse_args()
     torch.set_num_threads(2)  # the GPU does the work; leave the CPU cool
     os.makedirs(a.out, exist_ok=True)
@@ -92,6 +100,10 @@ def main():
     steps = a.epochs * ((len(train) + a.batch - 1) // a.batch)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.1)
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
+    run = track.start("swipe", a.lang, a.name or os.path.basename(a.out.rstrip("/")), layout=a.layout,
+                      data=a.data_name or os.path.basename(a.data.rstrip("/")),
+                      config=dict(epochs=a.epochs, batch=a.batch, lr=a.lr, augment=a.augment, train_swipes=len(train),
+                                  params=sum(p.numel() for p in model.parameters())))
     start, best = 0, 0.0
     if a.resume:
         ck = torch.load(a.resume)
@@ -113,6 +125,7 @@ def main():
             total += loss.item(); n += 1
             if n % 500 == 0:
                 print(f"epoch {epoch} step {n} loss {total / n:.3f}", flush=True)
+                run.log({"train/loss": total / n, "lr": sched.get_last_lr()[0], "epoch": epoch + n * a.batch / len(train)})
         acc = evaluate(model, dev, device)
         best = max(best, acc)
         state = {"model": model.state_dict(), "opt": opt.state_dict(), "sched": sched.state_dict(), "epoch": epoch, "best": best}
@@ -120,6 +133,8 @@ def main():
         if acc >= best:
             torch.save(model.state_dict(), os.path.join(a.out, "best.pt"))
         print(f"epoch {epoch}: loss {total / max(n, 1):.3f}, dev greedy word accuracy {acc:.3f}, {time.time() - t0:.0f} s", flush=True)
+        run.log({"dev/greedy_acc": acc, "dev/best_greedy_acc": best, "epoch": epoch + 1, "epoch_seconds": time.time() - t0})
+    run.finish()
 
 
 if __name__ == "__main__":
