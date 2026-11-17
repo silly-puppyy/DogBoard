@@ -280,6 +280,13 @@ class FlorisImeService : LifecycleInputMethodService() {
         super.onCreate()
         io.github.sillypuppyy.dogboard.perf.Perf.mark("service onCreate") // DogBoard: startup timing
         FlorisImeServiceReference = WeakReference(this)
+        // DogBoard: Advanced > Neural model: off lets it go at once, on loads it (where the phone runs it)
+        lifecycleScope.launch {
+            prefs.correction.neuralModel.asFlow().collect { on ->
+                if (!on) io.github.sillypuppyy.dogboard.engine.TypingEngine.attachNeuralLm(null)
+                else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureNeural(this@FlorisImeService) }
+            }
+        }
         // DogBoard: Brave's link rules for "Strip trackers from links" (small: 31 KB)
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.LinkCleaner.ensureLoaded(this@FlorisImeService) }
         systemLocalesFlow.value = resources.configuration.locales

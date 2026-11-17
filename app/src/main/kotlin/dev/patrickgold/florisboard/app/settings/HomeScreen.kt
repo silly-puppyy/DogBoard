@@ -136,7 +136,7 @@ fun HomeScreen() {
                             "Emoji and GIFs" -> Routes.Settings.DogEmoji
                             "Clipboard" -> Routes.Settings.DogClipboard
                             "Privacy" -> Routes.Settings.Privacy
-                            "Advanced" -> Routes.Settings.Other
+                            "Advanced" -> Routes.Settings.DogAdvanced
                             else -> Routes.Settings.DogAbout
                         }
                     )

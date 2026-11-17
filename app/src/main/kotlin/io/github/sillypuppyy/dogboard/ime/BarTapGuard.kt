@@ -25,6 +25,9 @@ import androidx.compose.ui.layout.positionInWindow
  */
 object BarTapGuard {
     const val WINDOW_MS = 500L
+
+    /** The window in effect: [WINDOW_MS] unless changed in Advanced > Timings (0 turns the guard off). */
+    @Volatile var windowMs = WINDOW_MS
     const val MIN_LETTER_PROB = 0.2
 
     /** When a letter or the space bar was last pressed (uptime ms). */

@@ -45,6 +45,8 @@ object EngineLoader {
      * phones and below keep the trigram).
      */
     fun neuralTier(context: Context): Boolean {
+        val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+        if (!prefs.correction.neuralModel.get()) return false // Advanced > Neural model
         val am = context.getSystemService(android.app.ActivityManager::class.java) ?: return false
         if (am.isLowRamDevice) return false
         val info = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }

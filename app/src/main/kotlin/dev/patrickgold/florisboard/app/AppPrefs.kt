@@ -181,6 +181,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard: backspace right after an autocorrection puts the typed word back (iOS); a feature
         // with its own switch (user, 2026-11-17)
         val undoOnBackspace = boolean(key = "correction__undo_on_backspace", default = true)
+        // DogBoard: Advanced > Neural model (only phones with room run it: EngineLoader.neuralTier)
+        val neuralModel = boolean(key = "correction__neural_model", default = true)
         // DogBoard, below the common rows on the Autocorrect page (user, 2026-11-17): iOS's look back (the previous
         // word changes when the next one reads much better) and rejoining a word split by a stray space
         val fixPreviousWord = boolean(key = "correction__fix_previous_word", default = true)
@@ -660,6 +662,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
 
     val other = Other()
     inner class Other {
+        // DogBoard: Developer options appear in Advanced after tapping the version in About 7 times
+        val devOptionsUnlocked = boolean(key = "other__dev_options_unlocked", default = false)
         val settingsTheme = enum(
             key = "other__settings_theme",
             default = AppTheme.AUTO,
@@ -861,6 +865,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val deleteWordMs = int(key = "feel__delete_word_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteWordInterval.inWholeMilliseconds.toInt())
         // DogBoard: Settings › Gestures: hold space, then slide to move the cursor (iOS); on by default
         val trackpadEnabled = boolean(key = "feel__trackpad_enabled", default = true)
+        // DogBoard: Advanced > Timings: a bar tap this soon after a key is read as a top-row key (BarTapGuard)
+        val barTapWindowMs = int(key = "feel__bar_tap_window_ms", default = io.github.sillypuppyy.dogboard.ime.BarTapGuard.WINDOW_MS.toInt())
         val trackpadHoldMs = int(key = "feel__trackpad_hold_ms", default = io.github.sillypuppyy.dogboard.feel.Trackpad.HOLD_MS.toInt())
         val trackpadStepDp = int(key = "feel__trackpad_step_dp", default = io.github.sillypuppyy.dogboard.feel.Trackpad.STEP_DP.toInt())
         // DogBoard: iOS "Enable Caps Lock" (KeyboardCapsLock); off = a second shift tap just toggles

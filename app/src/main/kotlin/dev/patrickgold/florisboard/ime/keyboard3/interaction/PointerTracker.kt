@@ -379,7 +379,7 @@ class PointerTracker(
      */
     fun barTapPosition(xPx: Float, size: IntSize, uptime: Long): Offset? {
         val guard = io.github.sillypuppyy.dogboard.ime.BarTapGuard
-        if (uptime - guard.lastKeyDownUptime > guard.WINDOW_MS || xPx < 0f || xPx > size.width) return null
+        if (uptime - guard.lastKeyDownUptime > guard.windowMs || xPx < 0f || xPx > size.width) return null
         val layerId = imeController.snapshotState().touchLayerId
         val letters = touchKeyboard.letterTargets(layerId, size.width / density, size.height / density, typingSpeed.interval).first
         if (letters.isEmpty()) return null

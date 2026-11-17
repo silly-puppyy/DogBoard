@@ -57,7 +57,7 @@ object SetHomeSpec {
         s("mood", "Emoji and GIFs", "Skin tone, recent emoji", P),
         s("content_paste", "Clipboard", "History, how long clips are kept", S),
         s("shield_person", "Privacy", "Incognito, contact names, your data", T),
-        s("tune", "Advanced", "Timings, developer options, backup", S),
+        s("tune", "Advanced", "Timings, neural model, backup", S),
         s("info", "About", "Version, licenses, credits", P),
     )
 }

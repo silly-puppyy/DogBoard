@@ -55,6 +55,12 @@ object SettingsSearch {
         Entry("Delete key repeat", "Advanced › Timings", "finetuning", "backspace hold speed whole words"),
         Entry("Space-bar trackpad", "Advanced › Timings", "finetuning", "cursor hold speed"),
         Entry("Backup and restore", "Advanced", "advanced", "export import save settings"),
+        Entry("Taps on the suggestion bar", "Advanced", "advanced", "bar tap guard top row window"),
+        Entry("Key preview", "Advanced", "advanced", "popup bubble pressed letter"),
+        Entry("Full-screen typing in landscape", "Advanced", "advanced", "landscape extract editor"),
+        Entry("Physical keyboard", "Advanced", "advanced", "hardware bluetooth keyboard"),
+        Entry("Neural model", "Advanced", "advanced", "battery memory ai language model"),
+        Entry("Show the app icon", "Advanced", "advanced", "launcher hide icon"),
         Entry("About", "About", "about", "version licenses credits"),
     )
 
