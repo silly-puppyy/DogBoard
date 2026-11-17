@@ -41,6 +41,7 @@ object LayoutPrefs {
 @Composable
 fun LayoutScreen() {
     val prefs by FlorisPreferenceStore
+    io.github.sillypuppyy.dogboard.design.MaterialYouTheme.Remember() // previews in the default look
     val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
     // read the stored values through their flows so the page follows every change

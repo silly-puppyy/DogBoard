@@ -62,4 +62,11 @@ object MaterialYouTheme {
 
     /** Set by the live keyboard: the default theme's tokens are these instead (null: the fixed palette). */
     @Volatile var override: Pair<Map<String, String>, Map<String, String>>? = null
+
+    /** Sets [override] for this process once (the keyboard and the settings previews both draw the default theme). */
+    @androidx.compose.runtime.Composable
+    fun Remember() {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        androidx.compose.runtime.remember(context) { if (override == null) override = forDevice(context); 0 }
+    }
 }

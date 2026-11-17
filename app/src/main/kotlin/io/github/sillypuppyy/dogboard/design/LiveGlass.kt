@@ -25,6 +25,11 @@ import kotlinx.coroutines.withContext
 /** The live keyboard's design theme: DogBoard's, or Glass over the user's photo (Kb:18-23, 400-406). */
 data class LiveTheme(
     val glass: Boolean,
+    /** The Themes page's choice resolved for now: the theme id and whether its dark version is drawn. */
+    val themeId: String = "dogboard",
+    val themeDark: Boolean = false,
+    /** Dalmatian's coat for this keyboard (0: the theme's own). */
+    val spotSeed: Int = 0,
     val dim: Float = 0.35f,
     val blur: Float = 12f,
     val keyOpacity: Float = 0.3f,
@@ -32,7 +37,7 @@ data class LiveTheme(
     val photoStamp: Long = 0L,
 ) {
     /** [p] with the Glass tokens when Glass is on; the photo itself is drawn by [LiveGlassBackdrop]. */
-    fun apply(p: KbProps): KbProps = if (!glass) p else p.copy(
+    fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed) else p.copy(
         theme = "glass", dim = dim, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
     )
 }
@@ -46,7 +51,18 @@ fun liveTheme(): LiveTheme {
     val blur by prefs.keyboard.glassBlur.collectAsState()
     val kop by prefs.keyboard.glassKeyOpacity.collectAsState()
     val lum by prefs.keyboard.glassPhotoLuminance.collectAsState()
-    return LiveTheme(enabled && stamp != 0L, dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp)
+    val day by prefs.keyboard.themeDay.collectAsState()
+    val night by prefs.keyboard.themeNight.collectAsState()
+    val follow by prefs.keyboard.themeFollow.collectAsState()
+    val reroll by prefs.keyboard.spotReroll.collectAsState()
+    val keptSeed by prefs.keyboard.spotSeed.collectAsState()
+    val (id, dark) = ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
+    // Dalmatian "every time it opens": a new coat per keyboard view, else the kept one
+    val openSeed = androidx.compose.runtime.remember { (1..96).random() }
+    // the Photo theme draws the glass photo when one is set, else the default look
+    val glass = (id == "glass" || enabled) && stamp != 0L
+    return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
+        dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp)
 }
 
 /**

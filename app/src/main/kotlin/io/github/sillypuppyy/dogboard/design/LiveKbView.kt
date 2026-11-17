@@ -136,7 +136,9 @@ fun LiveKbView(
 fun liveWindowBg(): androidx.compose.ui.graphics.Color {
     val context = androidx.compose.ui.platform.LocalContext.current
     remember(context) { if (MaterialYouTheme.override == null) MaterialYouTheme.override = MaterialYouTheme.forDevice(context); 0 }
-    return KbThemes.tokens("dogboard", liveDark()).bg
+    // the chosen theme's body colour (Themes page), in its day or night version
+    val p = liveTheme().apply(KbProps(dark = liveDark()))
+    return KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance).bg
 }
 
 /**

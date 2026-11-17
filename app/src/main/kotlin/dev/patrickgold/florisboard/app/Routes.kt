@@ -113,6 +113,11 @@ object Routes {
         @Deeplink("settings/layout")
         object Layout
 
+        // DogBoard: Settings › Look › Themes, the designer's themes page (SetThemes.dc.html)
+        @Serializable
+        @Deeplink("settings/themes")
+        object Themes
+
         @Serializable
         @Deeplink("settings/localization")
         object Localization
@@ -329,6 +334,7 @@ object Routes {
 
             composableWithDeepLink(Settings.Typing::class) { TypingScreen() }
             composableWithDeepLink(Settings.Layout::class) { io.github.sillypuppyy.dogboard.settings.LayoutScreen() }
+            composableWithDeepLink(Settings.Themes::class) { io.github.sillypuppyy.dogboard.settings.ThemesScreen() }
 
             composableWithDeepLink(Settings.Dictionary::class) {
                 // DogBoard: the designed "Your words" screen (SetDict.dc.html) with the design on

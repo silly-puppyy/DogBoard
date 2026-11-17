@@ -562,6 +562,15 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // dim, blur and key opacity as in the design (percent; blur in dp), the photo's measured
         // luminance (per mille) for the label contrast, and a stamp that changes with the photo
         val glassEnabled = boolean(key = "keyboard__glass_enabled", default = false)
+        // DogBoard: the Themes page (SetThemes.dc.html): day and night themes, following system dark mode
+        val themeDay = string(key = "keyboard__theme_day", default = "dogboard")
+        val themeNight = string(key = "keyboard__theme_night", default = "dogboard")
+        val themeFollow = boolean(key = "keyboard__theme_follow", default = true)
+        // Dalmatian: "open" = new spots each time the keyboard opens, "keep" = until shuffled; the kept coat
+        val spotReroll = string(key = "keyboard__spot_reroll", default = "open")
+        val spotSeed = int(key = "keyboard__spot_seed", default = 3)
+        // theme packs hidden from the Themes page (section ids, comma separated)
+        val hiddenThemePacks = string(key = "keyboard__hidden_theme_packs", default = "")
         val glassDim = int(key = "keyboard__glass_dim", default = 35)
         val glassBlur = int(key = "keyboard__glass_blur", default = 12)
         val glassKeyOpacity = int(key = "keyboard__glass_key_opacity", default = 30)
