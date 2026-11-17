@@ -26,7 +26,9 @@ from analyze_words import resample
 from compare_paths import measure, stats
 from physics import FingerParams, path as fpath
 
-FIT = ["omega", "omega_spread", "zeta", "switch", "switch_spread", "aim_first", "aim_mid", "aim_last",
+# parameters that get a per-person spread in the --cma fit (all but those with their own already)
+SPREAD = ["zeta", "aim_y_ratio", "start_dy", "noise", "noise_tau", "reach", "dwell", "aim_first", "aim_mid", "aim_last"]
+FIT = ["dwell", "omega", "omega_spread", "zeta", "switch", "switch_spread", "aim_first", "aim_mid", "aim_last",
        "care_spread", "bias", "noise", "noise_tau", "reach", "lift", "lift_spread"]
 
 
@@ -71,6 +73,8 @@ def main():
     ap.add_argument("--per-word", type=int, default=50)
     ap.add_argument("--evals", type=int, default=400)
     ap.add_argument("--out", default="")
+    ap.add_argument("--cma", action="store_true", help="CMA-ES over the typical values and a spread for every parameter")
+    ap.add_argument("--start", default="", help="params json to start from")
     a = ap.parse_args()
     layout = json.load(open(f"{a.futo}/swipe-5/layouts/qwerty.json"))
     counts, rows = defaultdict(int), []
@@ -103,7 +107,44 @@ def main():
         rng = random.Random(1)
         return summary([(w, keys, fpath(w, keys, rng, p)) for w, keys, _ in real])
 
-    base = FingerParams()
+    base = FingerParams(**json.load(open(a.start))) if a.start else FingerParams()
+    if base.dwell <= 0:
+        base = dataclasses.replace(base, dwell=100.0)
+    if a.cma:
+        import cma
+        names = FIT + [f"sd:{k}" for k in SPREAD]
+        x0 = np.concatenate([np.log([getattr(base, k) for k in FIT]), np.log([base.spreads.get(k, 0.2) for k in SPREAD])])
+
+        def params_of(v):
+            vals = {k: float(math.exp(x)) for k, x in zip(FIT, v[:len(FIT)])}
+            sds = {k: float(math.exp(x)) for k, x in zip(SPREAD, v[len(FIT):])}
+            return dataclasses.replace(base, spreads=sds, **vals)
+
+        def g(v):
+            p = params_of(v)
+            if p.zeta > 3 or p.omega > 200 or max(p.spreads.values()) > 1.5:
+                return 1e9
+            try:
+                e = error(sim(p), R)
+            except (OverflowError, ValueError, FloatingPointError):
+                return 1e9
+            return e if math.isfinite(e) else 1e9
+        print(f"start error {g(x0):.2f}  ({len(names)} numbers)", flush=True)
+        es = cma.CMAEvolutionStrategy(x0, 0.25, {"maxfevals": a.evals, "seed": 1, "verbose": -9})
+        while not es.stop():
+            xs = es.ask()
+            es.tell(xs, [g(x) for x in xs])
+            print(f"evals {es.countevals} best {es.result.fbest:.2f}", flush=True)
+        p = params_of(es.result.xbest)
+        M = sim(p)
+        print(f"final error {error(M, R):.2f}\n{p}")
+        for k in R:
+            print(f"  {k:22s} sim {M.get(k, float('nan')):.3f}  real {R[k]:.3f}")
+        if a.out:
+            d = dataclasses.asdict(p)
+            d = {k: (round(v, 4) if isinstance(v, float) else {kk: round(vv, 4) for kk, vv in v.items()} if isinstance(v, dict) else v) for k, v in d.items()}
+            json.dump(d, open(a.out, "w"), indent=1)
+        return
     x0 = np.log([getattr(base, k) for k in FIT])
 
     def f(v):

@@ -17,9 +17,10 @@ simulated person draws stiffness (speed), switch distance and care (aim spread) 
 Units: physical (units.py "phys": a tenth of the keyboard's width, both directions). Nothing here is
 specific to a layout: give key centres in those units.
 """
+import dataclasses
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -41,13 +42,19 @@ class FingerParams:
     reach: float = 0.25          # the last target counts as reached within this distance
     lift: float = 40.0           # ms from reaching the last key to lifting
     lift_spread: float = 0.6
+    dwell: float = 0.0           # ms resting on the first key before moving (recordings include it)
     dt: float = 8.0              # ms per step (a touch screen's sampling)
     max_ms: float = 4000.0
+    # per-person spread of any other parameter (user 2026-11-17: "sample all parameters on a
+    # gaussian"): name -> sd of a Gaussian in log space (log-normal: stays positive, spread relative)
+    spreads: dict = field(default_factory=dict)
 
 
 def person(rng: random.Random, p: FingerParams):
     """One simulated person's own constants."""
+    own = {k: getattr(p, k) * math.exp(rng.gauss(0, sd)) for k, sd in p.spreads.items() if sd > 0}
     return dict(
+        params=dataclasses.replace(p, **own) if own else p,
         omega=p.omega * math.exp(rng.gauss(0, p.omega_spread)),
         switch=p.switch * math.exp(rng.gauss(0, p.switch_spread)),
         care=math.exp(rng.gauss(0, p.care_spread)),
@@ -58,6 +65,7 @@ def person(rng: random.Random, p: FingerParams):
 def path(word: str, centres: dict, rng: random.Random, p: FingerParams = FingerParams(), who=None):
     """[(x, y, t_ms)] for `word` on keys at `centres` (physical key units)."""
     who = who or person(rng, p)
+    p = who.get("params", p)
     keys = [centres[c] for c in word]
     keys = [k for i, k in enumerate(keys) if i == 0 or k != keys[i - 1]]  # a double letter: no move
     n = len(keys)
@@ -73,6 +81,10 @@ def path(word: str, centres: dict, rng: random.Random, p: FingerParams = FingerP
     if n == 1:
         return out + [(x + rng.gauss(0, 0.03), y + rng.gauss(0, 0.03), p.dt * 3)]
     i, t, lift_at = 1, 0.0, None
+    # resting on the first key: the touch is down, the finger barely moves
+    while t + p.dt <= p.dwell:
+        t += p.dt
+        out.append((x + rng.gauss(0, 0.01), y + rng.gauss(0, 0.01), t))
     # the random force drifts (Ornstein-Uhlenbeck): sd p.noise, correlation time p.noise_tau
     keep = math.exp(-p.dt / max(p.noise_tau, 1e-3))
     kick = p.noise * math.sqrt(1 - keep * keep)
