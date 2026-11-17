@@ -191,10 +191,6 @@ class PointerTracker(
             typingInterval = typingSpeed.interval,
             letterPrior = imeController.letterPrior(),
         ) ?: return
-        if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
-            val n = down.position.normalized(size)
-            android.util.Log.d("DogBoardTap", "tap (%.3f, %.3f) of %.0fx%.0f dp -> %s".format(n.x, n.y, size.width / density, size.height / density, downKey.attrs.output))
-        }
         // DogBoard: remember where letter keys were tapped, for the word decoder
         if (downKey.isTextKey()) {
             val widthDp = size.width / density
