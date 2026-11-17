@@ -34,6 +34,10 @@ class HumanParams:
     speed_spread: float = 0.45  # log-normal spread of the speed between people / swipes
     sample_ms: float = 8.0      # touch sampling interval
     sloppy_spread: float = 0.45  # people (and swipes) differ in care: a log-normal factor on offsets and wobble
+    corner_along: float = 0.0   # extra spread along the travel direction at a key, for a 180-degree turn
+    over_median: float = 0.0    # run-on past the last key: median length (key widths)
+    over_spread: float = 1.0    # its log-normal spread
+    over_curl: float = 0.5      # how much the run-on bends (radians, at most)
 
 
 def _catmull(p0, p1, p2, p3, t):
@@ -53,7 +57,16 @@ def path(word: str, centres: dict, rng: random.Random, p: HumanParams = HumanPar
     for i, (x, y) in enumerate(keys):
         s = sl * (p.sigma_start if i == 0 else p.sigma_end if i == n - 1 else p.sigma_mid)
         dy = p.start_dy if i == 0 else 0.0
-        targets.append((x + rng.gauss(0, s), y + dy + rng.gauss(0, s * 0.8)))
+        tx, ty = x + rng.gauss(0, s), y + dy + rng.gauss(0, s * 0.8)
+        if 0 < i < n - 1 and p.corner_along:
+            # at a turn the finger overshoots or cuts short along its way in (more, the sharper)
+            ax, ay = x - keys[i - 1][0], y - keys[i - 1][1]
+            bx, by = keys[i + 1][0] - x, keys[i + 1][1] - y
+            na, nb = math.hypot(ax, ay) or 1.0, math.hypot(bx, by) or 1.0
+            cosang = max(-1.0, min(1.0, (ax * bx + ay * by) / (na * nb)))
+            along = rng.gauss(0, sl * p.corner_along * math.acos(cosang) / math.pi)
+            tx += along * ax / na; ty += along * ay / na
+        targets.append((tx, ty))
     if n == 1:
         targets = [targets[0], (targets[0][0] + rng.gauss(0, 0.05), targets[0][1] + rng.gauss(0, 0.05))]
         n = 2
@@ -70,6 +83,18 @@ def path(word: str, centres: dict, rng: random.Random, p: HumanParams = HumanPar
             w = p.cut * math.sin(math.pi * t) if 0 < i < n - 2 or True else 0.0
             pts.append((cx * (1 - w) + lx * w, cy * (1 - w) + ly * w))
     pts.append(targets[-1])
+    # run-on past the last key, bending a little
+    if p.over_median > 0 and len(targets) >= 2:
+        L = p.over_median * math.exp(rng.gauss(0, p.over_spread))
+        dx, dy = targets[-1][0] - targets[-2][0], targets[-1][1] - targets[-2][1]
+        heading = math.atan2(dy, dx)
+        curl = rng.uniform(-p.over_curl, p.over_curl)
+        steps = max(2, int(L / 0.05))
+        x, y = targets[-1]
+        for k in range(1, steps + 1):
+            h = heading + curl * k / steps
+            x += math.cos(h) * L / steps; y += math.sin(h) * L / steps
+            pts.append((x, y))
     # slow wobble across the direction of travel
     phase, freq = rng.uniform(0, 2 * math.pi), rng.uniform(0.6, 1.4)
     total = sum(math.dist(u, v) for u, v in zip(pts, pts[1:])) or 1e-6
