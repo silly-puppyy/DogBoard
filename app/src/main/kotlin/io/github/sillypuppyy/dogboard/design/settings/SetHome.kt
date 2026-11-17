@@ -2,6 +2,9 @@ package io.github.sillypuppyy.dogboard.design.settings
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -183,6 +186,8 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
             }
             TryItDock(Modifier.align(Alignment.BottomCenter), live = actions != null)
         }
+        // the page colour behind the status bar, so the scrolled page doesn't run under the clock
+        if (actions != null) Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(SetColors.screen))
     }
 }
 

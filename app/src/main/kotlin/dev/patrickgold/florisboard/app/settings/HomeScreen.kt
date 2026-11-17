@@ -75,6 +75,7 @@ fun HomeScreen() {
         prefs.keyboard.numberRow.collectAsState().value; prefs.keyboard.numberRowLongPress.collectAsState().value
         prefs.keyboard.bottomRow.collectAsState().value; prefs.keyboard.hintKind.collectAsState().value
         prefs.keyboard.spaceLabel.collectAsState().value; prefs.keyboard.capsLabels.collectAsState().value
+        prefs.keyboard.symbolPages.collectAsState().value; prefs.keyboard.pillKeys.collectAsState().value
         val layoutPreset = io.github.sillypuppyy.dogboard.settings.LayoutPrefs.presetIndex(io.github.sillypuppyy.dogboard.settings.LayoutPrefs.read(prefs))
         val keyboardHeight by prefs.keyboard.heightPercent.collectAsState()
         val scope = androidx.compose.runtime.rememberCoroutineScope()
