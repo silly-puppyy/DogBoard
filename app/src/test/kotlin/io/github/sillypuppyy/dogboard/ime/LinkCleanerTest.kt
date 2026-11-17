@@ -28,6 +28,11 @@ class LinkCleanerTest : FunSpec({
             "https://www.amazon.de/Some-Product-Name/dp/B000000000/ref=mp_s_a_1_1_sspa?crid=XXXX&dib=YYYY&dib_tag=se&keywords=dog&qid=1&sprefix=dog&sr=8-1-spons&aref=ZZZZ&sp_csd=QQQQ&psc=1"
         ) shouldBe "https://www.amazon.de/Some-Product-Name/dp/B000000000"
         LinkCleaner.cleanUrl("https://www.instagram.com/reel/AAAAAAAAAAA/?cplk=XXXXXXXX") shouldBe "https://www.instagram.com/reel/AAAAAAAAAAA/"
+        // TikTok video links (as a short link expands): no query at all; a search keeps its ?q=
+        LinkCleaner.cleanUrl("https://www.tiktok.com/@someone/video/7000000000000000000?_r=1&_t=XXXX&is_from_webapp=1&sender_device=pc&share_link_id=YYYY&u_code=ZZZZ&user_id=1") shouldBe
+            "https://www.tiktok.com/@someone/video/7000000000000000000"
+        LinkCleaner.cleanUrl("https://www.tiktok.com/search?q=dogs&_t=XXXX") shouldBe "https://www.tiktok.com/search?q=dogs"
+        LinkCleaner.cleanUrl("https://www.instagram.com/explore/search/keyword/?q=dogs") shouldBe "https://www.instagram.com/explore/search/keyword/?q=dogs"
         // short links: the code is the share; nothing to strip offline
         LinkCleaner.clean("https://vm.tiktok.com/AAAAAAAAA/") shouldBe "https://vm.tiktok.com/AAAAAAAAA/"
         LinkCleaner.clean("Take a look! https://pin.it/AAAAAAAAA") shouldBe "Take a look! https://pin.it/AAAAAAAAA"

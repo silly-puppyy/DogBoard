@@ -79,8 +79,16 @@ object LinkCleaner {
     // Short links (vm.tiktok.com/..., pin.it/..., a.co/...) carry the share in the code itself; only
     // asking the shortener gives the real link (ShortLinks, opt-in).
 
-    /** Sites whose page links work without any query: all of it goes (Instagram posts and reels). */
-    private val NO_QUERY = setOf("instagram.com")
+    /**
+     * Pages that work without any query: all of it goes. Instagram posts and reels; TikTok videos and
+     * photos, whose share links carry a long, changing set of tags (_r, _t, share_link_id, u_code,
+     * user_id, sender_device...; user 2026-11-17: "it expands to even more tracking parameters").
+     * Other pages of these sites (a search's ?q=) keep their query.
+     */
+    private val NO_QUERY = mapOf(
+        "instagram.com" to Regex("^/(p|reel|reels|tv)/"),
+        "tiktok.com" to Regex("^/@[^/]+/(video|photo)/|^/v/"),
+    )
 
     /** Amazon shops (amazon.de, amazon.co.uk, ...): the product page alone, without /ref=... or the query. */
     private val AMAZON = Regex("""^(.+\.)?amazon\.[a-z.]+$""")
@@ -101,7 +109,10 @@ object LinkCleaner {
         val q = url.indexOf('?')
         if (q < 0) return url
         val hash = url.indexOf('#', q).let { if (it < 0) url.length else it }
-        if (NO_QUERY.any { host == it || host.endsWith(".$it") }) return url.substring(0, q) + url.substring(hash)
+        val path = "/" + url.substringAfter("://").substringAfter('/', "").substringBefore('?')
+        if (NO_QUERY.any { (site, pages) -> (host == site || host.endsWith(".$site")) && pages.containsMatchIn(path) }) {
+            return url.substring(0, q) + url.substring(hash)
+        }
         val siteTags = PER_SITE.entries.filter { (site, _) -> host == site || host.endsWith(".$site") }.flatMap { it.value }.toSet()
         val braveTags = brave.filter { r -> r.include.any { it.matches(url) } && r.exclude.none { it.matches(url) } }.flatMap { it.params }.toSet()
         val kept = url.substring(q + 1, hash).split('&').filter { p ->
