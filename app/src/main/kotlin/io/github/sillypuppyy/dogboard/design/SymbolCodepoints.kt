@@ -123,4 +123,5 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "auto_fix_high" to 0xE663,
     "format_quote" to 0xE244,
     "match_case" to 0xF6F1,
+    "pin" to 0xF045,
 )

@@ -53,12 +53,9 @@ fun clipLead(d: KbClipData, fn: Color, fnFg: Color): KbClipLead? {
         d.media -> KbClipLead(if (d.icon == "play_circle") "Video" else "Photo", icon = d.icon, fg = fnFg)
         // the canvas's "clears in 0:52" while auto-clear is on (Settings > Clipboard)
         d.sensitive -> KbClipLead("••••••••", d.clearsInSec?.let { "clears in %d:%02d".format(it / 60, it % 60) } ?: "Password", icon = "lock", bg = fn, fg = fnFg)
-        else -> HEX.matchEntire(s)?.let { m ->
-            val rgb = m.groupValues[1].toInt(16)
-            KbClipLead(
-                "#" + m.groupValues[1].uppercase(), "rgb ${rgb shr 16 and 255} ${rgb shr 8 and 255} ${rgb and 255}",
-                bg = Color(0xFF000000 or rgb.toLong()), fg = fnFg, round = true, mono = true,
-            )
+        // a colour (ClipKinds: #RGB, #RRGGBB, rgb(), hsl(); the whole clip only)
+        else -> io.github.sillypuppyy.dogboard.ime.ClipKinds.color(s)?.let { c ->
+            KbClipLead(c.hex, c.rgb.removePrefix("rgb(").removeSuffix(")").let { "rgb $it" }, bg = Color(c.argb), fg = fnFg, round = true, mono = true)
         } ?: LINK.matchEntire(s)?.let { m ->
             val host = m.groupValues[2].lowercase()
             KbClipLead(host, m.groupValues[3].trimEnd('/'), letter = host.take(1).uppercase(), bg = fn, fg = fnFg)
@@ -69,7 +66,6 @@ fun clipLead(d: KbClipData, fn: Color, fnFg: Color): KbClipLead? {
 /** Kb:42: what the "Links" filter keeps: a clip that is a link (the link tile's test). */
 fun isLinkClip(text: String): Boolean = LINK.matchEntire(text.trim()) != null
 
-private val HEX = Regex("#?([0-9a-fA-F]{6})")
 private val LINK = Regex("(?i)(https?://)?(?:www\\.)?((?:[a-z0-9-]+\\.)+[a-z]{2,})(/\\S*)?")
 
 data class KbTool(val icon: String, val label: String, val pinned: Boolean = false)

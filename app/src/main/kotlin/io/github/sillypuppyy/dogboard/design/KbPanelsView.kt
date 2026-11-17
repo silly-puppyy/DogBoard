@@ -161,7 +161,9 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                         .clip(PILL).tap(actions?.let { a -> { a.onChip(i) } }).padding(start = 10.dp, end = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Symbol(c.icon, 18.sp, fg)
+                    // a colour clip: its swatch with a hairline, so white and black still show (Clipboard page)
+                    if (c.swatch != null) Box(Modifier.size(18.dp).background(Color(c.swatch), PILL).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(0x33000000))), PILL))
+                    else if (c.icon.isNotEmpty()) Symbol(c.icon, 18.sp, fg)
                     DText(c.label, Modifier.widthIn(max = CHIP_TEXT_MAX), style = text(14, 500, fg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     if (c.sub.isNotEmpty()) DText(c.sub, Modifier.alpha(0.75f), style = text(12, 400, fg))
                 }

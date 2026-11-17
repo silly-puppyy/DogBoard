@@ -97,10 +97,21 @@ fun TextInputLayout(
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.ShortLinks.expandAll(text) }
                 }
             }
-            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips) {
+            // a copied code in a field that asks for a number (ClipKinds.code)
+            val numberField = imeState.editor.info.inputAttributes.type == dev.patrickgold.florisboard.ime.editor.InputAttributes.Type.NUMBER
+            var clipCode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips, numberField) {
                 val offer = if (!clipSuggestion) null else io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
                 clipShown = offer
+                val clipText = offer?.takeIf { !it.isSensitive && it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT }?.text.orEmpty()
+                val color = if (smartChips) io.github.sillypuppyy.dogboard.ime.ClipKinds.color(clipText) else null
+                clipCode = if (smartChips) io.github.sillypuppyy.dogboard.ime.ClipKinds.code(clipText, numberField) else null
                 clipChips = if (!smartChips || offer == null || offer.isSensitive || offer.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT) emptyList()
+                // the designer's Clipboard page: a colour pastes as copied, the other formats beside it
+                else if (color != null) listOf(io.github.sillypuppyy.dogboard.design.KbChipData("", "Paste colour " + clipText.trim(), insert = clipText.trim(), swatch = color.argb)) +
+                    color.others().map { (name, value) -> io.github.sillypuppyy.dogboard.design.KbChipData("palette", name, insert = value) }
+                // a code in a number field: digits only, never the spaces a number field would refuse
+                else if (clipCode != null) listOf(io.github.sillypuppyy.dogboard.design.KbChipData("pin", "Paste code " + clipCode!!.chunked(3).joinToString(" "), insert = clipCode!!))
                 else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                     val whole = io.github.sillypuppyy.dogboard.design.KbChipData(io.github.sillypuppyy.dogboard.ime.RecentClip.icon(context, offer), io.github.sillypuppyy.dogboard.ime.RecentClip.label(offer))
                     listOf(whole) + io.github.sillypuppyy.dogboard.ime.RecentClip.entities(context, offer.text.orEmpty()).take(3)
@@ -145,11 +156,13 @@ fun TextInputLayout(
                             io.github.sillypuppyy.dogboard.ime.RecentClip.markUsed(item)
                             clipShown = null
                             // the whole clip pastes as itself; a piece of it as text
-                            if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
+                            val code = clipCode
+                            if (i == 0 && code != null) imeController.updateStateBlocking { emitChip(code, space = false, undoable = true) }
+                            else if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
                             else clipChips.getOrNull(i)?.let { c ->
                                 imeController.updateStateBlocking {
-                                    val piece = if (prefs.clipboard.stripTrackers.get()) cleanedPaste(c.label) else c.label
-                                    emitChip(piece, undoable = true, original = c.label)
+                                    val piece = if (prefs.clipboard.stripTrackers.get()) cleanedPaste(c.insert) else c.insert
+                                    emitChip(piece, undoable = true, original = c.insert)
                                 }
                             }
                         }
