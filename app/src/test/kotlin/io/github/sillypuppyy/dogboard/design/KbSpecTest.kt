@@ -226,4 +226,16 @@ class KbSpecTest : FunSpec({
         searchGridOrder(20).drop(16).take(4) shouldContainExactly listOf(16, 20, 17, 21)
         searchGridOrder(0) shouldBe emptyList<Int>()
     }
+
+    // DOGBOARD_SPEED set: what one render of the keyboard costs (the live keyboard renders on every
+    // press, release and preview-fade frame)
+    test("render speed").config(enabled = System.getenv("DOGBOARD_SPEED") != null) {
+        val mx = java.lang.management.ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
+        val props = KbProps(width = 411f, keyH = 260f, only = "live")
+        repeat(300) { KbSpec.render(props.copy(pressed = if (it % 2 == 0) "e" else "")) }
+        val a0 = mx.currentThreadAllocatedBytes; val t0 = System.nanoTime()
+        val n = 1000
+        repeat(n) { KbSpec.render(props.copy(pressed = if (it % 2 == 0) "e" else "")) }
+        println("SPEED KbSpec.render: %.3f ms, %.0f KB allocated per render".format((System.nanoTime() - t0) / 1e6 / n, (mx.currentThreadAllocatedBytes - a0) / 1024.0 / n))
+    }
 })
