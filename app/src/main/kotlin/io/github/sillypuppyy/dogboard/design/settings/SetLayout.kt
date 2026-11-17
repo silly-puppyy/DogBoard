@@ -202,7 +202,7 @@ fun SetLayout(state: SetLayoutState) {
             Row(Modifier.padding(horizontal = 32.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Symbol("translate", 18.sp, SetColors.primary)
                 DText(
-                    "Set per language. Languages without capital letters hide Letter case; Japanese adds Flick guides; Arabic and Hindi add Digit shapes.",
+                    "These choices apply to every language. Languages that need their own (a script without capitals, other digits) will show only what fits them.",
                     style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4,
                 )
             }
