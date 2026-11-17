@@ -114,6 +114,13 @@ class Lexicon private constructor(capacity: Int) {
         return listOf(word(node)!! to logProb[node].toDouble())
     }
 
+    /** The most likely casing of the word at [node] (forms(node).first() without the list), or null. */
+    fun firstForm(node: Int): String? = when {
+        wordId[node] == NONE -> null
+        hasCasings.get(node) -> casings[node]?.firstOrNull()?.first ?: word(node)
+        else -> word(node)
+    }
+
     /** Every stored casing of [word] (case-insensitive lookup). */
     fun formsOf(word: String): List<String> = find(word).takeIf { it != NONE }?.let { n -> forms(n).map { it.first } }.orEmpty()
 

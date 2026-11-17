@@ -149,6 +149,8 @@ configure<ApplicationExtension> {
         }
         unitTests.all {
             it.useJUnitPlatform()
+            // DOGBOARD_JFR=<file>: record the test JVM with Java Flight Recorder (allocation profiling)
+            System.getenv("DOGBOARD_JFR")?.let { f -> it.jvmArgs("-XX:StartFlightRecording=filename=$f,settings=profile") }
         }
     }
 }
