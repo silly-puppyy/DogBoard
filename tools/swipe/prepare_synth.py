@@ -70,6 +70,7 @@ def main():
     ap.add_argument("-n", type=int, default=800000)
     ap.add_argument("--top", type=int, default=100000)
     ap.add_argument("--workers", type=int, default=2)
+    ap.add_argument("--uniform", type=float, default=0.5, help="share of words drawn evenly from --top (the rest by frequency, as in text)")
     ap.add_argument("--shard", type=int, default=200000)
     ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     ap.add_argument("--aspect", type=float, default=0.42, help="phys: the keyboard's letter area height / width")
@@ -88,8 +89,8 @@ def main():
     os.makedirs(a.out, exist_ok=True)
 
     def draw(n):
-        half = n // 2
-        return rng.choices(words, weights=weights, k=half) + rng.choices(words, k=n - half)
+        even = int(n * a.uniform)
+        return rng.choices(words, weights=weights, k=n - even) + rng.choices(words, k=even)
 
     with Pool(a.workers, initializer=init, initargs=(centres, gen_of(a.human))) as pool:
         def build(n, seed0):
