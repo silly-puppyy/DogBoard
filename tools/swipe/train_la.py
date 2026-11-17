@@ -26,16 +26,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import track  # noqa: E402
 
 
-def move_together(x, lens, keys, gen_flip=True):
+def move_together(x, lens, keys, gen_flip=True, strong=False):
     """The same random affine map on each swipe's path and its keyboard (key units), steps recomputed.
     x (B, T, 4), keys (B, K, 2)."""
     b, t, _ = x.shape
     dev = x.device
     centre = torch.tensor([5.0, 1.5], device=dev)
-    ang = (torch.rand(b, device=dev) * 2 - 1) * math.radians(15)
-    shear = (torch.rand(b, device=dev) * 2 - 1) * 0.2
-    sx = torch.empty(b, device=dev).uniform_(0.8, 1.2)
-    sy = torch.empty(b, device=dev).uniform_(0.8, 1.2)
+    # strong: keyboards of other shapes (5 rows of 8, taller canvases) need a wider range
+    ang = (torch.rand(b, device=dev) * 2 - 1) * math.radians(30 if strong else 15)
+    shear = (torch.rand(b, device=dev) * 2 - 1) * (0.3 if strong else 0.2)
+    lo, hi = (0.6, 1.4) if strong else (0.8, 1.2)
+    sx = torch.empty(b, device=dev).uniform_(lo, hi)
+    sy = torch.empty(b, device=dev).uniform_(lo, hi)
     if gen_flip:
         sx = sx * torch.where(torch.rand(b, device=dev) < 0.5, -1.0, 1.0)
         sy = sy * torch.where(torch.rand(b, device=dev) < 0.5, -1.0, 1.0)
@@ -108,6 +110,7 @@ def main():
     ap.add_argument("--batch", type=int, default=256)
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--no-flip", action="store_true")
+    ap.add_argument("--strong", action="store_true", help="wider shape augmentation and time reversal")
     ap.add_argument("--name", default="")
     a = ap.parse_args()
     torch.set_num_threads(2)
@@ -137,7 +140,7 @@ def main():
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
     name = a.name or os.path.basename(a.out.rstrip("/"))
     run = track.start("swipe", "en", name, layout="any", data=os.path.basename(a.data.rstrip("/")),
-                      config=dict(model="layout-agnostic", backbone=a.backbone, epochs=a.epochs, batch=a.batch, lr=a.lr,
+                      config=dict(model="layout-agnostic", backbone=a.backbone, strong_aug=a.strong, epochs=a.epochs, batch=a.batch, lr=a.lr,
                                   flips=not a.no_flip, params=params, train_swipes=len(train)))
     best = 0.0
     for epoch in range(a.epochs):
@@ -145,7 +148,17 @@ def main():
         for x, lens, words in batches(train, a.batch, True):
             x = x.to(device)
             keys = kt.unsqueeze(0).expand(x.shape[0], -1, -1)
-            x, keys = move_together(x, lens, keys, not a.no_flip)
+            x, keys = move_together(x, lens, keys, not a.no_flip, a.strong)
+            if a.strong:
+                # time reversal for half the batch: the path backwards spells the word backwards
+                rev = torch.rand(x.shape[0]) < 0.5
+                for i in torch.nonzero(rev).flatten().tolist():
+                    n = int(lens[i])
+                    xy = x[i, :n, :2].flip(0)
+                    step = torch.zeros_like(xy)
+                    step[:-1] = xy[1:] - xy[:-1]
+                    x[i, :n] = torch.cat([xy, step], -1)
+                    words[i] = words[i][::-1]
             logp = model(x, keys)
             targets = torch.tensor([index[c] for w in words for c in w])
             loss = ctc(logp.transpose(0, 1), targets, lens, torch.tensor([len(w) for w in words]))
