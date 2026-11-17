@@ -31,7 +31,7 @@ private fun sourceFile(relPath: String): TextSourceFile {
 }
 
 @OptIn(WillRequireMigrationToRichErrors::class)
-private suspend fun compileLayout(path: String): K3CompileResult {
+internal suspend fun compileLayout(path: String): K3CompileResult {
     val importResolver = K3ImportResolver { importPath, _ ->
         val relPath = runCatching { URI(importPath).path?.removePrefix("/") }.getOrNull() ?: importPath
         sourceFile("import/$relPath")

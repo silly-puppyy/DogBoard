@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
-"""Generate DogBoard's English QWERTY layout (keyboard3 / CLDR Keyboard 3.0 XML).
+"""Generate DogBoard's keyboard layouts (keyboard3 / CLDR Keyboard 3.0 XML), one file per layout.
+
+Every layout shares the symbol planes, field rows and widths; only the letter rows differ. English
+QWERTY is defined here; other layouts take their letter rows from FlorisBoard's layout data
+(app/src/main/assets/ime/keyboard/org.florisboard.layouts/layouts/characters/*.json).
 
 Key widths are in keyboard3 units (a row is 10 units wide). They follow a 375 dp reference
-keyboard where a letter cell is 37.5 dp (1 unit):
+keyboard where a letter cell is 37.5 dp (1 unit) with ten letters in the widest row; with more
+letters per row every letter narrows to fill it:
 
     row 3:  shift 48 | gap 8 | 7 letters | gap 8.5 | delete 48
     row 4:  123 46.5 | fn 47 | space 188 | return 93.5
 
 Run from the repository root:
-    python3 tools/layouts/gen_qwerty_en.py
+    python3 tools/layouts/gen_layouts.py
 """
+import json
+from dataclasses import dataclass, field
 from pathlib import Path
 
-OUT = Path("app/src/main/assets/extensions/org.florisboard.k3.foundation/keyboard/qwerty-en.xml")
+OUT_DIR = Path("app/src/main/assets/extensions/org.florisboard.k3.foundation/keyboard")
+FLORIS_LAYOUTS = Path("app/src/main/assets/ime/keyboard/org.florisboard.layouts/layouts/characters")
 
 UNIT = 37.5  # dp per keyboard3 width unit on the reference keyboard
 
@@ -32,9 +40,6 @@ RETURN = w(93.5)
 # 375, URL from the 375 pt layout); TLD and currency long-press sets as in iOS
 EMAIL_KEY = w(40 * 375 / 320)  # 320 pt email row (40 pt keys) stretched to 375
 SPACE_EMAIL = w(375 - 46.5 - 47 - 2 * 40 * 375 / 320 - 93.5)  # space + the merged dictation slot
-PERIOD_URL = w(63)
-SLASH_URL = w(62)
-DOTCOM = w(63)
 TLDS = ".org .edu .net"  # long-press on .com
 PUNCT_WIDE = "1.4"   # the five wide punctuation keys on the symbol layers (5 x 1.4 = 7 letters)
 
@@ -80,7 +85,49 @@ WIDE_PUNCT = {
     "bang-wide": ("!", "¡"), "apos-wide": ("'", "’ ‘ `"),
 }
 
-ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
+
+
+@dataclass
+class Layout:
+    """A layout's letter rows (one string per key: letters, or a punctuation key in a letter row)."""
+    id: str
+    locale: str
+    name: str
+    layout: str
+    indicator: str
+    rows: list[list[str]]
+    # row 3's gaps around the letters (units); None: what the row leaves over, split evenly
+    gaps3: tuple[str, str] | None = None
+    accents: dict[str, str] = field(default_factory=lambda: ACCENTS)
+    # the shift layer's key where it isn't the letter's own capital (FlorisBoard case selectors: ß -> ẞ)
+    uppers: dict[str, str] = field(default_factory=dict)
+
+
+ENGLISH = Layout("qwerty-en", "en", "English (QWERTY)", "QWERTY", "EN",
+                 [list("qwertyuiop"), list("asdfghjkl"), list("zxcvbnm")], gaps3=(GAP_LEFT, GAP_RIGHT))
+
+
+def floris_layout(id: str, locale: str, name: str, layout: str, indicator: str, file: str) -> Layout:
+    """A layout from a FlorisBoard layout file: its key labels as letter rows, case selectors as uppers."""
+    data = json.loads((FLORIS_LAYOUTS / f"{file}.json").read_text(encoding="utf-8"))
+    rows, uppers = [], {}
+    for row in (data.get("arrangement", data) if isinstance(data, dict) else data):
+        keys = []
+        for k in row:
+            if k.get("$") == "case_selector":
+                keys.append(k["lower"]["label"])
+                uppers[k["lower"]["label"]] = k["upper"]["label"]
+            else:
+                keys.append(k["label"])
+        rows.append(keys)
+    return Layout(id, locale, name, layout, indicator, rows, uppers=uppers)
+
+
+LAYOUTS = [
+    ENGLISH,
+    floris_layout("qwertz-de", "de", "Deutsch (QWERTZ)", "QWERTZ", "DE", "german"),
+    floris_layout("azerty-fr", "fr", "Français (AZERTY)", "AZERTY", "FR", "azerty"),
+]
 
 SYMBOL_1 = [
     ["s-1", "s-2", "s-3", "s-4", "s-5", "s-6", "s-7", "s-8", "s-9", "s-0"],
@@ -107,12 +154,79 @@ def key_with_alts(key_id: str, output: str, alts: str, width: str | None = None)
     return lines
 
 
-def letter_keys() -> list[str]:
+def key_id(c: str) -> str:
+    """A letter row key's id: the letter itself for a-z / A-Z (as before), else its code point."""
+    return c if c.isascii() and c.isalpha() else f"u{ord(c):04x}" if c.islower() or not c.isalpha() else f"U{ord(c):04x}"
+
+
+def upper(c: str, lay: "Layout | None" = None) -> str:
+    """The shift layer's key: the layout's own capital, else a letter's capital (one character), else unchanged."""
+    if lay is not None and c in lay.uppers:
+        return lay.uppers[c]
+    u = c.upper()
+    return u if len(u) == 1 else c
+
+
+def letter_keys(lay: Layout) -> list[str]:
     lines = []
-    for letter in "".join(ROWS):
-        for case_letter in (letter, letter.upper()):
-            lines += key_with_alts(case_letter, case_letter, ACCENTS.get(case_letter, ""))
+    seen = set()
+    for c in [c for row in lay.rows for c in row]:
+        for case_c in (c, upper(c, lay)):
+            if key_id(case_c) in seen:
+                continue
+            seen.add(key_id(case_c))
+            lines += key_with_alts(key_id(case_c), case_c, lay.accents.get(case_c, ""), letter_width(lay))
     return lines
+
+
+def letter_width(lay: Layout) -> str | None:
+    """Letter key width when the widest of the first two rows has more than ten keys, else None (1 unit)."""
+    n = max(len(lay.rows[0]), len(lay.rows[1]))
+    return None if n <= 10 else f"{10 / n:.4f}".rstrip("0").rstrip(".")
+
+
+def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
+    """Row 3: shift, a gap, the letters, a gap, delete; narrower shift / delete when the letters need it."""
+    letters = " ".join(key_id(upper(c, lay) if shifted else c) for c in lay.rows[2])
+    if lay.gaps3 is not None:
+        return f"{shift_id} gap-left {letters} gap-right bksp"
+    w = float(letter_width(lay) or 1)
+    rest = 10 - len(lay.rows[2]) * w - 2 * float(SHIFT)
+    if rest >= 0:
+        return f"{shift_id} gap3-{lay.id} {letters} gap3-{lay.id} bksp"
+    return f"{shift_id}-narrow-{lay.id} {letters} bksp-narrow-{lay.id}"
+
+
+def row_keys(lay: Layout, i: int, shifted: bool) -> str:
+    """Rows 1 and 2: the letters, centred with half-gaps when the row is shorter than the widest."""
+    w = float(letter_width(lay) or 1)
+    keys = " ".join(key_id(upper(c, lay) if shifted else c) for c in lay.rows[i])
+    side = (10 - len(lay.rows[i]) * w) / 2
+    if lay is ENGLISH or side < 0.01:
+        return keys
+    return f"gap{i + 1}-{lay.id} {keys} gap{i + 1}-{lay.id}"
+
+
+def layout_gaps(lay: Layout) -> list[str]:
+    """The per-layout gap and narrow shift / delete keys rows 1-3 use."""
+    if lay is ENGLISH:
+        return []
+    w = float(letter_width(lay) or 1)
+    fmt = lambda x: f"{x:.4f}".rstrip("0").rstrip(".")
+    out = []
+    for i in (0, 1):
+        side = (10 - len(lay.rows[i]) * w) / 2
+        if side >= 0.01:
+            out.append(f'<key id="gap{i + 1}-{lay.id}" gap="true" width="{fmt(side)}" />')
+    rest = 10 - len(lay.rows[2]) * w - 2 * float(SHIFT)
+    if rest >= 0:
+        out.append(f'<key id="gap3-{lay.id}" gap="true" width="{fmt(rest / 2)}" />')
+    else:
+        side = fmt((10 - len(lay.rows[2]) * w) / 2)
+        out += [f'<key id="base-to-shift-narrow-{lay.id}" layerId="shift" width="{side}" />',
+                f'<key id="shift-to-base-narrow-{lay.id}" layerId="base" width="{side}" />',
+                f'<key id="bksp-narrow-{lay.id}" output="@k3:action/backspace" width="{side}" />']
+    return out
 
 
 def bottom_row(mode_key: str) -> str:
@@ -122,7 +236,7 @@ def bottom_row(mode_key: str) -> str:
 # Field-specific bottom rows; the app swaps a "<layer>-<variant>" layer in for base and shift.
 FIELD_ROWS = {
     "email": "to-symbol-1 fn-key space-email at-email period-email enter",
-    "url": "to-symbol-1 fn-key period-url slash-url dotcom enter",
+    "url": "to-symbol-1 fn-key space-email slash-url period-url enter",
     # the designer's Classic bottom row (Layout element "Bottom row"): ?123 · comma · emoji · space ·
     # period · action, 1.5 · 1 · 1 · 4 · 1 · 1.5 units; email puts @ in the comma slot, URLs /. The
     # emoji key is its narrower copy fn-key-classic (TouchModel treats both ids as the fn key).
@@ -132,7 +246,7 @@ FIELD_ROWS = {
 }
 
 
-def build() -> str:
+def build(lay: Layout) -> str:
     keys = [
         "",
         "<!-- Layer switches -->",
@@ -161,9 +275,11 @@ def build() -> str:
         '<key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />',
         f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
         f'<key id="period-email" output="." width="{EMAIL_KEY}" />',
-        f'<key id="period-url" output="." width="{PERIOD_URL}" />',
-        f'<key id="slash-url" output="/" width="{SLASH_URL}" />',
-        f'<key id="dotcom" output=".com" width="{DOTCOM}" longPressKeyIds="{" ".join("tld-" + t.strip(".").replace(".", "-") for t in TLDS.split())}" />',
+        "<!-- URL fields keep a space bar (Android address bars are search boxes too; Gboard keeps one):",
+        "     the email row's widths, with / and . ; the domains on a long press of . -->",
+        f'<key id="period-url" output="." width="{EMAIL_KEY}" longPressKeyIds="tld-com tld-org tld-net tld-edu" longPressDefaultKeyId="tld-com" />',
+        f'<key id="slash-url" output="/" width="{EMAIL_KEY}" />',
+        '<key id="tld-com" output=".com" />',
         *[f'<key id="tld-{t.strip(".").replace(".", "-")}" output="{t}" />' for t in TLDS.split()],
         f'<key id="fn-key" gap="true" width="{FN}" />',
         f'<key id="gap-left" gap="true" width="{GAP_LEFT}" />',
@@ -175,7 +291,8 @@ def build() -> str:
           for line in key_with_alts(key_id, out, alts, PUNCT_WIDE)],
         "",
         "<!-- Letters -->",
-        *letter_keys(),
+        *letter_keys(lay),
+        *layout_gaps(lay),
         "",
         "<!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->",
         '<key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />',
@@ -194,21 +311,17 @@ def build() -> str:
     ]
 
     wide = " ".join(WIDE_PUNCT)
-    letters = [" ".join(row) for row in ROWS]
+    base_rows = [row_keys(lay, 0, False), row_keys(lay, 1, False), row3(lay, "base-to-shift", False)]
+    shift_rows = [row_keys(lay, 0, True), row_keys(lay, 1, True), row3(lay, "shift-to-base", True)]
     layers = [
-        ("base", [letters[0], letters[1], f"base-to-shift gap-left {letters[2]} gap-right bksp", bottom_row("to-symbol-1")]),
-        ("shift", [letters[0].upper(), letters[1].upper(),
-                   f"shift-to-base gap-left {letters[2].upper()} gap-right bksp", bottom_row("to-symbol-1")]),
+        ("base", base_rows + [bottom_row("to-symbol-1")]),
+        ("shift", shift_rows + [bottom_row("to-symbol-1")]),
         ("symbol-1", [" ".join(SYMBOL_1[0]), " ".join(SYMBOL_1[1]),
                       f"to-symbol-2 gap-left {wide} gap-right bksp", bottom_row("to-base")]),
         ("symbol-2", [" ".join(SYMBOL_2[0]), " ".join(SYMBOL_2[1]),
                       f"to-symbol-1-row3 gap-left {wide} gap-right bksp", bottom_row("to-base")]),
         *[(f"{layer}-{variant}", rows[:3] + [row]) for variant, row in FIELD_ROWS.items()
-          for layer, rows in (
-              ("base", [letters[0], letters[1], f"base-to-shift gap-left {letters[2]} gap-right bksp", ""]),
-              ("shift", [letters[0].upper(), letters[1].upper(),
-                         f"shift-to-base gap-left {letters[2].upper()} gap-right bksp", ""]),
-          )],
+          for layer, rows in (("base", base_rows + [""]), ("shift", shift_rows + [""]))],
         ("numeric", [
             "plus-numeric 1-numeric 2-numeric 3-numeric percent-numeric",
             "open-paren-numeric 4-numeric 5-numeric 6-numeric space-numeric",
@@ -218,9 +331,9 @@ def build() -> str:
     ]
 
     out = [
-        '<keyboard3 xmlns="https://schemas.unicode.org/cldr/45/keyboard3" conformsTo="45" locale="en">',
-        '    <info author="DogBoard" name="English (QWERTY)" layout="QWERTY" indicator="EN" />',
-        "    <!-- Generated by tools/layouts/gen_qwerty_en.py; edit the generator, not this file. -->",
+        f'<keyboard3 xmlns="https://schemas.unicode.org/cldr/45/keyboard3" conformsTo="45" locale="{lay.locale}">',
+        f'    <info author="DogBoard" name="{lay.name}" layout="{lay.layout}" indicator="{lay.indicator}" />',
+        "    <!-- Generated by tools/layouts/gen_layouts.py; edit the generator, not this file. -->",
         "",
         "    <displays>",
         '        <display keyId="base-to-shift" display="@fl:icon/shift" />',
@@ -256,5 +369,7 @@ def build() -> str:
 
 
 if __name__ == "__main__":
-    OUT.write_text(build(), encoding="utf-8")
-    print(f"wrote {OUT}")
+    for lay in LAYOUTS:
+        out = OUT_DIR / f"{lay.id}.xml"
+        out.write_text(build(lay), encoding="utf-8")
+        print(f"wrote {out}")
