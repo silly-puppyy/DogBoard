@@ -7,7 +7,8 @@ DIR is huggingface.co/datasets/futo-org/swipe.futo.org (MIT, (c) 2025 FUTO): tra
 swipe per line: word, canvas size, and the path as normalised points (x, y in 0..1 over the letter
 area; their qwerty.json: keys 0.1 wide, rows a third high). A path becomes key units (x * 10, y * 3),
 resampled every --spacing key widths along its length, with the step to the next point:
-features (x, y, dx, dy). Words are lowercased, punctuation at their ends stripped ("Atri," > atri)
+features (x, y, dx, dy). With --units phys (units.py): y scaled by the canvas aspect instead, and each
+item carries a third field, that y scale (key centres: cy * it), as the canvas differs per swipe. Words are lowercased, punctuation at their ends stripped ("Atri," > atri)
 and apostrophes dropped (don't > dont: the decoder steps over apostrophes for free); then only a-z
 words are kept (before 2026-11-17 evening words with punctuation were dropped: ~14% of the swipes).
 """
@@ -17,6 +18,8 @@ import math
 import os
 
 import torch
+
+import units
 
 MAX_POINTS = 160
 
@@ -44,8 +47,9 @@ def resample(pts, spacing):
     return out[:MAX_POINTS]
 
 
-def features(path, spacing):
-    pts = resample([(p["x"] * 10.0, p["y"] * 3.0) for p in path], spacing)
+def features(path, spacing, sx=10.0, sy=3.0):
+    """sx, sy: units.scale() (default: the first models' grid units)."""
+    pts = resample([(p["x"] * sx, p["y"] * sy) for p in path], spacing)
     f = []
     for i, (x, y) in enumerate(pts):
         nx, ny = pts[i + 1] if i + 1 < len(pts) else pts[i]
@@ -53,7 +57,7 @@ def features(path, spacing):
     return torch.tensor(f, dtype=torch.float32)
 
 
-def convert(src, dst_prefix, spacing, shard):
+def convert(src, dst_prefix, spacing, shard, mode="grid", layout=None):
     items, n, kept, part = [], 0, 0, 0
     with open(src, encoding="utf-8") as fh:
         for line in fh:
@@ -63,7 +67,8 @@ def convert(src, dst_prefix, spacing, shard):
             path = d.get("data") or []
             if not w or not w.isascii() or not w.isalpha() or not path or len(w) > 24:
                 continue
-            items.append((features(path, spacing), w))
+            sx, sy = units.scale(mode, layout, d.get("canvas_width"), d.get("canvas_height"))
+            items.append((features(path, spacing, sx, sy), w) if mode == "grid" else (features(path, spacing, sx, sy), w, sy))
             kept += 1
             if shard and len(items) >= shard:
                 torch.save(items, f"{dst_prefix}-{part}.pt")
@@ -80,11 +85,12 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--spacing", type=float, default=0.3)
     ap.add_argument("--shard", type=int, default=200000)
+    ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     a = ap.parse_args()
+    layout = json.load(open(os.path.join(a.futo, "swipe-5", "layouts", "qwerty.json")))
     os.makedirs(a.out, exist_ok=True)
-    convert(os.path.join(a.futo, "dev.jsonl"), os.path.join(a.out, "dev"), a.spacing, 0)
-    convert(os.path.join(a.futo, "test.jsonl"), os.path.join(a.out, "test"), a.spacing, 0)
-    convert(os.path.join(a.futo, "train.jsonl"), os.path.join(a.out, "train"), a.spacing, a.shard)
+    for split, shard in (("dev", 0), ("test", 0), ("train", a.shard)):
+        convert(os.path.join(a.futo, f"{split}.jsonl"), os.path.join(a.out, split), a.spacing, shard, a.units, layout)
 
 
 if __name__ == "__main__":
