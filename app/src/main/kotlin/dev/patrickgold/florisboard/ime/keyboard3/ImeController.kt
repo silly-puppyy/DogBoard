@@ -1387,7 +1387,7 @@ class ImeController(
             autoSpace = false
             lastSpaceUptime = null
             pendingTap = null
-            if (revertLastCorrection() || revertLastRetro()) {
+            if (prefs.correction.undoOnBackspace.get() && (revertLastCorrection() || revertLastRetro())) {
                 reevaluateInputShiftState()
                 publishSuggestions()
                 return

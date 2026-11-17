@@ -172,6 +172,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__autocorrect_level",
             default = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.STANDARD,
         )
+        // DogBoard: backspace right after an autocorrection puts the typed word back (iOS); a feature
+        // with its own switch (user, 2026-11-17)
+        val undoOnBackspace = boolean(key = "correction__undo_on_backspace", default = true)
         // DogBoard: autocorrect adapts to what the user keeps and undoes (AutocorrectStrength; user, 2026-11-15: on)
         val adaptiveStrength = boolean(
             key = "correction__adaptive_strength",

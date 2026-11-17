@@ -41,6 +41,7 @@ fun TypingCorrectionScreen() {
     val autocorrectOn by prefs.correction.autocorrect.collectAsState()
     val level by prefs.correction.autocorrectLevel.collectAsState()
     val adaptive by prefs.correction.adaptiveStrength.collectAsState()
+    val undo by prefs.correction.undoOnBackspace.collectAsState()
     val suggestions by prefs.suggestion.enabled.collectAsState()
     val emojiMode by prefs.suggestion.emojiMode.collectAsState()
     val offensive by prefs.suggestion.blockPossiblyOffensive.collectAsState()
@@ -59,13 +60,16 @@ fun TypingCorrectionScreen() {
         ) {
             SetGroup("Correction") {
                 Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TitleSub("Autocorrect", "How readily typos are fixed when you press space. Backspace right after a fix puts your word back.")
+                    TitleSub("Autocorrect", "How readily typos are fixed when you press space.")
                     Segmented("tc:level", listOf("Off", "Gentle", "Standard", "Strong"), if (!autocorrectOn) 0 else 1 + L.indexOf(level)) { i ->
                         scope.launch {
                             prefs.correction.autocorrect.set(i > 0)
                             if (i > 0) prefs.correction.autocorrectLevel.set(L[i - 1])
                         }
                     }
+                }
+                SetSwitchRow("tc:undo", "Undo with backspace", "Backspace right after a fix puts back the word you typed.", undo) { v ->
+                    scope.launch { prefs.correction.undoOnBackspace.set(v) }
                 }
                 SetSwitchRow("tc:adapt", "Learn from your undos", "Autocorrect gets more careful when you often undo it, and bolder when you keep its fixes.", adaptive) { v ->
                     scope.launch { prefs.correction.adaptiveStrength.set(v) }
