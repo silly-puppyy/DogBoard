@@ -42,6 +42,11 @@ SCOWL_KINDS = ("words", "upper", "proper-names", "abbreviations", "contractions"
 # Zipf floor for SCOWL words wordfreq does not have, by SCOWL size level (rarer level, lower floor)
 LEVEL_FLOOR = [(35, 1.0), (50, 0.9), (60, 0.8), (70, 0.7), (80, 0.6), (95, 0.5)]
 # wordfreq-only words (not in SCOWL or Wikidata) need at least this Zipf to be added
+# short words only web text has (--short-word-filter): written in lowercase less than this share of
+# the time, they are acronyms or names stored in the wrong case and take their usual written form
+SHORT_MIN_LOWERCASE_SHARE = 0.10
+# units the short-word filter never removes
+UNITS = {"Hz", "Pa", "Wb", "Gy", "Sv", "Bq", "Np", "Da", "Gb", "Mb", "Kb"}
 MIN_ZIPF_WEB_ONLY = 3.0
 # possessives are kept only from this Zipf up
 MIN_ZIPF_POSSESSIVE = 2.5
@@ -293,6 +298,8 @@ def main():
     ap.add_argument("--casing", default="", help="casing_counts.py output; keeps SCOWL's casings of a word with a measured split")
     ap.add_argument("--min-zipf-web-only", type=float, default=MIN_ZIPF_WEB_ONLY, help="words only wordfreq has (slang, brands, tech) kept from this Zipf up")
     ap.add_argument("--min-zipf-possessive", type=float, default=MIN_ZIPF_POSSESSIVE, help="possessives ('s, s') kept from this Zipf up")
+    ap.add_argument("--short-word-filter", action="store_true", help="drop short fragments and abbreviations (see main)")
+    ap.add_argument("--short-word-report", default="", help="write the short words the filter dropped here")
     ap.add_argument("--seen-counts", default="", help="count_unigrams.py output (FineWeb): plain lowercase SCOWL words it never saw are dropped")
     args = ap.parse_args()
 
@@ -434,6 +441,79 @@ def main():
             z = lexicon.pop(c.upper())
             lexicon[c] = math.log10(10 ** lexicon.get(c, -9) + 10 ** z)
     lexicon["I"] = lexicon.pop("i", zipf.get("i", 7.0))
+
+    # short words (user, 2026-11-17: "Th is certainly unexpected... cut down the up to 4-5 letter words,
+    # and even harsher on 1-3 letter words"): a short entry is a cheap target for a slip and shows up
+    # as a completion ("ofth" -> "of Th"), so it must be a real word, a name or a common word, not a
+    # fragment or an abbreviation the web counts happen to hold
+    if args.short_word_filter:
+        names = {n.lower() for n in people} | {n.lower() for n in places} | {n.lower() for n in wikidata}
+        # how often each short word is written in lowercase among all its casings (FineWeb): acronyms
+        # and names are mostly capitalised (doj 1.5 %, nyt 3 %), slang mostly not (plz 70 %, pov 18 %)
+        casings = defaultdict(lambda: [0, 0])  # lowercase key -> [lowercase count, all count]
+        written = {}  # lowercase key -> (count, its most common written form)
+        if args.seen_counts:
+            with open(args.seen_counts, encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("#"):
+                        continue
+                    w, n = line.rstrip("\n").split("\t", 1)
+                    if len(w) <= 5 and w.isalpha():
+                        c = casings[w.lower()]
+                        c[1] += int(n)
+                        if w.islower():
+                            c[0] += int(n)
+                        if int(n) > written.get(w.lower(), (0, ""))[0]:
+                            written[w.lower()] = (int(n), w)
+        lowercase_share = lambda w: (casings[w][0] / casings[w][1]) if w in casings and casings[w][1] else 1.0
+        dropped = []
+        recased = []
+        for w in list(lexicon):
+            letters = sum(c.isalpha() for c in w)
+            if letters > 5 or "'" in w or w == "I":
+                continue
+            level, kind = scowl.get(w, (99, ""))
+            z = lexicon[w]
+            harsh = letters <= 3
+            # a capitalised or mixed-case form SCOWL has only in its capitalised list, from a rarer level,
+            # that isn't a person's name, a place or a brand: abbreviations and capitalised common words
+            # (Th, Ca, Md, Fr, Au, New, Law, Old)
+            # (4-5 letters only when the word is also stored in lowercase, a pure duplicate: real proper
+            # nouns without one stay, Kurds, Shia)
+            twin = w.lower() != w and w.lower() in lexicon
+            # Without a lowercase twin the word would disappear, so only what is surely not a word goes:
+            # two-letter abbreviations (Th, Md, Pb), rare three-letter ones; never units (Hz) or
+            # mixed case (MHz)
+            title = w[:1].isupper() and w[1:].islower()
+            gone_ok = title and w not in UNITS and (letters == 2 or (letters == 3 and z < 3.0))
+            capital_only = (not w.islower() and kind == "upper" and level >= (50 if harsh else 70)
+                            and w.lower() not in names and (twin or (harsh and gone_ok)))
+            # a lowercase word only web text has (no dictionary lists it), unless it is common: slang
+            # stays (lol, idk, omg), fragments and lowercase acronyms go (doj, mvs, crp)
+            web_only = w.islower() and w not in scowl
+            # mostly written capitalised: an acronym, brand or name stored in the wrong case; it takes
+            # its usual written form (xbox -> Xbox, nhs -> NHS) unless that form is already stored
+            if web_only and lowercase_share(w) < SHORT_MIN_LOWERCASE_SHARE and w in written:
+                form = written[w][1]
+                if form != w and form not in lexicon:
+                    lexicon[form] = lexicon.pop(w)
+                    recased.append((w, form))
+                    continue
+            # its usual written form is already stored: this lowercase copy is a duplicate. Nothing is cut
+            # for being rare (user, 2026-11-17: "don't cut important words"): chat words like mhm, cya
+            # and omw are rare in web text and often capitalised at a sentence start
+            web_only_rare = web_only and lowercase_share(w) < SHORT_MIN_LOWERCASE_SHARE
+            if capital_only or web_only_rare:
+                dropped.append((w, round(z, 2), "capital-only" if capital_only else "web-only"))
+                del lexicon[w]
+        if args.short_word_report:
+            with open(args.short_word_report, "w", encoding="utf-8") as f:
+                for w, z, why in sorted(dropped, key=lambda d: -d[1]):
+                    f.write(f"{w}\t{z}\t{why}\n")
+            with open(args.short_word_report + ".recased", "w", encoding="utf-8") as f:
+                for a, b in recased:
+                    f.write(f"{a}\t{b}\n")
+        print(f"short-word filter: dropped {len(dropped)}, recased {len(recased)}", file=sys.stderr)
 
     # possessives: only frequent ones; the engine generates the rest
     for w in [w for w in lexicon if w.lower().endswith(("'s", "s'"))]:
