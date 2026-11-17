@@ -77,16 +77,18 @@ def path(word: str, centres: dict, rng: random.Random, p: FingerParams = FingerP
     keep = math.exp(-p.dt / max(p.noise_tau, 1e-3))
     kick = p.noise * math.sqrt(1 - keep * keep)
     fx, fy = rng.gauss(0, p.noise), rng.gauss(0, p.noise)
+    # sub-steps keep the integration stable for stiff springs (w * h well below 2)
+    sub = max(1, math.ceil(w * dt / 0.3))
+    h = dt / sub
     while t < p.max_ms:
         tx, ty = targets[i]
         fx = fx * keep + rng.gauss(0, kick)
         fy = fy * keep + rng.gauss(0, kick)
-        ax = w * w * (tx - x) - 2 * z * w * vx + fx
-        ay = w * w * (ty - y) - 2 * z * w * vy + fy
-        vx += ax * dt
-        vy += ay * dt
-        x += vx * dt
-        y += vy * dt
+        for _ in range(sub):
+            vx += (w * w * (tx - x) - 2 * z * w * vx + fx) * h
+            vy += (w * w * (ty - y) - 2 * z * w * vy + fy) * h
+            x += vx * h
+            y += vy * h
         t += p.dt
         out.append((x, y, t))
         d = math.hypot(tx - x, ty - y)

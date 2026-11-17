@@ -110,7 +110,11 @@ def main():
         p = dataclasses.replace(base, **{k: float(math.exp(x)) for k, x in zip(FIT, v)})
         if p.zeta > 3 or p.omega > 200:
             return 1e9
-        return error(sim(p), R)
+        try:
+            e = error(sim(p), R)
+        except (OverflowError, ValueError, FloatingPointError):
+            return 1e9
+        return e if math.isfinite(e) else 1e9
     best = [1e18, None]
 
     def cb(v):
