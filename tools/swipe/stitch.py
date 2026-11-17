@@ -161,8 +161,9 @@ class Library:
         return out
 
 
-def build(jsonl, centres, n, out):
+def build(jsonl, layout, n, out, mode="grid"):
     import json
+    import units
     lib = Library()
     k = 0
     with open(jsonl) as f:
@@ -171,7 +172,8 @@ def build(jsonl, centres, n, out):
             w = d["word"].lower().strip(".,;:!?\"()[]{}").replace("'", "")
             if not (w.isascii() and w.isalpha()) or len(w) < 2:
                 continue
-            lib.add(w, [(p["x"] * 10, p["y"] * 3) for p in d["data"]], centres)
+            sx, sy = units.scale(mode, layout, d.get("canvas_width"), d.get("canvas_height"))
+            lib.add(w, units.points(d["data"], sx, sy), units.keys(layout, sx, sy))
             k += 1
             if k >= n:
                 break
@@ -186,6 +188,7 @@ if __name__ == "__main__":
     ap.add_argument("--futo", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("-n", type=int, default=100000)
+    ap.add_argument("--units", default="grid", choices=("grid", "phys", "key"))
     a = ap.parse_args()
     lay = json.load(open(f"{a.futo}/swipe-5/layouts/qwerty.json"))
-    build(f"{a.futo}/train.jsonl", {k["letter"]: (k["cx"] * 10, k["cy"] * 3) for k in lay["keys"]}, a.n, a.out)
+    build(f"{a.futo}/train.jsonl", lay, a.n, a.out, a.units)
