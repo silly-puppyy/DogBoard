@@ -21,6 +21,18 @@ class LinkCleanerTest : FunSpec({
         LinkCleaner.cleanUrl("https://example.com/search?s=dogs&si=1") shouldBe "https://example.com/search?s=dogs&si=1"
     }
 
+    // shapes of real share links (made-up IDs and values; real ones identify the sharer)
+    test("Wikipedia, Amazon and Instagram share links") {
+        LinkCleaner.cleanUrl("https://en.wikipedia.org/wiki/Dog?wprov=abcd1") shouldBe "https://en.wikipedia.org/wiki/Dog"
+        LinkCleaner.cleanUrl(
+            "https://www.amazon.de/Some-Product-Name/dp/B000000000/ref=mp_s_a_1_1_sspa?crid=XXXX&dib=YYYY&dib_tag=se&keywords=dog&qid=1&sprefix=dog&sr=8-1-spons&aref=ZZZZ&sp_csd=QQQQ&psc=1"
+        ) shouldBe "https://www.amazon.de/Some-Product-Name/dp/B000000000"
+        LinkCleaner.cleanUrl("https://www.instagram.com/reel/AAAAAAAAAAA/?cplk=XXXXXXXX") shouldBe "https://www.instagram.com/reel/AAAAAAAAAAA/"
+        // short links: the code is the share; nothing to strip offline
+        LinkCleaner.clean("https://vm.tiktok.com/AAAAAAAAA/") shouldBe "https://vm.tiktok.com/AAAAAAAAA/"
+        LinkCleaner.clean("Take a look! https://pin.it/AAAAAAAAA") shouldBe "Take a look! https://pin.it/AAAAAAAAA"
+    }
+
     test("links inside text; other text and links without a query are untouched") {
         LinkCleaner.clean("Look: https://www.youtube.com/watch?v=abc&si=zz and https://example.com/plain, ok?") shouldBe
             "Look: https://www.youtube.com/watch?v=abc and https://example.com/plain, ok?"
