@@ -222,7 +222,7 @@ fun SetSliderRow(
         LintParent(id) {
             Row(Modifier.heightIn(min = 44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 DText(title, Modifier.weight(1f), style = setText(16f))
-                DText(format(value), style = setText(16f, 600, if (changed) css("#2a4678") else SetColors.onSurfaceVariant))
+                DText(format(value), style = setText(16f, 600, if (changed) SetColors.primary else SetColors.onSurfaceVariant))
                 if (changed) {
                     Box(
                         Modifier.size(44.dp).background(SetColors.secondaryContainer, CircleShape).clickable { onChange(default) },

@@ -209,6 +209,10 @@ object Routes {
         @Deeplink("settings/privacy")
         object Privacy
 
+        @Serializable
+        @Deeplink("settings/sound-vibration")
+        object SoundVibration
+
         // DogBoard: About › Data licenses (the attribution of the shipped word data)
         @Serializable
         @Deeplink("settings/about/data-licenses")
@@ -371,6 +375,7 @@ object Routes {
             composableWithDeepLink(Settings.FineTuning::class) { io.github.sillypuppyy.dogboard.settings.FineTuningScreen() }
             composableWithDeepLink(Settings.TypingCorrection::class) { io.github.sillypuppyy.dogboard.settings.TypingCorrectionScreen() }
             composableWithDeepLink(Settings.Privacy::class) { io.github.sillypuppyy.dogboard.settings.PrivacyScreen() }
+            composableWithDeepLink(Settings.SoundVibration::class) { io.github.sillypuppyy.dogboard.settings.SoundVibrationScreen() }
             composableWithDeepLink(Settings.DataLicenses::class) { io.github.sillypuppyy.dogboard.settings.DataLicensesScreen() }
             composableWithDeepLink(Settings.Search::class) {
                 val nav = LocalNavController.current

@@ -87,6 +87,8 @@ class SetHomeActions(
     val onActionWords: (Boolean) -> Unit = {},
     val onSearch: (() -> Unit)? = null,
     val keyboardHeight: Int = 100,
+    /** The Look row's line: the chosen theme(s). */
+    val lookSub: String = "DogBoard, follows your wallpaper",
     val onKeyboardHeight: (Int) -> Unit = {},
 )
 
@@ -142,7 +144,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     }
                     SetLinkRow("main:look", actions?.onLook) {
                         MiniKeyboard()
-                        TitleSub("Look", "DogBoard · follows your wallpaper", Modifier.weight(1f))
+                        TitleSub("Look", actions?.lookSub ?: "DogBoard, follows your wallpaper", Modifier.weight(1f))
                         Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
                     }
                     SetBlockRow("main:autocorrect") {
@@ -198,11 +200,12 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
  */
 @Composable
 private fun MiniKeyboard() {
-    val w = css("#ffffff"); val f = css("#dbe2f9"); val a = css("#435e91")
+    // the canvas's colours are the default scheme's roles; the app's scheme now follows the keyboard theme
+    val w = SetColors.row; val f = SetColors.secondaryContainer; val a = SetColors.primary
     val col = (52f - 9f) / 4f
     val rowH = (32f - 6f) / 3f
     Column(
-        Modifier.size(64.dp, 44.dp).background(css("#ededf4"), RoundedCornerShape(10.dp)).padding(6.dp),
+        Modifier.size(64.dp, 44.dp).background(SetColors.surfaceContainerHighest, RoundedCornerShape(10.dp)).padding(6.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         for (row in listOf(listOf(w to 1, w to 1, w to 1, w to 1), listOf(f to 1, w to 1, w to 1, f to 1), listOf(f to 1, w to 2, a to 1))) {

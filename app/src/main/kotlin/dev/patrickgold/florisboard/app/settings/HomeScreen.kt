@@ -78,6 +78,16 @@ fun HomeScreen() {
         prefs.keyboard.symbolPages.collectAsState().value; prefs.keyboard.pillKeys.collectAsState().value
         val layoutPreset = io.github.sillypuppyy.dogboard.settings.LayoutPrefs.presetIndex(io.github.sillypuppyy.dogboard.settings.LayoutPrefs.read(prefs))
         val keyboardHeight by prefs.keyboard.heightPercent.collectAsState()
+        val themeDay by prefs.keyboard.themeDay.collectAsState()
+        val themeNight by prefs.keyboard.themeNight.collectAsState()
+        val themeFollow by prefs.keyboard.themeFollow.collectAsState()
+        val lookSub = io.github.sillypuppyy.dogboard.design.ThemeChoice.let { tc ->
+            val day = tc.theme(themeDay); val night = tc.theme(themeNight)
+            when {
+                !themeFollow || themeDay == themeNight -> day.name + if (day.id == "dogboard") ", follows your wallpaper" else ""
+                else -> "${day.name} by day, ${night.name} at night"
+            }
+        }
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
         io.github.sillypuppyy.dogboard.design.settings.SetHome(
@@ -111,6 +121,7 @@ fun HomeScreen() {
                 onActionWords = { on -> scope.launch { prefs.keyboard.actionKeyWords.set(on) } },
                 keyboardHeight = keyboardHeight,
                 onKeyboardHeight = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },
+                lookSub = lookSub,
                 onSection = { title ->
                     navController.navigate(
                         when (title) {
@@ -119,7 +130,7 @@ fun HomeScreen() {
                             "Typing and correction" -> Routes.Settings.TypingCorrection
                             "Privacy" -> Routes.Settings.Privacy
                             "Your words" -> Routes.Settings.Dictionary
-                            "Sound and vibration" -> Routes.Settings.Keyboard.InputFeedback
+                            "Sound and vibration" -> Routes.Settings.SoundVibration
                             "Gestures" -> Routes.Settings.Gestures
                             "Clipboard and toolbar" -> Routes.Settings.Clipboard
                             "Advanced" -> Routes.Settings.Other
