@@ -26,6 +26,8 @@ import dev.patrickgold.florisboard.app.Routes
 import dev.patrickgold.florisboard.app.components.FlorisScreenNg
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import io.github.sillypuppyy.dogboard.design.Symbol
+import io.github.sillypuppyy.dogboard.design.css
+import io.github.sillypuppyy.dogboard.design.settings.SetSectionRow
 import io.github.sillypuppyy.dogboard.design.settings.SetColors
 import io.github.sillypuppyy.dogboard.design.settings.SetGroup
 import io.github.sillypuppyy.dogboard.design.settings.SetLinkRow
@@ -74,12 +76,16 @@ fun TypingCorrectionScreen() {
         else -> "Standard"
     }
     SetPage("Autocorrect and typing") {
+        // icon rows as on the home page (user, 2026-11-17: "maybe add icons to the autocorrect menu")
+        val primary = SetColors.container(css("#d8e2ff"), css("#2a4678"))
+        val secondary = SetColors.container(css("#dbe2f9"), css("#3f4759"))
+        val tertiary = SetColors.container(css("#fbd7fc"), css("#583e5b"))
         SetRows(Modifier.fillMaxWidth()) {
-            SetPageLink("tc:autocorrect", "Autocorrect", "$levelName. Undo with backspace, learning from your undos") { nav.navigate(Routes.Settings.AutocorrectPage) }
-            SetPageLink("tc:suggestions", "Suggestions", "Words above the keys, emoji, offensive words, contact names") { nav.navigate(Routes.Settings.SuggestionsPage) }
-            SetPageLink("tc:capitals", "Capitals", "Sentence starts, names and “I”, caps lock") { nav.navigate(Routes.Settings.CapitalsPage) }
-            SetPageLink("tc:punctuation", "Smart punctuation", "Curly quotes, dashes, double-space full stop") { nav.navigate(Routes.Settings.PunctuationPage) }
-            SetPageLink("tc:words", "Your words", "Learned, added and blocked words, text replacements") { nav.navigate(Routes.Settings.Dictionary) }
+            SetSectionRow("auto_fix_high", "Autocorrect", "$levelName, undo with backspace, learning", primary.first, primary.second) { nav.navigate(Routes.Settings.AutocorrectPage) }
+            SetSectionRow("lightbulb", "Suggestions", "Words above the keys, emoji, contacts", secondary.first, secondary.second) { nav.navigate(Routes.Settings.SuggestionsPage) }
+            SetSectionRow("match_case", "Capitals", "Sentence starts, names and “I”, caps lock", tertiary.first, tertiary.second) { nav.navigate(Routes.Settings.CapitalsPage) }
+            SetSectionRow("format_quote", "Smart punctuation", "Curly quotes, dashes, double-space full stop", primary.first, primary.second) { nav.navigate(Routes.Settings.PunctuationPage) }
+            SetSectionRow("menu_book", "Your words", "Learned and blocked words, shortcuts", secondary.first, secondary.second) { nav.navigate(Routes.Settings.Dictionary) }
         }
     }
 }

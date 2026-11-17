@@ -117,3 +117,6 @@ vibration
 warning
 widgets
 work
+auto_fix_high
+format_quote
+match_case

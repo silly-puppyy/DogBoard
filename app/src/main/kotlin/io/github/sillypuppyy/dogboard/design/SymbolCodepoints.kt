@@ -120,4 +120,7 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "warning" to 0xF083,
     "widgets" to 0xE1BD,
     "work" to 0xE943,
+    "auto_fix_high" to 0xE663,
+    "format_quote" to 0xE244,
+    "match_case" to 0xF6F1,
 )
