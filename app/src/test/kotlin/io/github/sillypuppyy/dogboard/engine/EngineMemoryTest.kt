@@ -19,6 +19,12 @@ class EngineMemoryTest : FunSpec({
         }
         val lexicon = File(a + "en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }.also { keep.add(it) }
         println("ENGINEMEM %-14s %7.1f MB (%d words)".format("lexicon", (used() - last) / 1048576.0, lexicon.size)); last = used()
+        // what later starts hold: the lexicon as loaded from its snapshot (exact-size arrays)
+        val snap = File.createTempFile("lexicon", ".bin").also { it.deleteOnExit() }
+        snap.outputStream().use { lexicon.writeSnapshot(it) }
+        part("lexicon (snapshot, a second copy)") {
+            java.io.RandomAccessFile(snap, "r").channel.use { ch -> Lexicon.readSnapshot(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size()))!! }
+        }
         part("bigrams") { File(a + "en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) } }
         part("trigram (mmap, as the app)") {
             java.io.RandomAccessFile(a + "en.ngrams.bin", "r").channel.use { ch -> NgramModel.fromBuffer(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size()))!! }

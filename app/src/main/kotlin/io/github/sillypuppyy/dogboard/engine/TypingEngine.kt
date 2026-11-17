@@ -169,14 +169,16 @@ object TypingEngine {
         fun snapshot(name: String) = snapshotDir?.let { File(it, "$name-$snapshotKey.bin") }
         val lexiconSnapshot = snapshot("lexicon")
         val bigramSnapshot = snapshot("bigrams")
-        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(it.readBytes()) }.getOrNull() }
+        // mapped, not read into a byte array: the arrays are copied straight from the file's pages
+        fun map(f: File) = java.io.RandomAccessFile(f, "r").channel.use { it.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, it.size()) }
+        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it)) }.getOrNull() }
         val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.also { lex ->
             snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
             lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
         }
         val bigrams = openBigrams?.let { open ->
             bigramSnapshot?.takeIf { cachedLexicon != null && it.isFile }
-                ?.let { runCatching { Bigrams.readSnapshot(it.readBytes(), lexicon) }.getOrNull() }
+                ?.let { runCatching { Bigrams.readSnapshot(map(it), lexicon) }.getOrNull() }
                 ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
         }
         val engine = Loaded(lexicon, bigrams)

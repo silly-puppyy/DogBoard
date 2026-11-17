@@ -91,8 +91,10 @@ class Bigrams private constructor(
         private const val SNAPSHOT_MAGIC = 0x44474231 // "DGB1"
 
         /** Reads what [writeSnapshot] wrote for the same [lexicon], or null if it isn't one. */
-        fun readSnapshot(bytes: ByteArray, lexicon: Lexicon): Bigrams? = runCatching {
-            val b = java.nio.ByteBuffer.wrap(bytes)
+        fun readSnapshot(bytes: ByteArray, lexicon: Lexicon): Bigrams? = readSnapshot(java.nio.ByteBuffer.wrap(bytes), lexicon)
+
+        /** As [readSnapshot] from a buffer (the snapshot file mapped into memory: no heap copy first). */
+        fun readSnapshot(b: java.nio.ByteBuffer, lexicon: Lexicon): Bigrams? = runCatching {
             if (b.int != SNAPSHOT_MAGIC) return null
             val n = b.int
             val contexts = b.int

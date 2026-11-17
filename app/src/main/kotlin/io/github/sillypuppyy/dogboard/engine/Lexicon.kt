@@ -294,8 +294,13 @@ class Lexicon private constructor(capacity: Int) {
         private const val SNAPSHOT_MAGIC = 0x44474c32 // "DGL2": trie letters fold accents
 
         /** Reads what [writeSnapshot] wrote, or null if [bytes] isn't such a snapshot. */
-        fun readSnapshot(bytes: ByteArray): Lexicon? = runCatching {
-            val b = java.nio.ByteBuffer.wrap(bytes)
+        fun readSnapshot(bytes: ByteArray): Lexicon? = readSnapshot(java.nio.ByteBuffer.wrap(bytes))
+
+        /**
+         * As [readSnapshot] from a buffer, such as the snapshot file mapped into memory: no copy of
+         * the whole file on the heap first (that doubled the lexicon's memory while it loaded).
+         */
+        fun readSnapshot(b: java.nio.ByteBuffer): Lexicon? = runCatching {
             if (b.int != SNAPSHOT_MAGIC) return null
             val n = b.int
             val words = b.int
@@ -312,7 +317,7 @@ class Lexicon private constructor(capacity: Int) {
             b.asIntBuffer().get(lex.wordNode, 0, words); b.position(b.position() + 4 * words)
             lex.nodeCount = n
             lex.wordCount = words
-            val d = java.io.DataInputStream(java.io.ByteArrayInputStream(bytes, b.position(), bytes.size - b.position()))
+            val d = java.io.DataInputStream(b.asInputStream())
             repeat(d.readInt()) { val node = d.readInt(); lex.surface[node] = d.readUTF(); lex.hasSurface.set(node) }
             repeat(d.readInt()) {
                 val node = d.readInt()
@@ -373,5 +378,17 @@ class Lexicon private constructor(capacity: Int) {
             }
             return of(counts)
         }
+    }
+}
+
+/** The buffer's remaining bytes as a stream (reads advance the buffer). */
+internal fun java.nio.ByteBuffer.asInputStream(): java.io.InputStream = object : java.io.InputStream() {
+    override fun read(): Int = if (hasRemaining()) get().toInt() and 0xff else -1
+    override fun read(dst: ByteArray, off: Int, len: Int): Int {
+        if (len == 0) return 0
+        if (!hasRemaining()) return -1
+        val n = minOf(len, remaining())
+        get(dst, off, n)
+        return n
     }
 }
