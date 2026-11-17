@@ -649,10 +649,14 @@ class ImeController(
             if (after.length < before.length && before.startsWith(after)) undoEdit = UndoEdit("", before.substring(after.length), after)
         }
 
-        /** A copied text as DogBoard pastes it with "Strip trackers from links" on: short links expanded (when allowed and already asked), trackers removed. */
+        /**
+         * A copied text as DogBoard pastes it: short links expanded ("Expand short links", once the link
+         * service has answered) and trackers removed ("Strip trackers from links"); two separate opt-ins
+         * (user, 2026-11-17). Unchanged when both are off.
+         */
         fun cleanedPaste(text: String): String {
-            val source = if (prefs.clipboard.expandShortLinks.get()) io.github.sillypuppyy.dogboard.ime.ShortLinks.withExpanded(text) else text
-            return io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(source)
+            val expanded = if (prefs.clipboard.expandShortLinks.get()) io.github.sillypuppyy.dogboard.ime.ShortLinks.withExpanded(text) else text
+            return if (prefs.clipboard.stripTrackers.get()) io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(expanded) else expanded
         }
 
         /** DogBoard: the "Original link" chip after a cleaned paste: the text as it was copied, trackers and all. */
@@ -1557,7 +1561,7 @@ class ImeController(
             return item != null && when (item.type) {
                 ItemType.TEXT -> {
                     // DogBoard: Settings › Clipboard › Strip trackers from links, Expand short links (opt-in)
-                    val pasted = item.text?.let { if (prefs.clipboard.stripTrackers.get()) cleanedPaste(it) else it }
+                    val pasted = item.text?.let { cleanedPaste(it) }
                     val text = pasted?.asK3String()
                     if (text != null) {
                         val selected = state.content.surroundingText.textSelected.takeIf { state.content.selection.isNotCollapsed() }.orEmpty()

@@ -93,7 +93,7 @@ fun TextInputLayout(
             // Expand short links (opt-in): asked once when a copy holds one, so the paste is instant
             androidx.compose.runtime.LaunchedEffect(primaryClip, stripTrackers, expandShort) {
                 val text = primaryClip?.takeIf { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive }?.text
-                if (stripTrackers && expandShort && text != null && !isIncognitoMode) {
+                if (expandShort && text != null && !isIncognitoMode) {
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.ShortLinks.expandAll(text) }
                 }
             }
@@ -161,7 +161,7 @@ fun TextInputLayout(
                             else if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
                             else clipChips.getOrNull(i)?.let { c ->
                                 imeController.updateStateBlocking {
-                                    val piece = if (prefs.clipboard.stripTrackers.get()) cleanedPaste(c.insert) else c.insert
+                                    val piece = cleanedPaste(c.insert)
                                     emitChip(piece, undoable = true, original = c.insert)
                                 }
                             }
