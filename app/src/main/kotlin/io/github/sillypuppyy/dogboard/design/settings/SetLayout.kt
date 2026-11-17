@@ -209,6 +209,7 @@ fun SetLayout(state: SetLayoutState) {
         }
         // :85-90 Try it
         TryItDock(Modifier.align(Alignment.BottomCenter), live = true)
+        StatusBarBand()
     }
 }
 
@@ -227,7 +228,7 @@ private fun ElementRow(title: String, sub: String, changed: Boolean, onReset: ()
                 }
             }
         }
-        Box(Modifier.padding(end = 8.dp)) { control() }
+        Column(Modifier.padding(end = 8.dp)) { control() } // a Box stacked the two bottom-row cards
     }
 }
 

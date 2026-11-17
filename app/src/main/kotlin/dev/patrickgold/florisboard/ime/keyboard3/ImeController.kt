@@ -786,6 +786,7 @@ class ImeController(
             lookBack = null
             val word = currentWord
             if (word.isEmpty || !correctionAllowed() || cursorInsideWord()) return null
+            if (!prefs.correction.fixPreviousWord.get()) return null // Settings › Autocorrect (all settings)
             val typed = word.text
             if (!state.content.surroundingText.textBefore.endsWith("${back.committed} $typed")) return null
             // only from what is already decoded: this runs on the main thread as the word ends; when
@@ -1241,7 +1242,7 @@ class ImeController(
                 }
                 publish(decoded)
                 // a word split by a stray space ("goi g"): its rejoined reading, ready for the word end
-                latestJoin = back?.spaceTap?.let { tap ->
+                latestJoin = back?.spaceTap?.takeIf { prefs.correction.joinSplitWords.get() }?.let { tap ->
                     back.candidates?.let { prev ->
                         Triple(back, word.text, io.github.sillypuppyy.dogboard.perf.GcStats.track("join") { TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, decoded, curlyApostrophes()) })
                     }

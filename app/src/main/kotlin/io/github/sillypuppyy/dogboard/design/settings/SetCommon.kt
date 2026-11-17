@@ -1,5 +1,8 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
+import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.statusBars
+
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
@@ -116,6 +119,12 @@ object SetColors {
 /** Settings text: Roboto Flex, start-aligned (the keyboard's design text is centred). */
 fun setText(size: Float, weight: Int = 400, color: Color = SetColors.onSurface): TextStyle =
     designTextStyle(size.sp, weight, color).copy(textAlign = TextAlign.Start, lineHeight = (size * 1.2f).sp)
+
+/** The page colour behind the status bar, so a scrolled page doesn't run under the clock (last child of the page's Box). */
+@Composable
+fun StatusBarBand() {
+    Box(Modifier.fillMaxWidth().windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars).background(SetColors.screen))
+}
 
 /** SetHome:31-33: a labelled group of rows, 20 dp corners, 2 dp between rows. */
 @Composable

@@ -100,6 +100,9 @@ fun AutocorrectScreen() {
     val undo by prefs.correction.undoOnBackspace.collectAsState()
     val adaptive by prefs.correction.adaptiveStrength.collectAsState()
     val notify by prefs.correction.adaptiveNotify.collectAsState()
+    val fixPrevious by prefs.correction.fixPreviousWord.collectAsState()
+    val joinSplit by prefs.correction.joinSplitWords.collectAsState()
+    val neuralRetro by prefs.correction.neuralRetro.collectAsState()
     val L = AutocorrectLevel.entries
     SetPage("Autocorrect") {
         SetGroup("Autocorrect") {
@@ -122,6 +125,19 @@ fun AutocorrectScreen() {
             }
             if (adaptive) SetSwitchRow("ac:notify", "Tell me when it changes", "A notification each time autocorrect gets more careful or bolder.", notify) { v ->
                 scope.launch { prefs.correction.adaptiveNotify.set(v) }
+            }
+        }
+        // the rarely changed settings sit below the common ones, no switch to reveal them
+        // (user, 2026-11-17: "show the complicated settings just below the common ones")
+        SetGroup("Looking back") {
+            SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too, as on an iPhone.", fixPrevious) { v ->
+                scope.launch { prefs.correction.fixPreviousWord.set(v) }
+            }
+            SetSwitchRow("ac:join", "Rejoin split words", "A space typed by mistake inside a word is taken back: “meeti g” becomes “meeting”.", joinSplit) { v ->
+                scope.launch { prefs.correction.joinSplitWords.set(v) }
+            }
+            SetSwitchRow("ac:neural", "Neural look-back (experimental)", "The neural model also judges the previous word. Slower, and not clearly better yet.", neuralRetro) { v ->
+                scope.launch { prefs.correction.neuralRetro.set(v) }
             }
         }
     }

@@ -135,7 +135,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
             TryItDock(Modifier.align(Alignment.BottomCenter), live = actions != null)
         }
         // the page colour behind the status bar, so the scrolled page doesn't run under the clock
-        if (actions != null) Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(SetColors.screen))
+        if (actions != null) StatusBarBand()
     }
 }
 

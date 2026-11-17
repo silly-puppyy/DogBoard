@@ -175,6 +175,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard: backspace right after an autocorrection puts the typed word back (iOS); a feature
         // with its own switch (user, 2026-11-17)
         val undoOnBackspace = boolean(key = "correction__undo_on_backspace", default = true)
+        // DogBoard, below the common rows on the Autocorrect page (user, 2026-11-17): iOS's look back (the previous
+        // word changes when the next one reads much better) and rejoining a word split by a stray space
+        val fixPreviousWord = boolean(key = "correction__fix_previous_word", default = true)
+        val joinSplitWords = boolean(key = "correction__join_split_words", default = true)
         // DogBoard: autocorrect adapts to what the user keeps and undoes (AutocorrectStrength; user, 2026-11-15: on)
         val adaptiveStrength = boolean(
             key = "correction__adaptive_strength",
