@@ -151,7 +151,9 @@ class TouchKeyboard(
             val targets = textKeys.map { it.target(widthDp, heightDp) }
             val letters = buildMap {
                 for ((key, target) in textKeys.zip(targets)) {
-                    val text = (key.attrs.output as K3String).toText()
+                    // composed: the layout library keeps text decomposed ("ü" = u + U+0308), which
+                    // dropped ü ö ä from the decoder's keys
+                    val text = java.text.Normalizer.normalize((key.attrs.output as K3String).toText(), java.text.Normalizer.Form.NFC)
                     if (text.length == 1 && text[0].isLetter()) put(text[0].lowercaseChar(), target)
                 }
             }

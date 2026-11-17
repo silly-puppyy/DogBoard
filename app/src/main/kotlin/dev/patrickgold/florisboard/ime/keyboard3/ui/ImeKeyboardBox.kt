@@ -300,6 +300,7 @@ fun ImeKeyboardBox(
                 }
                 io.github.sillypuppyy.dogboard.design.LiveKbView(
                     layerId = touchLayerId.toString(),
+                    letterRows = remember(model) { io.github.sillypuppyy.dogboard.design.LiveKb.letterRows(model) },
                     shiftState = inputShiftState,
                     enterAction = enterAction,
                     numberRow = prefs.keyboard.numberRow.collectAsState().value || passwordField,

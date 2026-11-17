@@ -33,7 +33,9 @@ class AllLayoutsTest : FunSpec({
                 val layer = layers[layerId] ?: error("missing layer $layerId")
                 layer.rows.forEachIndexed { i, row ->
                     val width = row.sumOf { (model.keys.byKeyId[it] ?: error("unknown key $it")).width.toDouble() }
-                    // English's home row is 9 keys wide, centred by the layout engine; every other row fills 10
+                    // English's home row is 9 keys wide, centred by the layout engine; every other row fills 10,
+                    // never more (a row over 10 units loses its last key in the touch layout)
+                    (width <= 10.0) shouldBe true
                     if (!(i == 1 && width < 10)) width shouldBe (10.0 plusOrMinus 0.01)
                 }
             }
@@ -57,5 +59,14 @@ class AllLayoutsTest : FunSpec({
             val space = keys.getValue(' ')
             keys.filterKeys { it != ' ' }.values.all { space.centerY > it.centerY } shouldBe true
         }
+    }
+
+    // why the keyboard composes typed text and key labels (ImeController.emitTextTracked, TouchModel, LiveKb)
+    test("the layout library returns accented letters decomposed") {
+        val result = compileLayout("keyboard/qwertz-de.xml")
+        result.shouldBeInstanceOf<K3CompileResult.Success>()
+        val t = (result.model.keys.byKeyId[org.k3lp.model.key.K3KeyId("u00fc")]?.output as org.k3lp.lib.text.K3String).toText()
+        t shouldBe "u\u0308"
+        java.text.Normalizer.normalize(t, java.text.Normalizer.Form.NFC) shouldBe "ü"
     }
 })

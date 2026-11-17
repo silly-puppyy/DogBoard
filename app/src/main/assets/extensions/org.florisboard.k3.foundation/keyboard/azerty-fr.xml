@@ -348,7 +348,7 @@
         <key id="N-alt2" output="Ņ" />
         <key id="N-alt3" output="Ň" />
         <key id="u0027" output="'" />
-        <key id="gap3-azerty-fr" gap="true" width="0.22" />
+        <key id="gap3-azerty-fr" gap="true" width="0.2199" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />

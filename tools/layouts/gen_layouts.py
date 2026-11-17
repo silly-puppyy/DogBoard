@@ -182,7 +182,8 @@ def letter_keys(lay: Layout) -> list[str]:
 def letter_width(lay: Layout) -> str | None:
     """Letter key width when the widest of the first two rows has more than ten keys, else None (1 unit)."""
     n = max(len(lay.rows[0]), len(lay.rows[1]))
-    return None if n <= 10 else f"{10 / n:.4f}".rstrip("0").rstrip(".")
+    # rounded down: a row a hair over 10 units loses its last key in the touch layout (ü ö ä did)
+    return None if n <= 10 else f"{int(10 / n * 10000) / 10000:.4f}".rstrip("0").rstrip(".")
 
 
 def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
@@ -212,7 +213,7 @@ def layout_gaps(lay: Layout) -> list[str]:
     if lay is ENGLISH:
         return []
     w = float(letter_width(lay) or 1)
-    fmt = lambda x: f"{x:.4f}".rstrip("0").rstrip(".")
+    fmt = lambda x: f"{int(x * 10000) / 10000:.4f}".rstrip("0").rstrip(".")
     out = []
     for i in (0, 1):
         side = (10 - len(lay.rows[i]) * w) / 2

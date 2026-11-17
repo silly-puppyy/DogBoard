@@ -490,7 +490,12 @@ class ImeController(
 
         override fun emitText(value: K3String) = io.github.sillypuppyy.dogboard.perf.GcStats.track("key (main thread)") { emitTextTracked(value) }
 
-        private fun emitTextTracked(value: K3String) {
+        private fun emitTextTracked(raw: K3String) {
+            // composed, as other keyboards type it: the layout library keeps accented letters
+            // decomposed ("ǔ" = u + U+030C: two deletes for one letter, user 2026-11-17), which also
+            // breaks apps' search and our word lookups
+            val composed = java.text.Normalizer.normalize(raw.toText(), java.text.Normalizer.Form.NFC)
+            val value = if (composed == raw.toText()) raw else composed.asK3String()
             // DogBoard: track the word being typed; finishing it may autocorrect it first
             deletingWord = null
             lastRetro = null // set again by finishWord below when this input ends a word

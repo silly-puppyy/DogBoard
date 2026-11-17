@@ -10,10 +10,46 @@ import org.k3lp.lib.text.K3String
 /**
  * Stage 2 of the design port: the live keyboard's state as design props ([KbProps]), so the
  * ported Kb.dc.html view draws the real keyboard while FlorisBoard keeps touch handling. Layer ids
- * come from tools/layouts/gen_qwerty_en.py (base, shift, caps, symbol-1, symbol-2, numeric, and
+ * come from tools/layouts/gen_layouts.py (base, shift, caps, symbol-1, symbol-2, numeric, and
  * field variants such as base-email).
  */
 object LiveKb {
+    /**
+     * The layout's three letter rows as the touch layout defines them (keys, widths, gaps, shift and
+     * delete), for [KbProps.letterRows]: what is drawn is what is hit, for every layout. Rows narrower
+     * than the widest are centred, as the touch layout centres them. Null when the layout has no
+     * letter planes or a key the drawing doesn't know (the English rows are drawn then).
+     */
+    fun letterRows(model: org.k3lp.model.K3Model): List<List<KbLetterKey>>? {
+        val layers = model.layersByForm.touch.firstOrNull()?.layers ?: return null
+        val base = layers[dev.patrickgold.florisboard.ime.keyboard3.ImeLayerIds.Base]?.rows ?: return null
+        val shift = layers[dev.patrickgold.florisboard.ime.keyboard3.ImeLayerIds.Shift]?.rows
+        if (base.size < 4) return null
+        val rows = base.take(3).mapIndexed { i, row ->
+            row.mapIndexed { j, id ->
+                val key = model.keys.byKeyId[id] ?: return null
+                val w = key.width.toFloat()
+                when {
+                    key.gap -> KbLetterKey("gap", w = w)
+                    key.layerId != null -> KbLetterKey("shift", w = w)
+                    key.output == ImeActions.Backspace -> KbLetterKey("bksp", w = w)
+                    else -> {
+                        // composed (the layout library keeps "ü" as u + U+0308)
+                        fun nfc(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFC)
+                        val text = nfc((key.output as? K3String)?.toText() ?: return null)
+                        val shifted = nfc(shift?.getOrNull(i)?.getOrNull(j)?.let { model.keys.byKeyId[it]?.output as? K3String }?.toText().orEmpty())
+                        KbLetterKey("char", text, shifted, w)
+                    }
+                }
+            }
+        }
+        val full = rows.maxOf { r -> r.sumOf { it.w.toDouble() } }.toFloat()
+        return rows.map { r ->
+            val side = (full - r.sumOf { it.w.toDouble() }.toFloat()) / 2
+            if (side < 0.005f) r else listOf(KbLetterKey("gap", w = side)) + r + listOf(KbLetterKey("gap", w = side))
+        }
+    }
+
     /** The design's plane for a layout layer. */
     fun plane(layerId: String): String = when {
         layerId.startsWith("symbol-1") -> "symbol-1"

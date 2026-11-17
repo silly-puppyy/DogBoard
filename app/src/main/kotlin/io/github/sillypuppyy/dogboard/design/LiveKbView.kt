@@ -56,6 +56,8 @@ fun LiveKbView(
     fnKey: String = "emoji",
     /** The space-bar trackpad's finger x (dp), or null when it isn't in use. */
     trackpadX: Float? = null,
+    /** The active layout's letter rows ([LiveKb.letterRows]); null = English. */
+    letterRows: List<List<KbLetterKey>>? = null,
     modifier: Modifier = Modifier,
 ) {
     val dark = liveDark()
@@ -86,6 +88,7 @@ fun LiveKbView(
             plane = plane,
             field = field,
             numberRow = numberRow && plane == "base",
+            letterRows = letterRows,
             numRow = if (numberRow) "on" else if (numberRowLongPress) "hints" else "off",
             hintKind = hintKind,
             spaceLabel = spaceLabel,

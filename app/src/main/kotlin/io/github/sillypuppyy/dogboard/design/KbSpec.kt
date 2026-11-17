@@ -11,6 +11,13 @@ import kotlin.math.roundToInt
  * cites its lines. Lengths are dp (the canvas is CSS px on a 375-wide phone), font sizes sp.
  * Panels, dev row and special bar states: [KbExtrasSpec] (KbPanels.kt).
  */
+/**
+ * One key of a layout's letter rows, as the touch layout defines it: [kind] char / gap / shift /
+ * bksp, [base] and [shifted] the character on the base and shift layers, [w] its width in units.
+ */
+@androidx.compose.runtime.Immutable
+data class KbLetterKey(val kind: String, val base: String = "", val shifted: String = "", val w: Float = 1f)
+
 data class KbProps(
     val theme: String = "dogboard",
     val dark: Boolean = false,
@@ -74,6 +81,11 @@ data class KbProps(
      * instead; follow-up once the touch model supports a fixed row height.
      */
     val numberRow: Boolean = false,
+    /**
+     * The active layout's three letter rows (the live keyboard passes its touch layout's, so what is
+     * drawn is what is hit); null = English QWERTY ([KbSpec.ENGLISH_ROWS]).
+     */
+    val letterRows: List<List<KbLetterKey>>? = null,
     /** Kb:432-436, 569-573 layout elements (Settings › Layout). numRow: off / on / hints (digits on long-press of the top row); null = Kb's default by key style (on if [numberRow]). */
     val numRow: String? = null,
     /** Kb:430: another Dalmatian coat (0 = the theme's own seed). */
@@ -362,6 +374,14 @@ object KbSpec {
 
     private fun up(c: String) = if (c == "ß") "ẞ" else c.uppercase()
 
+    /** English QWERTY's letter rows (the gallery and previews; the live keyboard passes its layout's). */
+    val ENGLISH_ROWS: List<List<KbLetterKey>> = listOf(
+        "qwertyuiop".map { KbLetterKey("char", it.toString()) },
+        listOf(KbLetterKey("gap", w = 0.5f)) + "asdfghjkl".map { KbLetterKey("char", it.toString()) } + listOf(KbLetterKey("gap", w = 0.5f)),
+        listOf(KbLetterKey("shift", w = 1.28f), KbLetterKey("gap", w = 0.2133f)) + "zxcvbnm".map { KbLetterKey("char", it.toString()) } +
+            listOf(KbLetterKey("gap", w = 0.2267f), KbLetterKey("bksp", w = 1.28f)),
+    )
+
     fun render(P: KbProps): KbRender {
         val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance)
 
@@ -418,6 +438,9 @@ object KbSpec {
         val upper = shift != "off" || P.caseMode == "caps" // Kb:606
         fun ch(c: String, w: Float = 1f) = K(c, "char", w, label = c)
         fun letters(s: String) = s.map { c -> c.toString() }.map { c -> K(c, "char", 1f, label = if (upper) up(c) else c, base = c) }
+        val letterRows = P.letterRows ?: ENGLISH_ROWS
+        // the top letter row's letters, in order: the number row's digits as hints on long-press
+        val topRow = letterRows[0].filter { it.kind == "char" }.map { it.base }
         fun gap(w: Float) = K("", "gap", w)
         val shiftK = K("shift", "shift", 1.28f)
         fun bksp(w: Float = 1.28f) = K("bksp", "bksp", w)
@@ -481,12 +504,17 @@ object KbSpec {
                 )
             }
             // Kb:655: the number row (ours is a full-height row, the user's rule, not Kb's 44 dp)
-            else -> (if (numRow == "on" && plane == "base" && !landscape) listOf("1234567890".map { ch(it.toString()) }) else emptyList()) + listOf(
-                letters("qwertyuiop"),
-                listOf(gap(0.5f)) + letters("asdfghjkl") + listOf(gap(0.5f)),
-                listOf(shiftK, gap(0.2133f)) + letters("zxcvbnm") + listOf(gap(0.2267f), bksp()),
-                bottom,
-            )
+            else -> (if (numRow == "on" && plane == "base" && !landscape) listOf("1234567890".map { ch(it.toString()) }) else emptyList()) +
+                letterRows.map { row ->
+                    row.map { k ->
+                        when (k.kind) {
+                            "gap" -> gap(k.w)
+                            "shift" -> K("shift", "shift", k.w)
+                            "bksp" -> bksp(k.w)
+                            else -> K(k.base, "char", k.w, label = if (upper) k.shifted.ifEmpty { up(k.base) } else k.base, base = k.base)
+                        }
+                    }
+                } + listOf(bottom)
         }
         val units = spec[0].sumOf { it.w.toDouble() }.toFloat()
         val u = kbW / units
@@ -544,7 +572,7 @@ object KbSpec {
                         if (hintKind == "symbols") hint = AND_HINT[base] ?: ""
                         else if (base in LP && base != URL_DOT) hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
                     }
-                    if (plane == "base" && numRow == "hints" && base in "qwertyuiop" && base.length == 1) hint = AND_HINT[base] ?: ""
+                    if (plane == "base" && numRow == "hints") topRow.indexOf(base).takeIf { it in 0..9 }?.let { hint = "1234567890"[it].toString() }
                 }
                 // Kb:754
                 if (k.kind == "char" && ctrlOn && plane == "base") CTRLH[k.base.ifEmpty { k.id }]?.let { sub = it; fs = 20f * scale; hint = "" }
