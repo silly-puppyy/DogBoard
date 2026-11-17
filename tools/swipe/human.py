@@ -47,6 +47,14 @@ class HumanParams:
     over_curl: float = 0.9      # how much the run-on bends (radians, at most)
 
 
+# named versions, for comparisons (h2 = the defaults)
+PRESETS = {
+    "h1": HumanParams(sigma_start=0.24, sigma_mid=0.16, sigma_end=0.40, cut=0.20, wobble=0.12,
+                      corner_along=0.0, over_median=0.0),
+    "h2": HumanParams(),
+}
+
+
 def _catmull(p0, p1, p2, p3, t):
     t2, t3 = t * t, t * t * t
     return tuple(0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
