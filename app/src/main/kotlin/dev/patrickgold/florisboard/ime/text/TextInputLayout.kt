@@ -87,10 +87,11 @@ fun TextInputLayout(
             var clipChips by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<io.github.sillypuppyy.dogboard.design.KbChipData>>(emptyList()) }
             // Settings › Clipboard › "Suggest what you copied"
             val clipSuggestion by prefs.clipboard.suggestionEnabled.collectAsState()
-            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion) {
+            val smartChips by prefs.clipboard.smartChips.collectAsState()
+            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips) {
                 val offer = if (!clipSuggestion) null else io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
                 clipShown = offer
-                clipChips = if (offer == null || offer.isSensitive || offer.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT) emptyList()
+                clipChips = if (!smartChips || offer == null || offer.isSensitive || offer.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT) emptyList()
                 else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                     val whole = io.github.sillypuppyy.dogboard.design.KbChipData(io.github.sillypuppyy.dogboard.ime.RecentClip.icon(context, offer), io.github.sillypuppyy.dogboard.ime.RecentClip.label(offer))
                     listOf(whole) + io.github.sillypuppyy.dogboard.ime.RecentClip.entities(context, offer.text.orEmpty()).take(3)
@@ -133,7 +134,10 @@ fun TextInputLayout(
                             clipShown = null
                             // the whole clip pastes as itself; a piece of it as text
                             if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
-                            else clipChips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.label, undoable = true) } }
+                            else clipChips.getOrNull(i)?.let { c ->
+                                val piece = if (prefs.clipboard.stripTrackers.get()) io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(c.label) else c.label
+                                imeController.updateStateBlocking { emitChip(piece, undoable = true) }
+                            }
                         }
                     } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.insert, space = c.insert == c.label) } }
                 },

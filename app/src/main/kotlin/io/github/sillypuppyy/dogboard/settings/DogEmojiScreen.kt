@@ -52,10 +52,11 @@ fun DogEmojiScreen() {
             SetPageLink("em:suggest", "Emoji in suggestions", "When the bar offers emoji as you type") { nav.navigate(Routes.Settings.SuggestionsPage) }
         }
         // the rarely changed one, below the common settings
-        if (recents) SetGroup("Recent emoji") {
+        SetGroup("Recent emoji") {
             SetSliderRow(
                 "em:recentmax", "How many to keep", "The panel’s recent row keeps this many emoji.",
                 recentMax.toFloat(), e.historyRecentMaxSize.default.toFloat(), 10f..200f, 10f, { v -> "${v.toInt()}" },
+                enabled = recents,
             ) { v -> scope.launch { e.historyRecentMaxSize.set(v.toInt()) } }
         }
     }

@@ -146,6 +146,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "clipboard__history_hide_on_next_text_field",
             default = true,
         )
+        // DogBoard (user, 2026-11-17): Gboard's smart clipboard chips (phone, link, email, address in a
+        // copied text) on a switch, and opt-in removal of tracking tags from pasted links (LinkCleaner)
+        val smartChips = boolean(key = "clipboard__smart_chips", default = true)
+        val stripTrackers = boolean(key = "clipboard__strip_trackers", default = false)
         val clearPrimaryClipAffectsHistoryIfUnpinned = boolean(
             key = "clipboard__clear_primary_clip_affects_history_if_unpinned",
             default = true,

@@ -1533,13 +1533,15 @@ class ImeController(
         fun emitClipboardItem(item: ClipboardItem?, undoable: Boolean = false): Boolean {
             return item != null && when (item.type) {
                 ItemType.TEXT -> {
-                    val text = item.text?.asK3String()
+                    // DogBoard: Settings › Clipboard › Strip trackers from links (opt-in)
+                    val pasted = item.text?.let { if (prefs.clipboard.stripTrackers.get()) io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(it) else it }
+                    val text = pasted?.asK3String()
                     if (text != null) {
                         val selected = state.content.surroundingText.textSelected.takeIf { state.content.selection.isNotCollapsed() }.orEmpty()
                         emitText(text)
                         // DogBoard: Gboard's Undo chip after a paste from the clipboard chip
                         if (undoable) state.content.surroundingText.textBefore.let { after ->
-                            if (after.endsWith(item.text.orEmpty())) undoEdit = UndoEdit(item.text.orEmpty(), selected, after)
+                            if (after.endsWith(pasted)) undoEdit = UndoEdit(pasted, selected, after)
                         }
                         true
                     } else {

@@ -46,6 +46,8 @@ object SettingsSearch {
         Entry("Suggest what you copied", "Clipboard", "clipboard", "paste chip copy recent bar"),
         Entry("Passwords clear themselves", "Clipboard", "clipboard", "password sensitive clear auto delete"),
         Entry("Delete old clips", "Clipboard", "clipboard", "clean expire minutes"),
+        Entry("Smart chips", "Clipboard", "clipboard", "phone number link email address copied pieces"),
+        Entry("Strip trackers from links", "Clipboard", "clipboard", "tracking utm fbclid privacy clean url link"),
         Entry("Incognito typing", "Privacy", "privacy", "private learning"),
         Entry("Hold to show accents", "Advanced › Timings", "finetuning", "long press delay timing accents"),
         Entry("Caps lock double-tap", "Advanced › Timings", "finetuning", "shift timing"),

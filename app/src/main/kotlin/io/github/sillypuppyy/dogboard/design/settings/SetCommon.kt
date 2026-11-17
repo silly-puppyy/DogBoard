@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.statusBars
 
 import androidx.compose.foundation.rememberScrollState
@@ -221,11 +222,16 @@ fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onCha
 @Composable
 fun SetSliderRow(
     id: String, title: String, explain: String, value: Float, default: Float, range: ClosedFloatingPointRange<Float>, step: Float,
-    format: (Float) -> String, onChange: (Float) -> Unit,
+    format: (Float) -> String,
+    /** False: greyed and not draggable, as Android Settings shows a value whose switch is off (user, 2026-11-17). */
+    enabled: Boolean = true,
+    onChange: (Float) -> Unit,
 ) {
-    val changed = value != default
+    val changed = value != default && enabled
     Column(
-        Modifier.fillMaxWidth().background(SetColors.row).lint(id).padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+        Modifier.fillMaxWidth().background(SetColors.row).lint(id)
+            .then(if (enabled) Modifier else Modifier.alpha(0.38f)) // Material's disabled content opacity
+            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         LintParent(id) {
@@ -242,6 +248,7 @@ fun SetSliderRow(
             DText(explain, Modifier.padding(end = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = (14 * 1.4).sp), maxLines = 4)
             val steps = ((range.endInclusive - range.start) / step).toInt() - 1
             androidx.compose.material3.Slider(
+                enabled = enabled,
                 value = value, onValueChange = { v -> onChange((Math.round((v - range.start) / step) * step + range.start)) },
                 valueRange = range, steps = steps.coerceAtLeast(0),
                 modifier = Modifier.fillMaxWidth().padding(end = 8.dp, top = 4.dp).height(36.dp),
@@ -249,6 +256,9 @@ fun SetSliderRow(
                     thumbColor = SetColors.primary, activeTrackColor = SetColors.primary,
                     inactiveTrackColor = SetColors.secondaryContainer,
                     activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent,
+                    disabledThumbColor = SetColors.primary, disabledActiveTrackColor = SetColors.primary,
+                    disabledInactiveTrackColor = SetColors.secondaryContainer,
+                    disabledActiveTickColor = Color.Transparent, disabledInactiveTickColor = Color.Transparent,
                 ),
             )
         }

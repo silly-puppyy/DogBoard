@@ -21,6 +21,8 @@ fun DogClipboardScreen() {
     val scope = rememberCoroutineScope()
     val c = prefs.clipboard
     val history by c.historyEnabled.collectAsState()
+    val smart by c.smartChips.collectAsState()
+    val strip by c.stripTrackers.collectAsState()
     val suggest by c.suggestionEnabled.collectAsState()
     val cleanOld by c.historyAutoCleanOldEnabled.collectAsState()
     val oldAfter by c.historyAutoCleanOldAfter.collectAsState()
@@ -35,6 +37,12 @@ fun DogClipboardScreen() {
             SetSwitchRow("cb:suggest", "Suggest what you copied", "For 2 minutes after you copy something, the bar offers to paste it.", suggest) { v ->
                 scope.launch { c.suggestionEnabled.set(v) }
             }
+            SetSwitchRow("cb:smart", "Smart chips", "Phone numbers, links, emails and addresses in what you copied get chips of their own, to paste just that part.", smart) { v ->
+                scope.launch { c.smartChips.set(v) }
+            }
+            SetSwitchRow("cb:strip", "Strip trackers from links", "Tracking tags like utm_source and fbclid are removed from links you paste with DogBoard. The rest of the link stays.", strip) { v ->
+                scope.launch { c.stripTrackers.set(v) }
+            }
             SetSwitchRow("cb:history", "Clipboard history", "Keep what you copy, to paste again from the clipboard panel.", history) { v ->
                 scope.launch { c.historyEnabled.set(v) }
             }
@@ -43,9 +51,10 @@ fun DogClipboardScreen() {
             if (history) SetSwitchRow("cb:passwords", "Passwords clear themselves", "Copied passwords are removed from the clipboard and the history.", cleanPasswords) { v ->
                 scope.launch { c.historyAutoCleanSensitiveEnabled.set(v) }
             }
-            if (history && cleanPasswords) SetSliderRow(
+            if (history) SetSliderRow(
                 "cb:pwafter", "Clear passwords after", "How long a copied password stays.",
                 passwordsAfter.toFloat(), c.historyAutoCleanSensitiveAfter.default.toFloat(), 10f..600f, 10f, { v -> "${v.toInt()} s" },
+                enabled = cleanPasswords,
             ) { v -> scope.launch { c.historyAutoCleanSensitiveAfter.set(v.toInt()) } }
         }
         if (history) {
@@ -53,9 +62,10 @@ fun DogClipboardScreen() {
                 SetSwitchRow("cb:old", "Delete old clips", "Unpinned clips are deleted after a while.", cleanOld) { v ->
                     scope.launch { c.historyAutoCleanOldEnabled.set(v) }
                 }
-                if (cleanOld) SetSliderRow(
+                SetSliderRow(
                     "cb:oldafter", "Delete after", "How long unpinned clips are kept.",
                     oldAfter.toFloat(), c.historyAutoCleanOldAfter.default.toFloat(), 5f..240f, 5f, { v -> "${v.toInt()} min" },
+                    enabled = cleanOld,
                 ) { v -> scope.launch { c.historyAutoCleanOldAfter.set(v.toInt()) } }
             }
             // the rarely changed ones, below the common settings
@@ -63,9 +73,10 @@ fun DogClipboardScreen() {
                 SetSwitchRow("cb:limit", "Limit the history", "Keep only the most recent clips.", limitOn) { v ->
                     scope.launch { c.historySizeLimitEnabled.set(v) }
                 }
-                if (limitOn) SetSliderRow(
+                SetSliderRow(
                     "cb:limitn", "Clips to keep", "Older unpinned clips make room for new ones.",
                     limit.toFloat(), c.historySizeLimit.default.toFloat(), 5f..100f, 5f, { v -> "${v.toInt()}" },
+                    enabled = limitOn,
                 ) { v -> scope.launch { c.historySizeLimit.set(v.toInt()) } }
                 SetSwitchRow("cb:hidepaste", "Close after pasting", "The clipboard panel closes once you paste a clip.", hideOnPaste) { v ->
                     scope.launch { c.historyHideOnPaste.set(v) }

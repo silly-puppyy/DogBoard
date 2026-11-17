@@ -69,12 +69,11 @@ fun SoundVibrationScreen() {
             }
             SetGroup("Sound") {
                 SetSwitchRow("sv:sound", "Sound", "A click on each key.", sound) { v -> scope.launch { fb.audioEnabled.set(v) } }
-                if (sound) {
-                    SetSliderRow(
-                        "sv:volume", "Volume", "How loud the key click is.",
-                        volume.toFloat(), fb.audioVolume.default.toFloat(), 1f..100f, 1f, { v -> "${v.toInt()} %" },
-                    ) { v -> scope.launch { fb.audioVolume.set(v.toInt()) } }
-                }
+                SetSliderRow(
+                    "sv:volume", "Volume", "How loud the key click is.",
+                    volume.toFloat(), fb.audioVolume.default.toFloat(), 1f..100f, 1f, { v -> "${v.toInt()} %" },
+                    enabled = sound,
+                ) { v -> scope.launch { fb.audioVolume.set(v.toInt()) } }
             }
             if (vibration || sound) SetGroup("When") {
                 if (vibration) {
