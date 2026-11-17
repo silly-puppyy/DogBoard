@@ -88,10 +88,14 @@ def path(word: str, centres: dict, rng: random.Random, p: HumanParams = HumanPar
     res, j = [], 0
     for k in range(samples + 1):
         tau = k / samples
-        s = 10 * tau ** 3 - 15 * tau ** 4 + 6 * tau ** 5  # share of the distance covered
+        # share of the distance covered: mostly steady with soft ends (a pure minimum-jerk profile
+        # lingers at the ends long enough for a keyboard to read a long-press)
+        s = 0.7 * tau + 0.3 * (10 * tau ** 3 - 15 * tau ** 4 + 6 * tau ** 5)
         while j < len(out) - 2 and out[j + 1][2] < s:
             j += 1
         a, b = out[j], out[j + 1]
         f = 0 if b[2] == a[2] else (s - a[2]) / (b[2] - a[2])
         res.append((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, tau * duration))
-    return res
+    # stay on the letter rows (y = rows 0..3 edges): a touch above them would land on the suggestion
+    # bar, which measures the bar, not the recogniser (the tap benchmarks clamp the same way)
+    return [(min(max(x, 0.02), 9.98), min(max(y, 0.05), 2.95), t) for x, y, t in res]
