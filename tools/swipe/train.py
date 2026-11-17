@@ -17,7 +17,7 @@ import time
 import torch
 import torch.nn as nn
 
-from model import SwipeNet, encode, greedy
+from model import ALPHABET, SwipeNet, encode, greedy
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import track  # noqa: E402
@@ -35,9 +35,10 @@ def batches(items, size, shuffle):
     for c in chunks:
         feats = [items[i][0] for i in c]
         words = [items[i][1] for i in c]
+        alphabet = batches.alphabet
         lens = torch.tensor([f.shape[0] for f in feats])
         x = nn.utils.rnn.pad_sequence(feats, batch_first=True)
-        targets = torch.tensor([k for w in words for k in encode(w)])
+        targets = torch.tensor([k for w in words for k in encode(w, alphabet)])
         tlens = torch.tensor([len(w) for w in words])
         yield x, lens, targets, tlens, words
 
@@ -69,7 +70,7 @@ def evaluate(model, dev, device, n=5000):
         for x, lens, _, _, words in batches(dev[:n], 512, False):
             logp = model(x.to(device)).cpu()
             for i, w in enumerate(words):
-                right += greedy(logp[i, :lens[i]]) == w
+                right += greedy(logp[i, :lens[i]], batches.alphabet) == w
                 total += 1
     model.train()
     return right / max(total, 1)
@@ -84,6 +85,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--resume", default="")
     ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--alphabet", default="", help="the layout's letters (default a-z); a layout json's letters for other layouts")
     ap.add_argument("--lang", default="en")
     ap.add_argument("--layout", default="qwerty")
     ap.add_argument("--name", default="", help="version name for tracking (default: the --out folder's name)")
@@ -95,7 +97,13 @@ def main():
     train = [it for f in sorted(glob.glob(os.path.join(a.data, "train-*.pt"))) for it in torch.load(f)]
     dev = torch.load(os.path.join(a.data, "dev.pt"))
     print(f"train {len(train)}, dev {len(dev)}", flush=True)
-    model = SwipeNet().to(device)
+    if a.alphabet.endswith(".json"):
+        import json
+        a.alphabet = "".join(sorted(k["letter"] for k in json.load(open(a.alphabet))["keys"]))
+    batches.alphabet = a.alphabet or ALPHABET
+    train = [it for it in train if all(c in batches.alphabet for c in it[1])]
+    dev = [it for it in dev if all(c in batches.alphabet for c in it[1])]
+    model = SwipeNet(letters=len(batches.alphabet)).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
     steps = a.epochs * ((len(train) + a.batch - 1) // a.batch)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.1)

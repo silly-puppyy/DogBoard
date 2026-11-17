@@ -16,6 +16,7 @@ import os
 import torch
 
 from prepare_futo import features
+import units
 
 
 def main():
@@ -23,6 +24,7 @@ def main():
     ap.add_argument("--futo", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--min", type=int, default=500)
+    ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     sets = {}
@@ -42,7 +44,11 @@ def main():
             continue
         layout = json.load(open(path))
         keys = {k["letter"]: (k["cx"] * 10, k["cy"] * 3) for k in layout["keys"]}
-        out = [(features(d["data"], 0.3), w) for d, w in items if all(c in keys for c in w)]
+        out = []
+        for d, w in items:
+            if all(c in keys for c in w):
+                sx, sy = units.scale(a.units, layout, d.get("canvas_width"), d.get("canvas_height"))
+                out.append((features(d["data"], 0.3, sx, sy), w))
         torch.save({"items": out, "keys": keys, "layout": lay, "lang": lang}, os.path.join(a.out, f"{lay}-{lang}.pt"))
         print(f"{lay}-{lang}: {len(out)} swipes, {len(keys)} keys", flush=True)
 

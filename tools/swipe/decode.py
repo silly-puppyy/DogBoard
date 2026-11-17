@@ -33,8 +33,9 @@ class Trie:
         return root
 
 
-def load_lexicon(path, top=80000):
-    """DogBoard's lexicon (word<TAB>count), lowercased a-z words, the `top` most frequent; log share."""
+def load_lexicon(path, top=80000, letters=None):
+    """DogBoard's lexicon (word<TAB>count), lowercased words, the `top` most frequent; log share.
+    Words of a-z only, or with `letters` (a layout's letters, any script) words spelled with those."""
     counts = {}
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -42,7 +43,7 @@ def load_lexicon(path, top=80000):
                 continue
             w, n = line.rstrip("\n").split("\t")
             w = w.lower()
-            if w.isascii() and w.isalpha():
+            if (all(c in letters for c in w) if letters else (w.isascii() and w.isalpha())):
                 counts[w] = counts.get(w, 0) + int(n)
     best = sorted(counts.items(), key=lambda kv: -kv[1])[:top]
     total = sum(n for _, n in best)

@@ -16,14 +16,14 @@ FEATURES = 4
 class SwipeNet(nn.Module):
     """conv 5 (4 -> 128) -> ReLU -> BN -> BiLSTM 128 -> BN -> BiLSTM 128 -> FC 256 -> 27 (iOS's layout of layers)."""
 
-    def __init__(self, hidden: int = 128):
+    def __init__(self, hidden: int = 128, letters: int = len(ALPHABET)):
         super().__init__()
         self.conv = nn.Conv1d(FEATURES, hidden, kernel_size=5, padding=2)
         self.bn1 = nn.BatchNorm1d(hidden)
         self.lstm1 = nn.LSTM(hidden, hidden, batch_first=True, bidirectional=True)
         self.bn2 = nn.BatchNorm1d(2 * hidden)
         self.lstm2 = nn.LSTM(2 * hidden, hidden, batch_first=True, bidirectional=True)
-        self.fc = nn.Linear(2 * hidden, len(ALPHABET) + 1)
+        self.fc = nn.Linear(2 * hidden, letters + 1)  # blank + the layout's letters
 
     def forward(self, x):  # x: (batch, time, FEATURES) -> log-probs (batch, time, 27)
         h = self.bn1(torch.relu(self.conv(x.transpose(1, 2)))).transpose(1, 2)
@@ -33,15 +33,15 @@ class SwipeNet(nn.Module):
         return self.fc(h).log_softmax(-1)
 
 
-def encode(word: str) -> list[int]:
-    return [ALPHABET.index(c) + 1 for c in word]
+def encode(word: str, alphabet: str = ALPHABET) -> list[int]:
+    return [alphabet.index(c) + 1 for c in word]
 
 
-def greedy(logp) -> str:
+def greedy(logp, alphabet: str = ALPHABET) -> str:
     """Best path: argmax per step, repeats merged, blanks dropped."""
     out, prev = [], 0
     for k in logp.argmax(-1).tolist():
         if k != prev and k != 0:
-            out.append(ALPHABET[k - 1])
+            out.append(alphabet[k - 1])
         prev = k
     return "".join(out)
