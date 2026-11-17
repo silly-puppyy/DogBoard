@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
+import kotlinx.coroutines.launch
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastRoundToInt
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
@@ -203,6 +204,24 @@ fun ImeKeyboardBox(
         }
 
         val pointerTracker = rememberPointerTracker(activeTouchKeyboard)
+        // DogBoard: suggestion-bar taps right after a key may be top-row key taps (BarTapGuard)
+        val guardScope = androidx.compose.runtime.rememberCoroutineScope()
+        val keyAreaBounds = androidx.compose.runtime.remember { arrayOf<Any>(androidx.compose.ui.geometry.Offset.Zero, androidx.compose.ui.unit.IntSize.Zero) }
+        androidx.compose.runtime.DisposableEffect(pointerTracker) {
+            val handler = { change: androidx.compose.ui.input.pointer.PointerInputChange, windowX: Float, down: Boolean ->
+                val origin = keyAreaBounds[0] as androidx.compose.ui.geometry.Offset
+                val size = keyAreaBounds[1] as androidx.compose.ui.unit.IntSize
+                val at = if (size.width == 0) null else if (down) pointerTracker.barTapPosition(windowX - origin.x, size, change.uptimeMillis)
+                    else androidx.compose.ui.geometry.Offset(windowX - origin.x, 0f)
+                if (at != null) {
+                    val moved = change.copy(currentPosition = at, previousPosition = at)
+                    guardScope.launch { pointerTracker.mutateLocked { if (down) handleDown(moved, size) else handleUp(moved, size) } }
+                }
+                at != null
+            }
+            io.github.sillypuppyy.dogboard.ime.BarTapGuard.keyArea = handler
+            onDispose { if (io.github.sillypuppyy.dogboard.ime.BarTapGuard.keyArea === handler) io.github.sillypuppyy.dogboard.ime.BarTapGuard.keyArea = null }
+        }
         val trackedOutputPointer by pointerTracker.trackedOutputPointer.collectAsState()
         val trackedPeekPointer by pointerTracker.trackedPeekPointer.collectAsState()
         val trackedMultiTapSeq by pointerTracker.trackedMultiTapSeq.collectAsState()
@@ -227,6 +246,7 @@ fun ImeKeyboardBox(
                 .then(if (livePanel.isEmpty()) Modifier.trackPointerInput(pointerTracker, model) else Modifier)
                 // DogBoard: debug builds log the key area's screen bounds for automated typing tests
                 .onGloballyPositioned { coordinates ->
+                    keyAreaBounds[0] = coordinates.localToWindow(androidx.compose.ui.geometry.Offset.Zero); keyAreaBounds[1] = coordinates.size
                     if (dev.patrickgold.florisboard.BuildConfig.DEBUG || dev.patrickgold.florisboard.BuildConfig.BUILD_TYPE == "benchmark") {
                         val pos = coordinates.positionOnScreen()
                         val bounds = "${pos.x.toInt()} ${pos.y.toInt()} ${coordinates.size.width} ${coordinates.size.height}"

@@ -193,6 +193,7 @@ class PointerTracker(
         ) ?: return
         // DogBoard: remember where letter keys were tapped, for the word decoder
         if (downKey.isTextKey()) {
+            io.github.sillypuppyy.dogboard.ime.BarTapGuard.lastKeyDownUptime = down.uptimeMillis
             val widthDp = size.width / density
             val heightDp = size.height / density
             val (letterKeys, params) = touchKeyboard.letterTargets(downLayerId, widthDp, heightDp, typingSpeed.interval)
@@ -202,6 +203,7 @@ class PointerTracker(
             imeController.notePendingTap(null, emptyMap(), null)
             // DogBoard: where the space bar was tapped (a word split by a stray space may be rejoined)
             if ((downKey.attrs.output as? org.k3lp.lib.text.K3String)?.toText() == " ") {
+                io.github.sillypuppyy.dogboard.ime.BarTapGuard.lastKeyDownUptime = down.uptimeMillis
                 val normalized = down.position.normalized(size)
                 imeController.noteSpaceTap(Tap(normalized.x * size.width / density, normalized.y * size.height / density, down.uptimeMillis))
             }
@@ -367,6 +369,26 @@ class PointerTracker(
             }
             interactionController.performFeedback(InteractionKind.KeyPress, downKey.attrs.output)
         }
+    }
+
+    /**
+     * DogBoard ([io.github.sillypuppyy.dogboard.ime.BarTapGuard]): where in the key area ([size] px)
+     * a suggestion-bar tap at key-area x [xPx] lands as a top-row key tap (straight down into the
+     * top row), or null if it stays the bar's: too long after the last key, or a letter the
+     * language doesn't expect there.
+     */
+    fun barTapPosition(xPx: Float, size: IntSize, uptime: Long): Offset? {
+        val guard = io.github.sillypuppyy.dogboard.ime.BarTapGuard
+        if (uptime - guard.lastKeyDownUptime > guard.WINDOW_MS || xPx < 0f || xPx > size.width) return null
+        val layerId = imeController.snapshotState().touchLayerId
+        val letters = touchKeyboard.letterTargets(layerId, size.width / density, size.height / density, typingSpeed.interval).first
+        if (letters.isEmpty()) return null
+        val top = letters.values.minOf { it.centerY }
+        val (letter, target) = letters.entries.filter { it.value.centerY - top < 1f }
+            .minByOrNull { kotlin.math.abs(it.value.centerX - xPx / density) } ?: return null
+        val prior = imeController.letterPrior() ?: return null
+        if (prior(letter) < io.github.sillypuppyy.dogboard.engine.TypingEngine.keyPriorOf(guard.MIN_LETTER_PROB)) return null
+        return Offset(xPx, target.centerY * density)
     }
 
     suspend fun handleMove(move: PointerInputChange, size: IntSize) {

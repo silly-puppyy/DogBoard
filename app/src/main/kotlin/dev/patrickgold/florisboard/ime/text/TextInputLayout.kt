@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard.ime.text
 
+import io.github.sillypuppyy.dogboard.ime.barTapGuard
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -118,6 +119,7 @@ fun TextInputLayout(
                 else -> emptyList()
             }
             io.github.sillypuppyy.dogboard.design.LiveKbBar(
+                modifier = Modifier.barTapGuard(),
                 strip = if (showAutofill) emptyList() else strip,
                 chips = if (showAutofill) emptyList() else chips,
                 onChip = { i ->

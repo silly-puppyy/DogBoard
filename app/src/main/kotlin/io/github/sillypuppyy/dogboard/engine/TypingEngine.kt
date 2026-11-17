@@ -797,6 +797,9 @@ object TypingEngine {
         return { c -> KEY_PRIOR_WEIGHT * maxOf(KEY_PRIOR_FLOOR, logProbs[c.lowercaseChar()] ?: KEY_PRIOR_FLOOR) }
     }
 
+    /** What [keyPrior] gives a letter of probability [p]. */
+    fun keyPriorOf(p: Double): Double = KEY_PRIOR_WEIGHT * maxOf(KEY_PRIOR_FLOOR, ln(p))
+
     private const val BIGRAM_PRIOR_SHARE = 0.6
 
     private const val KEY_PRIOR_WEIGHT = 0.10
