@@ -460,23 +460,19 @@ object KbSpec {
         val shiftK = K("shift", "shift", 1.5f)
         fun bksp(w: Float = 1.5f) = K("bksp", "bksp", w)
         fun mode(label: String, w: Float) = K("mode-$label", "mode", w, label = label)
-        // the bottom row on row 3's columns: 123 as wide as shift, emoji one letter, return as wide as delete
-        fun fnK(w: Float = 1f) = K("fn", "fn", w)
+        fun fnK(w: Float = 1.2533f) = K("fn", "fn", w)
         fun space(w: Float) = K("space", "space", w)
-        fun retK(w: Float = 1.5f) = K("ret", "ret", w)
+        fun retK(w: Float = 2.4933f) = K("ret", "ret", w)
 
         val firstMode = if (plane == "base") (if (kstyle == "android") "?123" else "123") else "ABC"
         val bottom = when {
             // Kb:620-622: comma slot (@ for email, / for URLs), 1.5 · 1 · 1 · 4 · 1 · 1.5
             kstyle == "android" -> listOf(mode(firstMode, 1.5f), ch(when (field) { "email" -> "@"; "url" -> "/"; else -> "," }, 1f), fnK(1f), space(4f), ch(".", 1f), retK(1.5f))
-            // the action key as a word: iOS's widths, return wide enough for the word ("-word" layers)
-            P.actionStyle == "word" && field == "email" -> listOf(mode(firstMode, 1.24f), fnK(1.2533f), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK(2.4933f))
-            P.actionStyle == "word" && field == "url" -> listOf(mode(firstMode, 1.24f), fnK(1.2533f), space(2.5133f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK(2.4933f))
-            P.actionStyle == "word" -> listOf(mode(firstMode, 1.24f), fnK(1.2533f), space(5.0133f), retK(2.4933f))
-            field == "email" -> listOf(mode(firstMode, 1.5f), fnK(), space(3.5f), ch("@", 1.25f), ch(".", 1.25f), retK())
+            // iOS's bottom row keeps iOS's widths (user 2026-11-17)
+            field == "email" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK())
             // a space bar in URL fields too (address bars take searches; Gboard keeps one), .com etc. on a long press of .
-            field == "url" -> listOf(mode(firstMode, 1.5f), fnK(), space(3.5f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK())
-            else -> listOf(mode(firstMode, 1.5f), fnK(), space(6f), retK())
+            field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK())
+            else -> listOf(mode(firstMode, 1.24f), fnK(), space(5.0133f), retK())
         }
         fun symRow3(m: String) = listOf(mode(m, 1.5f), ch(".", 1.4f), ch(",", 1.4f), ch("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), bksp())
         val spec: List<List<K>> = when (plane) {
@@ -645,9 +641,8 @@ object KbSpec {
                     bg = if (spot != null) spot.press else if (fnPress) t.pressFn else t.pressKey
                     bgG = if (spot != null) null else t.grad[if (fnPress) "pressFn" else "pressKey"]
                 }
-                // Gboard's bottom row: comma and period in the function tone (not while pressed)
+                // the bottom row: only function keys take the accent; comma and period keep the letters' colours (user 2026-11-17)
                 val bottomRow = ri == spec.size - 1 && plane != "numeric" && plane != "numpad" && plane != "telpad" && plane != "telpad2"
-                if (t.gboardRow && bottomRow && k.kind == "char" && label in setOf(",", ".", "@", "/") && k.id != pressed) { bg = t.fn; fg = t.fnFg }
                 // and the emoji / globe key in the letter tone
                 if (t.gboardRow && bottomRow && k.kind == "fn" && k.id != pressed) { bg = t.key; fg = t.keyFg }
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + rowTops[ri] + mv

@@ -30,16 +30,15 @@ def w(dp: float) -> str:
 
 
 SHIFT = "1.5"  # Gboard: shift and delete take what the 7 letters leave, no gaps (user 2026-11-17)
-# the bottom row on row 3's columns (user 2026-11-17, after row 3 took Gboard's widths): 123 / ABC
-# as wide as shift, the emoji key one letter, return as wide as delete, space the rest
-MODE = "1.5"         # 123 / ABC
-FN = "1"             # emoji / language key
-SPACE = "6"
-RETURN = "1.5"
+# the iOS bottom row keeps iOS's widths (user 2026-11-17): 123 46.5 | emoji 47 | space 188 | return 93.5
+MODE = w(46.5)       # 123 / ABC
+FN = w(47)           # emoji / language key
+SPACE = w(188)       # space absorbs the 37.5 dp a dictation key would take
+RETURN = w(93.5)
 # Email and URL bottom rows: iOS arrangement and widths (email from the 320 pt layout stretched to
 # 375, URL from the 375 pt layout); TLD and currency long-press sets as in iOS
-EMAIL_KEY = "1.25"   # @ and . (email), / and . (URL)
-SPACE_EMAIL = "3.5"  # 10 - 1.5 - 1 - 2 x 1.25 - 1.5
+EMAIL_KEY = w(40 * 375 / 320)  # 320 pt email row (40 pt keys) stretched to 375
+SPACE_EMAIL = w(375 - 46.5 - 47 - 2 * 40 * 375 / 320 - 93.5)  # space + the merged dictation slot
 TLDS = ".org .edu .net"  # long-press on .com
 PUNCT_WIDE = "1.4"   # the five wide punctuation keys on the symbol layers (5 x 1.4 = 7 letters)
 
@@ -244,11 +243,6 @@ FIELD_ROWS = {
     "classic": "to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic",
     "classic-email": "to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic",
     "classic-url": "to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic",
-    # the action key as a word (Settings > Layout > Action key: Word): the iOS widths, return wide enough
-    # for "Search" / "Send"; 123 1.24, emoji 1.25, space 5.01, return 2.49 (email / URL: space 2.51)
-    "word": "to-symbol-1-word fn-key-word space-word enter-word",
-    "word-email": "to-symbol-1-word fn-key-word space-word-email at-email period-email enter-word",
-    "word-url": "to-symbol-1-word fn-key-word space-word-email slash-url period-url enter-word",
 }
 
 
@@ -279,11 +273,6 @@ def build(lay: Layout) -> str:
         '<key id="space-classic" output="\\u{0020}" width="4" />',
         '<key id="period-classic" output="." width="1" />',
         '<key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />',
-        f'<key id="to-symbol-1-word" layerId="symbol-1" width="{w(46.5)}" />',
-        f'<key id="fn-key-word" gap="true" width="{w(47)}" />',
-        f'<key id="space-word" output="\\u{{0020}}" width="{w(188)}" />',
-        f'<key id="space-word-email" output="\\u{{0020}}" width="{w(375 - 46.5 - 47 - 2 * 46.875 - 93.5)}" />',
-        f'<key id="enter-word" output="@k3:action/enter" width="{w(93.5)}" longPressKeyIds="newline" />',
         f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
         f'<key id="period-email" output="." width="{EMAIL_KEY}" />',
         "<!-- URL fields keep a space bar (Android address bars are search boxes too; Gboard keeps one):",
@@ -351,9 +340,6 @@ def build(lay: Layout) -> str:
         '        <display keyId="to-symbol-1-row3" display="123" />',
         '        <display keyId="to-symbol-1-classic" display="?123" />',
         '        <display keyId="space-classic" display="space" />',
-        '        <display keyId="to-symbol-1-word" display="123" />',
-        '        <display keyId="space-word" display="space" />',
-        '        <display keyId="space-word-email" display="space" />',
         '        <display keyId="to-symbol-2" display="#+=" />',
         '        <display keyId="to-base" display="ABC" />',
         '        <display keyId="space" display="space" />',

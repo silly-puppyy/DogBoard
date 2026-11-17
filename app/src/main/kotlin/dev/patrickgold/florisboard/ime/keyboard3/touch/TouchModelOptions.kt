@@ -38,8 +38,6 @@ data class TouchModelOptions(
     val symbolLongPress: Boolean = false,
     // DogBoard: the Classic bottom row (?123, comma, emoji, space, period, action): "-classic" layers
     val bottomRowClassic: Boolean = false,
-    // DogBoard: the action key as a word: "-word" layers keep a wide return key (else it lines up with delete)
-    val bottomRowWords: Boolean = false,
 ) {
     companion object {
         val Default = TouchModelOptions(
