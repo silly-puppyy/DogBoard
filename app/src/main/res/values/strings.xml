@@ -504,6 +504,9 @@
     <string name="pref__correction__adaptive_strength__summary" comment="Preference summary">Gets more careful if you often undo its changes, bolder if you keep them.</string>
     <string name="pref__correction__adaptive_notify__label" comment="Preference title">Tell me when it adapts</string>
     <string name="pref__correction__adaptive_notify__summary" comment="Preference summary">A notification each time autocorrect adjusts itself. It happens rarely.</string>
+    <string name="pref__keyboard__layout_group__title" comment="Preference group title">Keyboard layout</string>
+    <string name="pref__keyboard__layout__label" comment="Preference title">Layout</string>
+    <string name="pref__keyboard__layout__summary" comment="Preference summary">Autocorrect and suggestions are English only for now: other layouts type without them.</string>
     <string name="pref__correction__neural_retro__label" comment="Preference title">Smarter fixes to the previous word (experimental)</string>
     <string name="pref__correction__neural_retro__summary" comment="Preference summary">Uses the on-device language model to check the previous word against the one you are typing. More background work; only on phones that run the model.</string>
     <string name="adaptive_notify__channel" comment="Notification channel name">Autocorrect adjustments</string>

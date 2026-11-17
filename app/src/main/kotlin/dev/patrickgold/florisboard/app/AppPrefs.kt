@@ -487,6 +487,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__bottom_row",
             default = "simple",
         )
+        // DogBoard: the letter layout (tools/layouts/gen_layouts.py ids); autocorrection and
+        // suggestions are English-only until the internationalisation pass
+        val layoutId = string(
+            key = "keyboard__layout_id",
+            default = "qwerty-en",
+        )
         /** Letters on the keys always in capitals (else they follow shift). */
         val capsLabels = boolean(
             key = "keyboard__caps_labels",

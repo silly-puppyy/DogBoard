@@ -37,7 +37,7 @@ private val SCOPE_FOUNDATION = K3Descriptor("fl", "ext", "org.florisboard.k3.fou
 
 // TODO this is just a placeholder testing code, must be replaced by proper logic & extension-aware logic
 @OptIn(WillRequireMigrationToRichErrors::class)
-suspend fun loadFoundationKeyboard(imeController: ImeController, storage: Storage) {
+suspend fun loadFoundationKeyboard(imeController: ImeController, storage: Storage, layoutId: String = "qwerty-en") {
     suspend fun loadAssetFile(path: String): TextSourceFile {
         val xml = withContext(Dispatchers.IO) {
             val ref = FlorisRef.assets("extensions/org.florisboard.k3.foundation/$path")
@@ -58,8 +58,8 @@ suspend fun loadFoundationKeyboard(imeController: ImeController, storage: Storag
         displays = listOf("flex://org.florisboard.k3.foundation/displays-implied.xml"),
         keys = listOf("flex://org.florisboard.k3.foundation/keys-implied.xml"),
     )
-    // DogBoard: load our English QWERTY instead of the German QWERTZ placeholder
-    val file = loadAssetFile("keyboard/qwerty-en.xml")
+    // DogBoard: the chosen layout (gen_layouts.py), English QWERTY when it isn't there
+    val file = runCatching { loadAssetFile("keyboard/$layoutId.xml") }.getOrElse { loadAssetFile("keyboard/qwerty-en.xml") }
     // DogBoard: startup timing
     val result = io.github.sillypuppyy.dogboard.perf.Perf.measure("layout compile") { file.compileToModel(importResolver, impliedImports) }
     for (report in result.reports) {

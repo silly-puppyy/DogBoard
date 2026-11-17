@@ -16,6 +16,8 @@
 
 package dev.patrickgold.florisboard.app.settings.typing
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.ListItemDefaults
@@ -54,6 +56,25 @@ fun TypingScreen() {
         previewFieldVisible = true,
     ) { contentPadding ->
         ScrollableScreenColumn(contentPadding) {
+            // DogBoard: the letter layout (design pass phase 1; languages come with the i18n pass)
+            SegmentedListColumn(title = stringRes(R.string.pref__keyboard__layout_group__title)) {
+                ListPreference(
+                    prefs.keyboard.layoutId,
+                    shapes = ListItemDefaults.segmentedShapes(0, 1),
+                    title = stringRes(R.string.pref__keyboard__layout__label),
+                    entries = listPrefEntries {
+                        entry("qwerty-en", "English (QWERTY)")
+                        entry("qwertz-de", "Deutsch (QWERTZ)")
+                        entry("azerty-fr", "Français (AZERTY)")
+                    },
+                )
+            }
+            androidx.compose.material3.Text(
+                stringRes(R.string.pref__keyboard__layout__summary),
+                modifier = androidx.compose.ui.Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             SegmentedListColumn(title = stringRes(R.string.pref__typing_caps_group__title)) {
                 val count = 5
                 SwitchPreference(

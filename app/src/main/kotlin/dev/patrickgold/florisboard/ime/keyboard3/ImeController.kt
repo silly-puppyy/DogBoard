@@ -48,6 +48,7 @@ import dev.patrickgold.florisboard.ime.nlp.SuggestionCandidate
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import dev.patrickgold.florisboard.lib.FlorisLocale
 import dev.patrickgold.florisboard.lib.devtools.flogDebug
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -299,8 +300,11 @@ class ImeController(
         }
 
         // TODO proper stateful compilation
+        // DogBoard: the chosen layout, compiled again when the setting changes
         scope.launch {
-            loadFoundationKeyboard(this@ImeController, storageController.activeStorage.value)
+            prefs.keyboard.layoutId.asFlow().collectLatest { id ->
+                loadFoundationKeyboard(this@ImeController, storageController.activeStorage.value, id)
+            }
         }
     }
 
@@ -1072,8 +1076,12 @@ class ImeController(
          */
         private fun suggestionsAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
-            return attrs.type == InputAttributes.Type.TEXT && attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS
+            // English word lists only for now (internationalisation pass): no English suggestions on other layouts
+            return englishLayout() && attrs.type == InputAttributes.Type.TEXT && attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS
         }
+
+        /** DogBoard: the word engine's language matches the layout (English only until the i18n pass). */
+        private fun englishLayout(): Boolean = prefs.keyboard.layoutId.get().endsWith("-en")
 
         /** DogBoard: the layout's language tag (from the model, as composition uses it). */
         private var languageTag = ""
@@ -1086,7 +1094,10 @@ class ImeController(
 
         private fun wordEngineAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
-            return attrs.type == InputAttributes.Type.TEXT &&
+            // the word engine is English for now: other layouts type plainly until the
+            // internationalisation pass brings their word lists and language models
+            return englishLayout() &&
+                attrs.type == InputAttributes.Type.TEXT &&
                 attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS &&
                 !attrs.flagTextNoSuggestions
         }
