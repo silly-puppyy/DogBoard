@@ -20,6 +20,7 @@ import torch
 
 from decode import load_lexicon
 from human import PRESETS, path as human_path
+from stitch import Library
 from prepare_futo import resample
 
 CENTRES = {}
@@ -36,7 +37,10 @@ def feats(xy):
 def make(job):
     seed, words = job
     rng = random.Random(seed)
-    return [(feats([(x, y) for x, y, _ in human_path(w, CENTRES, rng, PARAMS[0])]), w) for w in words]
+    gen = PARAMS[0]
+    if isinstance(gen, Library):
+        return [(feats(gen.path(w, CENTRES, rng)), w) for w in words]
+    return [(feats([(x, y) for x, y, _ in human_path(w, CENTRES, rng, gen)]), w) for w in words]
 
 
 def init(centres, params):
@@ -53,7 +57,7 @@ def main():
     ap.add_argument("--top", type=int, default=100000)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--shard", type=int, default=200000)
-    ap.add_argument("--human", default="h2", choices=sorted(PRESETS))
+    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)} or lib:PATH (stitch.py library)")
     a = ap.parse_args()
     torch.set_num_threads(1)
     lay = json.load(open(a.layout))
@@ -68,7 +72,7 @@ def main():
         half = n // 2
         return rng.choices(words, weights=weights, k=half) + rng.choices(words, k=n - half)
 
-    with Pool(a.workers, initializer=init, initargs=(centres, PRESETS[a.human])) as pool:
+    with Pool(a.workers, initializer=init, initargs=(centres, Library.load(a.human[4:]) if a.human.startswith("lib:") else PRESETS[a.human])) as pool:
         def build(n, seed0):
             ws = draw(n)
             rng.shuffle(ws)
