@@ -532,6 +532,34 @@ object TypingEngine {
     }
 
     /**
+     * The two-word readings the look back compares ([retrocorrection] with neural scores): the
+     * previous word's top single words, each followed by the current word's best two readings.
+     */
+    private fun retroPairs(previous: List<Candidate>, current: List<Candidate>): List<Pair<Candidate, Candidate>> {
+        val prev = previous.filter { !it.isCompletion && it.words == 1 }.take(4)
+        val cur = current.filter { !it.isCompletion && it.words == 1 && !it.isTypedString }.take(2)
+        return prev.flatMap { p -> cur.map { c -> p to c } }
+    }
+
+    /**
+     * The neural model's ln P(previous + current | text before the previous word) for each reading
+     * [retrocorrection] will compare, keyed "previous current"; null without the model. Runs the model
+     * in another context than the current word's: call it off the main thread, after the refinement.
+     */
+    fun retroNeuralScores(previousDecoded: List<Candidate>, current: List<Candidate>, textBeforePrevious: String): Map<String, Double>? {
+        val lm = neuralLm ?: return null
+        val phrases = retroPairs(previousDecoded, current).map { (p, c) -> "${p.word} ${c.word}" }.distinct()
+        if (phrases.size < 2) return null
+        val t0 = System.nanoTime()
+        val scores = runCatching { lm.wordScores(textBeforePrevious, phrases, maxSteps = 48) }.getOrNull() ?: return null
+        lastNeuralRetroMillis = (System.nanoTime() - t0) / 1_000_000
+        return scores
+    }
+
+    @Volatile
+    var lastNeuralRetroMillis = -1L
+
+    /**
      * What [word] should become when it is finished, or null to keep it as typed.
      * [previousCorrection] is what this returned one keystroke earlier (iOS hysteresis).
      */
@@ -556,6 +584,11 @@ object TypingEngine {
          */
         previousCandidates: List<Candidate>? = null,
         currentCandidates: List<Candidate>? = null,
+        /**
+         * [retroNeuralScores] for [previousCandidates] (the decoder's, before any neural refinement)
+         * and [currentCandidates]: each reading's language score blended with the neural model's.
+         */
+        neuralPairs: Map<String, Double>? = null,
     ): String? {
         val engine = loaded ?: return null
         val bigrams = engine.bigrams ?: return null // the look back needs a context model
@@ -576,7 +609,16 @@ object TypingEngine {
             )).filter { it.words == 1 && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
                 .let { respectingContactNames(previous.text, it) }
             val curReadings = currentCandidates?.filter { !it.isCompletion && it.words == 1 }
+            val pairs = if (neuralPairs != null && currentCandidates != null) retroPairs(prevCandidates, currentCandidates) else emptyList()
+            fun neuralJoint(p: Candidate): Double? = pairs.filter { it.first.word == p.word }.mapNotNull { (_, c) ->
+                val n = neuralPairs?.get("${p.word} ${c.word}") ?: return@mapNotNull null
+                val r = d.rescored(c, bigrams.contextId(p.word.lowercase()))
+                p.geometry + r.geometry + Decoder.LANGUAGE_POWER_CONTEXT * ((1 - NEURAL_WEIGHT) * (p.languageModel + r.languageModel) + NEURAL_WEIGHT * n)
+            }.maxOrNull()
+            // with neural scores for every reading the comparison uses them, else the n-gram joint as before
+            val useNeural = pairs.isNotEmpty() && prevCandidates.all { neuralJoint(it) != null }
             fun joint(prevWord: String, prevScore: Double): Double {
+                if (useNeural) prevCandidates.firstOrNull { it.word == prevWord }?.let { p -> neuralJoint(p)?.let { return it } }
                 val context = bigrams.contextId(prevWord.lowercase())
                 val best = if (curReadings != null) {
                     curReadings.maxOfOrNull { d.rescored(it, context).score }

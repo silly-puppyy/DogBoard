@@ -176,6 +176,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "correction__adaptive_strength",
             default = true,
         )
+        // DogBoard (experimental, user 2026-11-17): the neural model also scores the look back at the
+        // previous word (iOS: its transformer is part of the model that scores retrocorrections)
+        val neuralRetro = boolean(
+            key = "correction__neural_retro",
+            default = false,
+        )
         // DogBoard: a notification each time the adaptive strength changes step (user, 2026-11-16)
         val adaptiveNotify = boolean(
             key = "correction__adaptive_notify",

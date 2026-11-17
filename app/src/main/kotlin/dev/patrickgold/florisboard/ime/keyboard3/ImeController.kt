@@ -147,6 +147,8 @@ class ImeController(
         val candidates: List<io.github.sillypuppyy.dogboard.engine.Candidate>? = null,
         /** Where the space after it was tapped (a word split by a stray space may be rejoined). */
         val spaceTap: Tap? = null,
+        /** The decoder's candidates before the neural refinement (the neural look back scores these). */
+        val decoded: List<io.github.sillypuppyy.dogboard.engine.Candidate>? = null,
     )
     private var lookBack: LookBack? = null
 
@@ -198,6 +200,10 @@ class ImeController(
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
     @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
+    // DogBoard: the decoder's own candidates for the same key (before the neural refinement), and the
+    // experimental neural look back's scores for the current word
+    @Volatile private var latestStage1: Pair<String, List<Candidate>>? = null
+    @Volatile private var latestRetroNeural: Pair<String, Map<String, Double>>? = null
     // DogBoard: the autocorrection chosen for the word one keystroke ago, as (typed text, choice)
     @Volatile private var previousKeystrokeCorrection: Pair<String, String?>? = null
     @Volatile private var latestCorrection: Pair<String, String?>? = null
@@ -713,10 +719,10 @@ class ImeController(
                         scope.launch { TypingEngine.noteCorrected(typed, corrected) }
                     }
                     noteFinishedWord(context, corrected, context2)
-                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context, candidates, spaceTap)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), corrected, context, candidates, spaceTap, latestStage1?.takeIf { it.first == key }?.second)
                 } else {
                     noteFinishedWord(context, typed, context2)
-                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context, candidates, spaceTap)
+                    if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context, candidates, spaceTap, latestStage1?.takeIf { it.first == key }?.second)
                 }
             } else if (!word.isEmpty && separator == " " && word.text != rejectedWord) {
                 lookBack = null // autocorrect off or the user insisted on this word: nothing to look back at
@@ -773,8 +779,11 @@ class ImeController(
             // only from what is already decoded: this runs on the main thread as the word ends; when
             // the background decode of the current word hasn't caught up, there is no look back
             val current = latestDecode?.takeIf { it.first == decodeKey(typed, wordContext(), wordContext2()) }?.second ?: return null
+            // with the experimental neural look back: its scores, when they were ready for this word
+            val neural = latestRetroNeural?.takeIf { it.first == decodeKey(typed, wordContext(), wordContext2()) && back.decoded != null }?.second
             val newPrevious = TypingEngine.retrocorrection(back.word, back.committed, back.context, word, curlyApostrophes(),
-                previousCandidates = back.candidates ?: return null, currentCandidates = current) ?: return null
+                previousCandidates = (if (neural != null) back.decoded else back.candidates) ?: return null, currentCandidates = current,
+                neuralPairs = neural) ?: return null
             if (!replaceBeforeCursor("${back.committed} $typed", "$newPrevious $typed")) return null
             state.content.selection.start.let { end ->
                 val offset = end - typed.length - 1 - newPrevious.length
@@ -998,6 +1007,8 @@ class ImeController(
             deletingWord = null
             wordAroundCursor = null
             latestDecode = null
+            latestStage1 = null
+            latestRetroNeural = null
             previousKeystrokeCorrection = null
             latestCorrection = null
         }
@@ -1190,12 +1201,14 @@ class ImeController(
             val neuralContext = textBefore.takeIf { it.endsWith(word.text) }?.dropLast(word.text.length)
                 ?.let { t -> if (textBefore.length >= SURROUNDING_BEFORE) t.substringAfter(' ', t) else t }
             val back = lookBack
+            val neuralRetro = prefs.correction.neuralRetro.get()
             suggestionJob = scope.launch {
                 val key = decodeKey(word.text, context, context2)
                 // stage 1: the decoder's candidates, published at once (the word end uses them: it never
                 // waits for the neural model, user 2026-11-17: "pausing right before it autocorrects")
                 val decoded = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
                 latestDecode = key to decoded
+                latestStage1 = key to decoded
                 fun publish(candidates: List<io.github.sillypuppyy.dogboard.engine.Candidate>) {
                     val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
                     val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null
@@ -1222,6 +1235,16 @@ class ImeController(
                     if (refined != null && isActive && latestDecode?.first == key) {
                         latestDecode = key to refined
                         publish(refined)
+                    }
+                    // stage 3 (experimental): the look back at the previous word, scored by the neural model
+                    val prevDecoded = back?.decoded
+                    if (neuralRetro && prevDecoded != null && isActive && neuralContext.endsWith(back.committed + " ")) {
+                        val before = neuralContext.dropLast(back.committed.length + 1)
+                        val scores = io.github.sillypuppyy.dogboard.perf.GcStats.track("neural retro") {
+                            TypingEngine.retroNeuralScores(prevDecoded, refined ?: decoded, before)
+                        }
+                        TypingEngine.lastNeuralRetroMillis.takeIf { it >= 0 && scores != null }?.let { android.util.Log.i("DogBoardPerf", "neural look back took ${it}ms") }
+                        if (scores != null && isActive) latestRetroNeural = key to scores
                     }
                 }
             }

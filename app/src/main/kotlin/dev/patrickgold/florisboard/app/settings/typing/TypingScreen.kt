@@ -159,7 +159,7 @@ fun TypingScreen() {
                 }
             }
             SegmentedListColumn(title = stringRes(R.string.pref__correction__title)) {
-                val count = 4
+                val count = 5
                 // DogBoard
                 SwitchPreference(
                     prefs.correction.autocorrect,
@@ -192,6 +192,13 @@ fun TypingScreen() {
                     title = stringRes(R.string.pref__correction__adaptive_notify__label),
                     summary = stringRes(R.string.pref__correction__adaptive_notify__summary),
                     enabledIf = { prefs.correction.autocorrect isEqualTo true && prefs.correction.adaptiveStrength isEqualTo true },
+                )
+                SwitchPreference(
+                    prefs.correction.neuralRetro,
+                    shapes = ListItemDefaults.segmentedShapes(4, count),
+                    title = stringRes(R.string.pref__correction__neural_retro__label),
+                    summary = stringRes(R.string.pref__correction__neural_retro__summary),
+                    enabledIf = { prefs.correction.autocorrect isEqualTo true },
                 )
             }
 

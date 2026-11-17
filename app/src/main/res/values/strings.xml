@@ -504,6 +504,8 @@
     <string name="pref__correction__adaptive_strength__summary" comment="Preference summary">Gets more careful if you often undo its changes, bolder if you keep them.</string>
     <string name="pref__correction__adaptive_notify__label" comment="Preference title">Tell me when it adapts</string>
     <string name="pref__correction__adaptive_notify__summary" comment="Preference summary">A notification each time autocorrect adjusts itself. It happens rarely.</string>
+    <string name="pref__correction__neural_retro__label" comment="Preference title">Smarter fixes to the previous word (experimental)</string>
+    <string name="pref__correction__neural_retro__summary" comment="Preference summary">Uses the on-device language model to check the previous word against the one you are typing. More background work; only on phones that run the model.</string>
     <string name="adaptive_notify__channel" comment="Notification channel name">Autocorrect adjustments</string>
     <string name="adaptive_notify__careful__title" comment="Notification title">Autocorrect is a little more careful now</string>
     <string name="adaptive_notify__careful__text" comment="Notification text">You\'ve been undoing some of its changes, so it now needs to be surer before changing a word.</string>
