@@ -23,6 +23,7 @@ import torch
 from decode import load_lexicon
 from human import PRESETS, path as human_path
 from stitch import Library
+from physics import FingerParams, path as finger_path
 import units
 from prepare_futo import resample
 
@@ -41,9 +42,19 @@ def make(job):
     seed, words = job
     rng = random.Random(seed)
     gen = PARAMS[0]
+    if isinstance(gen, FingerParams):
+        return [(feats([(x, y) for x, y, _ in finger_path(w, CENTRES, rng, gen)]), w) for w in words]
     if isinstance(gen, Library):
         return [(feats(gen.path(w, CENTRES, rng)), w) for w in words]
     return [(feats([(x, y) for x, y, _ in human_path(w, CENTRES, rng, gen)]), w) for w in words]
+
+
+def gen_of(spec):
+    if spec.startswith("lib:"):
+        return Library.load(spec[4:])
+    if spec.startswith("finger:"):
+        return FingerParams(**json.load(open(spec[7:])))
+    return PRESETS[spec]
 
 
 def init(centres, params):
@@ -62,7 +73,7 @@ def main():
     ap.add_argument("--shard", type=int, default=200000)
     ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     ap.add_argument("--aspect", type=float, default=0.42, help="phys: the keyboard's letter area height / width")
-    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)} or lib:PATH (stitch.py library)")
+    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library) or finger:PARAMS.json (physics.py)")
     a = ap.parse_args()
     torch.set_num_threads(1)
     lay = json.load(open(a.layout))
@@ -80,7 +91,7 @@ def main():
         half = n // 2
         return rng.choices(words, weights=weights, k=half) + rng.choices(words, k=n - half)
 
-    with Pool(a.workers, initializer=init, initargs=(centres, Library.load(a.human[4:]) if a.human.startswith("lib:") else PRESETS[a.human])) as pool:
+    with Pool(a.workers, initializer=init, initargs=(centres, gen_of(a.human))) as pool:
         def build(n, seed0):
             ws = draw(n)
             rng.shuffle(ws)
