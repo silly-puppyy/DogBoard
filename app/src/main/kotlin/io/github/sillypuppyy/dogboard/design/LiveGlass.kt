@@ -35,10 +35,17 @@ data class LiveTheme(
     val keyOpacity: Float = 0.3f,
     val photoLuminance: Float = 0.3f,
     val photoStamp: Long = 0L,
+    val glassFg: String = "auto",
+    val halo: Boolean = true,
+    val actColor: String? = null,
+    val actFg: String? = null,
+    /** "center top", "center" or "center bottom": which part of the photo shows. */
+    val photoPos: String = "center",
 ) {
     /** [p] with the Glass tokens when Glass is on; the photo itself is drawn by [LiveGlassBackdrop]. */
     fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed) else p.copy(
         theme = "glass", dim = dim, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
+        glassFg = glassFg, halo = halo, actColor = actColor, actFg = actFg,
     )
 }
 
@@ -61,8 +68,15 @@ fun liveTheme(): LiveTheme {
     val openSeed = androidx.compose.runtime.remember { (1..96).random() }
     // the Photo theme draws the glass photo when one is set, else the default look
     val glass = (id == "glass" || enabled) && stamp != 0L
+    val labels by prefs.keyboard.glassLabels.collectAsState()
+    val halo by prefs.keyboard.glassHalo.collectAsState()
+    val accent by prefs.keyboard.glassAccent.collectAsState()
+    val pos by prefs.keyboard.glassPhotoPos.collectAsState()
+    val context = LocalContext.current
+    val analysis by produceState<GlassPhoto.Analysis?>(null, stamp) { value = withContext(Dispatchers.IO) { GlassPhoto.analysis(context) } }
+    val acc = analysis?.accents?.let { it.getOrNull(accent) ?: it.firstOrNull() }
     return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
-        dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp)
+        dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp, labels, halo, acc?.first, acc?.second, pos)
 }
 
 /**
@@ -80,6 +94,7 @@ fun LiveGlassBackdrop(theme: LiveTheme, modifier: Modifier = Modifier) {
         photo?.let { b ->
             Image(
                 b.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop,
+                alignment = when (theme.photoPos) { "center top" -> androidx.compose.ui.Alignment.TopCenter; "center bottom" -> androidx.compose.ui.Alignment.BottomCenter; else -> androidx.compose.ui.Alignment.Center },
                 modifier = Modifier.fillMaxSize().blur(theme.blur.dp, BlurredEdgeTreatment.Rectangle),
             )
         }

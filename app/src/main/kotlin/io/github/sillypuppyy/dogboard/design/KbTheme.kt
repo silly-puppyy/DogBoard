@@ -183,8 +183,11 @@ object KbThemes {
      * Kb:399-412: the theme's light or dark set (falling back to the one it has), merged over
      * DEF; `linkFg` defaults to `act`, or `actFg` when `act` is transparent. Glass: [glass].
      */
-    fun tokens(themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f): KbTokens {
-        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance) else {
+    fun tokens(
+        themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f,
+        glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null,
+    ): KbTokens {
+        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg) else {
             val th = T[themeId] ?: T.getValue("dogboard")
             // the default theme in the system's Material You colours, when the live keyboard set them
             MaterialYouTheme.override?.takeIf { themeId == "dogboard" || T[themeId] == null }?.let { (l, d) -> if (dark) d else l }
@@ -221,22 +224,29 @@ object KbThemes {
      * models the image under the keys as luminance 0.3 (Themes.dc.html:87-93); DogBoard passes the
      * chosen photo's measured luminance instead, so readability follows the real picture.
      */
-    private fun glass(dim: Float, kop: Float, photoLuminance: Float = 0.3f): Map<String, String> {
+    private fun glass(
+        dim: Float, kop: Float, photoLuminance: Float = 0.3f,
+        glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null,
+    ): Map<String, String> {
         val under = photoLuminance * (1.0 - dim).pow(2.2)  // Kb:538
         val capL = kop * 1 + (1 - kop) * under
         val cW = 1.05 / (capL + 0.05)
         val cB = (capL + 0.05) / (lumHex("#1b1c1e") + 0.05)
-        val light = cW >= cB
+        // Kb:541 labels: white or dark as asked, else whichever reads better
+        val light = when (glassFg) { "white" -> true; "dark" -> false; else -> cW >= cB }
         val fgc = if (light) "#ffffff" else "#1b1c1e"
         fun a(x: Double) = "rgba(255,255,255,$x)"
         return mapOf(
             "bg" to "transparent", "key" to a(kop.toDouble()), "keyFg" to fgc, "fn" to a(String.format(java.util.Locale.ROOT, "%.3f", kop * 0.55).toDouble()), "fnFg" to fgc,
-            "act" to "#f0b46a", "actFg" to "#3a2200", "chip" to "rgba(255,255,255,0.88)", "chipFg" to "#2b2b2b", "pop" to "#ffffff", "popFg" to "#1b1c1e",
+            "act" to (actColor ?: "#f0b46a"), "actFg" to (actFg ?: "#3a2200"), "chip" to "rgba(255,255,255,0.88)", "chipFg" to "#2b2b2b", "pop" to "#ffffff", "popFg" to "#1b1c1e",
             "sel" to "#f0b46a", "selFg" to "#3a2200", "hint" to if (light) "rgba(255,255,255,0.8)" else "rgba(27,28,30,0.75)",
             "div" to if (light) "rgba(255,255,255,0.35)" else "rgba(0,0,0,0.25)", "barFg" to fgc, "barMuted" to fgc,
             "tile" to a(max(0.2, kop.toDouble())), "tileFg" to fgc, "pressKey" to a(min(1.0, kop + 0.25)), "pressFn" to a(min(1.0, kop + 0.15)),
             "lock" to "#ffffff", "lockFg" to "#1b1c1e", "linkFg" to if (light) "#ffffff" else "#1b1c1e",
-        ) + if (kop < 0.12f) {  // Kb:545: nearly clear keys keep a hairline ring
+        ) + (if (halo) {  // Kb:544 the label shadow (a dark one under white labels, a light glow round dark ones)
+            val h = if (light) "0 1px 2px rgba(0,0,0,0.6), 0 0 6px rgba(0,0,0,0.35)" else "0 0 3px rgba(255,255,255,0.75), 0 0 8px rgba(255,255,255,0.4)"
+            mapOf("keyTs" to h, "fnTs" to h)
+        } else emptyMap()) + if (kop < 0.12f) {  // Kb:545: nearly clear keys keep a hairline ring
             val ring = "inset 0 0 0 1px " + if (light) "rgba(255,255,255,0.45)" else "rgba(0,0,0,0.3)"
             mapOf("keyShadow" to ring, "fnShadow" to ring)
         } else emptyMap()

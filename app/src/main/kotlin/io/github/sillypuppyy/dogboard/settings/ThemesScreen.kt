@@ -49,7 +49,7 @@ fun ThemesScreen() {
             if (hide) set.add(id) else set.remove(id)
             scope.launch { prefs.keyboard.hiddenThemePacks.set(set.sorted().joinToString(",")) }
         },
-        onEditPhoto = { navController.navigate(Routes.Settings.Theme) },
+        onEditPhoto = { navController.navigate(Routes.Settings.Photo) },
         onBack = { navController.popBackStack() },
     ))
 }

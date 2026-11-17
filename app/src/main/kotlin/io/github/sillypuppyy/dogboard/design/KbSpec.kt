@@ -66,6 +66,11 @@ data class KbProps(
     val keyOpacity: Float = 0.3f,
     /** Glass: the photo's measured luminance (the design models it as 0.3). */
     val photoLuminance: Float = 0.3f,
+    /** Kb:429-431 the photo theme's labels (auto / white / dark), their shadow, and the return key's colours. */
+    val glassFg: String = "auto",
+    val halo: Boolean = true,
+    val actColor: String? = null,
+    val actFg: String? = null,
     /** Glass: draw the design's gradient stand-in; off when the live keyboard draws the real photo behind. */
     val backdrop: Boolean = true,
     val preview: String = "",
@@ -390,7 +395,7 @@ object KbSpec {
     )
 
     fun render(P: KbProps): KbRender {
-        val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance)
+        val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance, P.glassFg, P.halo, P.actColor, P.actFg)
 
         // Kb:414-415
         val radius = when (P.keyShape) { "pill" -> 999f; "square" -> 4f; else -> t.radius }

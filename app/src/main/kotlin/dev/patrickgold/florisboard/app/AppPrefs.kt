@@ -572,6 +572,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val spotSeed = int(key = "keyboard__spot_seed", default = 3)
         // theme packs hidden from the Themes page (section ids, comma separated)
         val hiddenThemePacks = string(key = "keyboard__hidden_theme_packs", default = "")
+        // the photo theme's page (SetPhoto.dc.html): labels auto / white / dark, label shadow, which of the
+        // photo's colours the return key takes, and where the photo sits (top / centre / bottom)
+        val glassLabels = string(key = "keyboard__glass_labels", default = "auto")
+        val glassHalo = boolean(key = "keyboard__glass_halo", default = true)
+        val glassAccent = int(key = "keyboard__glass_accent", default = 0)
+        val glassPhotoPos = string(key = "keyboard__glass_photo_pos", default = "center")
         val glassDim = int(key = "keyboard__glass_dim", default = 35)
         val glassBlur = int(key = "keyboard__glass_blur", default = 12)
         val glassKeyOpacity = int(key = "keyboard__glass_key_opacity", default = 30)
