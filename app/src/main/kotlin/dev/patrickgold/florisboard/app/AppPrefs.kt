@@ -427,7 +427,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard: the phone's key click by default (user, 2026-11-14: the soft tap felt weak and flat)
         val hapticStyle = enum(
             key = "input_feedback__haptic_style",
-            default = io.github.sillypuppyy.dogboard.feel.HapticStyle.PHONE,
+            // DogBoard: Rich (iPhone-like) by default; Plain = Gboard's (user 2026-11-17)
+            default = io.github.sillypuppyy.dogboard.feel.HapticStyle.CRISP,
         )
         val hapticFeatKeyPress = boolean(
             key = "input_feedback__haptic_feat_key_press",
