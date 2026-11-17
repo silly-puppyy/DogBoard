@@ -77,3 +77,8 @@ en.nosuggest.txt (built by tools/data/build_nosuggest.py)
   Words never offered by autocorrection, completion or prediction, from the List of Dirty,
   Naughty, Obscene, and Otherwise Bad Words (https://github.com/LDNOOBW), English list, CC BY 4.0
   (https://creativecommons.org/licenses/by/4.0/); kept only where in DogBoard's lexicon.
+
+clean-urls.json (fetched by tools/links/fetch_clean_urls.py)
+  Brave's "Copy clean link" list (https://github.com/brave/adblock-lists, brave-lists/clean-urls.json),
+  unchanged, under the Mozilla Public License 2.0, included in licenses/Brave-clean-urls-MPL-2.0.txt.
+  Used by Settings > Clipboard > Strip trackers from links.

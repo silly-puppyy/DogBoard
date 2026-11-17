@@ -33,6 +33,25 @@ class LinkCleanerTest : FunSpec({
         LinkCleaner.clean("Take a look! https://pin.it/AAAAAAAAA") shouldBe "Take a look! https://pin.it/AAAAAAAAA"
     }
 
+    test("Brave's list (assets/dogboard/clean-urls.json): patterns and site rules") {
+        LinkCleaner.matchPattern("*://*.amazon.com/*").matches("https://www.amazon.com/dp/X?tag=a") shouldBe true
+        LinkCleaner.matchPattern("*://*.amazon.com/*").matches("https://amazon.com/") shouldBe true
+        LinkCleaner.matchPattern("*://*.amazon.com/*").matches("https://notamazon.com/") shouldBe false
+        LinkCleaner.load(java.io.File("src/main/assets/dogboard/clean-urls.json").readText())
+        LinkCleaner.cleanUrl("https://www.linkedin.com/in/someone?trk=public_profile&miniProfileUrn=1") shouldBe "https://www.linkedin.com/in/someone?miniProfileUrn=1"
+        LinkCleaner.cleanUrl("https://www.reddit.com/r/dogs/comments/abc/x/?share_id=Q&utm_name=iossmf") shouldBe "https://www.reddit.com/r/dogs/comments/abc/x/"
+        LinkCleaner.cleanUrl("https://example.com/p?id=3&srsltid=AAAA&pk_campaign=x") shouldBe "https://example.com/p?id=3"
+        // Brave's exclusion: X's redirect links keep their parameters
+        LinkCleaner.cleanUrl("https://x.com/i/redirect?url=https%3A%2F%2Fexample.com&t=1") shouldBe "https://x.com/i/redirect?url=https%3A%2F%2Fexample.com"
+    }
+
+    test("short links are recognised; expansion is only used once asked") {
+        ShortLinks.isShort("https://vm.tiktok.com/AAAAAAAAA/") shouldBe true
+        ShortLinks.isShort("https://pin.it/AAAAAAAAA") shouldBe true
+        ShortLinks.isShort("https://www.youtube.com/watch?v=x") shouldBe false
+        ShortLinks.withExpanded("see https://pin.it/AAAAAAAAA") shouldBe "see https://pin.it/AAAAAAAAA"
+    }
+
     test("links inside text; other text and links without a query are untouched") {
         LinkCleaner.clean("Look: https://www.youtube.com/watch?v=abc&si=zz and https://example.com/plain, ok?") shouldBe
             "Look: https://www.youtube.com/watch?v=abc and https://example.com/plain, ok?"

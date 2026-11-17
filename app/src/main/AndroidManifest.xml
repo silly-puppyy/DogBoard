@@ -4,6 +4,9 @@
 
     <!-- Permission needed to vibrate if the user has key press vibration enabled -->
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!-- DogBoard: only for opt-in features: Settings > Clipboard > Expand short links (ShortLinks,
+         known link services only); GIFs later -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- DogBoard: contact names as words, opt-in (asked in onboarding); read into memory only -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
 

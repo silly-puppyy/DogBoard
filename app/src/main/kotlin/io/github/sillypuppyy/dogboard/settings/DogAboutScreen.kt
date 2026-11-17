@@ -34,7 +34,7 @@ fun DogAboutScreen() {
         SetGroup("Licenses") {
             SetPageLink("ab:license", "DogBoard’s license", "Apache License 2.0, as FlorisBoard") { nav.navigate(Routes.Settings.ProjectLicense) }
             SetPageLink("ab:thirdparty", "Open-source libraries", "The libraries DogBoard uses and their licenses") { nav.navigate(Routes.Settings.ThirdPartyLicenses) }
-            SetPageLink("ab:data", "Word data", "Where the dictionaries and language models come from") { nav.navigate(Routes.Settings.DataLicenses) }
+            SetPageLink("ab:data", "Word data", "Where the word lists, language models and link rules come from") { nav.navigate(Routes.Settings.DataLicenses) }
         }
     }
 }

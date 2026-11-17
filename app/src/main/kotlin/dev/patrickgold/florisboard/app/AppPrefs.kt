@@ -150,6 +150,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // copied text) on a switch, and opt-in removal of tracking tags from pasted links (LinkCleaner)
         val smartChips = boolean(key = "clipboard__smart_chips", default = true)
         val stripTrackers = boolean(key = "clipboard__strip_trackers", default = false)
+        // with it: short links (vm.tiktok.com, pin.it...) asked once for their target (ShortLinks; network)
+        val expandShortLinks = boolean(key = "clipboard__expand_short_links", default = false)
         val clearPrimaryClipAffectsHistoryIfUnpinned = boolean(
             key = "clipboard__clear_primary_clip_affects_history_if_unpinned",
             default = true,

@@ -23,6 +23,7 @@ fun DogClipboardScreen() {
     val history by c.historyEnabled.collectAsState()
     val smart by c.smartChips.collectAsState()
     val strip by c.stripTrackers.collectAsState()
+    val expandShort by c.expandShortLinks.collectAsState()
     val suggest by c.suggestionEnabled.collectAsState()
     val cleanOld by c.historyAutoCleanOldEnabled.collectAsState()
     val oldAfter by c.historyAutoCleanOldAfter.collectAsState()
@@ -40,9 +41,14 @@ fun DogClipboardScreen() {
             SetSwitchRow("cb:smart", "Smart chips", "Phone numbers, links, emails and addresses in what you copied get chips of their own, to paste just that part.", smart) { v ->
                 scope.launch { c.smartChips.set(v) }
             }
-            SetSwitchRow("cb:strip", "Strip trackers from links", "Tracking tags like utm_source and fbclid are removed from links you paste with DogBoard. The rest of the link stays.", strip) { v ->
+            SetSwitchRow("cb:strip", "Strip trackers from links", "Tracking tags like utm_source and fbclid are removed from links you paste with DogBoard (Brave’s list and DogBoard’s own). After pasting, “Original link” puts it back as copied.", strip) { v ->
                 scope.launch { c.stripTrackers.set(v) }
             }
+            if (strip) SetSwitchRow(
+                "cb:expand", "Expand short links",
+                "Short links like vm.tiktok.com and pin.it carry a code that points back to your account. DogBoard asks the link service once where it leads and pastes that address, cleaned. Needs the internet; only known link services are asked.",
+                expandShort,
+            ) { v -> scope.launch { c.expandShortLinks.set(v) } }
             SetSwitchRow("cb:history", "Clipboard history", "Keep what you copy, to paste again from the clipboard panel.", history) { v ->
                 scope.launch { c.historyEnabled.set(v) }
             }

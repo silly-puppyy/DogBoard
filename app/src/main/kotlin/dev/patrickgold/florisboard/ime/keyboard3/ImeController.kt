@@ -197,7 +197,11 @@ class ImeController(
 
     /** DogBoard: the edit the bar's Undo chip can take back (UpdateImeStateScope.undoLastEdit). */
     private var undoEdit: UndoEdit? = null
-        set(v) { field = v; io.github.sillypuppyy.dogboard.ime.LiveStrip.undoShown.value = v != null }
+        set(v) {
+            field = v
+            io.github.sillypuppyy.dogboard.ime.LiveStrip.undoShown.value = v != null
+            io.github.sillypuppyy.dogboard.ime.LiveStrip.originalShown.value = v?.original != null
+        }
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
     @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
@@ -643,6 +647,25 @@ class ImeController(
         fun recordHeldDelete(before: String) {
             val after = state.content.surroundingText.textBefore
             if (after.length < before.length && before.startsWith(after)) undoEdit = UndoEdit("", before.substring(after.length), after)
+        }
+
+        /** A copied text as DogBoard pastes it with "Strip trackers from links" on: short links expanded (when allowed and already asked), trackers removed. */
+        fun cleanedPaste(text: String): String {
+            val source = if (prefs.clipboard.expandShortLinks.get()) io.github.sillypuppyy.dogboard.ime.ShortLinks.withExpanded(text) else text
+            return io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(source)
+        }
+
+        /** DogBoard: the "Original link" chip after a cleaned paste: the text as it was copied, trackers and all. */
+        fun restoreOriginalPaste() {
+            val u = undoEdit ?: return
+            val original = u.original ?: return
+            undoEdit = null
+            if (state.content.surroundingText.textBefore != u.after) return
+            val withSpace = if (u.inserted.endsWith(' ') && !original.endsWith(' ')) "$original " else original
+            if (!replaceBeforeCursor(u.inserted, withSpace)) return
+            expectedContentQueue.push(state.content)
+            currentWord.clear()
+            publishSuggestions()
         }
 
         /** DogBoard: the Undo chip tapped: the pasted text goes, the deleted text comes back. */
@@ -1508,7 +1531,7 @@ class ImeController(
         }
 
         /** DogBoard: a smart chip tapped: its text replaces the word being typed, then a space; nothing is learned. */
-        fun emitChip(text: String, space: Boolean = true, undoable: Boolean = false) {
+        fun emitChip(text: String, space: Boolean = true, undoable: Boolean = false, original: String? = null) {
             val typed = currentWord.text
             val insert = if (space) "$text " else text
             if (typed.isNotEmpty() && !replaceBeforeCursor(typed, insert)) return
@@ -1517,7 +1540,7 @@ class ImeController(
             io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.value = emptyList()
             publishSuggestions()
             // a piece of the clip pasted from its chip: Undo takes it back (the word it replaced returns)
-            if (undoable) state.content.surroundingText.textBefore.let { after -> if (after.endsWith(insert)) undoEdit = UndoEdit(insert, typed, after) }
+            if (undoable) state.content.surroundingText.textBefore.let { after -> if (after.endsWith(insert)) undoEdit = UndoEdit(insert, typed, after, original?.takeIf { it != text }) }
         }
 
         fun emitCandidate(candidate: SuggestionCandidate) {
@@ -1533,15 +1556,15 @@ class ImeController(
         fun emitClipboardItem(item: ClipboardItem?, undoable: Boolean = false): Boolean {
             return item != null && when (item.type) {
                 ItemType.TEXT -> {
-                    // DogBoard: Settings › Clipboard › Strip trackers from links (opt-in)
-                    val pasted = item.text?.let { if (prefs.clipboard.stripTrackers.get()) io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(it) else it }
+                    // DogBoard: Settings › Clipboard › Strip trackers from links, Expand short links (opt-in)
+                    val pasted = item.text?.let { if (prefs.clipboard.stripTrackers.get()) cleanedPaste(it) else it }
                     val text = pasted?.asK3String()
                     if (text != null) {
                         val selected = state.content.surroundingText.textSelected.takeIf { state.content.selection.isNotCollapsed() }.orEmpty()
                         emitText(text)
                         // DogBoard: Gboard's Undo chip after a paste from the clipboard chip
                         if (undoable) state.content.surroundingText.textBefore.let { after ->
-                            if (after.endsWith(pasted)) undoEdit = UndoEdit(pasted, selected, after)
+                            if (after.endsWith(pasted)) undoEdit = UndoEdit(pasted, selected, after, item.text?.takeIf { it != pasted })
                         }
                         true
                     } else {
@@ -1779,4 +1802,5 @@ fun K3Content.cursorCapsMode(inputAttributes: InputAttributes): InputAttributes.
 }
 
 /** DogBoard: an edit the bar's Undo chip can take back (see ImeController's undoEdit). */
-private data class UndoEdit(val inserted: String, val removed: String, val after: String)
+/** [original]: the text as copied, when the paste was cleaned (links without trackers, short links expanded). */
+private data class UndoEdit(val inserted: String, val removed: String, val after: String, val original: String? = null)

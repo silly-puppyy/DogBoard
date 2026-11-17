@@ -20,6 +20,9 @@ object LiveStrip {
     /** Whether the bar shows Gboard's Undo chip (after a paste from the clip chip, a held or swipe delete). */
     val undoShown = MutableStateFlow(false)
 
+    /** And beside it the "Original link" chip, after a paste whose links were cleaned or expanded. */
+    val originalShown = MutableStateFlow(false)
+
     /** Contacts by lowercase first name ([io.github.sillypuppyy.dogboard.contacts.ContactCards]); empty unless allowed. */
     @Volatile
     var contactCards: Map<String, List<io.github.sillypuppyy.dogboard.contacts.ContactCard>> = emptyMap()

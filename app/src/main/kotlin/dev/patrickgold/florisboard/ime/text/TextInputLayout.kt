@@ -88,6 +88,15 @@ fun TextInputLayout(
             // Settings › Clipboard › "Suggest what you copied"
             val clipSuggestion by prefs.clipboard.suggestionEnabled.collectAsState()
             val smartChips by prefs.clipboard.smartChips.collectAsState()
+            val stripTrackers by prefs.clipboard.stripTrackers.collectAsState()
+            val expandShort by prefs.clipboard.expandShortLinks.collectAsState()
+            // Expand short links (opt-in): asked once when a copy holds one, so the paste is instant
+            androidx.compose.runtime.LaunchedEffect(primaryClip, stripTrackers, expandShort) {
+                val text = primaryClip?.takeIf { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive }?.text
+                if (stripTrackers && expandShort && text != null && !isIncognitoMode) {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.ShortLinks.expandAll(text) }
+                }
+            }
             androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips) {
                 val offer = if (!clipSuggestion) null else io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
                 clipShown = offer
@@ -109,6 +118,7 @@ fun TextInputLayout(
             Box {
             val contactChips by io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.collectAsState()
             val undoShown by io.github.sillypuppyy.dogboard.ime.LiveStrip.undoShown.collectAsState()
+            val originalShown by io.github.sillypuppyy.dogboard.ime.LiveStrip.originalShown.collectAsState()
             // contact chips while a name is typed; else, with nothing typed, a text clip's chips
             val typing = strip.any { it.kind != io.github.sillypuppyy.dogboard.engine.Suggestion.Kind.PREDICTION }
             val clipChipsShown = contactChips.isEmpty() && !typing && clipShown != null && clipChips.isNotEmpty()
@@ -116,7 +126,9 @@ fun TextInputLayout(
             // (it goes as soon as anything else changes the text or the cursor, so it can take the bar)
             val undoChip = undoShown
             val chips = when {
-                undoChip -> listOf(io.github.sillypuppyy.dogboard.design.KbChipData("undo", "Undo"))
+                // after a cleaned paste, "Original link" puts the link back as it was copied
+                undoChip -> listOf(io.github.sillypuppyy.dogboard.design.KbChipData("undo", "Undo")) +
+                    (if (originalShown) listOf(io.github.sillypuppyy.dogboard.design.KbChipData("link", "Original link")) else emptyList())
                 contactChips.isNotEmpty() -> contactChips
                 clipChipsShown -> clipChips
                 else -> emptyList()
@@ -126,7 +138,7 @@ fun TextInputLayout(
                 strip = if (showAutofill) emptyList() else strip,
                 chips = if (showAutofill) emptyList() else chips,
                 onChip = { i ->
-                    if (undoChip) imeController.updateStateBlocking { undoLastEdit() }
+                    if (undoChip) imeController.updateStateBlocking { if (i == 1) restoreOriginalPaste() else undoLastEdit() }
                     else if (clipChipsShown) {
                         val item = clipShown
                         if (item != null) {
@@ -135,8 +147,10 @@ fun TextInputLayout(
                             // the whole clip pastes as itself; a piece of it as text
                             if (i == 0) imeController.updateStateBlocking { emitClipboardItem(item, undoable = true) }
                             else clipChips.getOrNull(i)?.let { c ->
-                                val piece = if (prefs.clipboard.stripTrackers.get()) io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(c.label) else c.label
-                                imeController.updateStateBlocking { emitChip(piece, undoable = true) }
+                                imeController.updateStateBlocking {
+                                    val piece = if (prefs.clipboard.stripTrackers.get()) cleanedPaste(c.label) else c.label
+                                    emitChip(piece, undoable = true, original = c.label)
+                                }
                             }
                         }
                     } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.insert, space = c.insert == c.label) } }
