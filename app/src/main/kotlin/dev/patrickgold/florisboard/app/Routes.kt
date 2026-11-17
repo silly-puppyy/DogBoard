@@ -242,6 +242,10 @@ object Routes {
         @Deeplink("settings/emoji-dogboard")
         object DogEmoji
 
+        @Serializable
+        @Deeplink("settings/about-dogboard")
+        object DogAbout
+
         // DogBoard: About › Data licenses (the attribution of the shipped word data)
         @Serializable
         @Deeplink("settings/about/data-licenses")
@@ -412,6 +416,7 @@ object Routes {
             composableWithDeepLink(Settings.DogGestures::class) { io.github.sillypuppyy.dogboard.settings.DogGesturesScreen() }
             composableWithDeepLink(Settings.DogClipboard::class) { io.github.sillypuppyy.dogboard.settings.DogClipboardScreen() }
             composableWithDeepLink(Settings.DogEmoji::class) { io.github.sillypuppyy.dogboard.settings.DogEmojiScreen() }
+            composableWithDeepLink(Settings.DogAbout::class) { io.github.sillypuppyy.dogboard.settings.DogAboutScreen() }
             composableWithDeepLink(Settings.DataLicenses::class) { io.github.sillypuppyy.dogboard.settings.DataLicensesScreen() }
             composableWithDeepLink(Settings.Search::class) {
                 val nav = LocalNavController.current
@@ -434,7 +439,7 @@ object Routes {
                             "dictionary" -> Settings.Dictionary
                             "finetuning" -> Settings.FineTuning
                             "advanced" -> Settings.Other
-                            "about" -> Settings.About
+                            "about" -> Settings.DogAbout
                             else -> Settings.Home
                         }
                     )

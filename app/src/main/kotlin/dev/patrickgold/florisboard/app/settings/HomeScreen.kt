@@ -137,7 +137,7 @@ fun HomeScreen() {
                             "Clipboard" -> Routes.Settings.DogClipboard
                             "Privacy" -> Routes.Settings.Privacy
                             "Advanced" -> Routes.Settings.Other
-                            else -> Routes.Settings.About
+                            else -> Routes.Settings.DogAbout
                         }
                     )
                 },
