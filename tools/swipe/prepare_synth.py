@@ -29,6 +29,7 @@ from prepare_futo import resample
 
 CENTRES = {}
 PARAMS = []
+SHAPE = {}  # layout json and aspect range, when each swipe gets its own keyboard shape
 
 
 def feats(xy):
@@ -42,6 +43,18 @@ def make(job):
     seed, words = job
     rng = random.Random(seed)
     gen = PARAMS[0]
+    if SHAPE:
+        out = []
+        for w in words:
+            sx, sy = units.scale("phys", SHAPE["layout"], 1.0, rng.uniform(*SHAPE["range"]))
+            c = units.keys(SHAPE["layout"], sx, sy)
+            if isinstance(gen, FingerParams):
+                out.append((feats([(x, y) for x, y, _ in finger_path(w, c, rng, gen)]), w))
+            elif isinstance(gen, Library):
+                out.append((feats(gen.path(w, c, rng)), w))
+            else:
+                out.append((feats([(x, y) for x, y, _ in human_path(w, c, rng, gen)]), w))
+        return out
     if isinstance(gen, FingerParams):
         return [(feats([(x, y) for x, y, _ in finger_path(w, CENTRES, rng, gen)]), w) for w in words]
     if isinstance(gen, Library):
@@ -57,9 +70,11 @@ def gen_of(spec):
     return PRESETS[spec]
 
 
-def init(centres, params):
+def init(centres, params, shape=None):
     CENTRES.update(centres)
     PARAMS.append(params)
+    if shape:
+        SHAPE.update(shape)
 
 
 def main():
@@ -74,6 +89,7 @@ def main():
     ap.add_argument("--shard", type=int, default=200000)
     ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     ap.add_argument("--aspect", type=float, default=0.42, help="phys: the keyboard's letter area height / width")
+    ap.add_argument("--aspect-max", type=float, default=0.0, help="phys: each swipe its own aspect, between --aspect and this")
     ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library) or finger:PARAMS.json (physics.py)")
     a = ap.parse_args()
     torch.set_num_threads(1)
@@ -92,7 +108,7 @@ def main():
         even = int(n * a.uniform)
         return rng.choices(words, weights=weights, k=n - even) + rng.choices(words, k=even)
 
-    with Pool(a.workers, initializer=init, initargs=(centres, gen_of(a.human))) as pool:
+    with Pool(a.workers, initializer=init, initargs=(centres, gen_of(a.human), {"layout": lay, "range": (a.aspect, a.aspect_max)} if a.aspect_max > a.aspect else None)) as pool:
         def build(n, seed0):
             ws = draw(n)
             rng.shuffle(ws)
