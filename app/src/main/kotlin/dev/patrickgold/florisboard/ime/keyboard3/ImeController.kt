@@ -688,12 +688,12 @@ class ImeController(
                 // iOS never computes at the word end: it applies the correction already found, or keeps
                 // the typed word when none is ready ("avoided autocorrect deadlock"); no decode here
                 val ready = latestDecode?.takeIf { it.first == key }?.second
-                if (ready == null && BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept")
+                if (ready == null && logsText) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept")
                 val candidates = ready ?: emptyList()
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
                 TypingEngine.adaptiveStrength = prefs.correction.adaptiveStrength.get()
                 val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)
-                if (BuildConfig.DEBUG) {
+                if (logsText) {
                     android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context, context2)} " +
                         candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
                 }
@@ -756,7 +756,7 @@ class ImeController(
             unconfirmedWord = null // the earlier word isn't a word to learn any more
             noteFinishedWord(back.context, joined, null)
             lastRetro = LastRetro(old, joined, "${back.word.text} $typed", separator)
-            if (BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "join '$old' -> $joined")
+            if (logsText) android.util.Log.d("DogBoardAc", "join '$old' -> $joined")
             currentWord.clear()
             rejectedWord = null
             return true
@@ -783,7 +783,7 @@ class ImeController(
             state.content.surroundingText.textBefore.let { tb ->
                 noteRecentCorrection(back.committed, newPrevious, tb.dropLast(typed.length + 1 + newPrevious.length))
             }
-            if (BuildConfig.DEBUG) android.util.Log.d("DogBoardAc", "retro ${back.committed} -> $newPrevious before $typed")
+            if (logsText) android.util.Log.d("DogBoardAc", "retro ${back.committed} -> $newPrevious before $typed")
             // the earlier word's pending learning and kept-correction now refer to the new word
             unconfirmedWord = unconfirmedWord?.let { (ctx, w) -> if (w == back.committed) ctx to newPrevious else ctx to w }
             unconfirmedCorrection = null
@@ -962,6 +962,13 @@ class ImeController(
             scope.launch { TypingEngine.correctionKept(typed, corrected) }
         }
 
+
+        /**
+         * Debug logs that show typed text (DogBoardAc): off unless switched on for the tag
+         * (`adb shell setprop log.tag.DogBoardAc DEBUG`, the emulator tests), so a debug build on a
+         * phone keeps what is typed out of logcat.
+         */
+        private val logsText: Boolean get() = BuildConfig.DEBUG && android.util.Log.isLoggable("DogBoardAc", android.util.Log.DEBUG)
 
         /** The user kept [word] against autocorrect: remember it, except in incognito mode. */
         private fun learnWord(word: String) {
@@ -1207,7 +1214,7 @@ class ImeController(
                         Triple(back, word.text, io.github.sillypuppyy.dogboard.perf.GcStats.track("join") { TypingEngine.spaceJoin(back.word, back.committed, back.context, tap, word, prev, decoded, curlyApostrophes()) })
                     }
                 }
-                if (BuildConfig.DEBUG && back != null) android.util.Log.d("DogBoardAc", "join check '${back.committed} ${word.text}': tap=${back.spaceTap} -> ${latestJoin?.third} ${TypingEngine.lastJoinDebug}")
+                if (logsText && back != null) android.util.Log.d("DogBoardAc", "join check '${back.committed} ${word.text}': tap=${back.spaceTap} -> ${latestJoin?.third} ${TypingEngine.lastJoinDebug}")
                 // stage 2: refined by the neural model, when it finishes before the next key
                 if (neuralContext != null && isActive) {
                     val refined = io.github.sillypuppyy.dogboard.perf.GcStats.track("neural") { TypingEngine.refineWithNeural(decoded, neuralContext) }

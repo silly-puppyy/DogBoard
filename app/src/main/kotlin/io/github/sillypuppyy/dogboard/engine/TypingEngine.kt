@@ -912,13 +912,21 @@ object TypingEngine {
 
     /**
      * iOS FilterLearnedTypo: a word learned from a slip ("ofthe", accepted fewer than 2 times)
-     * gives way when the same letters split into words ("of the").
+     * gives way when the same letters split into words ("of the"). The space bar is one of the keys
+     * a tap may have meant, so a letter typed for a space splits them too ("ofna" -> "of a").
      */
     private fun withoutLearnedTypo(typed: String, candidates: List<Candidate>): List<Candidate> {
         val t = typed.lowercase()
         if (lock.read { t !in learnedWords } || personal.uses(t) >= 2) return candidates
-        val split = candidates.any { it.words > 1 && it.word.replace(" ", "").equals(typed, ignoreCase = true) }
+        val split = candidates.any { it.words > 1 && splitsTyped(it.word, typed) }
         return if (split) candidates.filter { !it.word.equals(typed, ignoreCase = true) } else candidates
+    }
+
+    /** [candidate] is [typed] split into words: its spaces added between letters or typed as letters. */
+    internal fun splitsTyped(candidate: String, typed: String): Boolean {
+        if (candidate.replace(" ", "").equals(typed, ignoreCase = true)) return true
+        return candidate.length == typed.length &&
+            candidate.indices.all { i -> candidate[i] == ' ' || candidate[i].equals(typed[i], ignoreCase = true) }
     }
 
     /**

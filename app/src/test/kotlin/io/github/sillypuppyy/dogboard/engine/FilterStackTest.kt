@@ -91,6 +91,36 @@ class FilterStackTest : FunSpec({
         }
     }
 
+    test("FilterLearnedTypo: a word learned from a space typed as a letter gives way too") {
+        val dir = Files.createTempDirectory("dogboard-learned-space").toFile()
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
+                userWords = File(dir, "user_words.txt"),
+            )
+            // the space bar is one of the keys; the space tapped low on the n key
+            val keys = QwertyGeometry.keysWithSpace(375f, 216f)
+            val n = keys.getValue('n'); val space = keys.getValue(' ')
+            fun ofna() = CurrentWord().apply {
+                for (c in "ofna") {
+                    val tap = if (c == 'n') Tap(n.centerX, n.centerY + 0.3f * (space.centerY - n.centerY)) else keys.getValue(c).let { Tap(it.centerX, it.centerY) }
+                    addLetter(c, tap, keys, PARAMS)
+                }
+            }
+            TypingEngine.learn("ofna")
+            val word = ofna()
+            (TypingEngine.correction(word, TypingEngine.candidates(word, "ahead")) ?: "ofna") shouldBe "of a"
+            TypingEngine.splitsTyped("of a", "ofna") shouldBe true
+            TypingEngine.splitsTyped("of the", "ofthe") shouldBe true
+            TypingEngine.splitsTyped("of a", "ofta") shouldBe true // any letter may be the space's
+            TypingEngine.splitsTyped("if a", "ofna") shouldBe false
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
+
     test("RescoreShortWords: \"u\" scores like \"you\"") {
         val lex = Lexicon.of(linkedMapOf("you" to 100_000L, "i" to 50_000L, "y" to 300L, "u" to 100L))
         val keys = KEYS
