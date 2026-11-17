@@ -58,14 +58,17 @@ import io.github.sillypuppyy.dogboard.design.lint
  */
 object SetColors {
     /**
-     * The app's Material scheme while it is dark (set by FlorisAppTheme), else null: the canvas
-     * defines the light colours only, and dark uses the Material palette's own dark roles (user,
-     * 2026-11-14: "isn't there already a factory default dark? why not just use it").
+     * The app's Material scheme (set by FlorisAppTheme), seeded from the keyboard theme (user
+     * 2026-11-17: "change the app to match the keyboard theme"); null in previews: the canvas's
+     * light colours. Dark uses the palette's own dark roles (user, 2026-11-14: "isn't there
+     * already a factory default dark? why not just use it").
      */
-    var darkScheme: androidx.compose.material3.ColorScheme? by androidx.compose.runtime.mutableStateOf(null)
+    var scheme: androidx.compose.material3.ColorScheme? by androidx.compose.runtime.mutableStateOf(null)
+    var schemeDark: Boolean by androidx.compose.runtime.mutableStateOf(false)
 
-    private inline fun role(light: Color, dark: (androidx.compose.material3.ColorScheme) -> Color): Color =
-        darkScheme?.let(dark) ?: light
+    /** [light]: the canvas's colour, [lightRole] the scheme role it is (the canvas is the #435e91 seed's 2021 palette). */
+    private inline fun role(light: Color, lightRole: (androidx.compose.material3.ColorScheme) -> Color, dark: (androidx.compose.material3.ColorScheme) -> Color): Color =
+        scheme?.let { if (schemeDark) dark(it) else lightRole(it) } ?: light
 
     private val lScreen = css("#f3f3fa")
     private val lOnSurface = css("#1a1b20")
@@ -80,24 +83,24 @@ object SetColors {
     private val lErrorContainer = css("#ffdad6")
     private val lOnErrorContainer = css("#93000a")
 
-    val screen get() = role(lScreen) { it.surface } // page background
-    val onSurface get() = role(lOnSurface) { it.onSurface }
-    val onSurfaceVariant get() = role(lOnSurfaceVariant) { it.onSurfaceVariant }
-    val primary get() = role(lPrimary) { it.primary }
-    val outline get() = role(lOutline) { it.outline }
-    val outlineVariant get() = role(lOutlineVariant) { it.outlineVariant }
-    val surfaceContainerHighest get() = role(lSurfaceContainerHighest) { it.surfaceContainerHighest }
-    val row get() = role(lRow) { it.surfaceContainer } // rows sit a step above the page
-    val secondaryContainer get() = role(lSecondaryContainer) { it.secondaryContainer }
-    val onSecondaryContainer get() = role(lOnSecondaryContainer) { it.onSecondaryContainer }
-    val errorContainer get() = role(lErrorContainer) { it.errorContainer } // SetDict:67
-    val onErrorContainer get() = role(lOnErrorContainer) { it.onErrorContainer }
+    val screen get() = role(lScreen, { it.surfaceContainerLow }) { it.surface } // page background
+    val onSurface get() = role(lOnSurface, { it.onSurface }) { it.onSurface }
+    val onSurfaceVariant get() = role(lOnSurfaceVariant, { it.onSurfaceVariant }) { it.onSurfaceVariant }
+    val primary get() = role(lPrimary, { it.primary }) { it.primary }
+    val outline get() = role(lOutline, { it.outline }) { it.outline }
+    val outlineVariant get() = role(lOutlineVariant, { it.outlineVariant }) { it.outlineVariant }
+    val surfaceContainerHighest get() = role(lSurfaceContainerHighest, { it.surfaceContainerHighest }) { it.surfaceContainerHighest }
+    val row get() = role(lRow, { it.surfaceContainerLowest }) { it.surfaceContainer } // rows sit a step above the page
+    val secondaryContainer get() = role(lSecondaryContainer, { it.secondaryContainer }) { it.secondaryContainer }
+    val onSecondaryContainer get() = role(lOnSecondaryContainer, { it.onSecondaryContainer }) { it.onSecondaryContainer }
+    val errorContainer get() = role(lErrorContainer, { it.errorContainer }) { it.errorContainer } // SetDict:67
+    val onErrorContainer get() = role(lOnErrorContainer, { it.onErrorContainer }) { it.onErrorContainer }
     /**
-     * A tonal container pair (SetHome's section icons): the canvas's light pair as given, in dark
-     * the scheme's primary / secondary / tertiary container roles.
+     * A tonal container pair (SetHome's section icons): the scheme's primary / secondary / tertiary
+     * container roles for the canvas's pairs (the canvas's own colours in previews).
      */
     fun container(lightBg: Color, lightFg: Color): Pair<Color, Color> {
-        val s = darkScheme ?: return lightBg to lightFg
+        val s = scheme ?: return lightBg to lightFg
         return when (lightBg) {
             css("#d8e2ff") -> s.primaryContainer to s.onPrimaryContainer
             css("#fbd7fc") -> s.tertiaryContainer to s.onTertiaryContainer
@@ -116,10 +119,33 @@ fun setText(size: Float, weight: Int = 400, color: Color = SetColors.onSurface):
 
 /** SetHome:31-33: a labelled group of rows, 20 dp corners, 2 dp between rows. */
 @Composable
-fun SetGroup(label: String, content: @Composable ColumnScope.() -> Unit) {
+fun SetGroup(label: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DText(label, Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp), style = setText(14f, 500, SetColors.primary))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)), verticalArrangement = Arrangement.spacedBy(2.dp), content = content)
+        SetRows(Modifier.fillMaxWidth(), content)
+    }
+}
+
+/**
+ * Rows stacked 2 dp apart, as Android's own Settings groups them (measured on Android 17,
+ * 2026-11-17): 20 dp corners on the group's outside, 4 dp corners where rows meet.
+ */
+@Composable
+fun SetRows(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    androidx.compose.ui.layout.Layout(content, modifier) { measurables, c ->
+        val gap = 2.dp.roundToPx()
+        val ps = measurables.map { it.measure(c.copy(minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity)) }
+        val w = ps.maxOfOrNull { it.width }?.coerceAtLeast(c.minWidth) ?: c.minWidth
+        val h = ps.sumOf { it.height } + gap * (ps.size - 1).coerceAtLeast(0)
+        layout(w, h) {
+            var y = 0
+            ps.forEachIndexed { i, p ->
+                val top = if (i == 0) 20.dp else 4.dp
+                val bottom = if (i == ps.lastIndex) 20.dp else 4.dp
+                p.placeWithLayer(0, y) { shape = RoundedCornerShape(top, top, bottom, bottom); clip = true }
+                y += p.height + gap
+            }
+        }
     }
 }
 

@@ -40,12 +40,25 @@ fun getColorScheme(
 ): ColorScheme {
     val prefs by FlorisPreferenceStore
     val accentColor by prefs.other.accentColor.collectAsState()
-    val seedColor = systemAccentOrDefault(accentColor)
     val isDark = theme.isDark || theme.isAuto && isSystemInDarkTheme()
+    // DogBoard: the app takes its colours from the keyboard theme (user 2026-11-17): the default
+    // theme keeps the wallpaper's (system) accent, any other theme seeds the palette with its return key
+    val themeDay by prefs.keyboard.themeDay.collectAsState()
+    val themeNight by prefs.keyboard.themeNight.collectAsState()
+    val themeFollow by prefs.keyboard.themeFollow.collectAsState()
+    val (kbTheme, kbDark) = io.github.sillypuppyy.dogboard.design.ThemeChoice.resolve(
+        io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(themeDay, themeNight, themeFollow), isDark,
+    )
+    val themeSeed = if (kbTheme == "dogboard" || kbTheme == "glass") null
+        else io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark).act.takeIf { it.alpha > 0.5f }
+    val seedColor = themeSeed ?: systemAccentOrDefault(accentColor)
     val isAmoled = theme.isAmoled && isDark
 
-    return neutralDynamicColorScheme(
-        primary = seedColor,
+    return com.materialkolor.dynamicColorScheme(
+        seedColor = seedColor,
+        // the system accent is the primary as given; a theme's colour seeds the palette, whose own
+        // tones keep text readable (a light return key would make faint primary text)
+        primary = if (themeSeed == null) seedColor else null,
         isDark = isDark,
         isAmoled = theme.isAmoled,
         style = PaletteStyle.TonalSpot,
@@ -84,7 +97,8 @@ fun FlorisAppTheme(
     }
 
     // DogBoard: the redesigned settings pages take the dark roles from this scheme
-    io.github.sillypuppyy.dogboard.design.settings.SetColors.darkScheme = if (darkTheme) colorScheme else null
+    io.github.sillypuppyy.dogboard.design.settings.SetColors.scheme = colorScheme
+    io.github.sillypuppyy.dogboard.design.settings.SetColors.schemeDark = darkTheme
 
     MaterialTheme(
         colorScheme = colorScheme,

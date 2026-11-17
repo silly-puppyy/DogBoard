@@ -152,7 +152,7 @@ fun SetPhoto(state: SetPhotoState) {
                         horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
                     ) { Symbol("restart_alt", 18.sp, SetColors.primary); DText("Auto", style = setText(14f, 500, SetColors.primary)) }
                 }
-                Column(Modifier.clip(RoundedCornerShape(20.dp)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                SetRows {
                     // :155-157 return key colour from the photo
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         TitleSub("Return key colour", "Picked from the photo")

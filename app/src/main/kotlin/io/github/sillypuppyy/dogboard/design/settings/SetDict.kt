@@ -120,7 +120,7 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
         // SetDict:38 blurb: margin 0 32, 14 / 1.5
         DText(cur.blurb, Modifier.padding(horizontal = 32.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = 21.sp), maxLines = 4)
         // SetDict:40-48 the list: margin 0 16, radius 20, rows 2 apart
-        Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        SetRows(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
             for (w in rows) {
                 Row(
                     Modifier.fillMaxWidth().heightIn(min = 64.dp).background(SetColors.row).padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
@@ -144,7 +144,7 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
         // SetDict:50-63 text replacements: padding 0 16, gap 8
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             DText("Text replacements", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SetRows(Modifier.fillMaxWidth()) {
                 for ((shortcut, phrase) in state.replacements) {
                     Row(
                         Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp),

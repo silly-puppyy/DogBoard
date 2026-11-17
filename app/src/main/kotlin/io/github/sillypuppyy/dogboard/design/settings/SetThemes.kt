@@ -211,7 +211,7 @@ fun SetThemes(state: SetThemesState) {
             // :115-130 theme packs: show or hide each in the gallery, import one
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Theme packs", Modifier.padding(start = 4.dp, top = 8.dp), style = setText(14f, 500, primary))
-                Column(Modifier.clip(RoundedCornerShape(20.dp)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                SetRows {
                     for ((id, icon, name, sub) in ThemeChoice.PACKS) {
                         val shown = id !in state.hidden
                         Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {

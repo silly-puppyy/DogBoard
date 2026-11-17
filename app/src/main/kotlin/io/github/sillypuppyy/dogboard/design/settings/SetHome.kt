@@ -45,7 +45,7 @@ object SetHomeSpec {
     // settings layout v2 (approved by the user 2026-11-14, notes/design/settings-layout-proposal.md):
     // sections in order of how often people need them; titles and subs from that proposal
     val sections = listOf(
-        s("translate", "Languages and layouts", "English (US) · QWERTY · Simple layout", P),
+        s("translate", "Languages and layouts", "Your languages, QWERTY or another layout", P),
         s("palette", "Look", "Theme, photo background, key height", T, "SetLook"),
         s("spellcheck", "Typing and correction", "Autocorrect, capitals, punctuation", S),
         s("vibration", "Sound and vibration", "Volume, vibration style, feedback per key", P, "SetFeel"),
