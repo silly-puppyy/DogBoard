@@ -134,7 +134,7 @@ fun HomeScreen() {
                             "Sound and vibration" -> Routes.Settings.SoundVibration
                             "Gestures" -> Routes.Settings.DogGestures
                             "Emoji and GIFs" -> Routes.Settings.Media
-                            "Clipboard" -> Routes.Settings.Clipboard
+                            "Clipboard" -> Routes.Settings.DogClipboard
                             "Privacy" -> Routes.Settings.Privacy
                             "Advanced" -> Routes.Settings.Other
                             else -> Routes.Settings.About

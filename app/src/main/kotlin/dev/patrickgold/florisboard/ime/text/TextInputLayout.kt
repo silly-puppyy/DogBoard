@@ -85,8 +85,10 @@ fun TextInputLayout(
             var clipShown by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem?>(null) }
             // a text clip's chips: the whole text, then what is inside it (Gboard: phone, email, link, address, date)
             var clipChips by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<List<io.github.sillypuppyy.dogboard.design.KbChipData>>(emptyList()) }
-            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode) {
-                val offer = io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
+            // Settings › Clipboard › "Suggest what you copied"
+            val clipSuggestion by prefs.clipboard.suggestionEnabled.collectAsState()
+            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion) {
+                val offer = if (!clipSuggestion) null else io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
                 clipShown = offer
                 clipChips = if (offer == null || offer.isSensitive || offer.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT) emptyList()
                 else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
