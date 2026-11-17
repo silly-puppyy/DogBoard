@@ -13,6 +13,13 @@ overshoots not modelled yet: its long tail is short), mean distance 0.158/0.081/
 0.332, start 0.252/0.089/0.578 vs 0.245/0.093/0.521, end 0.392/0.138/0.970 vs 0.358/0.127/0.850,
 ms per key 75/40/134 vs 73/43/152.
 
+h2 (2026-11-17 21:00, fit_human.py on 2,000 dev words, key by key): corner spread grows with the
+turn angle, and swipes run on past the last key (median 0.2 key, curling). Error against real key-
+level statistics 7.8 -> 3.5: length median/p90 1.057/1.246 vs real 1.066/1.246; sharp-corner miss
+0.178/0.590 vs 0.172/0.559; last key 0.182/0.490 vs 0.192/0.480; run-on p90 0.90 vs 0.95. Still off:
+sideways spread ~20% too wide, spread along straight runs too small (one sigma for both now).
+h1 (the parameters above this note's first fit) is in git history (commit 30229cc).
+
 A swipe: each key's target = its centre + a Gaussian offset (start, middle and end sizes differ); a
 Catmull-Rom curve through the targets, pulled towards the chord between neighbours (corner cutting);
 a slow sideways wobble; points every few ms along a bell-shaped speed profile.
@@ -24,20 +31,20 @@ from dataclasses import dataclass
 
 @dataclass
 class HumanParams:
-    sigma_start: float = 0.24   # key widths, target offset at the first key
-    sigma_mid: float = 0.16     # at the keys in between
-    sigma_end: float = 0.40     # at the last key
+    sigma_start: float = 0.27   # key widths, target offset at the first key
+    sigma_mid: float = 0.28     # at the keys in between
+    sigma_end: float = 0.29     # at the last key
     start_dy: float = 0.06      # starts land a little low
-    cut: float = 0.20           # corner cutting: 0 = through the targets, 1 = straight chords
+    cut: float = 0.35           # corner cutting: 0 = through the targets, 1 = straight chords
     wobble: float = 0.12        # amplitude of the slow sideways drift (key widths)
     ms_per_key: float = 73.0    # median speed
     speed_spread: float = 0.45  # log-normal spread of the speed between people / swipes
     sample_ms: float = 8.0      # touch sampling interval
     sloppy_spread: float = 0.45  # people (and swipes) differ in care: a log-normal factor on offsets and wobble
-    corner_along: float = 0.0   # extra spread along the travel direction at a key, for a 180-degree turn
-    over_median: float = 0.0    # run-on past the last key: median length (key widths)
+    corner_along: float = 0.3   # extra spread along the travel direction at a key, for a 180-degree turn
+    over_median: float = 0.2    # run-on past the last key: median length (key widths)
     over_spread: float = 1.0    # its log-normal spread
-    over_curl: float = 0.5      # how much the run-on bends (radians, at most)
+    over_curl: float = 0.9      # how much the run-on bends (radians, at most)
 
 
 def _catmull(p0, p1, p2, p3, t):
