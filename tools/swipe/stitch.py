@@ -20,6 +20,8 @@ import math
 import pickle
 import random
 
+import numpy as np
+
 LEN_BINS = (0.0, 0.6, 1.2, 2.0, 3.0, 4.5, 6.5, 99)
 TURN_BINS = (0, 45, 110, 181)  # degrees: straight, bend, sharp; -1 = word end
 
@@ -83,7 +85,7 @@ def _to_frame(pts, origin, d, L):
 
 def _from_frame(uv, origin, d, L):
     s = L if L > 0 else 1.0
-    return [(origin[0] + u * s * d[0] - v * d[1], origin[1] + u * s * d[1] + v * d[0]) for u, v in uv]
+    return [(origin[0] + u * s * d[0] - v * d[1], origin[1] + u * s * d[1] + v * d[0]) for u, v in np.asarray(uv, dtype=np.float64).tolist()]
 
 
 class Library:
@@ -107,11 +109,12 @@ class Library:
             key = (_bin(L, LEN_BINS), _turn_bin(keys, i), _turn_bin(keys, i + 1))
             # the piece runs from the real path's point at key a to its point at key b; stored
             # relative to the keys, so the offsets at the keys come along
-            self.pieces.setdefault(key, []).append(_to_frame(seg, a, d, L))
+            # compact arrays: a library of all ~930k FUTO swipes as Python tuples took GBs per process
+            self.pieces.setdefault(key, []).append(np.asarray(_to_frame(seg, a, d, L), dtype=np.float32))
         d0, _ = _frame(keys[0], keys[1], (1.0, 0.0))
-        self.leads.append(_to_frame(path[:picks[0] + 1], keys[0], d0, 0.0))
+        self.leads.append(np.asarray(_to_frame(path[:picks[0] + 1], keys[0], d0, 0.0), dtype=np.float32))
         d1, _ = _frame(keys[-2], keys[-1], (1.0, 0.0))
-        self.runs.append(_to_frame(path[picks[-1]:], keys[-1], d1, 0.0))
+        self.runs.append(np.asarray(_to_frame(path[picks[-1]:], keys[-1], d1, 0.0), dtype=np.float32))
 
     def save(self, f):
         pickle.dump((self.pieces, self.leads, self.runs), open(f, "wb"))
