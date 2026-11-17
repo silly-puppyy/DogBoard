@@ -71,6 +71,9 @@ class SetLayoutState(
     val onBack: () -> Unit,
     /** The language and layout under the title ("English (US), QWERTY"). */
     val subtitle: String = "English (US), QWERTY",
+    /** The letter layout (gen_layouts.py ids); null hides the choice (previews). */
+    val layoutId: String? = null,
+    val onLayoutId: (String) -> Unit = {},
 )
 
 /** SetLayout.dc.html:107-112: the note under the preset selector. */
@@ -133,6 +136,18 @@ fun SetLayout(state: SetLayoutState) {
                 )
                 val render = remember(props) { KbSpec.render(props) }
                 Box(Modifier.width(358.dp)) { KbView(render) }
+            }
+            // DogBoard: the letter layout (moved here from the old Typing screen, 2026-11-17)
+            state.layoutId?.let { id ->
+                SetGroup("Letters") {
+                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ElementSeg("letters", listOf("qwerty-en" to "QWERTY", "qwertz-de" to "QWERTZ", "azerty-fr" to "AZERTY"), id, state.onLayoutId)
+                        DText(
+                            "QWERTZ and AZERTY type German and French letters; suggestions and autocorrect stay English-only for now, so they’re off with these.",
+                            style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4,
+                        )
+                    }
+                }
             }
             // :31-41 Preset
             SetGroup("Preset") {

@@ -62,5 +62,7 @@ fun LayoutScreen() {
         elements = LayoutPrefs.read(prefs),
         onChange = { e -> scope.launch { LayoutPrefs.write(prefs, e) } },
         onBack = { navController.popBackStack() },
+        layoutId = prefs.keyboard.layoutId.collectAsState().value,
+        onLayoutId = { id -> scope.launch { prefs.keyboard.layoutId.set(id) } },
     ))
 }

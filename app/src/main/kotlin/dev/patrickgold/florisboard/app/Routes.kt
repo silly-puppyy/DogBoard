@@ -200,6 +200,15 @@ object Routes {
         @Deeplink("settings/other/fine-tuning")
         object FineTuning
 
+        // DogBoard: the Typing and correction and Privacy sections (feature-inventory.md)
+        @Serializable
+        @Deeplink("settings/typing-correction")
+        object TypingCorrection
+
+        @Serializable
+        @Deeplink("settings/privacy")
+        object Privacy
+
         // DogBoard: About › Data licenses (the attribution of the shipped word data)
         @Serializable
         @Deeplink("settings/about/data-licenses")
@@ -360,6 +369,8 @@ object Routes {
 
             composableWithDeepLink(Settings.Other::class) { OtherScreen() }
             composableWithDeepLink(Settings.FineTuning::class) { io.github.sillypuppyy.dogboard.settings.FineTuningScreen() }
+            composableWithDeepLink(Settings.TypingCorrection::class) { io.github.sillypuppyy.dogboard.settings.TypingCorrectionScreen() }
+            composableWithDeepLink(Settings.Privacy::class) { io.github.sillypuppyy.dogboard.settings.PrivacyScreen() }
             composableWithDeepLink(Settings.DataLicenses::class) { io.github.sillypuppyy.dogboard.settings.DataLicensesScreen() }
             composableWithDeepLink(Settings.Search::class) {
                 val nav = LocalNavController.current

@@ -116,7 +116,8 @@ fun HomeScreen() {
                         when (title) {
                             "Languages and layouts" -> Routes.Settings.Localization
                             "Look" -> Routes.Settings.Theme
-                            "Typing and correction", "Privacy" -> Routes.Settings.Typing
+                            "Typing and correction" -> Routes.Settings.TypingCorrection
+                            "Privacy" -> Routes.Settings.Privacy
                             "Your words" -> Routes.Settings.Dictionary
                             "Sound and vibration" -> Routes.Settings.Keyboard.InputFeedback
                             "Gestures" -> Routes.Settings.Gestures
