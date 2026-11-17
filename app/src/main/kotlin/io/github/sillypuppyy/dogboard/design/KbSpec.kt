@@ -67,6 +67,9 @@ data class KbProps(
     /** Glass: the photo's measured luminance (the design models it as 0.3). */
     val photoLuminance: Float = 0.3f,
     /** Kb:429-431 the photo theme's labels (auto / white / dark), their shadow, and the return key's colours. */
+    /** The symbol pages: "iphone" (123 / #+=) or "android" (Gboard's ?123 / =\<), and ?123 / action keys as pills. */
+    val symbols: String = "iphone",
+    val pillKeys: Boolean = false,
     val glassFg: String = "auto",
     val halo: Boolean = true,
     val actColor: String? = null,
@@ -476,8 +479,14 @@ object KbSpec {
         }
         fun symRow3(m: String) = listOf(mode(m, 1.5f), ch(".", 1.4f), ch(",", 1.4f), ch("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), bksp())
         val spec: List<List<K>> = when (plane) {
-            "symbol-1" -> listOf("1234567890".map { ch(it.toString()) }, "-/:;()$&@\"".map { ch(it.toString()) }, symRow3("#+="), bottom)
-            "symbol-2" -> listOf("[]{}#%^*+=".map { ch(it.toString()) }, listOf("_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•").map { ch(it) }, symRow3("123"), bottom)
+            // Gboard's ?123 / =\< pages (Settings > Layout > Symbols: Android-style; photographed 2026-11-17)
+            "symbol-1" -> if (P.symbols == "android") listOf("1234567890".map { ch(it.toString()) }, "@#\$_&-+()/".map { ch(it.toString()) },
+                listOf(mode("=\\<", 1.5f)) + "*\"':;!?".map { ch(it.toString()) } + listOf(bksp()), bottom)
+            else listOf("1234567890".map { ch(it.toString()) }, "-/:;()$&@\"".map { ch(it.toString()) }, symRow3("#+="), bottom)
+            "symbol-2" -> if (P.symbols == "android") listOf(listOf("~", "`", "|", "•", "√", "π", "÷", "×", "§", "Δ").map { ch(it) },
+                listOf("£", "¢", "€", "¥", "^", "°", "=", "{", "}", "\\").map { ch(it) },
+                listOf(mode("?123", 1.5f)) + listOf("%", "©", "®", "™", "✓", "[", "]").map { ch(it) } + listOf(bksp()), bottom)
+            else listOf("[]{}#%^*+=".map { ch(it.toString()) }, listOf("_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•").map { ch(it) }, symRow3("123"), bottom)
             "numeric" -> {
                 fun f(l: String, w: Float) = K(l, "fnchar", w, label = l)
                 listOf(
@@ -657,7 +666,7 @@ object KbSpec {
                     gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, bgGradient = bgG, ts = ts, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
                     icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, hintFg = spot?.hint ?: t.hint, sub = sub,
                     base = k.base.ifEmpty { k.id },
-                    pill = t.gboardRow && bottomRow && (k.kind == "mode" || k.kind == "ret"),
+                    pill = P.pillKeys && bottomRow && (k.kind == "mode" || k.kind == "ret"),
                 )
             })
         }

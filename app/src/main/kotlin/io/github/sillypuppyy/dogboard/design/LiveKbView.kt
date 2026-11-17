@@ -40,6 +40,9 @@ fun LiveKbView(
     spaceLabel: String = "auto",
     langName: String = "English",
     capsLabels: Boolean = false,
+    /** Symbol pages ("iphone" / "android") and ?123 / action keys as pills (Settings › Layout). */
+    symbolPages: String = "iphone",
+    pillKeys: Boolean = false,
     /** The Classic bottom row (?123, comma, emoji, space, period, action): the design's "android" key style. */
     bottomClassic: Boolean = false,
     actionLabel: String? = null,
@@ -99,6 +102,7 @@ fun LiveKbView(
             caseMode = if (capsLabels) "caps" else "shift",
             kstyle = if (bottomClassic) "android" else "ios",
             actionStyle = if (actionWords) "word" else "icon",
+            symbols = symbolPages, pillKeys = pillKeys,
             actionLabel = actionLabel,
             shift = LiveKb.shift(shiftState),
             ret = if (enterAction in RET_WORDS) enterAction else "return",

@@ -38,6 +38,8 @@ data class TouchModelOptions(
     val symbolLongPress: Boolean = false,
     // DogBoard: the Classic bottom row (?123, comma, emoji, space, period, action): "-classic" layers
     val bottomRowClassic: Boolean = false,
+    // DogBoard: Gboard's ?123 / =\< symbol pages instead of iOS's 123 / #+= (Settings > Layout > Symbols)
+    val symbolsAndroid: Boolean = false,
 ) {
     companion object {
         val Default = TouchModelOptions(

@@ -322,7 +322,7 @@ private fun FnKeyAction.asK3Key(): K3Key {
 }
 
 private fun K3LayerId.isFieldVariantLayer(): Boolean =
-    value.let { it.endsWith("-email") || it.endsWith("-url") || it.endsWith("-classic") }
+    value.let { it.endsWith("-email") || it.endsWith("-url") || it.endsWith("-classic") || it.endsWith("-android") }
 
 private fun computeTouchKeyboard(
     model: K3Model,
@@ -360,6 +360,8 @@ private fun computeTouchKeyboard(
             val sourceLayer = variantSuffix
                 ?.takeIf { layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift }
                 ?.let { layers[K3LayerId(layer.id.value + it)] }
+                // DogBoard: Android-style symbol pages (Settings > Layout > Symbols): "symbol-1-android" / "-2-android"
+                ?: layers[K3LayerId(layer.id.value + "-android")]?.takeIf { options.symbolsAndroid && layer.id.value.startsWith("symbol-") }
                 ?: layer
             val rows = buildList {
                 // DogBoard: also on caps lock, so the row doesn't vanish when caps lock is on

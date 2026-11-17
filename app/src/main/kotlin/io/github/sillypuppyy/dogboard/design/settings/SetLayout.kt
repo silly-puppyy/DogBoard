@@ -49,13 +49,18 @@ data class LayoutElements(
     val space: String = "auto", // auto, lang, space, blank
     val action: String = "icon", // icon, word
     val caseMode: String = "shift", // shift, caps
+    // user 2026-11-17, mix and match: the symbol pages and ?123 / action keys as pills
+    val symbols: String = "iphone", // iphone (123 / #+=), android (?123 / =\<)
+    val pill: Boolean = false,
 ) {
     companion object {
         /** SetLayout.dc.html:96-97: the two presets. */
+        /** iPhone-style (was "Simple"). */
         val SIMPLE = LayoutElements()
         // digits on the top row only, as Gboard and the designer's answer (D3) have it; symbol or
         // accent hints stay one choice away (Settings > Layout > Hints)
-        val CLASSIC = LayoutElements(numRow = "hints", bottom = "classic", hints = "off")
+        /** Android-style (was "Classic"): Gboard's bottom row, symbol pages and pill keys. */
+        val CLASSIC = LayoutElements(numRow = "hints", bottom = "classic", hints = "off", symbols = "android", pill = true)
     }
 }
 
@@ -70,9 +75,9 @@ class SetLayoutState(
 
 /** SetLayout.dc.html:107-112: the note under the preset selector. */
 private val PRESET_NOTES = mapOf(
-    "simple" to "Clean and quiet: punctuation lives on the 123 keys and on long-press.",
-    "classic" to "Comma and period beside space, symbols on long-press, digits on the top row.",
-    "custom" to "Your own mix. Pick Simple or Classic to start over from a preset.",
+    "simple" to "As on an iPhone: a wide return key, punctuation on the 123 pages and on long-press.",
+    "classic" to "As on Android: comma and period beside space, digits on the top row, round ?123 and action keys.",
+    "custom" to "Your own mix. Pick iPhone-style or Android-style to start over from a preset.",
 )
 
 /** Settings › Layout, mix and match (SetLayout.dc.html, 390 x 1900). */
@@ -123,7 +128,7 @@ fun SetLayout(state: SetLayoutState) {
                         ret = when (field) { "url" -> "go"; "email" -> "next"; else -> "send" },
                         kstyle = if (st.bottom == "classic") "android" else "ios",
                         numRow = st.numRow, hintKind = st.hints, spaceLabel = st.space,
-                        actionStyle = st.action, caseMode = st.caseMode,
+                        actionStyle = st.action, caseMode = st.caseMode, symbols = st.symbols, pillKeys = st.pill,
                     ),
                 )
                 val render = remember(props) { KbSpec.render(props) }
@@ -133,7 +138,7 @@ fun SetLayout(state: SetLayoutState) {
             SetGroup("Preset") {
                 Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Segmented(
-                        "layout:preset", listOf("Simple", "Classic", "Custom"), listOf("simple", "classic", "custom").indexOf(preset),
+                        "layout:preset", listOf("iPhone-style", "Android-style", "Custom"), listOf("simple", "classic", "custom").indexOf(preset),
                     ) { i -> if (i == 0) state.onChange(LayoutElements.SIMPLE) else if (i == 1) state.onChange(LayoutElements.CLASSIC) }
                     DText(PRESET_NOTES.getValue(preset), style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 3)
                 }
@@ -146,6 +151,12 @@ fun SetLayout(state: SetLayoutState) {
                 ElementRow("Bottom row", "Where comma and period live. Email fields put @ in the comma slot, web addresses /.", st.bottom != LayoutElements.SIMPLE.bottom, { state.onChange(st.copy(bottom = LayoutElements.SIMPLE.bottom)) }) {
                     BottomRowCard(st.bottom == "simple", "123, emoji, space, action", listOf(Mk("123", 1.24f, 'f'), Mk("emo", 1.25f, 'f'), Mk("", 5f, 'k'), Mk("ret", 2.5f, 'a'))) { state.onChange(st.copy(bottom = "simple")) }
                     BottomRowCard(st.bottom == "classic", "?123, comma, emoji, space, period, action", listOf(Mk("?123", 1.5f, 'f'), Mk(",", 1f, 'k'), Mk("emo", 1f, 'f'), Mk("", 4f, 'k'), Mk(".", 1f, 'k'), Mk("ret", 1.5f, 'a'))) { state.onChange(st.copy(bottom = "classic")) }
+                }
+                ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.SIMPLE.symbols, { state.onChange(st.copy(symbols = LayoutElements.SIMPLE.symbols)) }) {
+                    ElementSeg("symbols", listOf("iphone" to "iPhone-style", "android" to "Android-style"), st.symbols) { state.onChange(st.copy(symbols = it)) }
+                }
+                ElementRow("Round keys", "123 and the action key as round pills, as on Android.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {
+                    ElementSeg("pill", listOf("off" to "Off", "on" to "On"), if (st.pill) "on" else "off") { state.onChange(st.copy(pill = it == "on")) }
                 }
                 ElementRow("Long-press hints", "A small character in the key corner showing what a long-press types.", st.hints != LayoutElements.SIMPLE.hints, { state.onChange(st.copy(hints = LayoutElements.SIMPLE.hints)) }) {
                     ElementSeg("hints", listOf("off" to "Off", "accents" to "Accents", "symbols" to "Symbols"), st.hints) { state.onChange(st.copy(hints = it)) }

@@ -256,6 +256,7 @@ class ImeController(
         prefs.keyboard.numberRowLongPress.asFlow(),
         prefs.keyboard.hintKind.asFlow(),
         prefs.keyboard.bottomRow.asFlow(),
+        prefs.keyboard.symbolPages.asFlow(),
     ) { values ->
         TouchModelOptions(
             showNumberRow = values[0] as Boolean,
@@ -269,6 +270,7 @@ class ImeController(
             numberRowLongPress = values[8] as Boolean,
             symbolLongPress = values[9] == "symbols",
             bottomRowClassic = values[10] == "classic",
+            symbolsAndroid = values[11] == "android",
         )
     }.stateIn(scope, SharingStarted.Eagerly, TouchModelOptions.Default)
 

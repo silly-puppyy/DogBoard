@@ -21,6 +21,8 @@ object LayoutPrefs {
         space = prefs.keyboard.spaceLabel.get(),
         action = if (prefs.keyboard.actionKeyWords.get()) "word" else "icon",
         caseMode = if (prefs.keyboard.capsLabels.get()) "caps" else "shift",
+        symbols = prefs.keyboard.symbolPages.get(),
+        pill = prefs.keyboard.pillKeys.get(),
     )
 
     suspend fun write(prefs: FlorisPreferenceModel, e: LayoutElements) {
@@ -31,9 +33,11 @@ object LayoutPrefs {
         prefs.keyboard.spaceLabel.set(e.space)
         prefs.keyboard.actionKeyWords.set(e.action == "word")
         prefs.keyboard.capsLabels.set(e.caseMode == "caps")
+        prefs.keyboard.symbolPages.set(e.symbols)
+        prefs.keyboard.pillKeys.set(e.pill)
     }
 
-    /** Settings home "Layout style": 0 Simple, 1 Comma & period (Classic), 2 Custom (any mix). */
+    /** Settings home "Layout style": 0 iPhone-style, 1 Android-style, 2 Custom (any mix). */
     fun presetIndex(e: LayoutElements) = when (e) { LayoutElements.SIMPLE -> 0; LayoutElements.CLASSIC -> 1; else -> 2 }
 }
 
@@ -52,6 +56,8 @@ fun LayoutScreen() {
     prefs.keyboard.spaceLabel.collectAsState().value
     prefs.keyboard.actionKeyWords.collectAsState().value
     prefs.keyboard.capsLabels.collectAsState().value
+    prefs.keyboard.symbolPages.collectAsState().value
+    prefs.keyboard.pillKeys.collectAsState().value
     SetLayout(SetLayoutState(
         elements = LayoutPrefs.read(prefs),
         onChange = { e -> scope.launch { LayoutPrefs.write(prefs, e) } },

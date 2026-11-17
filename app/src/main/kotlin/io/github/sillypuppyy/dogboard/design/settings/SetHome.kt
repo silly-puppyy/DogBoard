@@ -123,7 +123,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     // are mixed) opens Settings › Layout (designer answers §1)
                     SetBlockRow("main:layout") {
                         TitleSub("Layout style", "How the bottom row and long-press work")
-                        Segmented("seg:layout", listOf("Simple", "Comma & period", "Custom"), actions?.layoutPreset ?: 0, listOf(1f, 1f, 0.8f),
+                        Segmented("seg:layout", listOf("iPhone-style", "Android-style", "Custom"), actions?.layoutPreset ?: 0, listOf(1f, 1f, 0.8f),
                             onSelect = actions?.let { a -> { i: Int -> a.onLayoutPreset(i) } })
                     }
                     SetLinkRow("main:languages", actions?.onLanguages) {

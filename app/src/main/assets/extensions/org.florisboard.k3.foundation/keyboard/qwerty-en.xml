@@ -10,6 +10,8 @@
         <display keyId="to-symbol-1-classic" display="?123" />
         <display keyId="space-classic" display="space" />
         <display keyId="to-symbol-2" display="#+=" />
+        <display keyId="to-symbol-2-android" display="=\u{005C}&lt;" />
+        <display keyId="to-symbol-1-android" display="?123" />
         <display keyId="to-base" display="ABC" />
         <display keyId="space" display="space" />
         <display keyId="newline" display="New line" />
@@ -27,6 +29,8 @@
         <key id="to-symbol-1" layerId="symbol-1" width="1.24" />
         <key id="to-symbol-1-row3" layerId="symbol-1" width="1.5" />
         <key id="to-symbol-2" layerId="symbol-2" width="1.5" />
+        <key id="to-symbol-2-android" layerId="symbol-2" width="1.5" />
+        <key id="to-symbol-1-android" layerId="symbol-1" width="1.5" />
         <key id="to-base" layerId="base" width="1.24" />
         <key id="numeric" layerId="numeric" />
 
@@ -116,6 +120,27 @@
         <key id="s-pound" output="£" />
         <key id="s-yen" output="¥" />
         <key id="s-bullet" output="•" />
+        <key id="s-apos" output="'" longPressKeyIds="s-apos-alt0 s-apos-alt1 s-apos-alt2" longPressDefaultKeyId="s-apos-alt0" />
+        <key id="s-apos-alt0" output="’" />
+        <key id="s-apos-alt1" output="‘" />
+        <key id="s-apos-alt2" output="`" />
+        <key id="s-excl" output="!" longPressKeyIds="s-excl-alt0" longPressDefaultKeyId="s-excl-alt0" />
+        <key id="s-excl-alt0" output="¡" />
+        <key id="s-question" output="?" longPressKeyIds="s-question-alt0" longPressDefaultKeyId="s-question-alt0" />
+        <key id="s-question-alt0" output="¿" />
+        <key id="s-backtick" output="`" />
+        <key id="s-sqrt" output="√" />
+        <key id="s-pi" output="π" />
+        <key id="s-divide" output="÷" />
+        <key id="s-times" output="×" />
+        <key id="s-section" output="§" />
+        <key id="s-delta" output="Δ" />
+        <key id="s-cent" output="¢" />
+        <key id="s-degree" output="°" />
+        <key id="s-copy" output="©" />
+        <key id="s-reg" output="®" />
+        <key id="s-tm" output="™" />
+        <key id="s-check" output="✓" />
         <key id="period-wide" output="." width="1.4" longPressKeyIds="period-wide-alt0" longPressDefaultKeyId="period-wide-alt0" />
         <key id="period-wide-alt0" output="…" />
         <key id="comma-wide" output="," width="1.4" />
@@ -399,6 +424,20 @@
             <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
             <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
             <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base fn-key space enter" />
+        </layer>
+
+        <layer id="symbol-1-android">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-at s-hash s-dollar s-underscore s-amp s-hyphen s-plus s-lparen s-rparen s-slash" />
+            <row keys="to-symbol-2-android s-asterisk s-dquote s-apos s-colon s-semicolon s-excl s-question bksp" />
+            <row keys="to-base fn-key space enter" />
+        </layer>
+
+        <layer id="symbol-2-android">
+            <row keys="s-tilde s-backtick s-pipe s-bullet s-sqrt s-pi s-divide s-times s-section s-delta" />
+            <row keys="s-pound s-cent s-euro s-yen s-caret s-degree s-equal s-lcurly s-rcurly s-backslash" />
+            <row keys="to-symbol-1-android s-percent s-copy s-reg s-tm s-check s-lsquare s-rsquare bksp" />
             <row keys="to-base fn-key space enter" />
         </layer>
 

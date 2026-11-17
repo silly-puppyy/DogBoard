@@ -78,6 +78,11 @@ SYMBOLS = {
     "s-underscore": ("_", ""), "s-backslash": ("\\", ""), "s-pipe": ("|", ""), "s-tilde": ("~", ""),
     "s-less": ("<", ""), "s-greater": (">", ""), "s-euro": ("€", ""), "s-pound": ("£", ""),
     "s-yen": ("¥", ""), "s-bullet": ("•", ""),
+    # Gboard's symbol pages (Settings > Layout > Symbols: Android-style; photographed on the emulator 2026-11-17)
+    "s-apos": ("'", "’ ‘ `"), "s-excl": ("!", "¡"), "s-question": ("?", "¿"), "s-backtick": ("`", ""),
+    "s-sqrt": ("√", ""), "s-pi": ("π", ""), "s-divide": ("÷", ""), "s-times": ("×", ""), "s-section": ("§", ""),
+    "s-delta": ("Δ", ""), "s-cent": ("¢", ""), "s-degree": ("°", ""), "s-copy": ("©", ""), "s-reg": ("®", ""),
+    "s-tm": ("™", ""), "s-check": ("✓", ""),
 }
 WIDE_PUNCT = {
     "period-wide": (".", "…"), "comma-wide": (",", ""), "question-wide": ("?", "¿"),
@@ -129,6 +134,17 @@ LAYOUTS = [
 SYMBOL_1 = [
     ["s-1", "s-2", "s-3", "s-4", "s-5", "s-6", "s-7", "s-8", "s-9", "s-0"],
     ["s-hyphen", "s-slash", "s-colon", "s-semicolon", "s-lparen", "s-rparen", "s-dollar", "s-amp", "s-at", "s-dquote"],
+]
+# Gboard's ?123 and =\< pages: rows 1-2 of ten keys, row 3 seven keys between the page switch and delete
+SYMBOL_1_ANDROID = [
+    ["s-1", "s-2", "s-3", "s-4", "s-5", "s-6", "s-7", "s-8", "s-9", "s-0"],
+    ["s-at", "s-hash", "s-dollar", "s-underscore", "s-amp", "s-hyphen", "s-plus", "s-lparen", "s-rparen", "s-slash"],
+    ["s-asterisk", "s-dquote", "s-apos", "s-colon", "s-semicolon", "s-excl", "s-question"],
+]
+SYMBOL_2_ANDROID = [
+    ["s-tilde", "s-backtick", "s-pipe", "s-bullet", "s-sqrt", "s-pi", "s-divide", "s-times", "s-section", "s-delta"],
+    ["s-pound", "s-cent", "s-euro", "s-yen", "s-caret", "s-degree", "s-equal", "s-lcurly", "s-rcurly", "s-backslash"],
+    ["s-percent", "s-copy", "s-reg", "s-tm", "s-check", "s-lsquare", "s-rsquare"],
 ]
 SYMBOL_2 = [
     ["s-lsquare", "s-rsquare", "s-lcurly", "s-rcurly", "s-hash", "s-percent", "s-caret", "s-asterisk", "s-plus", "s-equal"],
@@ -255,6 +271,8 @@ def build(lay: Layout) -> str:
         f'<key id="to-symbol-1" layerId="symbol-1" width="{MODE}" />',
         f'<key id="to-symbol-1-row3" layerId="symbol-1" width="{SHIFT}" />',
         f'<key id="to-symbol-2" layerId="symbol-2" width="{SHIFT}" />',
+        f'<key id="to-symbol-2-android" layerId="symbol-2" width="{SHIFT}" />',
+        f'<key id="to-symbol-1-android" layerId="symbol-1" width="{SHIFT}" />',
         f'<key id="to-base" layerId="base" width="{MODE}" />',
         '<key id="numeric" layerId="numeric" />',
         "",
@@ -318,6 +336,11 @@ def build(lay: Layout) -> str:
                       f"to-symbol-2 {wide} bksp", bottom_row("to-base")]),
         ("symbol-2", [" ".join(SYMBOL_2[0]), " ".join(SYMBOL_2[1]),
                       f"to-symbol-1-row3 {wide} bksp", bottom_row("to-base")]),
+        # the Android-style pages; the touch layout swaps them in for symbol-1 / symbol-2 when chosen
+        ("symbol-1-android", [" ".join(SYMBOL_1_ANDROID[0]), " ".join(SYMBOL_1_ANDROID[1]),
+                              "to-symbol-2-android " + " ".join(SYMBOL_1_ANDROID[2]) + " bksp", bottom_row("to-base")]),
+        ("symbol-2-android", [" ".join(SYMBOL_2_ANDROID[0]), " ".join(SYMBOL_2_ANDROID[1]),
+                              "to-symbol-1-android " + " ".join(SYMBOL_2_ANDROID[2]) + " bksp", bottom_row("to-base")]),
         *[(f"{layer}-{variant}", rows[:3] + [row]) for variant, row in FIELD_ROWS.items()
           for layer, rows in (("base", base_rows + [""]), ("shift", shift_rows + [""]))],
         ("numeric", [
@@ -341,6 +364,8 @@ def build(lay: Layout) -> str:
         '        <display keyId="to-symbol-1-classic" display="?123" />',
         '        <display keyId="space-classic" display="space" />',
         '        <display keyId="to-symbol-2" display="#+=" />',
+        '        <display keyId="to-symbol-2-android" display="=\\u{005C}&lt;" />',
+        '        <display keyId="to-symbol-1-android" display="?123" />',
         '        <display keyId="to-base" display="ABC" />',
         '        <display keyId="space" display="space" />',
         '        <display keyId="newline" display="New line" />',
