@@ -19,11 +19,11 @@ import random
 from collections import defaultdict
 
 import numpy as np
-from scipy.optimize import minimize
 
 import units
 from analyze_words import resample
 from compare_paths import measure, stats
+from mean_paths import key_aligned
 from physics import FingerParams, path as fpath
 
 # parameters that get a per-person spread in the --cma fit (all but those with their own already)
@@ -72,7 +72,8 @@ def summary(samples):
 
 
 def error(m, r):
-    e = 0.0
+    # the simulated mean path should lie on the real one (0.1 key of gap = one unit of error)
+    e = m.get("mean_gap", 0.0) / 0.1
     for k, v in r.items():
         if k not in m:
             continue
@@ -96,6 +97,7 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--cma", action="store_true", help="CMA-ES over the typical values and a spread for every parameter")
     ap.add_argument("--start", default="", help="params json to start from")
+    ap.add_argument("--mode", default="", help="pursuit: fit the pursuit model's parameters")
     a = ap.parse_args()
     layout = json.load(open(f"{a.futo}/swipe-5/layouts/qwerty.json"))
     counts, rows = defaultdict(int), []
@@ -122,15 +124,40 @@ def main():
             if len(real) >= a.words * a.per_word:
                 break
     R = summary(real)
+    # each word's mean path, lined up by key progress (mean_paths.py): the simulation's mean should lie on it
+    real_mean = {}
+    for w in words:
+        al = [key_aligned([(x, y) for x, y, _ in pts], [keys[c] for c in w]) for ww, keys, pts in real if ww == w]
+        al = [x for x in al if x is not None]
+        if len(al) >= 10:
+            real_mean[w] = np.stack(al).mean(0)
+
+    def mean_gap(samples):
+        by = defaultdict(list)
+        for w, keys, pts in samples:
+            if w in real_mean:
+                x = key_aligned([(x, y) for x, y, _ in pts], [keys[c] for c in w])
+                if x is not None:
+                    by[w].append(x)
+        return float(np.mean([np.hypot(*(np.stack(v).mean(0) - real_mean[w]).T).mean() for w, v in by.items() if len(v) >= 10]))
     print(f"{len(real)} real swipes of {len(words)} words", flush=True)
 
     def sim(p):
         rng = random.Random(1)
-        return summary([(w, keys, fpath(w, keys, rng, p)) for w, keys, _ in real])
+        samples = [(w, keys, fpath(w, keys, rng, p)) for w, keys, _ in real]
+        out = summary(samples)
+        out["mean_gap"] = mean_gap(samples)
+        return out
 
     base = FingerParams(**json.load(open(a.start))) if a.start else FingerParams()
     if base.dwell <= 0:
         base = dataclasses.replace(base, dwell=100.0)
+    global FIT, SPREAD
+    if a.mode == "pursuit":
+        base = dataclasses.replace(base, mode="pursuit")
+        FIT = ["dwell", "guide_speed", "corner_slow", "corner_r", "drift", "drift_tau", "omega", "omega_spread", "zeta",
+               "aim_first", "aim_mid", "aim_last", "care_spread", "bias", "noise", "noise_tau", "follow", "lift_spread"]
+        SPREAD = ["zeta", "drift", "drift_tau", "corner_slow", "corner_r", "noise", "dwell", "aim_mid", "aim_y_ratio"]
     if a.cma:
         import cma
         names = FIT + [f"sd:{k}" for k in SPREAD]
@@ -185,6 +212,7 @@ def main():
             best[0], best[1] = e, v
             print(f"error {e:.2f}", flush=True)
     print(f"start error {f(x0):.2f}", flush=True)
+    from scipy.optimize import minimize
     res = minimize(f, x0, method="Nelder-Mead", callback=cb, options={"maxfev": a.evals, "initial_simplex": np.vstack([x0] + [x0 + 0.4 * np.eye(len(FIT))[i] for i in range(len(FIT))])})
     p = dataclasses.replace(base, **{k: round(float(math.exp(x)), 4) for k, x in zip(FIT, res.x)})
     M = sim(p)
