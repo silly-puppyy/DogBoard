@@ -83,7 +83,8 @@ fun ImeSystemUi() {
     }
 
     val backgroundQuery = rememberSnyggThemeQuery(FlorisImeUi.Window.elementName)
-    val backgroundColor = backgroundQuery.background()
+    // DogBoard: the window is drawn in the design theme's body colour (the stopgap theme's is transparent)
+    val backgroundColor = io.github.sillypuppyy.dogboard.design.liveWindowBg()
     val backgroundImage = backgroundQuery.backgroundImage.uriOrNull()
 
     val hasBackgroundImage = backgroundImage != null

@@ -156,11 +156,14 @@ fun BoxScope.ImeWindow() {
 
     FloatingDockToFixedIndicator()
 
+    // DogBoard: the window's background is the design theme's body colour (the stopgap theme's is transparent)
+    val dogBg = io.github.sillypuppyy.dogboard.design.liveWindowBg()
     SnyggBox(
         elementName = FlorisImeUi.Window.elementName,
         attributes = attributes,
         modifier = Modifier
             .align(Alignment.BottomStart)
+            .drawBehind { drawRect(dogBg) }
             .ifIsInstance<ImeWindowProps.Fixed>(windowSpec.props) {
                 Modifier
                     .fillMaxWidth()

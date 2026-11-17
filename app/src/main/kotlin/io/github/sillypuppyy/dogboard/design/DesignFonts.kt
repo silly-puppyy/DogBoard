@@ -43,6 +43,26 @@ object DesignFonts {
         }
     }
 
+    /**
+     * The phone's own Google Sans (Pixel phones ship it as the system family "google-sans-text"; it is
+     * what Gboard asks for) when the default Material You theme is on; Roboto Flex otherwise or when
+     * the phone has no such font. Nothing is bundled or downloaded.
+     */
+    @Volatile var preferSystemGoogleSans = false
+
+    private val systemGoogleSans: Boolean by lazy {
+        runCatching { android.graphics.fonts.SystemFonts.getAvailableFonts().any { it.file?.name?.startsWith("GoogleSans") == true } }.getOrDefault(false)
+    }
+    private val sansCache = HashMap<Int, FontFamily>()
+
+    /** The text family for design text at [weight] / [sizeSp]: see [preferSystemGoogleSans]. */
+    fun textFamily(weight: Int, sizeSp: Float): FontFamily =
+        if (preferSystemGoogleSans && systemGoogleSans) synchronized(sansCache) {
+            sansCache.getOrPut(weight) {
+                FontFamily(android.graphics.Typeface.create(android.graphics.Typeface.create("google-sans-text", android.graphics.Typeface.NORMAL), weight, false))
+            }
+        } else robotoFlex(weight, sizeSp)
+
     /** Material Symbols Rounded with axes FILL [fill] (0/1), wght [weight], opsz [sizeSp] (20-48). */
     fun symbols(fill: Int, weight: Int, sizeSp: Float): FontFamily = synchronized(symbolCache) {
         val key = Triple(fill, weight, sizeSp.toInt().coerceIn(20, 48))
@@ -64,7 +84,7 @@ object DesignFonts {
 
 /** Design text: Roboto Flex at [size] / [weight], line-height 1 as on the key caps. */
 fun designTextStyle(size: TextUnit, weight: Int, color: Color): TextStyle = TextStyle(
-    fontFamily = DesignFonts.robotoFlex(weight, size.value),
+    fontFamily = DesignFonts.textFamily(weight, size.value),
     fontWeight = FontWeight(weight),
     fontSize = size,
     lineHeight = size,

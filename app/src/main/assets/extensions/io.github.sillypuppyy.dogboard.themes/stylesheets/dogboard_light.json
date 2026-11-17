@@ -42,7 +42,7 @@
     "--divider": "dynamic-light-color(outlineVariant)"
   },
   "window": {
-    "background": "var(--background)",
+    "background": "transparent",
     "foreground": "var(--on-background)"
   },
   "window[windowmode=`floating`]": {

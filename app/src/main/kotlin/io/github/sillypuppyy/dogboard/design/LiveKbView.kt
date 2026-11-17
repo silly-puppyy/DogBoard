@@ -63,7 +63,7 @@ fun LiveKbView(
     val dark = liveDark()
     // the default theme in the system's Material You colours (neutral greys before Android 14), as Gboard
     val context = androidx.compose.ui.platform.LocalContext.current
-    remember(context) { MaterialYouTheme.override = MaterialYouTheme.forDevice(context); 0 }
+    remember(context) { MaterialYouTheme.override = MaterialYouTheme.forDevice(context); DesignFonts.preferSystemGoogleSans = true; 0 }
     BoxWithConstraints(modifier.fillMaxSize()) {
         // nothing to draw until the key area has a real size (the first measure can be empty)
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f || maxHeight.value < 100f) return@BoxWithConstraints
@@ -129,6 +129,17 @@ fun LiveKbView(
 }
 
 /**
+ * The keyboard window's own background (the strip around the navigation handle too): the design
+ * theme's body colour, so it matches the keys' surroundings (it was the older stopgap theme's grey).
+ */
+@Composable
+fun liveWindowBg(): androidx.compose.ui.graphics.Color {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    remember(context) { if (MaterialYouTheme.override == null) MaterialYouTheme.override = MaterialYouTheme.forDevice(context); 0 }
+    return KbThemes.tokens("dogboard", liveDark()).bg
+}
+
+/**
  * Dark or light as the keyboard's theme setting decides (FlorisBoard's theme mode: always day,
  * always night, follow the system, or follow the time of day).
  */
@@ -178,7 +189,8 @@ fun LiveKbBar(
     modifier: Modifier = Modifier,
 ) {
     val dark = liveDark()
-    BoxWithConstraints(modifier.fillMaxWidth().height(48.dp)) {
+    // Gboard's 44 dp strip with the default Material You look, the canvas's 48 otherwise
+    BoxWithConstraints(modifier.fillMaxWidth().height(if (MaterialYouTheme.override != null) 44.dp else 48.dp)) {
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f) return@BoxWithConstraints
         val slots = strip.map { s ->
             when (s.kind) {

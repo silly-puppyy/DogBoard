@@ -546,7 +546,8 @@ object KbSpec {
         // Kb:514-518
         val hFloat = if (floating) 24f else 0f
         val showBar = !barless && only != "keys" && only != "live"
-        val barH = if (showBar) 48f else 0f
+        // Gboard's strip is 44 dp at this width (traced); the canvas's 48
+        val barH = if (!showBar) 0f else if (t.gboardRow) 44f else 48f
         val devH = if (dev) 44f else 0f
         val keyTop0 = hFloat + barH + devH
         val pos = HashMap<String, KbCapPos>()
@@ -569,7 +570,8 @@ object KbSpec {
                 var bgG = t.grad["keyG"]; var ts = t.keyTs // Kb:740: the G tokens, with their colour as the fallback
                 // designer 2026-11-14: letters 25 sp, numbers and symbols 24 sp; every function icon a
                 // 24 dp Material Symbols glyph (at 22 it drew ~16 dp)
-                var icon = ""; var fill = 0; var label = k.label; val iconSize = 24f; var hint = ""
+                // Gboard's key icons are ~30 % larger (measured: shift 21, delete 26, check 19 dp wide against our 16 / 20 / 16)
+                var icon = ""; var fill = 0; var label = k.label; val iconSize = if (t.gboardRow) 31f else 24f; var hint = ""
                 var aria = k.label.ifEmpty { k.id }; var sub = k.sub
                 val isFnTone = k.kind in listOf("shift", "bksp", "mode", "fn", "fnchar", "spaceicon")
                 if (isFnTone) { bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs }
@@ -641,6 +643,11 @@ object KbSpec {
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + rowTops[ri] + mv
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
                 if (isFnTone && icon.isEmpty() && k.kind != "mode" && k.kind != "fnchar") fs = 15f
+                // Gboard's label sizes (traced, sw >= 400): letters 27 dp, ?123 / ABC 18 dp medium
+                if (t.gboardRow) {
+                    if (k.kind == "char" && label.length == 1 && label[0].isLetter()) fs = 27f
+                    if (k.kind == "mode") { fs = 18f; fw = 500 }
+                }
                 KbKey(
                     gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, bgGradient = bgG, ts = ts, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
                     icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, hintFg = spot?.hint ?: t.hint, sub = sub,
@@ -702,7 +709,8 @@ object KbSpec {
             KbSlot(
                 text = text, kind = kind, aria = if (kind == "lit") "Keep $text" else text,
                 bg = if (isChip) t.chip else Color.Transparent, fg = if (isChip) t.chipFg else t.barFg,
-                wt = if (isChip) 600 else 400, fs = if (kind == "emo") 22f else 16f,
+                // Gboard's candidates are 18 dp (traced), ours 16 in the canvas
+                wt = if (isChip) 600 else 400, fs = if (kind == "emo") 22f else if (t.gboardRow) 18f else 16f,
                 ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else emptyList(),
                 showDiv = i > 0 && !isChip && !prevChip, divBg = t.div,
             )
