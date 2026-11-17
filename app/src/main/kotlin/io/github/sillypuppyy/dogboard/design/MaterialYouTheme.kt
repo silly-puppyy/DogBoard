@@ -18,7 +18,9 @@ object MaterialYouTheme {
         val surface = role("surface_container")
         // letter keys: the lowest container (white) in light; in dark Gboard lifts them to a grey
         // above the body (bright_key_on_dynamic_color_dark_theme), not the lowest container (black)
-        val lowest = if (dark) role("surface_container_high") else role("surface_container_lowest")
+        // (measured on the emulator: Gboard's dark letter keys #292c34 = the highest container; the
+        // high one, #1d1f26, left the keys barely apart from the #17191f body)
+        val lowest = if (dark) role("surface_bright") else role("surface_container_lowest")
         val highest = role("surface_container_highest")
         val onSurface = role("on_surface")
         val variant = role("on_surface_variant")
@@ -32,7 +34,7 @@ object MaterialYouTheme {
             "chip" to second, "chipFg" to onSecond, "pop" to highest, "popFg" to onSurface,
             "sel" to primary, "selFg" to onPrimary, "hint" to variant, "div" to role("outline_variant"),
             "barFg" to onSurface, "barMuted" to variant, "tile" to lowest, "tileFg" to onSurface,
-            "pressKey" to highest, "pressFn" to if (dark) role("surface_bright") else role("surface_container_high"), "lock" to primary, "lockFg" to onPrimary,
+            "pressKey" to if (dark) role("surface_container_highest") else highest, "pressFn" to if (dark) role("surface_bright") else role("surface_container_high"), "lock" to primary, "lockFg" to onPrimary,
             "radius" to "8", "gboardRow" to "1",
         )
     }
