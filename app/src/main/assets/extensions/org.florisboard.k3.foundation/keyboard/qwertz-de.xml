@@ -22,16 +22,16 @@
     <keys>
 
         <!-- Layer switches -->
-        <key id="base-to-shift" layerId="shift" width="1.28" />
-        <key id="shift-to-base" layerId="base" width="1.28" />
+        <key id="base-to-shift" layerId="shift" width="1.5" />
+        <key id="shift-to-base" layerId="base" width="1.5" />
         <key id="to-symbol-1" layerId="symbol-1" width="1.24" />
-        <key id="to-symbol-1-row3" layerId="symbol-1" width="1.28" />
-        <key id="to-symbol-2" layerId="symbol-2" width="1.28" />
+        <key id="to-symbol-1-row3" layerId="symbol-1" width="1.5" />
+        <key id="to-symbol-2" layerId="symbol-2" width="1.5" />
         <key id="to-base" layerId="base" width="1.24" />
         <key id="numeric" layerId="numeric" />
 
         <!-- Actions -->
-        <key id="bksp" output="@k3:action/backspace" width="1.28" />
+        <key id="bksp" output="@k3:action/backspace" width="1.5" />
         <key id="enter" output="@k3:action/enter" width="2.4933" longPressKeyIds="newline" />
         <key id="newline" output="\u{000A}" />
         <key id="space" output="\u{0020}" width="5.0133" />
@@ -55,8 +55,6 @@
         <key id="tld-edu" output=".edu" />
         <key id="tld-net" output=".net" />
         <key id="fn-key" gap="true" width="1.2533" />
-        <key id="gap-left" gap="true" width="0.2133" />
-        <key id="gap-right" gap="true" width="0.2267" />
 
         <!-- Digits and extra symbols -->
         <key id="s-1" output="1" />
@@ -355,7 +353,9 @@
         <key id="M" output="M" width="0.909" />
         <key id="u00df" output="ß" width="0.909" />
         <key id="U1e9e" output="ẞ" width="0.909" />
-        <key id="gap3-qwertz-de" gap="true" width="0.0839" />
+        <key id="base-to-shift-narrow-qwertz-de" layerId="shift" width="1.3639" />
+        <key id="shift-to-base-narrow-qwertz-de" layerId="base" width="1.3639" />
+        <key id="bksp-narrow-qwertz-de" output="@k3:action/backspace" width="1.3639" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -388,98 +388,98 @@
         <layer id="base">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-qwertz-de y x c v b n m u00df gap3-qwertz-de bksp" />
+            <row keys="base-to-shift-narrow-qwertz-de y x c v b n m u00df bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-qwertz-de Y X C V B N M U1e9e gap3-qwertz-de bksp" />
+            <row keys="shift-to-base-narrow-qwertz-de Y X C V B N M U1e9e bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="symbol-1">
             <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
             <row keys="s-hyphen s-slash s-colon s-semicolon s-lparen s-rparen s-dollar s-amp s-at s-dquote" />
-            <row keys="to-symbol-2 gap-left period-wide comma-wide question-wide bang-wide apos-wide gap-right bksp" />
+            <row keys="to-symbol-2 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
             <row keys="to-base fn-key space enter" />
         </layer>
 
         <layer id="symbol-2">
             <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
             <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
-            <row keys="to-symbol-1-row3 gap-left period-wide comma-wide question-wide bang-wide apos-wide gap-right bksp" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
             <row keys="to-base fn-key space enter" />
         </layer>
 
         <layer id="base-email">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-qwertz-de y x c v b n m u00df gap3-qwertz-de bksp" />
+            <row keys="base-to-shift-narrow-qwertz-de y x c v b n m u00df bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-qwertz-de Y X C V B N M U1e9e gap3-qwertz-de bksp" />
+            <row keys="shift-to-base-narrow-qwertz-de Y X C V B N M U1e9e bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-qwertz-de y x c v b n m u00df gap3-qwertz-de bksp" />
+            <row keys="base-to-shift-narrow-qwertz-de y x c v b n m u00df bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-qwertz-de Y X C V B N M U1e9e gap3-qwertz-de bksp" />
+            <row keys="shift-to-base-narrow-qwertz-de Y X C V B N M U1e9e bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-qwertz-de y x c v b n m u00df gap3-qwertz-de bksp" />
+            <row keys="base-to-shift-narrow-qwertz-de y x c v b n m u00df bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-qwertz-de Y X C V B N M U1e9e gap3-qwertz-de bksp" />
+            <row keys="shift-to-base-narrow-qwertz-de Y X C V B N M U1e9e bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-qwertz-de y x c v b n m u00df gap3-qwertz-de bksp" />
+            <row keys="base-to-shift-narrow-qwertz-de y x c v b n m u00df bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-qwertz-de Y X C V B N M U1e9e gap3-qwertz-de bksp" />
+            <row keys="shift-to-base-narrow-qwertz-de Y X C V B N M U1e9e bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-qwertz-de y x c v b n m u00df gap3-qwertz-de bksp" />
+            <row keys="base-to-shift-narrow-qwertz-de y x c v b n m u00df bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-qwertz-de Y X C V B N M U1e9e gap3-qwertz-de bksp" />
+            <row keys="shift-to-base-narrow-qwertz-de Y X C V B N M U1e9e bksp-narrow-qwertz-de" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

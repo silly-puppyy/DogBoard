@@ -20,6 +20,8 @@ data class KbTokens(
     // DEF (Kb:364)
     val radius: Float, val fw: Int, val fsScale: Float, val hintFs: Float, val hintFw: Int,
     val retIcon: String, val keyShadow: List<CssShadow>, val fnShadow: List<CssShadow>,
+    /** Gboard's bottom row: ?123 / ABC and the action key as pills, comma and period in the function tone. */
+    val gboardRow: Boolean = false,
     val actShadow: List<CssShadow>, val linkFg: Color,
     val actIsTransparent: Boolean,
     /** Kb:522-530: a gradient `bg` (Dusk, Lagoon, Peach); [bg] is then its first colour. */
@@ -184,7 +186,9 @@ object KbThemes {
     fun tokens(themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f): KbTokens {
         val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance) else {
             val th = T[themeId] ?: T.getValue("dogboard")
-            (if (dark) th["dark"] else th["light"]) ?: th["light"] ?: th.getValue("dark")
+            // the default theme in the system's Material You colours, when the live keyboard set them
+            MaterialYouTheme.override?.takeIf { themeId == "dogboard" || T[themeId] == null }?.let { (l, d) -> if (dark) d else l }
+                ?: (if (dark) th["dark"] else th["light"]) ?: th["light"] ?: th.getValue("dark")
         }
         val t = DEF + raw
         fun c(k: String) = t.getValue(k).let { v -> CssGradient.parse(v)?.stops?.first()?.first ?: css(v) }
@@ -197,7 +201,7 @@ object KbThemes {
             pressKey = c("pressKey"), pressFn = c("pressFn"), lock = c("lock"), lockFg = c("lockFg"),
             radius = t.getValue("radius").toFloat(), fw = t.getValue("fw").toInt(),
             fsScale = t.getValue("fsScale").toFloat(), hintFs = t.getValue("hintFs").toFloat(),
-            hintFw = t.getValue("hintFw").toInt(), retIcon = t.getValue("retIcon"),
+            hintFw = t.getValue("hintFw").toInt(), retIcon = t.getValue("retIcon"), gboardRow = t["gboardRow"] == "1",
             keyShadow = CssShadow.parse(t.getValue("keyShadow")), fnShadow = CssShadow.parse(t.getValue("fnShadow")),
             actShadow = CssShadow.parse(t.getValue("actShadow")), linkFg = linkFg,
             actIsTransparent = t["act"] == "transparent",

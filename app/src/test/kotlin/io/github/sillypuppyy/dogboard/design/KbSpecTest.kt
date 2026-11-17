@@ -193,8 +193,10 @@ class KbSpecTest : FunSpec({
         // expected = the canvas's own JS run in node on the same layout (seeds 1-30, iOS and Android rows, all equal)
         val r = KbSpec.render(KbProps(theme = "dalmatian"))
         val spotted = r.rows.flatMapIndexed { ri, row -> row.keys.mapIndexedNotNull { ci, k -> "$ri:$ci".takeIf { !k.gap && k.bg == css("#1b1b1b") && k.kind != "ret" } } }
-        spotted.toSet() shouldBe setOf("2:6", "2:5", "2:3", "1:3", "1:2", "2:8", "1:8", "1:7", "0:7", "3:0", "2:0")
-        val spot = r.rows[2].keys[6]
+        // the same keys as the canvas's coat (x, v, b, m and shift in row 3); row 3 has no gaps since
+        // Gboard's geometry (2026-11-17), so their indices are one lower than the canvas's
+        spotted.toSet() shouldBe setOf("2:5", "2:4", "2:2", "1:3", "1:2", "2:7", "1:8", "1:7", "0:7", "3:0", "2:0")
+        val spot = r.rows[2].keys[5]
         spot.fg shouldBe css("#ffffff")
         spot.shadow.size shouldBe 0
         spot.hintFg shouldBe css("#a9a59c")

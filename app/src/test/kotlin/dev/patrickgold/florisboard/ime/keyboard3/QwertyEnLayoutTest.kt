@@ -127,8 +127,8 @@ class QwertyEnLayoutTest : FunSpec({
         // letter centres
         tap(18.75f, 27f) shouldBe "q".asK3String()
         tap(187.5f, 81f) shouldBe "g".asK3String()
-        // the 8 dp gap between shift and z goes to z, not to nothing
-        tap(48f + 4f, 135f) shouldBe "z".asK3String()
+        // row 3 as Gboard's: shift is 1.5 units (56.25 dp of 375) with no gap, z right after it
+        tap(56.25f + 4f, 135f) shouldBe "z".asK3String()
         // inside the shift key's rectangle it stays shift (a layer switch, no text output)
         keyboard.findKeyForTap(
             ImeLayerIds.Base, androidx.compose.ui.geometry.Offset(20f / widthDp, 135f / heightDp),

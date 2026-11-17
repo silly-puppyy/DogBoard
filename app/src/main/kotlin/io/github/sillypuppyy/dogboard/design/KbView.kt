@@ -170,7 +170,7 @@ private data class CapFrame(
 
 @Composable
 private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
-    val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
+    val shape = if (k.pill) RoundedCornerShape(50) else RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
     // Kb:558: where the spec puts this cap, for the lint's spacing check
     val rowTop = r.rowTops.getOrElse(ri) { ri * r.rowH }; val rowH = r.rowHs.getOrElse(ri) { r.rowH }
     val capTop = r.top + rowTop + r.mv

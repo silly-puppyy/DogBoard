@@ -61,6 +61,9 @@ fun LiveKbView(
     modifier: Modifier = Modifier,
 ) {
     val dark = liveDark()
+    // the default theme in the system's Material You colours (neutral greys before Android 14), as Gboard
+    val context = androidx.compose.ui.platform.LocalContext.current
+    remember(context) { MaterialYouTheme.override = MaterialYouTheme.forDevice(context); 0 }
     BoxWithConstraints(modifier.fillMaxSize()) {
         // nothing to draw until the key area has a real size (the first measure can be empty)
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f || maxHeight.value < 100f) return@BoxWithConstraints

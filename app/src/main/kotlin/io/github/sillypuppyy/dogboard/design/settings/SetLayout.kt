@@ -53,7 +53,9 @@ data class LayoutElements(
     companion object {
         /** SetLayout.dc.html:96-97: the two presets. */
         val SIMPLE = LayoutElements()
-        val CLASSIC = LayoutElements(numRow = "hints", bottom = "classic", hints = "symbols")
+        // digits on the top row only, as Gboard and the designer's answer (D3) have it; symbol or
+        // accent hints stay one choice away (Settings > Layout > Hints)
+        val CLASSIC = LayoutElements(numRow = "hints", bottom = "classic", hints = "off")
     }
 }
 

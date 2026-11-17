@@ -9,7 +9,7 @@ Key widths are in keyboard3 units (a row is 10 units wide). They follow a 375 dp
 keyboard where a letter cell is 37.5 dp (1 unit) with ten letters in the widest row; with more
 letters per row every letter narrows to fill it:
 
-    row 3:  shift 48 | gap 8 | 7 letters | gap 8.5 | delete 48
+    row 3:  shift 1.5 units | 7 letters | delete 1.5 units (Gboard; was iOS 48 dp with gaps)
     row 4:  123 46.5 | fn 47 | space 188 | return 93.5
 
 Run from the repository root:
@@ -29,9 +29,7 @@ def w(dp: float) -> str:
     return f"{dp / UNIT:.4f}".rstrip("0").rstrip(".")
 
 
-SHIFT = w(48)
-GAP_LEFT = w(8)
-GAP_RIGHT = w(8.5)
+SHIFT = "1.5"  # Gboard: shift and delete take what the 7 letters leave, no gaps (user 2026-11-17)
 MODE = w(46.5)       # 123 / ABC
 FN = w(47)           # emoji / language key
 SPACE = w(188)       # space absorbs the 37.5 dp a dictation key would take
@@ -96,15 +94,13 @@ class Layout:
     layout: str
     indicator: str
     rows: list[list[str]]
-    # row 3's gaps around the letters (units); None: what the row leaves over, split evenly
-    gaps3: tuple[str, str] | None = None
     accents: dict[str, str] = field(default_factory=lambda: ACCENTS)
     # the shift layer's key where it isn't the letter's own capital (FlorisBoard case selectors: ß -> ẞ)
     uppers: dict[str, str] = field(default_factory=dict)
 
 
 ENGLISH = Layout("qwerty-en", "en", "English (QWERTY)", "QWERTY", "EN",
-                 [list("qwertyuiop"), list("asdfghjkl"), list("zxcvbnm")], gaps3=(GAP_LEFT, GAP_RIGHT))
+                 [list("qwertyuiop"), list("asdfghjkl"), list("zxcvbnm")])
 
 
 def floris_layout(id: str, locale: str, name: str, layout: str, indicator: str, file: str) -> Layout:
@@ -189,10 +185,10 @@ def letter_width(lay: Layout) -> str | None:
 def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
     """Row 3: shift, a gap, the letters, a gap, delete; narrower shift / delete when the letters need it."""
     letters = " ".join(key_id(upper(c, lay) if shifted else c) for c in lay.rows[2])
-    if lay.gaps3 is not None:
-        return f"{shift_id} gap-left {letters} gap-right bksp"
     w = float(letter_width(lay) or 1)
     rest = 10 - len(lay.rows[2]) * w - 2 * float(SHIFT)
+    if rest < 0.01 and rest > -0.01:
+        return f"{shift_id} {letters} bksp"
     if rest >= 0:
         return f"{shift_id} gap3-{lay.id} {letters} gap3-{lay.id} bksp"
     return f"{shift_id}-narrow-{lay.id} {letters} bksp-narrow-{lay.id}"
@@ -220,8 +216,10 @@ def layout_gaps(lay: Layout) -> list[str]:
         if side >= 0.01:
             out.append(f'<key id="gap{i + 1}-{lay.id}" gap="true" width="{fmt(side)}" />')
     rest = 10 - len(lay.rows[2]) * w - 2 * float(SHIFT)
-    if rest >= 0:
+    if 0.01 <= rest:
         out.append(f'<key id="gap3-{lay.id}" gap="true" width="{fmt(rest / 2)}" />')
+    elif rest > -0.01:
+        pass
     else:
         side = fmt((10 - len(lay.rows[2]) * w) / 2)
         out += [f'<key id="base-to-shift-narrow-{lay.id}" layerId="shift" width="{side}" />',
@@ -283,8 +281,6 @@ def build(lay: Layout) -> str:
         '<key id="tld-com" output=".com" />',
         *[f'<key id="tld-{t.strip(".").replace(".", "-")}" output="{t}" />' for t in TLDS.split()],
         f'<key id="fn-key" gap="true" width="{FN}" />',
-        f'<key id="gap-left" gap="true" width="{GAP_LEFT}" />',
-        f'<key id="gap-right" gap="true" width="{GAP_RIGHT}" />',
         "",
         "<!-- Digits and extra symbols -->",
         *[line for key_id, (out, alts) in SYMBOLS.items() for line in key_with_alts(key_id, out, alts)],
@@ -318,9 +314,9 @@ def build(lay: Layout) -> str:
         ("base", base_rows + [bottom_row("to-symbol-1")]),
         ("shift", shift_rows + [bottom_row("to-symbol-1")]),
         ("symbol-1", [" ".join(SYMBOL_1[0]), " ".join(SYMBOL_1[1]),
-                      f"to-symbol-2 gap-left {wide} gap-right bksp", bottom_row("to-base")]),
+                      f"to-symbol-2 {wide} bksp", bottom_row("to-base")]),
         ("symbol-2", [" ".join(SYMBOL_2[0]), " ".join(SYMBOL_2[1]),
-                      f"to-symbol-1-row3 gap-left {wide} gap-right bksp", bottom_row("to-base")]),
+                      f"to-symbol-1-row3 {wide} bksp", bottom_row("to-base")]),
         *[(f"{layer}-{variant}", rows[:3] + [row]) for variant, row in FIELD_ROWS.items()
           for layer, rows in (("base", base_rows + [""]), ("shift", shift_rows + [""]))],
         ("numeric", [
