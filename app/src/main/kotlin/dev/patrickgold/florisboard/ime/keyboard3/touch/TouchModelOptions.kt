@@ -34,7 +34,7 @@ data class TouchModelOptions(
     val keyVariation: KeyVariation = KeyVariation.NORMAL,
     // DogBoard: number row "on long-press" (designer's Layout element): q-p offer their digit first
     val numberRowLongPress: Boolean = false,
-    // DogBoard: long-press hints "Symbols": each letter's hinted symbol (KbSpec.AND_HINT) comes first
+    // DogBoard: long-press hints "Symbols": each letter's hinted symbol (KbSpec.positionalHint, by place) comes first
     val symbolLongPress: Boolean = false,
     // DogBoard: the Classic bottom row (?123, comma, emoji, space, period, action): "-classic" layers
     val bottomRowClassic: Boolean = false,

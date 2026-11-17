@@ -315,12 +315,18 @@ object KbSpec {
         // the URL row's '.': domains on a long press (qwerty-en.xml period-url), no corner hint
         (URL_DOT to listOf(".com", ".org", ".net", ".edu"))
 
-    /** Kb:455 Android-style corner hints. */
-    val AND_HINT: Map<String, String> = mapOf(
-        "q" to "1", "w" to "2", "e" to "3", "r" to "4", "t" to "5", "y" to "6", "u" to "7", "i" to "8", "o" to "9", "p" to "0",
-        "a" to "@", "s" to "#", "d" to "$", "f" to "_", "g" to "&", "h" to "-", "j" to "+", "k" to "(", "l" to ")",
-        "z" to "*", "x" to "\"", "c" to "'", "v" to ":", "b" to ";", "n" to "!", "m" to "?",
+    /**
+     * Kb:455 Android-style corner hints, by position as Gboard places them: the n-th letter of the
+     * n-th letter row (q -> 1, a -> @, z -> * on QWERTY; the same places on any layout).
+     */
+    val HINT_ROWS: List<List<String>> = listOf(
+        "1234567890".map { it.toString() },
+        listOf("@", "#", "$", "_", "&", "-", "+", "(", ")"),
+        listOf("*", "\"", "'", ":", ";", "!", "?"),
     )
+
+    /** The hint for a letter key at [row] (0-2) and [index] among that row's letters, or null. */
+    fun positionalHint(row: Int, index: Int): String? = HINT_ROWS.getOrNull(row)?.getOrNull(index)
 
     /** Kb:508 return-key words. */
     val RET: Map<String, String> = mapOf(
@@ -441,6 +447,8 @@ object KbSpec {
         val letterRows = P.letterRows ?: ENGLISH_ROWS
         // the top letter row's letters, in order: the number row's digits as hints on long-press
         val topRow = letterRows[0].filter { it.kind == "char" }.map { it.base }
+        // each letter's place (row, index among the row's letters): the corner hints go by place
+        val letterPlace = buildMap { letterRows.forEachIndexed { r, row -> row.filter { it.kind == "char" }.forEachIndexed { j, k -> put(k.base, r to j) } } }
         fun gap(w: Float) = K("", "gap", w)
         val shiftK = K("shift", "shift", 1.28f)
         fun bksp(w: Float = 1.28f) = K("bksp", "bksp", w)
@@ -569,7 +577,7 @@ object KbSpec {
                     val base = k.base.ifEmpty { k.id }
                     // Kb:747-751
                     if (plane == "base" && hintKind != "off") {
-                        if (hintKind == "symbols") hint = AND_HINT[base] ?: ""
+                        if (hintKind == "symbols") hint = letterPlace[base]?.let { (r, j) -> positionalHint(r, j) } ?: ""
                         else if (base in LP && base != URL_DOT) hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
                     }
                     if (plane == "base" && numRow == "hints") topRow.indexOf(base).takeIf { it in 0..9 }?.let { hint = "1234567890"[it].toString() }

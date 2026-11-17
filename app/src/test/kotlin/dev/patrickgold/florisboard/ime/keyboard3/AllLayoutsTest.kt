@@ -69,4 +69,24 @@ class AllLayoutsTest : FunSpec({
         t shouldBe "u\u0308"
         java.text.Normalizer.normalize(t, java.text.Normalizer.Form.NFC) shouldBe "ü"
     }
+
+    test("long-press digits and symbols go by the key's place, on any layout (Gboard)") {
+        suspend fun firstLongPress(path: String, letter: String): String? {
+            val result = compileLayout(path)
+            result.shouldBeInstanceOf<K3CompileResult.Success>()
+            val options = TouchModelOptions.Default.copy(numberRowLongPress = true, symbolLongPress = true)
+            val keyboard = coroutineScope { computeTouchModel(result.model, options) }.selectKeyboard(deviceWidthMm = 70)
+            val key = keyboard.layers.getValue(ImeLayerIds.Base).keys.first { (it.attrs.output as? org.k3lp.lib.text.K3String)?.toText() == letter }
+            return (key.extendedPopupKeys.firstOrNull()?.data?.output as? org.k3lp.lib.text.K3String)?.toText()
+        }
+        firstLongPress("keyboard/qwerty-en.xml", "q") shouldBe "1"
+        firstLongPress("keyboard/qwerty-en.xml", "a") shouldBe "@"
+        firstLongPress("keyboard/qwerty-en.xml", "z") shouldBe "*"
+        // QWERTZ: z is the 6th key of the top row, y the first of the third
+        firstLongPress("keyboard/qwertz-de.xml", "z") shouldBe "6"
+        firstLongPress("keyboard/qwertz-de.xml", "y") shouldBe "*"
+        // AZERTY: a is the first key of the top row
+        firstLongPress("keyboard/azerty-fr.xml", "a") shouldBe "1"
+        firstLongPress("keyboard/azerty-fr.xml", "q") shouldBe "@"
+    }
 })

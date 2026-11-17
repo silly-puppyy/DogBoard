@@ -441,14 +441,14 @@ private fun computeTouchKeyboard(
                             )
                         }
                         else -> (key.longPressKeyIds ?: emptyList()).let { ids ->
-                            // DogBoard: digits on long-press of the top row (q→1 … p→0) come first
-                            val letter = (key.output as? org.k3lp.lib.text.K3String)?.toText()?.lowercase()?.takeIf { it.length == 1 }
-                            val digit = letter
-                                ?.takeIf { options.numberRowLongPress && it[0] in TOP_ROW }
-                                ?.let { K3KeyId("s-" + DIGITS[TOP_ROW.indexOf(it[0])]) }?.takeIf { model.keys.byKeyId[it] != null }
+                            // DogBoard: digits on long-press of the top row (q→1 … p→0) come first; digits
+                            // and symbols go by the key's place in the letter rows, as Gboard's (any layout)
+                            val place = letterPlaces(model)[key.id]
+                            val digit = place?.takeIf { options.numberRowLongPress && it.first == 0 }
+                                ?.let { (_, j) -> DIGITS.getOrNull(j) }?.let { K3KeyId("s-$it") }?.takeIf { model.keys.byKeyId[it] != null }
                             // the hinted symbol as a key of the layout that types it (the symbol planes have them all)
-                            val symbol = letter?.takeIf { options.symbolLongPress && it[0] in 'a'..'z' }
-                                ?.let { io.github.sillypuppyy.dogboard.design.KbSpec.AND_HINT[it] }
+                            val symbol = place?.takeIf { options.symbolLongPress }
+                                ?.let { (r, j) -> io.github.sillypuppyy.dogboard.design.KbSpec.positionalHint(r, j) }
                                 ?.let { sym -> symbolKeyIds(model)[sym] }
                             listOfNotNull(digit ?: symbol) + ids to (digit ?: symbol)
                         }.takeIf { it.first.isNotEmpty() }?.let { (longPressKeyIds, added) ->
@@ -585,11 +585,33 @@ fun K3Key.isSuitableForSimplePopup(): Boolean {
 fun K3KeyId.isFnKeyId(): Boolean = this == TouchKey.FnKeyId || value == "fn-key-classic"
 
 // DogBoard: the top letter row and its digits (number row on long-press)
-private const val TOP_ROW = "qwertyuiop"
 private const val DIGITS = "1234567890"
 
 /** DogBoard: a key id that types each single character, from the symbol planes (ids "s-…") first. */
 private val symbolKeyIdCache = java.util.WeakHashMap<Any, Map<String, K3KeyId>>()
+
+private val letterPlaceCache = java.util.WeakHashMap<K3Model, Map<K3KeyId, Pair<Int, Int>>>()
+
+/**
+ * DogBoard: each letter key's place in the base and shift layers' letter rows (row 0-2, index among
+ * that row's letters), for the long-press digits and symbols, which go by place.
+ */
+private fun letterPlaces(model: K3Model): Map<K3KeyId, Pair<Int, Int>> = synchronized(letterPlaceCache) {
+    letterPlaceCache.getOrPut(model) {
+        val out = HashMap<K3KeyId, Pair<Int, Int>>()
+        val layers = model.layersByForm.touch.firstOrNull()?.layers ?: return@getOrPut out
+        for (layerId in listOf(ImeLayerIds.Base, ImeLayerIds.Shift)) {
+            val rows = layers[layerId]?.rows ?: continue
+            rows.take(3).forEachIndexed { r, row ->
+                row.filter { id ->
+                    val text = (model.keys.byKeyId[id]?.output as? org.k3lp.lib.text.K3String)?.toText()
+                    text != null && java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFC).let { it.length == 1 && it[0].isLetter() }
+                }.forEachIndexed { j, id -> out.putIfAbsent(id, r to j) }
+            }
+        }
+        out
+    }
+}
 
 private fun symbolKeyIds(model: K3Model): Map<String, K3KeyId> = synchronized(symbolKeyIdCache) {
     symbolKeyIdCache.getOrPut(model) {
