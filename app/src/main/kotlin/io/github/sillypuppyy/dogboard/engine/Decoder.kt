@@ -88,6 +88,12 @@ class Decoder(
         /** Split taps that run words together into several words ("helloeveryone"). */
         val splitWords: Boolean = true,
         /**
+         * With [splitWords]: a word may also end where no tap was (a space the user never touched,
+         * "callyou"). iOS's English beam never does this (only its neural tap model splits words);
+         * a tap read as the space bar is always allowed.
+         */
+        val missedSpace: Boolean = true,
+        /**
          * A tap beyond the pruning radius may still be read as any key at this cost (+ the time term + the
          * radius's likelihood), for taps that land far off; null = never, as on iOS. 1.5 (eval 2026-11-15,
          * stray taps from the IMK data at realistic 0.5-1 %: control 97.9 -> 98.2 / 97.3 -> 97.7, rare
@@ -518,7 +524,7 @@ class Decoder(
             // a whole word may end here and the next tap begin another: the space key was not
             // tapped, which costs what any skipped key does (iOS prices a missed space as a key
             // error); only the most likely few, which keeps the search near its one-word size
-            if (config.splitWords && i in 1 until n) {
+            if (config.splitWords && config.missedSpace && i in 1 until n) {
                 // the best MAX_RESTARTS by score, ties in layer order (no boxing: this runs on every
                 // layer of every keystroke); every word end still gets its prefix, as before
                 val topState = arrayOfNulls<State>(MAX_RESTARTS); val topPrefix = IntArray(MAX_RESTARTS); val topScore = DoubleArray(MAX_RESTARTS)
