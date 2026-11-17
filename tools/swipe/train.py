@@ -38,6 +38,26 @@ def batches(items, size, shuffle):
         yield x, lens, targets, tlens, words
 
 
+def augment(x, lens):
+    """Each swipe a little stretched, shifted, tilted and shaken (on the GPU): people, phones and
+    keyboards differ, and FUTO's swipes all come from one keyboard. Steps (dx, dy) are recomputed."""
+    b, t, _ = x.shape
+    dev = x.device
+    xy = x[..., :2]
+    centre = xy.sum(1, keepdim=True) / lens.view(b, 1, 1).to(dev)
+    scale = torch.empty(b, 1, 2, device=dev).uniform_(0.85, 1.15)
+    angle = torch.randn(b, device=dev) * 0.05  # ~3 degrees
+    cos, sin = torch.cos(angle).view(b, 1), torch.sin(angle).view(b, 1)
+    c = (xy - centre) * scale
+    rot = torch.stack([c[..., 0] * cos - c[..., 1] * sin, c[..., 0] * sin + c[..., 1] * cos], -1)
+    shift = torch.randn(b, 1, 2, device=dev) * torch.tensor([0.15, 0.12], device=dev)
+    xy = rot + centre + shift + torch.randn_like(xy) * 0.03
+    mask = (torch.arange(t, device=dev).view(1, t) < (lens.to(dev).view(b, 1) - 1)).unsqueeze(-1)
+    step = torch.zeros_like(xy)
+    step[:, :-1] = xy[:, 1:] - xy[:, :-1]
+    return torch.cat([xy, step * mask], -1) * (torch.arange(t, device=dev).view(1, t, 1) < lens.to(dev).view(b, 1, 1))
+
+
 def evaluate(model, dev, device, n=5000):
     model.eval()
     right = total = 0
@@ -59,6 +79,7 @@ def main():
     ap.add_argument("--batch", type=int, default=256)
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--resume", default="")
+    ap.add_argument("--augment", action="store_true")
     a = ap.parse_args()
     torch.set_num_threads(2)  # the GPU does the work; leave the CPU cool
     os.makedirs(a.out, exist_ok=True)
@@ -79,7 +100,10 @@ def main():
     for epoch in range(start, a.epochs):
         t0, total, n = time.time(), 0.0, 0
         for x, lens, targets, tlens, _ in batches(train, a.batch, True):
-            logp = model(x.to(device))
+            x = x.to(device)
+            if a.augment:
+                x = augment(x, lens)
+            logp = model(x)
             loss = ctc(logp.transpose(0, 1), targets, lens, tlens)
             opt.zero_grad()
             loss.backward()
