@@ -55,14 +55,15 @@ class SpaceOnLetterProbeTest : FunSpec({
             ?.let { TypingEngine.attachNgrams(it) }
         File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         try {
-            for ((before, words) in listOf("only" to "if the", "only if" to "the language", "if" to "the language model", "of" to "a letter or space")) {
+            for ((before, words) in listOf("only" to "if the", "only if" to "the language", "if" to "the language model", "of" to "a letter or space",
+                    "." to "straight below it")) {
                 for (h in listOf(0.0, 0.3)) {
-                    val n = keys.getValue('n')
+                    val n = keys.getValue(if (words.startsWith("straight")) 'b' else 'n')
                     val word = CurrentWord().apply {
                         for (c in words) {
                             val tap = if (c == ' ') Tap(n.centerX, (n.centerY + h * (space.centerY - n.centerY)).toFloat())
                                 else keys.getValue(c).let { Tap(it.centerX, it.centerY) }
-                            addLetter(if (c == ' ') 'n' else c, tap, keys, params)
+                            addLetter(if (c == ' ') (if (words.startsWith("straight")) 'b' else 'n') else c, tap, keys, params)
                         }
                     }
                     val candidates = TypingEngine.candidates(word, before.split(' ').last(), previous2 = before.split(' ').getOrNull(before.split(' ').size - 2))

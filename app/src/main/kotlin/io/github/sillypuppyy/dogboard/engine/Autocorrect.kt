@@ -110,7 +110,8 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         // a correction with the typed letters ("dont" -> "don't") keeps the typed word already
         if (sortKey(t) != sortKey(typed)) {
             val asTyped = ranked.firstOrNull { it.isTypedString || it.word.equals(typed, ignoreCase = true) }
-            if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return null
+            // the typed word stays, as the dictionary spells it ("mr" -> "Mr", as when it is the top)
+            if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)
         }
         // Rule 4: a correction that is not a completion of what was typed is taken as is.
         if (!(t.length >= typed.length && t.startsWith(typed))) return t
@@ -132,6 +133,13 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         val (second, s) = cased.getOrNull(1) ?: return t
         if (s.equals(t, ignoreCase = true) || s.startsWith(t, ignoreCase = true)) return t
         return if (level.dominanceRatio * exp(second.score) < exp(top.score)) t else null
+    }
+
+    /** The typed word kept: its dictionary capitals when they are all that differs ("Mr"), else null (left as typed). */
+    private fun keptAsTyped(typed: String, asTyped: Candidate, case: (String) -> String?): String? {
+        if (asTyped.isTypedString) return null
+        val t = case(asTyped.word) ?: return null
+        return t.takeIf { it != typed && it.equals(typed, ignoreCase = true) }
     }
 
     /**
