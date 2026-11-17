@@ -37,6 +37,7 @@ RAW_MAX = 32767
 
 KEYBOARDS = {
     "dogboard": "io.github.sillypuppyy.dogboard.bench/dev.patrickgold.florisboard.FlorisImeService",
+    "dogboard-debug": "io.github.sillypuppyy.dogboard.debug/dev.patrickgold.florisboard.FlorisImeService",
     "gboard": "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME",
     "futo": "org.futo.inputmethod.latin/.LatinIME",
     "heliboard": "helium314.keyboard/.latin.LatinIME",
@@ -198,7 +199,11 @@ def type_text(dev, keys, text, rng, noise_mm, gap_s, noise_y_mm=None, far=0.0, t
     pitch = keys["s"][0] - keys["a"][0]
     letters = [keys[c] for c in "abcdefghijklmnopqrstuvwxyz" if c in keys]
     left, right = min(p[0] for p in letters) - pitch / 2, max(p[0] for p in letters) + pitch / 2
-    top, bottom = min(p[1] for p in letters) - pitch / 2, max(p[1] for p in letters) + pitch / 2
+    # vertical bounds: 0.3 row pitch past the outer rows' centres = on the key caps (rows are 165 px
+    # apart with ~100 px caps; anything higher reached DogBoard's suggestion bar, which starts at the
+    # top row's cap edge: "bed" -> "b d")
+    row_pitch = keys["a"][1] - keys["q"][1]
+    top, bottom = min(p[1] for p in letters) - row_pitch * 0.3, max(p[1] for p in letters) + row_pitch * 0.3
     points = []
     for ch in text.lower():
         x, y = keys[ch]
@@ -213,7 +218,10 @@ def type_text(dev, keys, text, rng, noise_mm, gap_s, noise_y_mm=None, far=0.0, t
                         break
                 x, y = x + dx * pitch, y + dy * pitch
             else:
-                x, y = x + gx, y + gy
+                # kept inside the letter area: a top-row tap pushed up into the suggestion bar picks a
+                # suggestion and adds a space ("bed" -> "b d"), which measures the bar's placement,
+                # not autocorrection (found 2026-11-17: most 2 mm "misses" were such bar taps)
+                x, y = min(max(x + gx, left), right), min(max(y + gy, top), bottom)
         points.append((x, y))
     dev.tap(points, gap_s, rng)
     time.sleep(0.8)
@@ -226,11 +234,29 @@ def run(dev, name, ime, sentences, args):
         # start from nothing learned: earlier runs (and this run's key probing) teach it words
         dev.sh(f"am force-stop {pkg}; cd /data/data/{pkg}/files/dogboard && rm -f personal.tsv "
                "rejected_corrections.txt user_words.txt emoji_usage.tsv")
+    def bound():
+        m = re.search(r"mCurImeId=(\S+)", dev.sh("dumpsys input_method"))
+        return m.group(1) if m else ""
     dev.sh(f"ime enable {ime}")
     dev.sh(f"ime set {ime}")
+    # the test screen belongs to DogBoard's debug build, whose keyboard otherwise stays bound (Android
+    # keeps a running IME): stop that process so the keyboard under test is the one serving the field
+    if not ime.startswith(TEST_PKG + "/"):
+        dev.sh(f"am force-stop {TEST_PKG}")
+        dev.sh(f"ime set {ime}")
     # a keyboard switched to cold needs a moment before it takes taps
     dev.fresh_field()
     time.sleep(5.0)
+    # Android may keep (or fall back to) another keyboard: make sure this one serves the field
+    for _ in range(3):
+        if bound() == ime:
+            break
+        dev.sh(f"ime set {ime}")
+        dev.fresh_field()
+        time.sleep(3.0)
+    if bound() != ime:
+        print(f"   NOT MEASURED: the field is served by {bound()}, not {ime}", flush=True)
+        return {"keyboard": name, "error": f"bound to {bound()}"}
     cache = Path(args.keys_cache)
     cached = json.loads(cache.read_text()) if cache.exists() else {}
     tag = f"{name} {dev.w}x{dev.h}"
@@ -244,14 +270,31 @@ def run(dev, name, ime, sentences, args):
     if name == "dogboard":  # forget what the probing taught it, then let it load its word data again
         dev.sh(f"am force-stop {pkg}; cd /data/data/{pkg}/files/dogboard && rm -f personal.tsv "
                "rejected_corrections.txt user_words.txt emoji_usage.tsv")
+        # force-stopping the selected keyboard makes Android fall back to the default one (Gboard):
+        # every earlier "dogboard" sentence row was typed by Gboard (found 2026-11-17)
+        dev.sh(f"ime set {ime}")
         dev.fresh_field()
         time.sleep(3)
+        if bound() != ime:
+            print(f"   NOT MEASURED: the field is served by {bound()} after the reset", flush=True)
+            return {"keyboard": name, "error": f"bound to {bound()}"}
     result = {"keyboard": name, "keys": keys}
     clock = LiftClock(dev)
     latencies = {"letter": [], "space": []}
     right = total = 0
     misses = []
     rng = random.Random(args.seed)
+    # footprint while typing the sentences: CPU time of the keyboard's process, frames, memory after
+    def cpu_ticks():
+        pid = dev.sh(f"pidof {pkg}").split()
+        if not pid:
+            return None
+        f = dev.sh(f"cat /proc/{pid[0]}/stat").split(")")[-1].split()
+        return pid[0], int(f[11]) + int(f[12])  # utime + stime (after the comm field), in clock ticks
+    dev.fresh_field()  # the keyboard's process is up before it is measured
+    time.sleep(2)
+    dev.sh(f"dumpsys gfxinfo {pkg} reset")
+    ticks0 = cpu_ticks()
     for s in sentences:
         typed = re.sub(r"[^a-z ]", "", s.lower().replace("'", "").replace("’", ""))
         dev.fresh_field()
@@ -272,6 +315,23 @@ def run(dev, name, ime, sentences, args):
             after = [c for c, _ in changes if c >= t - 0.002]
             if after:
                 latencies["space" if ch == " " else "letter"].append((after[0] - t) * 1000)
+    ticks1 = cpu_ticks()
+    if bound() != ime:
+        print(f"   NOT MEASURED: the keyboard changed to {bound()} while typing", flush=True)
+        return {"keyboard": name, "error": f"rebound to {bound()}"}
+    words_typed = sum(len(words_of(x)) for x in sentences)
+    gfx = dev.sh(f"dumpsys gfxinfo {pkg}")
+    def gfx_line(label):
+        m = re.search(label + r"[^\n]*", gfx)
+        return m.group(0).strip() if m else ""
+    mem = re.search(r"TOTAL PSS:\s*(\d+)", dev.sh(f"dumpsys meminfo {pkg}"))
+    if ticks0 is not None and ticks1 is not None and ticks0[0] != ticks1[0]:
+        print(f"   footprint: the keyboard's process changed while typing ({ticks0[0]} -> {ticks1[0]}): not measured", flush=True)
+    elif ticks0 is not None and ticks1 is not None and words_typed:
+        result_footprint = dict(cpu_ms_per_word=(ticks1[1] - ticks0[1]) * 10.0 / words_typed, pss_mb=int(mem.group(1)) / 1024 if mem else None,
+                                frames=gfx_line("Total frames rendered"), janky=gfx_line("Janky frames:"), p90=gfx_line("90th percentile"), p99=gfx_line("99th percentile"))
+        print(f"   footprint: CPU {result_footprint['cpu_ms_per_word']:.1f} ms a word, memory {result_footprint['pss_mb']} MB PSS; "
+              f"{result_footprint['frames']}; {result_footprint['janky']}; {result_footprint['p90']}; {result_footprint['p99']}", flush=True)
     typo_right = 0
     for typed, expected in TYPOS:
         dev.fresh_field()
