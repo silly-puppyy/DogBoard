@@ -32,9 +32,19 @@ FIT = ["dwell", "omega", "omega_spread", "zeta", "switch", "switch_spread", "aim
        "care_spread", "bias", "noise", "noise_tau", "reach", "lift", "lift_spread"]
 
 
+def turning(xy, step=0.25):
+    """Total absolute turning (degrees) along a path resampled every `step` key widths: loops add 360."""
+    p = resample(xy, max(3, int(sum(math.dist(u, v) for u, v in zip(xy, xy[1:])) / step) + 1))
+    d = np.diff(p, axis=0)
+    a = np.arctan2(d[:, 1], d[:, 0])
+    da = np.diff(a)
+    da = (da + np.pi) % (2 * np.pi) - np.pi
+    return float(np.degrees(np.abs(da).sum()))
+
+
 def summary(samples):
     """samples: [(word, keys, [(x, y, t)])] -> statistics dict."""
-    r, by_word, rows = {}, defaultdict(list), []
+    r, by_word, rows, turn_extra, outside = {}, defaultdict(list), [], [], []
     for w, keys, pts in samples:
         xy = [(x, y) for x, y, _ in pts]
         if len(xy) < 3:
@@ -44,6 +54,10 @@ def summary(samples):
         ks = [keys[c] for c in w]
         ideal = sum(math.dist(u, v) for u, v in zip(ks, ks[1:])) or 1e-6
         rows.append((sum(math.dist(u, v) for u, v in zip(xy, xy[1:])) / ideal, (pts[-1][2] - pts[0][2]) / ideal))
+        # turning beyond what the key-to-key polyline turns (loops, wiggles); leaving the keyboard
+        turn_extra.append(turning(xy) - (turning(ks) if len(ks) > 2 else 0.0))
+        xs = [k[0] for k in keys.values()]; ys = [k[1] for k in keys.values()]
+        outside.append(any(x < min(xs) - 0.6 or x > max(xs) + 0.6 or y < min(ys) - 0.6 or y > max(ys) + 0.6 for x, y in xy))
     out = stats(r)
     rms = [float(np.sqrt(((np.stack(v) - np.stack(v).mean(0)) ** 2).sum(-1).mean())) for v in by_word.values() if len(v) >= 10]
     out["band"] = float(np.median(rms))
@@ -51,6 +65,9 @@ def summary(samples):
     slow = a[:, 1] > np.median(a[:, 1])
     out["ms_per_unit"] = float(np.median(a[:, 1]))
     out["len_slow_minus_fast"] = float(np.median(a[slow, 0]) - np.median(a[~slow, 0]))
+    out["turn_extra50"] = float(np.median(turn_extra))
+    out["turn_extra90"] = float(np.percentile(turn_extra, 90))
+    out["outside_share"] = float(np.mean(outside))
     return out
 
 
@@ -61,6 +78,10 @@ def error(m, r):
             continue
         if k.startswith("len"):
             e += abs(m[k] - v) / 0.03
+        elif k == "outside_share":
+            e += abs(m[k] - v) / 0.02          # in units of 2% of swipes
+        elif k.startswith("turn_extra"):
+            e += abs(m[k] - v) / max(abs(v), 30.0)
         else:
             e += abs(m[k] - v) / max(abs(v), 0.05)
     return e
