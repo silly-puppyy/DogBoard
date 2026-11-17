@@ -170,7 +170,9 @@ class KbSpecTest : FunSpec({
         key(g, "q").let { it.bgGradient!!.stops.map { s -> s.second } shouldContainExactly listOf(0f, 0.45f, 1f); it.bgGradient!!.angleDeg shouldBe 180f; it.bg shouldBe css("#f1f1f4") }
         key(g, "bksp").let { it.fill shouldBe 1; it.bgGradient!!.stops.first().first shouldBe css("#7a8290") }
         key(g, "ret").let { it.label shouldBe "return"; it.icon shouldBe ""; it.fw shouldBe 600 }
-        key(KbProps(theme = "gloss", ret = "send", actionStyle = "icon"), "ret").let { it.label shouldBe "Send"; it.bgGradient!!.stops.last().first shouldBe css("#2558c0") }
+        // Gloss's word shows on the wide return key of the word layout (Settings > Layout > Action key: Word);
+        // the default bottom row lines up with delete (2026-11-17) and is too narrow for it: the icon
+        key(KbProps(theme = "gloss", ret = "send", actionStyle = "word"), "ret").let { it.label shouldBe "Send"; it.bgGradient!!.stops.last().first shouldBe css("#2558c0") }
         key(KbProps(theme = "gloss", ret = "send", actionOff = true), "ret").fg shouldBe css("rgba(255,255,255,0.45)")
         key(KbProps(theme = "gloss", pressed = "q"), "q").bgGradient!!.stops.first().first shouldBe css("#c9ccd3")
         key(g, "space").let { it.label shouldBe "space"; it.fg shouldBe css("#4f545e"); it.fs shouldBe 15f }

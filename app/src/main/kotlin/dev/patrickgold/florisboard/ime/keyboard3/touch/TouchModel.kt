@@ -322,7 +322,7 @@ private fun FnKeyAction.asK3Key(): K3Key {
 }
 
 private fun K3LayerId.isFieldVariantLayer(): Boolean =
-    value.let { it.endsWith("-email") || it.endsWith("-url") || it.endsWith("-classic") }
+    value.let { it.endsWith("-email") || it.endsWith("-url") || it.endsWith("-classic") || it.endsWith("-word") }
 
 private fun computeTouchKeyboard(
     model: K3Model,
@@ -349,7 +349,9 @@ private fun computeTouchKeyboard(
         else -> null
     }
     // and the Classic bottom row: "-classic", "-classic-email", "-classic-url"
-    val variantSuffix = if (options.bottomRowClassic) "-classic" + fieldSuffix.orEmpty() else fieldSuffix
+    // and the action key as a word: "-word", "-word-email", "-word-url" (a wide return key)
+    val variantSuffix = if (options.bottomRowClassic) "-classic" + fieldSuffix.orEmpty()
+        else if (options.bottomRowWords) "-word" + fieldSuffix.orEmpty() else fieldSuffix
     val touchLayers = buildMap {
         for ((_, layer) in layers) {
             if (layer.id == ImeLayerIds.Numrow || layer.id.isFieldVariantLayer()) {
@@ -582,7 +584,7 @@ fun K3Key.isSuitableForSimplePopup(): Boolean {
 }
 
 /** DogBoard: the fn (emoji / language) key, also as the Classic bottom row's narrower copy. */
-fun K3KeyId.isFnKeyId(): Boolean = this == TouchKey.FnKeyId || value == "fn-key-classic"
+fun K3KeyId.isFnKeyId(): Boolean = this == TouchKey.FnKeyId || value == "fn-key-classic" || value == "fn-key-word"
 
 // DogBoard: the top letter row and its digits (number row on long-press)
 private const val DIGITS = "1234567890"
