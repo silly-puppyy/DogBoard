@@ -7,7 +7,9 @@ DIR is huggingface.co/datasets/futo-org/swipe.futo.org (MIT, (c) 2025 FUTO): tra
 swipe per line: word, canvas size, and the path as normalised points (x, y in 0..1 over the letter
 area; their qwerty.json: keys 0.1 wide, rows a third high). A path becomes key units (x * 10, y * 3),
 resampled every --spacing key widths along its length, with the step to the next point:
-features (x, y, dx, dy). Words are lowercased; only a-z words are kept.
+features (x, y, dx, dy). Words are lowercased, punctuation at their ends stripped ("Atri," > atri)
+and apostrophes dropped (don't > dont: the decoder steps over apostrophes for free); then only a-z
+words are kept (before 2026-11-17 evening words with punctuation were dropped: ~14% of the swipes).
 """
 import argparse
 import json
@@ -57,7 +59,7 @@ def convert(src, dst_prefix, spacing, shard):
         for line in fh:
             n += 1
             d = json.loads(line)
-            w = d.get("word", "").lower()
+            w = d.get("word", "").lower().strip(".,;:!?\"()[]{}“”‘’").replace("'", "").replace("’", "")
             path = d.get("data") or []
             if not w or not w.isascii() or not w.isalpha() or not path or len(w) > 24:
                 continue
