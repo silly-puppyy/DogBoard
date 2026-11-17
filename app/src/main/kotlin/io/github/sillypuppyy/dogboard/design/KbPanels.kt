@@ -21,6 +21,8 @@ data class KbClipData(
     val thumbnail: (suspend (sizePx: Int) -> androidx.compose.ui.graphics.ImageBitmap?)? = null,
     /** The source app marked it sensitive (a password): [text] is already masked. */
     val sensitive: Boolean = false,
+    /** Seconds until a sensitive clip clears itself (the clipboard setting), or null when it doesn't. */
+    val clearsInSec: Int? = null,
 )
 
 /**
@@ -49,7 +51,8 @@ fun clipLead(d: KbClipData, fn: Color, fnFg: Color): KbClipLead? {
     val s = d.text.trim()
     return when {
         d.media -> KbClipLead(if (d.icon == "play_circle") "Video" else "Photo", icon = d.icon, fg = fnFg)
-        d.sensitive -> KbClipLead("••••••••", "Password", icon = "lock", bg = fn, fg = fnFg)
+        // the canvas's "clears in 0:52" while auto-clear is on (Settings > Clipboard)
+        d.sensitive -> KbClipLead("••••••••", d.clearsInSec?.let { "clears in %d:%02d".format(it / 60, it % 60) } ?: "Password", icon = "lock", bg = fn, fg = fnFg)
         else -> HEX.matchEntire(s)?.let { m ->
             val rgb = m.groupValues[1].toInt(16)
             KbClipLead(

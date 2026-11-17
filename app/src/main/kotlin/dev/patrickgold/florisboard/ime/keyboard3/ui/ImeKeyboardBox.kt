@@ -295,6 +295,13 @@ fun ImeKeyboardBox(
                     }
                 }
                 // asked when a panel opens, not on every redraw (a cross-process call per keystroke)
+                // a password clip's countdown (auto-clear on): ticks each second while the clipboard is open
+                val clearSensitive by prefs.clipboard.historyAutoCleanSensitiveEnabled.collectAsState()
+                val clearAfterSec by prefs.clipboard.historyAutoCleanSensitiveAfter.collectAsState()
+                var nowMs by remember { androidx.compose.runtime.mutableLongStateOf(System.currentTimeMillis()) }
+                androidx.compose.runtime.LaunchedEffect(livePanel, clearSensitive) {
+                    while (clearSensitive && livePanel == "clipboard") { nowMs = System.currentTimeMillis(); kotlinx.coroutines.delay(1000) }
+                }
                 val phoneLocked = remember(livePanel) {
                     context.getSystemService(android.app.KeyguardManager::class.java)?.isKeyguardLocked == true
                 }
@@ -347,6 +354,7 @@ fun ImeKeyboardBox(
                             text = if (item.isSensitive) item.displayText(context) else item.text.orEmpty(),
                             pinned = item.isPinned,
                             sensitive = item.isSensitive,
+                            clearsInSec = if (item.isSensitive && clearSensitive) ((item.creationTimestampMs + clearAfterSec * 1000L - nowMs) / 1000).toInt().coerceAtLeast(0) else null,
                             thumbnail = if (media) { px -> io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, px) } else null,
                         )
                     } },

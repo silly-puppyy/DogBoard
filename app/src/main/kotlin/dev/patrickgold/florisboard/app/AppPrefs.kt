@@ -127,7 +127,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         )
         val historyAutoCleanSensitiveAfter = int(
             key = "clipboard__history_auto_clean_sensitive_after",
-            default = 20,
+            // DogBoard: a minute (the designer's password tile counts down from it; user: off by default)
+            default = 60,
         )
         val historySizeLimitEnabled = boolean(
             key = "clipboard__history_size_limit_enabled",

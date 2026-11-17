@@ -57,7 +57,8 @@ class ClipboardManager(
 ) : AndroidClipboardManager_OnPrimaryClipChangedListener, Closeable {
     companion object {
         // 1 minute
-        private const val INTERVAL = 60 * 1000L
+        // DogBoard: every 5 s (was a minute): a password set to clear after a minute shouldn't stay two
+        private const val INTERVAL = 5 * 1000L
 
         /**
          * Taken from ClipboardDescription.java from the AOSP
@@ -286,7 +287,14 @@ class ClipboardManager(
         if (prefs.clipboard.historyAutoCleanSensitiveEnabled.get()) {
             val sensitiveData = clipHistory.all.filter { it.isSensitive }
             val expiryTime = System.currentTimeMillis() - (prefs.clipboard.historyAutoCleanSensitiveAfter.get() * 1000)
-            itemsToRemove.addAll(sensitiveData.filter { it.creationTimestampMs < expiryTime })
+            val expired = sensitiveData.filter { it.creationTimestampMs < expiryTime }
+            itemsToRemove.addAll(expired)
+            // DogBoard: and from the system clipboard while it still holds that password (DogBoard's
+            // history alone would leave it pasteable everywhere)
+            if (expired.isNotEmpty() && android.os.Build.VERSION.SDK_INT >= 28) {
+                val primary = runCatching { systemClipboardManager.primaryClip?.getItemAt(0)?.coerceToText(appContext)?.toString() }.getOrNull()
+                if (primary != null && expired.any { it.text == primary }) runCatching { systemClipboardManager.clearPrimaryClip() }
+            }
         }
         if (itemsToRemove.isNotEmpty()) {
             ioScope.launch {
