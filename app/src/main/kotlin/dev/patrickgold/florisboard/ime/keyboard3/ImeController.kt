@@ -286,6 +286,7 @@ class ImeController(
         prefs.typing.deleteWordsAfter.asFlow().collectIn(scope) { feel.deleteWordsAfter = it }
         prefs.typing.deleteWordMs.asFlow().collectIn(scope) { feel.deleteWordMs = it.toLong() }
         prefs.typing.trackpadHoldMs.asFlow().collectIn(scope) { feel.trackpadHoldMs = it.toLong() }
+        prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { feel.trackpadEnabled = it }
         prefs.typing.trackpadStepDp.asFlow().collectIn(scope) { feel.trackpadStepDp = it.toFloat() }
         combine(
             prefs.devtools.enabled.asFlow(),

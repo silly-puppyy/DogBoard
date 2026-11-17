@@ -40,7 +40,7 @@ object SettingsSearch {
         Entry("Text replacements", "Autocorrect and typing › Your words", "dictionary", "shortcuts omw expand phrases"),
         Entry("Vibration", "Sound and vibration", "feedback", "haptics haptic buzz tap feel style rich plain soft"),
         Entry("Sound", "Sound and vibration", "feedback", "click audio noise volume"),
-        Entry("Gestures", "Gestures", "gestures", "swipe trackpad cursor space bar delete"),
+        Entry("Move the cursor", "Gestures", "gestures", "swipe trackpad cursor space bar hold slide"),
         Entry("Emoji", "Emoji and GIFs", "emoji", "skin tone recent gif"),
         Entry("Clipboard history", "Clipboard", "clipboard", "copy paste clips keep passwords"),
         Entry("Incognito typing", "Privacy", "privacy", "private learning"),

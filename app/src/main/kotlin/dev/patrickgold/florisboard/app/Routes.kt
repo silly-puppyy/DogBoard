@@ -230,6 +230,10 @@ object Routes {
         @Deeplink("settings/typing-correction/punctuation")
         object PunctuationPage
 
+        @Serializable
+        @Deeplink("settings/gestures-dogboard")
+        object DogGestures
+
         // DogBoard: About › Data licenses (the attribution of the shipped word data)
         @Serializable
         @Deeplink("settings/about/data-licenses")
@@ -397,6 +401,7 @@ object Routes {
             composableWithDeepLink(Settings.SuggestionsPage::class) { io.github.sillypuppyy.dogboard.settings.SuggestionsScreen() }
             composableWithDeepLink(Settings.CapitalsPage::class) { io.github.sillypuppyy.dogboard.settings.CapitalsScreen() }
             composableWithDeepLink(Settings.PunctuationPage::class) { io.github.sillypuppyy.dogboard.settings.PunctuationScreen() }
+            composableWithDeepLink(Settings.DogGestures::class) { io.github.sillypuppyy.dogboard.settings.DogGesturesScreen() }
             composableWithDeepLink(Settings.DataLicenses::class) { io.github.sillypuppyy.dogboard.settings.DataLicensesScreen() }
             composableWithDeepLink(Settings.Search::class) {
                 val nav = LocalNavController.current
@@ -413,7 +418,7 @@ object Routes {
                             "feedback" -> Settings.SoundVibration
                             "languages" -> Settings.Localization
                             "theme" -> Settings.Themes
-                            "gestures" -> Settings.Gestures
+                            "gestures" -> Settings.DogGestures
                             "clipboard" -> Settings.Clipboard
                             "emoji" -> Settings.Media
                             "dictionary" -> Settings.Dictionary

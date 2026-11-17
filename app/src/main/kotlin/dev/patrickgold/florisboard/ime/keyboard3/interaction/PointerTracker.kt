@@ -106,7 +106,7 @@ sealed interface TrackedPointer {
     ) : TrackedPointer {
         /** DogBoard: the space bar was held long enough to be a trackpad, even if never moved. */
         fun isTrackpad(nowUptime: Long): Boolean = cursorAnchorDp != null ||
-            (downKey.attrs.output == SPACE && !trackpadCancelled && nowUptime - down.uptimeMillis >= io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs)
+            (downKey.attrs.output == SPACE && !trackpadCancelled && io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadEnabled && nowUptime - down.uptimeMillis >= io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs)
     }
 }
 
@@ -317,7 +317,7 @@ class PointerTracker(
             )
             // DogBoard: iOS turns a held space into the trackpad after the hold time even if the
             // finger hasn't moved (the keys go blank at once); moves then continue from here
-            if (downKey.attrs.output == SPACE) {
+            if (downKey.attrs.output == SPACE && io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadEnabled) {
                 val downId = down.id
                 val downXDp = down.position.x / density
                 scope.launch {
@@ -437,7 +437,7 @@ class PointerTracker(
         val xDp = move.position.x / density
         var anchor = trackedPointer.cursorAnchorDp
         if (anchor == null) {
-            if (trackedPointer.trackpadCancelled) return
+            if (trackedPointer.trackpadCancelled || !io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadEnabled) return
             if (move.uptimeMillis - trackedPointer.down.uptimeMillis < io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs) {
                 val movedDp = (move.position - trackedPointer.down.position).getDistance() / density
                 if (movedDp > Trackpad.ALLOWABLE_MOVEMENT_DP) {

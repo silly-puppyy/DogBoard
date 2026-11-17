@@ -132,7 +132,7 @@ fun HomeScreen() {
                             "Theme" -> Routes.Settings.Themes
                             "Autocorrect and typing" -> Routes.Settings.TypingCorrection
                             "Sound and vibration" -> Routes.Settings.SoundVibration
-                            "Gestures" -> Routes.Settings.Gestures
+                            "Gestures" -> Routes.Settings.DogGestures
                             "Emoji and GIFs" -> Routes.Settings.Media
                             "Clipboard" -> Routes.Settings.Clipboard
                             "Privacy" -> Routes.Settings.Privacy

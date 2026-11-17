@@ -53,7 +53,7 @@ object SetHomeSpec {
         s("palette", "Theme", "Day and night themes, photo background", T),
         s("spellcheck", "Autocorrect and typing", "Autocorrect, suggestions, your words", P),
         s("vibration", "Sound and vibration", "Vibration style, volume, when they play", S),
-        s("swipe", "Gestures", "Space-bar cursor, swipe to delete", T),
+        s("swipe", "Gestures", "Hold the space bar to move the cursor", T),
         s("mood", "Emoji and GIFs", "Skin tone, recent emoji", P),
         s("content_paste", "Clipboard", "History, how long clips are kept", S),
         s("shield_person", "Privacy", "Incognito, contact names, your data", T),

@@ -40,6 +40,8 @@ object FeelSettings {
     /** 0: never switch to whole words. */
     @Volatile var deleteWordsAfter: Int = Timings.DELETE_CHARS_BEFORE_WORDS
     @Volatile var deleteWordMs: Long = Timings.DeleteWordInterval.inWholeMilliseconds
+    /** Settings › Gestures: holding space turns it into a trackpad. */
+    @Volatile var trackpadEnabled: Boolean = true
     @Volatile var trackpadHoldMs: Long = Trackpad.HOLD_MS
     @Volatile var trackpadStepDp: Float = Trackpad.STEP_DP
 }

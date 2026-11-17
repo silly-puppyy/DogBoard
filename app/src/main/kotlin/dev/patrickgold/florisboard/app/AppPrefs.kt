@@ -849,6 +849,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val deleteCharMs = int(key = "feel__delete_char_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteCharInterval.inWholeMilliseconds.toInt())
         val deleteWordsAfter = int(key = "feel__delete_words_after", default = io.github.sillypuppyy.dogboard.feel.Timings.DELETE_CHARS_BEFORE_WORDS)
         val deleteWordMs = int(key = "feel__delete_word_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteWordInterval.inWholeMilliseconds.toInt())
+        // DogBoard: Settings › Gestures: hold space, then slide to move the cursor (iOS); on by default
+        val trackpadEnabled = boolean(key = "feel__trackpad_enabled", default = true)
         val trackpadHoldMs = int(key = "feel__trackpad_hold_ms", default = io.github.sillypuppyy.dogboard.feel.Trackpad.HOLD_MS.toInt())
         val trackpadStepDp = int(key = "feel__trackpad_step_dp", default = io.github.sillypuppyy.dogboard.feel.Trackpad.STEP_DP.toInt())
         // DogBoard: iOS "Enable Caps Lock" (KeyboardCapsLock); off = a second shift tap just toggles
