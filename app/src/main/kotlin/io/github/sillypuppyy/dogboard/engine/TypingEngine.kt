@@ -644,7 +644,7 @@ object TypingEngine {
         val phrases = retroPairs(previousDecoded, current).map { (p, c) -> "${p.word} ${c.word}" }.distinct()
         if (phrases.size < 2) return null
         val t0 = System.nanoTime()
-        val scores = runCatching { tallySteps(lm, "retro") { lm.wordScores(textBeforePrevious, phrases, maxSteps = 48) } }.getOrNull() ?: return null
+        val scores = runCatching { tallySteps(lm, "retro") { lm.backgroundWordScores(textBeforePrevious, phrases, maxSteps = 48) } }.getOrNull() ?: return null
         lastNeuralRetroMillis = (System.nanoTime() - t0) / 1_000_000
         return scores
     }
@@ -763,7 +763,7 @@ object TypingEngine {
         val scores = runCatching {
             tallySteps(lm, "hindsight") {
                 HashMap<String, Double>().also { out ->
-                    for (p in phrases) lm.wordScores(before, listOf(p), maxSteps = 200)[p]?.let { out[p] = it }
+                    for (p in phrases) lm.backgroundWordScores(before, listOf(p), maxSteps = 200)[p]?.let { out[p] = it }
                 }
             }.also {
                 android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms (${lm.steps - s0} model steps)")

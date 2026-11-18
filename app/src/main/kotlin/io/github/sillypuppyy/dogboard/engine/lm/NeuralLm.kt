@@ -32,7 +32,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     private val idBuf = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
     private val posBuf = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
     /** Tokens whose keys/values sit in the cache (BOS first), and the logits after the last of them. */
-    private val cached = ArrayList<Int>()
+    private var cached = ArrayList<Int>()
     // probability buffers, reused (a prediction allocates nothing per vocabulary entry: the
     // typing thread stalls on garbage collection when background work allocates fast)
     private lateinit var pBuf: FloatArray // after the context
@@ -179,7 +179,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     private var contextText: String? = null
     private var capReady = false
     /** ln P(word | [contextText]) already worked out. */
-    private val wordCache = HashMap<String, Double>()
+    private var wordCache = HashMap<String, Double>()
 
     private fun contextChanged(text: String) {
         if (text != contextText) { contextText = text; capReady = false; wordCache.clear() }
@@ -223,6 +223,42 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
      * cache; longer ones run their extra pieces, at most [maxSteps] new steps a call (results are kept
      * for the context, so the next keystroke goes on); words not reached are left out.
      */
+    /**
+     * A second context for work that reads an earlier text (the retro-check, the look-back): its own cache
+     * buffers, tokens and distributions, swapped in for the call, so the live context (predictions and the
+     * keystroke's refinement) keeps its tokens. With one context each switched it back and forth: on the
+     * phone a retro-check ran 43 model steps a word and predictions 16 a call, re-running each other's text,
+     * and keystrokes waited behind them (perf 2026-11-18).
+     */
+    private inner class Parked {
+        var k: ByteBuffer? = null; var v: ByteBuffer? = null
+        var tokens = ArrayList<Int>(); var p: FloatArray? = null; var q: FloatArray? = null
+        var have = false; var text: String? = null; var cap = false; var words = HashMap<String, Double>()
+
+        fun swap() {
+            if (k == null) { k = ByteBuffer.allocateDirect(cacheBytes).order(ByteOrder.nativeOrder()); v = ByteBuffer.allocateDirect(cacheBytes).order(ByteOrder.nativeOrder()); p = FloatArray(vocab + 1); q = FloatArray(vocab + 1) }
+            kA = k!!.also { k = kA }; vA = v!!.also { v = vA }
+            cached = tokens.also { tokens = cached }
+            pBuf = p!!.also { p = pBuf }; qBuf = q!!.also { q = qBuf }
+            haveContext = have.also { have = haveContext }
+            contextText = text.also { text = contextText }
+            capReady = cap.also { cap = capReady }
+            wordCache = words.also { words = wordCache }
+        }
+    }
+    private val background = Parked()
+
+    /** [wordScores] in the background context (see [Parked]). */
+    @Synchronized
+    fun backgroundWordScores(textBefore: String, words: Collection<String>, maxSteps: Int = 6): Map<String, Double> {
+        background.swap()
+        try {
+            return wordScores(textBefore, words, maxSteps)
+        } finally {
+            background.swap()
+        }
+    }
+
     @Synchronized
     fun wordScores(textBefore: String, words: Collection<String>, maxSteps: Int = 6, deadlineNanos: Long = Long.MAX_VALUE): Map<String, Double> {
         ensureContext(textBefore, 3)
