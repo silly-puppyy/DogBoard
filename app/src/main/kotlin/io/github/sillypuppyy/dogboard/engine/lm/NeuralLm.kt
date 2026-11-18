@@ -16,7 +16,7 @@ import kotlin.math.exp
  * continuations) write cache slots past the context, which the next real token overwrites, so they
  * need no copy. Not thread-safe on its own: [predict] is synchronized.
  */
-class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads: Int = 2) {
+class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads: Int = 1) {
     private val interpreter = Interpreter(model, Interpreter.Options().setNumThreads(threads))
     private val idIn: Int; private val posIn: Int; private val kIn: Int; private val vIn: Int
     private val logitsOut: Int; private val kOut: Int; private val vOut: Int
@@ -62,7 +62,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         kA = cache(); vA = cache()
         if (appCache) { kB = direct(outs[kOut].numBytes()); vB = direct(outs[vOut].numBytes()) } else { kB = cache(); vB = cache() }
         logits = ByteBuffer.allocateDirect(4 * vocab).order(ByteOrder.nativeOrder())
-        pBuf = FloatArray(vocab); qBuf = FloatArray(vocab); nBuf = FloatArray(vocab)
+        pBuf = FloatArray(vocab + 1); qBuf = FloatArray(vocab + 1); nBuf = FloatArray(vocab + 1)
         isWordStart = BooleanArray(vocab) { val p = tokenizer.piece(it); p.length > 1 && p[0] == PieceTokenizer.SPACE && p[1].isLetter() }
         isLetters = BooleanArray(vocab) { val p = tokenizer.piece(it); p.isNotEmpty() && p.all { c -> c.isLetter() || c == '\'' } }
     }
@@ -70,6 +70,13 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     /** Runs [token] at position [pos] (cache in A, out to B, then swapped); next-token probabilities into [out]. */
     /** Model steps run so far (for the perf log). */
     @Volatile var steps = 0L
+        private set
+    /** Time in the interpreter, and in the softmax after it, so far (ns, for the perf log). */
+    @Volatile var invokeNanos = 0L
+        private set
+    @Volatile var softmaxNanos = 0L
+        private set
+    @Volatile var encodeNanos = 0L
         private set
 
     private fun step(token: Int, pos: Int, out: FloatArray): FloatArray {
@@ -79,16 +86,29 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         kA.rewind(); vA.rewind(); kB.rewind(); vB.rewind(); logits.rewind()
         inputs[idIn] = idBuf; inputs[posIn] = posBuf; inputs[kIn] = kA; inputs[vIn] = vA
         outputs[logitsOut] = logits; outputs[kOut] = kB; outputs[vOut] = vB
+        val t0 = System.nanoTime()
         interpreter.runForMultipleInputsOutputs(inputs, outputs)
+        val t1 = System.nanoTime(); invokeNanos += t1 - t0
         if (appCache) { writeSlot(kB, kA, pos); writeSlot(vB, vA, pos) } else { kA = kB.also { kB = kA }; vA = vB.also { vB = vA } }
         logits.rewind()
-        logits.asFloatBuffer().get(out)
+        logits.asFloatBuffer().get(out, 0, vocab)
         var max = Float.NEGATIVE_INFINITY
-        for (x in out) if (x > max) max = x
+        for (i in 0 until vocab) if (out[i] > max) max = out[i]
+        // logits more than SOFTMAX_CUT below the best add < e^-20 each (all 16,000: < 4e-5 of the sum):
+        // no exp for them (most of the vocabulary; the exps were a large part of a step). They keep
+        // minus their distance to the best, so [lnP] still gives their exact ln P; read as probabilities
+        // they are 0 ([prob]). out[vocab] = ln(sum), for [lnP].
+        val floor = max - SOFTMAX_CUT
         var sum = 0.0
-        for (i in out.indices) { val e = exp((out[i] - max).toDouble()); out[i] = e.toFloat(); sum += e }
+        for (i in 0 until vocab) {
+            val x = out[i]
+            if (x < floor) { out[i] = x - max; continue }
+            val e = exp(x - max); out[i] = e; sum += e
+        }
         val inv = (1.0 / sum).toFloat()
-        for (i in out.indices) out[i] *= inv
+        for (i in 0 until vocab) if (out[i] > 0f) out[i] *= inv
+        out[vocab] = ln(sum).toFloat()
+        softmaxNanos += System.nanoTime() - t1
         return out
     }
 
@@ -106,8 +126,18 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
 
     private fun argmax(a: FloatArray): Int {
         var best = 0
-        for (i in 1 until a.size) if (a[i] > a[best]) best = i
+        for (i in 1 until vocab) if (a[i] > a[best]) best = i
         return best
+    }
+
+    /** P(token [i]) from a [step] output: 0 for the tokens it left without an exp. */
+    private fun prob(a: FloatArray, i: Int): Float = if (a[i] > 0f) a[i] else 0f
+
+    /** ln P(token [i]) from a [step] output, exact for every token. */
+    private fun lnP(a: FloatArray, i: Int): Double = when {
+        a[i] > 0f -> ln(a[i].toDouble())
+        a[i] < 0f -> (a[i] - a[vocab]).toDouble()
+        else -> ln(1e-30)
     }
 
     /**
@@ -142,7 +172,9 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         if (haveContext && textBefore == contextText) return
         // the context: BOS + the text's tokens, the newest that leave room for the tries after it
         val room = ctx - 2 - maxPieces - 2
+        val e0 = System.nanoTime()
         val all = tokenizer.encode(textBefore)
+        encodeNanos += System.nanoTime() - e0
         // a text that slid on (the editor's window starts later each word) continues the cache when
         // the cached tokens end inside the new ones: only the new tokens run (the cache keeps the
         // older context too)
@@ -188,10 +220,10 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
                 step(PieceTokenizer.CAP, pos, qBuf); steps++; capReady = true
             }
             // the first piece from the context's distribution (or after the capital token)
-            var lp = if (seq[0] == PieceTokenizer.CAP) ln(pBuf[PieceTokenizer.CAP].toDouble()) else 0.0
+            var lp = if (seq[0] == PieceTokenizer.CAP) lnP(pBuf, PieceTokenizer.CAP) else 0.0
             val i = if (seq[0] == PieceTokenizer.CAP) 1 else 0
             if (i >= seq.size) continue
-            lp += ln((if (i == 1) qBuf else pBuf)[seq[i]].toDouble().coerceAtLeast(1e-30))
+            lp += lnP(if (i == 1) qBuf else pBuf, seq[i])
             // the rest piece by piece
             val extra = seq.size - i - 1
             if (extra > 0) {
@@ -199,7 +231,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
                 var at = pos
                 for (k in 0 until seq.size - 1) {
                     val next = step(seq[k], at, nBuf); at++; steps++
-                    if (k + 1 > i) lp += ln(next[seq[k + 1]].toDouble().coerceAtLeast(1e-30))
+                    if (k + 1 > i) lp += lnP(next, seq[k + 1])
                 }
             }
             wordCache[w] = lp; out[w] = lp
@@ -230,12 +262,12 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         // the capitalised path: CAP at pos, then the word
         val q = step(PieceTokenizer.CAP, pos, qBuf)
         capReady = true
-        val pCap = p[PieceTokenizer.CAP].toDouble()
+        val pCap = prob(p, PieceTokenizer.CAP).toDouble()
         // the [first] best word starts, without sorting or boxing the vocabulary
         val starts = IntArray(first) { -1 }; val startScore = DoubleArray(first) { -1.0 }
         for (i in 0 until vocab) {
             if (!isWordStart[i]) continue
-            val sc = p[i] + pCap * q[i]
+            val sc = prob(p, i) + pCap * prob(q, i)
             if (sc <= startScore[first - 1]) continue
             var k = first - 1
             while (k > 0 && startScore[k - 1] < sc) { startScore[k] = startScore[k - 1]; starts[k] = starts[k - 1]; k-- }
@@ -244,9 +276,9 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         val words = LinkedHashMap<String, Double>()
         for ((si, t) in starts.withIndex()) {
             if (t < 0) continue
-            val capFirst = pCap * q[t] > p[t]
+            val capFirst = pCap * prob(q, t) > prob(p, t)
             val seq = ArrayList<Int>().apply { if (capFirst) add(PieceTokenizer.CAP); add(t) }
-            var prob = startScore[si]
+            var score = startScore[si]
             if (!isWord(tokenizer.piece(t).substring(1))) {
                 // the word may go on: follow the likeliest letter pieces
                 var at = pos
@@ -255,12 +287,12 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
                 for (k in 0 until maxPieces) {
                     val j = argmax(next)
                     if (!isLetters[j] || at >= ctx - 1) break
-                    seq.add(j); prob *= next[j]
+                    seq.add(j); score *= prob(next, j)
                     next = step(j, at, nBuf); at++
                 }
             }
             val word = tokenizer.decode(seq.toIntArray()).trim()
-            if (word.isNotEmpty()) words[word] = (words[word] ?: 0.0) + prob
+            if (word.isNotEmpty()) words[word] = (words[word] ?: 0.0) + score
         }
         return words.entries.sortedByDescending { it.value }.take(n).map { it.key to it.value }
     }
@@ -271,5 +303,6 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     private companion object {
         /** Cached tokens that must line up before a slid text continues the cache (fewer: a chance match). */
         const val MIN_OVERLAP = 4
+        const val SOFTMAX_CUT = 20f
     }
 }

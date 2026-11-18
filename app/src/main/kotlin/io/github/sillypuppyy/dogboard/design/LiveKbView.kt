@@ -127,7 +127,14 @@ fun LiveKbView(
             trackpadX = trackpadX,
         )
         val themed = liveTheme().apply(props)
-        val render = remember(themed) { KbSpec.render(themed) }
+        // one layout per keyboard state and pressed key; the preview (and its fade frames), the long-press
+        // bar and the trackpad are laid over it (KbSpec.overlays) without rebuilding it
+        val layoutProps = themed.copy(
+            pressed = themed.pressed.ifEmpty { if (themed.previewFade != null) "" else themed.preview },
+            preview = "", previewFade = null, longpress = "", lpSel = 0, lpItems = emptyList(), trackpadX = null,
+        )
+        val layout = remember(layoutProps) { KbSpec.layout(layoutProps) }
+        val render = KbSpec.overlays(layout, themed)
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
     }
 }

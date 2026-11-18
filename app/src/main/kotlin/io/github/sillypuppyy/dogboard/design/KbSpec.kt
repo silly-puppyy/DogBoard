@@ -246,6 +246,10 @@ data class KbRender(
     val tpY: Float,
     val rootRadius: Float,
     val rootShadow: List<CssShadow>,
+    /** For [KbSpec.overlays]: the letters show upper case on the base plane (long-press variants follow), and the
+     *  trackpad's resting x (dp, the key area's middle). */
+    val upperBase: Boolean = false,
+    val tpRestX: Float = 0f,
     val x: KbExtras,
     val slotOverflow: String,
     /** Kb:18-23 glass theme: blurred picture behind the keys, dimmed. */
@@ -398,7 +402,42 @@ object KbSpec {
         listOf(KbLetterKey("shift", w = 1.5f)) + "zxcvbnm".map { KbLetterKey("char", it.toString()) } + listOf(KbLetterKey("bksp", w = 1.5f)),
     )
 
-    fun render(P: KbProps): KbRender {
+    fun render(P: KbProps): KbRender = overlays(layout(P), P)
+
+    /**
+     * The press visuals over a [layout]: the key preview, the long-press bar and the trackpad's x. Cheap, so
+     * the live keyboard keeps one layout per keyboard state and pressed key, and lays these over it on every
+     * frame of a preview fade or a long-press slide (perf 2026-11-18: the whole layout was rebuilt per frame).
+     */
+    fun overlays(r: KbRender, P: KbProps): KbRender {
+        if (P.preview.isEmpty() && P.longpress.isEmpty() && P.trackpadX == null) return r
+        val pos = r.pos; val W = r.W; val t = r.t; val trackpad = r.trackpad
+        // Kb:571-576 key preview
+        val pv = P.preview.takeIf { it.isNotEmpty() && it in pos && !trackpad }?.let { id ->
+            val p = pos.getValue(id); val w = p.capW + 18
+            KbPreview(x = max(2f, min(W - w - 2, p.capX + p.capW / 2 - w / 2)), y = p.capTop - 6 - 58, w = w, label = p.label, fw = t.fw, alpha = P.previewFade ?: 1f)
+        }
+        // Kb:577-590 long-press bar
+        val lp = P.longpress.takeIf { it.isNotEmpty() && it in pos }?.let { id ->
+            val p = pos.getValue(id)
+            var vars = P.lpItems.ifEmpty { LP[p.base] ?: emptyList() }
+            if (P.lpItems.isEmpty() && r.upperBase) vars = vars.map(::up)
+            val sel = P.lpSel
+            val cells = longPressCells(p.capX, p.capW, W, vars)
+            val rows = (cells.maxOfOrNull { it.row } ?: 0) + 1
+            val x = (cells.minOfOrNull { it.x } ?: p.capX) - LP_PAD
+            val right = (cells.maxOfOrNull { it.x + it.w } ?: p.capX) + LP_PAD
+            val h = rows * LP_CELL_H + 2 * LP_PAD
+            KbLongPress(
+                x, p.capTop - 8 - h, vars.mapIndexed { i, c -> Triple(c, if (i == sel) t.sel else Color.Transparent, if (i == sel) t.selFg else t.popFg) },
+                cells, right - x, h,
+            )
+        }?.takeIf { it.items.isNotEmpty() }
+        return r.copy(pv = pv, lp = lp, tpX = (P.trackpadX ?: r.tpRestX) - 28)
+    }
+
+    /** The keyboard without press visuals ([overlays] adds them). */
+    fun layout(P: KbProps): KbRender {
         val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance, P.glassFg, P.halo, P.actColor, P.actFg)
 
         // Kb:414-415
@@ -672,27 +711,6 @@ object KbSpec {
             })
         }
 
-        // Kb:571-576 key preview
-        val pv = P.preview.takeIf { it.isNotEmpty() && it in pos && !trackpad }?.let { id ->
-            val p = pos.getValue(id); val w = p.capW + 18
-            KbPreview(x = max(2f, min(W - w - 2, p.capX + p.capW / 2 - w / 2)), y = p.capTop - 6 - 58, w = w, label = p.label, fw = t.fw, alpha = P.previewFade ?: 1f)
-        }
-        // Kb:577-590 long-press bar
-        val lp = P.longpress.takeIf { it.isNotEmpty() && it in pos }?.let { id ->
-            val p = pos.getValue(id)
-            var vars = P.lpItems.ifEmpty { LP[p.base] ?: emptyList() }
-            if (P.lpItems.isEmpty() && upper && plane == "base") vars = vars.map(::up)
-            val sel = P.lpSel
-            val cells = longPressCells(p.capX, p.capW, W, vars)
-            val rows = (cells.maxOfOrNull { it.row } ?: 0) + 1
-            val x = (cells.minOfOrNull { it.x } ?: p.capX) - LP_PAD
-            val right = (cells.maxOfOrNull { it.x + it.w } ?: p.capX) + LP_PAD
-            val h = rows * LP_CELL_H + 2 * LP_PAD
-            KbLongPress(
-                x, p.capTop - 8 - h, vars.mapIndexed { i, c -> Triple(c, if (i == sel) t.sel else Color.Transparent, if (i == sel) t.selFg else t.popFg) },
-                cells, right - x, h,
-            )
-        }?.takeIf { it.items.isNotEmpty() }
         // Kb:591-599 language menu
         val lm = if (P.langMenu) pos["fn"]?.let { p ->
             KbLangMenu(max(4f, p.capX), p.capTop - 8 - 202, listOf(
@@ -743,7 +761,7 @@ object KbSpec {
         return KbRender(
             only = only, t = t, W = W, H = H, radius = radius, kbW = kbW, rowH = rowH, rowTops = rowTops, rowHs = rowHs, mv = mv, mh = mh, keyAreaH = keyAreaH, navH = navH,
             rows = rows, stripL = stripL, stripR = stripR, showBar = showBar, barH = barH, devH = devH, floatH = hFloat,
-            showKeys = showKeys, showNav = showNav, navIcons = !landscape, labelOp = labelOp, capOp = capOp, pos = pos, pv = pv, lp = lp, lm = lm,
+            showKeys = showKeys, showNav = showNav, navIcons = !landscape, labelOp = labelOp, capOp = capOp, pos = pos, pv = null, lp = null, lm = lm,
             mSlots = mSlots, slots = slots, barOp = if (trackpad) 0.35f else 1f,
             leftIcon = if (incognito) "domino_mask" else "widgets",
             leftAria = if (incognito) "Incognito is on" else if (toolsOpen) "Close tools" else "Tools",
@@ -761,6 +779,7 @@ object KbSpec {
             micIcon = if (mVoice) "stop" else "mic", micAria = if (mVoice) "Stop dictation" else "Voice input",
             micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else t.barMuted, micFill = if (mVoice) 1 else 0,
             trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowHs.last() / 2 - 28,
+            upperBase = upper && plane == "base", tpRestX = kbW / 2 + stripL.w,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
             x = KbExtrasSpec.extras(P, t, W),
             slotOverflow = P.slotOverflow, glass = P.theme == "glass" && P.backdrop, blurPx = P.blur, dimA = P.dim,

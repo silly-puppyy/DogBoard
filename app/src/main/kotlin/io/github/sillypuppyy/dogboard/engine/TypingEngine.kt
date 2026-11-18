@@ -582,7 +582,8 @@ object TypingEngine {
             val a = stepTally.getOrPut(what) { LongArray(3) }
             synchronized(a) { a[0]++; a[1] += lm.steps - s0; a[2] += System.nanoTime() - t0 }
             if (tallyCalls.incrementAndGet() % 50 == 0L) android.util.Log.i("DogBoardPerf", "neural steps: " +
-                stepTally.entries.joinToString { (k, v) -> "$k ${v[0]} calls ${v[1]} steps ${v[2] / 1_000_000} ms" })
+                stepTally.entries.joinToString { (k, v) -> "$k ${v[0]} calls ${v[1]} steps ${v[2] / 1_000_000} ms" } +
+                "; in the interpreter ${lm.invokeNanos / 1_000_000} ms, softmax ${lm.softmaxNanos / 1_000_000} ms, tokenizing ${lm.encodeNanos / 1_000_000} ms")
         }
     }
 
