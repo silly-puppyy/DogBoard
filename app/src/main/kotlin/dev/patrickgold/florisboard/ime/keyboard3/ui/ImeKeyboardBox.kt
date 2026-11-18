@@ -296,11 +296,13 @@ fun ImeKeyboardBox(
                             drawPath(
                                 ribbon,
                                 androidx.compose.ui.graphics.Brush.linearGradient(
-                                    listOf(trailColor.copy(alpha = 0f), trailColor.copy(alpha = 0.95f)),
+                                    listOf(trailColor.copy(alpha = 0f), trailColor),
                                     start = androidx.compose.ui.geometry.Offset(tail.x, tail.y), end = androidx.compose.ui.geometry.Offset(head.x, head.y),
                                 ),
                             )
-                            drawCircle(trailColor.copy(alpha = 0.95f), trailWidthPx / 2f, androidx.compose.ui.geometry.Offset(head.x, head.y))
+                            // opaque where the head meets the ribbon: no darker overlap (user 2026-11-18); the
+                            // ribbon is one filled shape, so crossings don't darken either
+                            drawCircle(trailColor, trailWidthPx / 2f, androidx.compose.ui.geometry.Offset(head.x, head.y))
                         }
                     }
                     trackedPeekPointer?.let { trackedPeekPointer ->
