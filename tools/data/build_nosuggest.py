@@ -19,18 +19,25 @@ ASSETS = os.path.join(ROOT, "app", "src", "main", "assets", "dogboard")
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("source", help="the LDNOOBW list for the language")
+    ap.add_argument("--lexicon", default=os.path.join(ASSETS, "en.lexicon.tsv"))
+    ap.add_argument("--out", default=os.path.join(ASSETS, "en.nosuggest.txt"))
+    a = ap.parse_args()
     lexicon = set()
-    with open(os.path.join(ASSETS, "en.lexicon.tsv"), encoding="utf-8") as f:
+    with open(a.lexicon, encoding="utf-8") as f:
         for line in f:
             if not line.startswith("#"):
                 lexicon.add(line.split("\t", 1)[0].lower())
     words = set()
-    with open(sys.argv[1], encoding="utf-8") as f:
+    with open(a.source, encoding="utf-8") as f:
         for line in f:
             w = line.strip().lower()
+            # English words only (a-z, one inner apostrophe); another language needs its own letters here
             if re.fullmatch(r"[a-z]+(?:'[a-z]+)?", w) and w in lexicon:
                 words.add(w)
-    out = os.path.join(ASSETS, "en.nosuggest.txt")
+    out = a.out
     with open(out, "w", encoding="utf-8") as f:
         f.write("# Never suggested (still typeable); tools/data/build_nosuggest.py\n")
         f.write("# from LDNOOBW (github.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words), CC BY 4.0\n")

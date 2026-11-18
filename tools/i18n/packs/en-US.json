@@ -254,11 +254,13 @@
         "python3",
         "tools/data/build_emoji_keywords.py",
         "${DATA}/cldr/annotations-en.xml",
-        "${DATA}/wordfreq/whl/wordfreq/data/large_en.msgpack.gz"
+        "${DATA}/wordfreq/whl/wordfreq/data/large_en.msgpack.gz",
+        "${DATA}/cldr/annotationsDerived-en.xml"
       ],
       "inputs": [
         "tools/data/build_emoji_keywords.py",
-        "${DATA}/cldr/annotations-en.xml"
+        "${DATA}/cldr/annotations-en.xml",
+        "${DATA}/cldr/annotationsDerived-en.xml"
       ],
       "outputs": [
         "${ASSETS}/dogboard/en.emoji.tsv",

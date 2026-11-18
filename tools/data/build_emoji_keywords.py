@@ -38,8 +38,18 @@ def is_emoji(s: str) -> bool:
 
 
 def main():
-    xml = open(sys.argv[1], encoding="utf-8").read()
-    zipf = load_wordfreq(sys.argv[2])
+    import argparse
+    global OUT
+    ap = argparse.ArgumentParser()
+    ap.add_argument("annotations", help="CLDR common/annotations/<lang>.xml")
+    ap.add_argument("wordfreq", help="wordfreq large_<lang>.msgpack.gz")
+    ap.add_argument("derived", nargs="?", default="", help="CLDR common/annotationsDerived/<lang>.xml (skin tones)")
+    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--tones-out", default="")
+    a = ap.parse_args()
+    OUT = a.out
+    xml = open(a.annotations, encoding="utf-8").read()
+    zipf = load_wordfreq(a.wordfreq)
 
     def popularity(cp: str) -> float:
         bare = cp.replace("\ufe0f", "")
@@ -73,16 +83,16 @@ def main():
             emojis = [cp for *_, cp in sorted(index[k])][:MAX_PER_KEYWORD]
             f.write(f"{k}\t{' '.join(emojis)}\n")
     print(f"{len(names)} emoji, {len(index)} keywords -> {OUT}")
-    if len(sys.argv) > 3:
-        write_tones(open(sys.argv[3], encoding="utf-8").read())
+    if a.derived:
+        write_tones(open(a.derived, encoding="utf-8").read(), a.tones_out)
 
 
 TONES = ["\U0001F3FB", "\U0001F3FC", "\U0001F3FD", "\U0001F3FE", "\U0001F3FF"]
 
 
-def write_tones(xml: str):
+def write_tones(xml: str, out_path: str = ""):
     """base emoji -> its form in each skin tone, from CLDR's derived annotations."""
-    out = os.path.join(os.path.dirname(OUT), "en.emoji-tones.tsv")
+    out = out_path or os.path.join(os.path.dirname(OUT), "en.emoji-tones.tsv")
     table = {}
     for cp in dict.fromkeys(re.findall(r'<annotation cp="([^"]+)"', xml)):
         tones = {c for c in cp if c in TONES}

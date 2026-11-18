@@ -19,16 +19,21 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "app"
 
 
 def main():
-    xml = open(sys.argv[1], encoding="utf-8").read()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("segments", help="CLDR common/segments/<lang>.xml")
+    ap.add_argument("--out", default=OUT)
+    a = ap.parse_args()
+    xml = open(a.segments, encoding="utf-8").read()
     items = set(re.findall(r"<suppression>([^<]+)</suppression>", xml))
     dotted = {w for w in items if w.count(".") >= 2}
     words = sorted(dotted | {w.lower() for w in dotted}, key=lambda w: (w.lower(), w))
-    with open(OUT, "w", encoding="utf-8") as f:
+    with open(a.out, "w", encoding="utf-8") as f:
         f.write("# Abbreviations that keep their period; built by tools/data/build_abbreviations.py\n")
         f.write("# from Unicode CLDR common/segments/en.xml (Unicode License v3, licenses/Unicode-License.txt)\n")
         for w in words:
             f.write(w + "\n")
-    print(f"{len(words)} abbreviations -> {OUT}")
+    print(f"{len(words)} abbreviations -> {a.out}")
 
 
 if __name__ == "__main__":

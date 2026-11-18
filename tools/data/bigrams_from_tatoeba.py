@@ -44,8 +44,14 @@ def tokens(sentence):
 
 
 def main():
-    src = sys.argv[1]
-    vocab = {line.split("\t")[0].lower() for line in open(LEXICON, encoding="utf-8") if not line.startswith("#")}
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("sentences", help="Tatoeba <lang>_sentences.tsv")
+    ap.add_argument("--lexicon", default=LEXICON)
+    ap.add_argument("--out", default=DST)
+    a = ap.parse_args()
+    src = a.sentences
+    vocab = {line.split("\t")[0].lower() for line in open(a.lexicon, encoding="utf-8") if not line.startswith("#")}
     counts = collections.Counter()
     for line in open(src, encoding="utf-8"):
         parts = line.rstrip("\n").split("\t")
@@ -62,12 +68,12 @@ def main():
         and p not in OVERUSED_NAMES and w not in OVERUSED_NAMES
     ]
     kept.sort(key=lambda x: (x[0], -x[2], x[1]))
-    with open(DST, "w", encoding="utf-8") as out:
+    with open(a.out, "w", encoding="utf-8") as out:
         out.write("#dogboard-bigrams 1\n#lang en\n")
         out.write(f"#source Tatoeba (https://tatoeba.org) English sentences, CC-BY 2.0 FR; min count {MIN_COUNT}\n")
         for p, w, c in kept:
             out.write(f"{p}\t{w}\t{c}\n")
-    print(f"{len(kept)} bigrams -> {DST}", file=sys.stderr)
+    print(f"{len(kept)} bigrams -> {a.out}", file=sys.stderr)
 
 
 if __name__ == "__main__":
