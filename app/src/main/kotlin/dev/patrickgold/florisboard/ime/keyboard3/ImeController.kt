@@ -161,6 +161,12 @@ class ImeController(
     private class LastRetro(val old: String, val new: String, val typedOld: String, val tail: String)
     private var lastRetro: LastRetro? = null
 
+    // DogBoard: hindsight apostrophes (TypingEngine.APOSTROPHE_TWINS): words kept as typed whose twin has an
+    // apostrophe, by where they start in the text, checked again once three more words are typed
+    private class ApostropheWatch(val typed: String, val twin: String, val before: String, val start: Int)
+    private val apostropheWatches = ArrayList<ApostropheWatch>()
+    private var readyApostropheFix: ApostropheWatch? = null
+
     /** DogBoard: the word the cursor rests in (text before and after it) while the bar offers corrections for it. */
     private var wordAroundCursor: Pair<String, String>? = null
 
@@ -788,6 +794,7 @@ class ImeController(
                 } else {
                     noteFinishedWord(context, typed, context2)
                     if (separator == " ") lookBack = LookBack(word.snapshot(), typed, context, candidates, spaceTap, latestStage1?.takeIf { it.first == key }?.second)
+                    watchApostrophe(typed)
                 }
             } else if (!word.isEmpty && separator == " " && word.text != rejectedWord) {
                 lookBack = null // autocorrect off or the user insisted on this word: nothing to look back at
@@ -799,8 +806,64 @@ class ImeController(
             if (retro != null) {
                 lastRetro = LastRetro(retro.first, retro.second, retro.third, " $committed$separator")
             }
+            checkApostropheWatches()
             currentWord.clear()
             rejectedWord = null
+            readyApostropheFix?.let { readyApostropheFix = null; applyApostropheFix(it) }
+        }
+
+        /** A word kept as typed with a trustworthy apostrophe twin ("its", "were", "ill"): watch it. */
+        private fun watchApostrophe(typed: String) {
+            if (!prefs.correction.fixPreviousWord.get() || !correctionAllowed() || !TypingEngine.hasNeuralLm) return
+            val twin = TypingEngine.apostropheTwin(typed) ?: return
+            if (TypingEngine.apostropheFixRejected(typed, twin)) return
+            val tb = state.content.surroundingText.textBefore
+            if (!tb.endsWith(typed)) return
+            if (apostropheWatches.size >= 4) apostropheWatches.removeAt(0)
+            apostropheWatches.add(ApostropheWatch(typed, twin, tb.dropLast(typed.length).toString(), state.content.selection.start - typed.length))
+        }
+
+        /** The text from a watched word to the cursor, when the word is still there as typed; else null. */
+        private fun watchedSpan(w: ApostropheWatch): String? {
+            val tb = state.content.surroundingText.textBefore
+            val span = state.content.selection.start - w.start
+            if (state.content.selection.isNotCollapsed() || span < w.typed.length || span > tb.length) return null
+            return tb.substring(tb.length - span).takeIf { it.startsWith(w.typed) }
+        }
+
+        /** Once three words follow a watched word, the neural model reads it again (off the main thread). */
+        private fun checkApostropheWatches() {
+            val it = apostropheWatches.iterator()
+            while (it.hasNext()) {
+                val w = it.next()
+                val span = watchedSpan(w)
+                val after = span?.substring(w.typed.length)
+                if (after == null) { it.remove(); continue }
+                if (after.isEmpty()) continue // just watched: its separator isn't typed yet
+                if (!after.startsWith(" ")) { it.remove(); continue }
+                val words = after.trim().split(Regex("\\s+")).filter { s -> s.isNotEmpty() }
+                if (words.size < TypingEngine.APOSTROPHE_AFTER_WORDS) continue
+                it.remove()
+                val tail = words.take(TypingEngine.APOSTROPHE_AFTER_WORDS).joinToString(" ")
+                scope.launch(Dispatchers.Default) {
+                    val margin = TypingEngine.apostropheMargin(w.before, w.typed, w.twin, tail) ?: return@launch
+                    if (logsText) android.util.Log.d("DogBoardAc", "apostrophe ${w.typed} -> ${w.twin} before '$tail': margin %.2f".format(margin))
+                    if (margin > TypingEngine.APOSTROPHE_MARGIN) updateState {
+                        if (currentWord.isEmpty) applyApostropheFix(w) else readyApostropheFix = w
+                    }
+                }
+            }
+        }
+
+        /** Puts the apostrophe in (underlined as a correction; Backspace right after takes it back). */
+        private fun applyApostropheFix(w: ApostropheWatch) {
+            val span = watchedSpan(w) ?: return
+            val rest = span.substring(w.typed.length)
+            if (!replaceBeforeCursor(w.typed + rest, w.twin + rest)) return
+            state.editor.commitCorrection(w.start, w.typed, w.twin)
+            noteRecentCorrection(w.typed, w.twin, w.before)
+            lastRetro = LastRetro(w.typed, w.twin, w.typed, rest)
+            if (logsText) android.util.Log.d("DogBoardAc", "apostrophe fixed: ${w.typed} -> ${w.twin}")
         }
 
         /**

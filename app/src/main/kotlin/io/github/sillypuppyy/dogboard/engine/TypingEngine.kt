@@ -611,6 +611,48 @@ object TypingEngine {
     var lastNeuralRetroMillis = -1L
 
     /**
+     * Hindsight apostrophes (user 2026-11-18; an extension of iOS's retrocorrection, which adds a word's
+     * apostrophe twin as a candidate (AddAlternativesForRetrocorrection) but looks one word ahead):
+     * a word typed without an apostrophe whose twin has one, checked again once [APOSTROPHE_AFTER_WORDS]
+     * more words are typed. Only the pairs measured as trustworthy (tools/lm/apostrophe_trust.py,
+     * Tatoeba, 3 words of hindsight; lets/let's and wont/won't left out: 1.7 % and 12 % false alarms).
+     */
+    val APOSTROPHE_TWINS = mapOf(
+        "its" to "it's", "were" to "we're", "well" to "we'll", "hell" to "he'll", "shed" to "she'd",
+        "ill" to "I'll", "cant" to "can't", "id" to "I'd", "wed" to "we'd", "shell" to "she'll",
+    )
+    const val APOSTROPHE_AFTER_WORDS = 3
+
+    /**
+     * How much more likely the twin reads than the typed word, followed by the same words (ln, the
+     * neural model): above it the word changes. 5.0 is the cautious point measured: 0.2 % of right
+     * words changed, 66 % of dropped apostrophes fixed (0.5 % / 94 % at 2.0).
+     */
+    const val APOSTROPHE_MARGIN = 5.0
+
+    /** The apostrophe twin of [typed] in its case ("Its" -> "It's", "ill" -> "I'll"), or null. */
+    fun apostropheTwin(typed: String): String? {
+        val twin = APOSTROPHE_TWINS[typed.lowercase()] ?: return null
+        return if (typed.first().isUpperCase()) twin.replaceFirstChar { it.uppercase() } else twin
+    }
+
+    /**
+     * ln P(twin + [after] | [before]) - ln P(typed + [after] | [before]) by the neural model, or null
+     * without it. Runs the model in its own context: call it off the main thread.
+     */
+    fun apostropheMargin(before: String, typed: String, twin: String, after: String): Double? {
+        val lm = neuralLm ?: return null
+        val a = "$twin $after"; val b = "$typed $after"
+        val scores = runCatching { lm.wordScores(before, listOf(a, b), maxSteps = 64) }.getOrNull() ?: return null
+        val sa = scores[a] ?: return null
+        val sb = scores[b] ?: return null
+        return sa - sb
+    }
+
+    /** True when the user undid this fix before (an apostrophe fix shares the rejections of corrections). */
+    fun apostropheFixRejected(typed: String, twin: String): Boolean = rejections.isBlocked(typed, twin)
+
+    /**
      * What [word] should become when it is finished, or null to keep it as typed.
      * [previousCorrection] is what this returned one keystroke earlier (iOS hysteresis).
      */

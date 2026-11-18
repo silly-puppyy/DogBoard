@@ -47,6 +47,10 @@ object EngineLoader {
     fun neuralTier(context: Context): Boolean {
         val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
         if (!prefs.correction.neuralModel.get()) return false // Advanced > Neural model
+        // debug builds: `adb shell setprop debug.dogboard.neural 1` runs it on any device (emulator tests)
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG && runCatching {
+                Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, "debug.dogboard.neural") == "1"
+            }.getOrDefault(false)) return true
         val am = context.getSystemService(android.app.ActivityManager::class.java) ?: return false
         if (am.isLowRamDevice) return false
         val info = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
