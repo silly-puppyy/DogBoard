@@ -188,10 +188,11 @@ class Generator:
     """prepare_synth.py's --human cvae:MODEL.pt: draws swipes on CPU, a batch of words at a time."""
 
     def __init__(self, path):
+        path, _, temp = path.partition("@")  # cvae:MODEL.pt@1.3: style codes drawn wider than N(0, I)
         s = torch.load(path, map_location="cpu")
         self.net = CVAE(s["z"]).eval()
         self.net.load_state_dict(s["model"])
-        self.temp = 1.0
+        self.temp = float(temp) if temp else 1.0
 
     @torch.no_grad()
     def paths(self, words, centres, rng):
