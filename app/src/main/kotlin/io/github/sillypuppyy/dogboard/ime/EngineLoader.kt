@@ -65,8 +65,13 @@ object EngineLoader {
         TypingEngine.attachNeuralLm(loadNeuralLm(context.applicationContext))
     }
 
+    private fun nativeMark(what: String) =
+        android.util.Log.i("DogBoardPerf", "memory after $what: native ${android.os.Debug.getNativeHeapAllocatedSize() / 1048576} MB, " +
+            "java ${(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576} MB")
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
+        nativeMark("start")
         val t0 = android.os.SystemClock.uptimeMillis()
         val app = context.applicationContext
         val assets = app.assets
@@ -93,10 +98,12 @@ object EngineLoader {
             snapshotKey = app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
         )
         android.util.Log.i("DogBoardPerf", "engine ready (suggestions on) after ${android.os.SystemClock.uptimeMillis() - t0} ms")
+        nativeMark("engine")
         // the trigram model (when built into this app), attached after the engine is ready so
         // startup isn't slowed: memory-mapped from the package, which stores it uncompressed
         // (build.gradle.kts noCompress), so nothing is copied to the heap
         TypingEngine.attachNgrams(loadNgrams(app))
+        nativeMark("trigram")
         // the neural language model for next-word predictions, when its files are in this build
         // (assets/dogboard/lm: built privately, not in git yet): memory-mapped like the trigram.
         // Only on phones with room for it (iOS runs its transformer only where the Neural Engine is,
@@ -104,6 +111,7 @@ object EngineLoader {
         // of the typing path's CPU; without it the trigram alone predicts and scores
         if (neuralTier(app)) TypingEngine.attachNeuralLm(loadNeuralLm(app))
         else android.util.Log.i("DogBoardPerf", "neural model skipped on this device (memory)")
+        nativeMark("neural")
         // the swipe recogniser (4.4 MB, memory-mapped like the trigram; every phone: ~2 ms of work per
         // swipe on a desktop core, run only when a swipe ends)
         TypingEngine.attachSwipeNet(runCatching {
@@ -115,9 +123,11 @@ object EngineLoader {
                 }
             }
         }.onFailure { android.util.Log.i("DogBoardPerf", "swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull())
+        nativeMark("swipe")
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
         TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.bin").use { CharModel.read(it) } }.getOrNull())
         android.util.Log.i("DogBoardPerf", "letter model attached after ${android.os.SystemClock.uptimeMillis() - t1} ms")
+        nativeMark("letter model")
     }
 }

@@ -10,7 +10,7 @@ import java.nio.ByteOrder
  * (so the padding can't change the result). Returns [n x 27] log-probs. Not thread-safe: synchronized.
  */
 class SwipeNet(model: ByteBuffer, threads: Int = 2) {
-    private val interpreter = Interpreter(model, Interpreter.Options().setNumThreads(threads))
+    private val interpreter = Interpreter(model, Interpreter.Options().setNumThreads(threads).setUseXNNPACK(false))
     private val steps: Int
     private val xIn: Int
     private val revIn: Int
