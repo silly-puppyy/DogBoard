@@ -76,6 +76,12 @@ private val SPACE = " ".asK3String()
 // DogBoard: how far (key widths) a press on a letter has to move to become a swipe
 private const val GLIDE_START_KEYS = 0.6f
 
+/** DogBoard: how long a point of the swipe trail stays visible (ms), shrinking from the tail (Gboard-like). */
+const val TRAIL_MS = 700L
+
+/** DogBoard: a point of the swipe trail: position (px) and when the finger was there (uptime ms). */
+class TrailPoint(val x: Float, val y: Float, val t: Long)
+
 sealed interface TrackedPointer {
     val id: PointerId
     val down: PointerInputChange
@@ -162,15 +168,16 @@ class PointerTracker(
     private var lastUpKeyState: LastUpKey? = null
 
     /** DogBoard: swipe typing: the finger's path (dp) from a letter key's press; active once it moved far enough. */
-    private class Glide(val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float) {
+    private class Glide(val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float, startT: Long) {
         val xs = ArrayList<Float>().apply { add(startX) }
         val ys = ArrayList<Float>().apply { add(startY) }
+        val ts = ArrayList<Long>().apply { add(startT) }
         var active = false
     }
     private var glide: Glide? = null
 
     /** DogBoard: the trail of the swipe in progress (pixels), drawn over the keys; null when none. */
-    val glideTrail: StateFlow<List<Offset>?>
+    val glideTrail: StateFlow<List<TrailPoint>?>
         field = MutableStateFlow(null)
     // DogBoard: caps lock timing is measured from the first shift press, not its release
     private var lastShiftDownUptime: Long = Long.MIN_VALUE
@@ -213,7 +220,7 @@ class PointerTracker(
             io.github.sillypuppyy.dogboard.engine.TypingEngine.hasSwipe &&
             (downKey.attrs.output as? org.k3lp.lib.text.K3String)?.toText()?.let { it.length == 1 && it[0].isLetter() } == true
         ) {
-            glide = Glide(down.id, downLayerId, down.position.x / density, down.position.y / density)
+            glide = Glide(down.id, downLayerId, down.position.x / density, down.position.y / density, down.uptimeMillis)
         }
         // DogBoard: remember where letter keys were tapped, for the word decoder
         if (downKey.isTextKey()) {
@@ -421,7 +428,7 @@ class PointerTracker(
         glide?.takeIf { it.id == move.id }?.let { g ->
             val xDp = move.position.x / density
             val yDp = move.position.y / density
-            g.xs.add(xDp); g.ys.add(yDp)
+            g.xs.add(xDp); g.ys.add(yDp); g.ts.add(move.uptimeMillis)
             if (!g.active) {
                 val keyWidthDp = size.width / density / 10f
                 val out = trackedOutputPointer.value?.takeIf { it.id == move.id }
@@ -437,7 +444,9 @@ class PointerTracker(
             }
             if (g.active) {
                 if (io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeTrail) {
-                    glideTrail.value = List(g.xs.size) { Offset(g.xs[it] * density, g.ys[it] * density) }
+                    // only what the trail can still show (TRAIL_MS)
+                    val from = g.ts.indexOfFirst { move.uptimeMillis - it <= TRAIL_MS + 50 }.coerceAtLeast(0)
+                    glideTrail.value = (from until g.xs.size).map { TrailPoint(g.xs[it] * density, g.ys[it] * density, g.ts[it]) }
                 }
                 return
             }

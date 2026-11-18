@@ -233,7 +233,12 @@ fun ImeKeyboardBox(
         // DogBoard: the swipe trail, in the theme's accent, newest part opaque, the tail fading
         val glideTrail by pointerTracker.glideTrail.collectAsState()
         val trailColor = io.github.sillypuppyy.dogboard.design.liveAccent()
-        val trailWidthPx = with(density) { 5.dp.toPx() }
+        val trailWidthPx = with(density) { 11.dp.toPx() }
+        // the trail keeps shrinking from its tail even while the finger rests: redraw every frame
+        var trailNow by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+        androidx.compose.runtime.LaunchedEffect(glideTrail != null) {
+            while (glideTrail != null) androidx.compose.runtime.withFrameMillis { trailNow = android.os.SystemClock.uptimeMillis() }
+        }
 
         Box(
             modifier = modifier
@@ -262,16 +267,40 @@ fun ImeKeyboardBox(
                 }
                 .drawWithContent {
                     drawContent()
-                    glideTrail?.let { pts ->
-                        val n = pts.size
-                        for (i in 1 until n) {
-                            val age = (n - i).toFloat() / n
-                            drawLine(
-                                color = trailColor.copy(alpha = 0.85f * (1f - age * 0.8f)),
-                                start = pts[i - 1], end = pts[i],
-                                strokeWidth = trailWidthPx * (1f - age * 0.5f),
-                                cap = StrokeCap.Round,
+                    // the swipe trail as Gboard draws it (measured on the emulator, 2026-11-18): one smooth
+                    // ribbon, ~11 dp and round at the finger, narrowing and fading to nothing at a tail
+                    // ~0.7 s behind; in the theme's accent
+                    glideTrail?.let { all ->
+                        val now = maxOf(trailNow, all.last().t)
+                        val pts = all.filter { now - it.t <= dev.patrickgold.florisboard.ime.keyboard3.interaction.TRAIL_MS }
+                        if (pts.size >= 2) {
+                            val life = dev.patrickgold.florisboard.ime.keyboard3.interaction.TRAIL_MS.toFloat()
+                            val left = ArrayList<androidx.compose.ui.geometry.Offset>(pts.size)
+                            val right = ArrayList<androidx.compose.ui.geometry.Offset>(pts.size)
+                            for (i in pts.indices) {
+                                val a = pts[maxOf(i - 1, 0)]; val b = pts[minOf(i + 1, pts.size - 1)]
+                                var dx = b.x - a.x; var dy = b.y - a.y
+                                val len = kotlin.math.hypot(dx, dy).takeIf { it > 0f } ?: 1f
+                                dx /= len; dy /= len
+                                val half = trailWidthPx / 2f * (1f - (now - pts[i].t) / life).coerceIn(0f, 1f)
+                                left.add(androidx.compose.ui.geometry.Offset(pts[i].x - dy * half, pts[i].y + dx * half))
+                                right.add(androidx.compose.ui.geometry.Offset(pts[i].x + dy * half, pts[i].y - dx * half))
+                            }
+                            val ribbon = androidx.compose.ui.graphics.Path().apply {
+                                moveTo(left[0].x, left[0].y)
+                                for (i in 1 until left.size) lineTo(left[i].x, left[i].y)
+                                for (i in right.indices.reversed()) lineTo(right[i].x, right[i].y)
+                                close()
+                            }
+                            val tail = pts.first(); val head = pts.last()
+                            drawPath(
+                                ribbon,
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(trailColor.copy(alpha = 0f), trailColor.copy(alpha = 0.95f)),
+                                    start = androidx.compose.ui.geometry.Offset(tail.x, tail.y), end = androidx.compose.ui.geometry.Offset(head.x, head.y),
+                                ),
                             )
+                            drawCircle(trailColor.copy(alpha = 0.95f), trailWidthPx / 2f, androidx.compose.ui.geometry.Offset(head.x, head.y))
                         }
                     }
                     trackedPeekPointer?.let { trackedPeekPointer ->

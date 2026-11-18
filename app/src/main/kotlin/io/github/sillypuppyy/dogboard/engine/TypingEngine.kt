@@ -281,7 +281,9 @@ object TypingEngine {
         val f = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.features(
             FloatArray(xs.size) { map.x(xs[it]) }, FloatArray(ys.size) { map.y(ys[it]) },
         )
+        val t0 = System.nanoTime()
         val logp = net.run(f)
+        val t1 = System.nanoTime()
         return lock.read {
             val lex = engine.lexicon
             val beam = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.decode(logp, logp.size / 27, lex, top = 10)
@@ -293,8 +295,12 @@ object TypingEngine {
                 val path = c.score - uni
                 if (scorer != null && p1 >= 0) path + SWIPE_CONTEXT_WEIGHT * scorer.logProb(p2, p1, lex.wordId(c.node), uni) else path + uni
             }.mapNotNull { lex.firstForm(it.node) }.filter { it.lowercase() !in blocked }.distinct().take(top)
+                .also { lastSwipeTiming = "network ${(t1 - t0) / 1_000_000} ms, search ${(System.nanoTime() - t1) / 1_000_000} ms, ${f.size / 4} steps" }
         }
     }
+
+    /** The last swipe's timing (for the DogBoardPerf log). */
+    @Volatile var lastSwipeTiming: String = ""
 
     /**
      * Lets the neural model go when the system is short of memory (iOS releases its language model

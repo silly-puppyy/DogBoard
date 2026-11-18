@@ -176,11 +176,13 @@ class ImeController(
      */
     suspend fun commitSwipe(xs: FloatArray, ys: FloatArray, centres: Map<Char, Pair<Float, Float>>) {
         val textBefore = snapshotState().content.surroundingText.textBefore
+        val t0 = SystemClock.uptimeMillis()
         val words = kotlinx.coroutines.withContext(Dispatchers.Default) {
             io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeWords(
                 xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
             )
         }
+        android.util.Log.i("DogBoardPerf", "swipe: ${xs.size} points -> ${words.firstOrNull()} in ${SystemClock.uptimeMillis() - t0} ms (${io.github.sillypuppyy.dogboard.engine.TypingEngine.lastSwipeTiming})")
         if (words.isEmpty()) return
         updateState { acceptSwipe(words) }
     }
