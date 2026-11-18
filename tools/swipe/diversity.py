@@ -58,16 +58,22 @@ def main():
     ap.add_argument("--words", type=int, default=20)
     ap.add_argument("--per", type=int, default=120)
     ap.add_argument("--skip", type=int, default=300000)
+    ap.add_argument("--swipe5", default="", help="LAYOUT:ASPECT: real swipes from swipe-5 on that layout (no copying test)")
     a = ap.parse_args()
-    layout = json.load(open(f"{a.futo}/swipe-5/layouts/qwerty.json"))
-    sx, sy = units.scale("phys", layout, 1.0, 0.42)
+    lay_name, _, asp = (a.swipe5 or "qwerty:0.42").partition(":")
+    layout = json.load(open(f"{a.futo}/swipe-5/layouts/{lay_name}.json"))
+    sx, sy = units.scale("phys", layout, 1.0, float(asp))
     keys = units.keys(layout, sx, sy)
     train, held = defaultdict(list), defaultdict(list)
-    with open(f"{a.futo}/train.jsonl") as f:
+    if a.swipe5:  # all of that layout's swipes are new people; no training pool
+        a.skip = 0
+    with open(f"{a.futo}/swipe-5/swipe5.jsonl" if a.swipe5 else f"{a.futo}/train.jsonl") as f:
         for i, line in enumerate(f):
             if i >= a.skip + 300000:
                 break
             d = json.loads(line)
+            if a.swipe5 and (d.get("layout") != lay_name or not isinstance(d.get("data"), list)):
+                continue  # other layouts; multi-stroke records (as prepare_layouts.py skips them)
             w = d["word"].lower()
             if not (w.isalpha() and len(w) >= 3 and all(c in keys for c in w)):
                 continue
@@ -79,14 +85,14 @@ def main():
             al = key_aligned([(q["x"] * sx, q["y"] * sy) for q in d["data"]], ks)
             if al is not None and np.isfinite(al).all():
                 pool[w].append(al)
-    words = [w for w in sorted(held, key=lambda w: -len(held[w])) if len(held[w]) >= a.per and len(train[w]) >= 100][:a.words]
+    words = [w for w in sorted(held, key=lambda w: -len(held[w])) if len(held[w]) >= a.per and (a.swipe5 or len(train[w]) >= 100)][:a.words]
     print(f"{len(words)} words: {', '.join(words)}")
     gens = [("real (new people)", None)] + [(s.split("=", 1)[0], gen_of(s.split("=", 1)[1])) for s in a.gen]
     out = {}
     for name, gen in gens:
         rows = defaultdict(list)
         for w in words:
-            R = np.stack(held[w][:a.per]); T = np.stack(train[w][:400])
+            R = np.stack(held[w][:a.per]); T = np.stack(train[w][:400]) if train[w] else np.zeros((0,) + R.shape[1:])
             if gen is None:
                 G = R[: a.per // 2]; R = R[a.per // 2:]   # real vs real: two halves of new people
             else:
@@ -99,10 +105,11 @@ def main():
             dg = dist(G, G); rows["pairwise"].append(dg[np.triu_indices(len(G), 1)].mean())
             rows["precision"].append(inside(G, R, knn_radius(R)))
             rows["recall"].append(inside(R, G, knn_radius(G)))
-            rows["copying"].append(np.median(dist(G, T).min(1)) / np.median(dist(R, T).min(1)))
+            rows["copying"].append(np.median(dist(G, T).min(1)) / np.median(dist(R, T).min(1)) if len(T) else float("nan"))
+            rows["mean gap"].append(float(np.hypot(*(G.mean(0) - R.mean(0)).T).mean()))
             rows["rough"].append(np.sqrt((np.diff(G, 2, axis=1) ** 2).sum(-1).mean()))
         out[name] = {k: float(np.mean(v)) for k, v in rows.items()}
-    keys_ = ["spread", "pairwise", "precision", "recall", "copying", "rough"]
+    keys_ = ["spread", "pairwise", "precision", "recall", "copying", "mean gap", "rough"]
     print(f"  {'':22s}" + "".join(f"{k:>10s}" for k in keys_))
     for name, r in out.items():
         print(f"  {name:22s}" + "".join(f"{r[k]:10.3f}" for k in keys_))

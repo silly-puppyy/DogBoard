@@ -188,7 +188,13 @@ class Generator:
     """prepare_synth.py's --human cvae:MODEL.pt: draws swipes on CPU, a batch of words at a time."""
 
     def __init__(self, path):
-        path, _, temp = path.partition("@")  # cvae:MODEL.pt@1.3: style codes drawn wider than N(0, I)
+        # cvae:MODEL.pt@1.3: style codes drawn wider than N(0, I); cvae:MODEL.pt@1.3:0.7: keys squashed vertically by
+        # 0.7 before drawing and the path stretched back (2026-11-18: trained on FUTO's short keys, rows 1.4 key widths
+        # apart; swipe-5's keyboards are taller, rows 2.25 apart, and people there cut corners instead of reaching the
+        # centres: 1 = the same physical moves on any keyboard, 0.42 / 0.68 = moves in proportion to key height)
+        path, _, opts = path.partition("@")
+        temp, _, squash = opts.partition(":")
+        self.squash = float(squash) if squash else 1.0
         s = torch.load(path, map_location="cpu")
         self.net = CVAE(s["z"]).eval()
         self.net.load_state_dict(s["model"])
@@ -196,6 +202,15 @@ class Generator:
 
     @torch.no_grad()
     def paths(self, words, centres, rng):
+        if self.squash != 1.0:
+            k = self.squash
+            squashed = {c: (x, y * k) for c, (x, y) in centres.items()}
+            self.squash = 1.0
+            try:
+                out = self.paths(words, squashed, rng)
+            finally:
+                self.squash = k
+            return [None if p is None else [(x, y / k) for x, y in p] for p in out]
         out = [None] * len(words)
         items = []
         for i, w in enumerate(words):
