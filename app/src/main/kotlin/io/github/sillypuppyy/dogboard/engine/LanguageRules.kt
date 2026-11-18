@@ -22,6 +22,11 @@ data class LanguageRules(
      * (exact case), corrections people tend to undo are never made.
      */
     @SerialName("learned_typo_overrides") val learnedTypoOverrides: Map<String, List<String>> = emptyMap(),
+    /**
+     * Marks that keep a space typed before them (French in France and Belgium: "Bonjour !"), so the
+     * keyboard does not move them before that space as it does elsewhere ("word ?" -> "word? ").
+     */
+    @SerialName("space_before_marks") val spaceBeforeMarks: String = "",
 ) {
     companion object {
         /** en-US (assets/dogboard/packs/en-US/rules.json). */

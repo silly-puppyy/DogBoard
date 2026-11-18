@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "tag": "fr-FR",
+  "name": "French (France)",
+  "script": "Latn",
+  "version": "2026.11.18",
+  "files": {
+    "rules": {
+      "path": "dogboard/packs/fr-FR/rules.json",
+      "size": 35,
+      "sha256": "7c8701459e47468b87c32dd9c4c0c6e6aa8f074a7f61d51076fef4e9139b627a"
+    }
+  },
+  "sources": [
+    {
+      "name": "DogBoard project (language rules)",
+      "licence": "same as the app",
+      "for": [
+        "rules"
+      ]
+    }
+  ]
+}

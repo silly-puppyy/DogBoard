@@ -1,0 +1,20 @@
+{
+  "tag": "fr-FR",
+  "name": "French (France)",
+  "script": "Latn",
+  "version": "2026.11.18",
+  "files": {
+    "rules": {
+      "path": "dogboard/packs/fr-FR/rules.json"
+    }
+  },
+  "sources": [
+    {
+      "name": "DogBoard project (language rules)",
+      "licence": "same as the app",
+      "for": [
+        "rules"
+      ]
+    }
+  ]
+}

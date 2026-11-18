@@ -550,7 +550,7 @@ class ImeController(
             // before it, "word ?" -> "word? " (only , . ? !: a typed space before ":)" or ";)" is kept);
             // not ? ! in France / Belgium French, whose typography keeps the space (iOS keeps it too)
             if (!autoSpace && lastSpaceUptime != null && text in SWAP_AFTER_TYPED_SPACE && wordEngineAllowed() &&
-                !(text in FRENCH_SPACED && keepsSpaceBeforeMarks())
+                !(text.length == 1 && text in languageRules().spaceBeforeMarks)
             ) {
                 val tb = state.content.surroundingText.textBefore
                 if (tb.length >= 2 && tb.last() == ' ' && tb[tb.length - 2].isLetterOrDigit()) autoSpace = true
@@ -1255,11 +1255,10 @@ class ImeController(
         /** DogBoard: the layout's language tag (from the model, as composition uses it). */
         private var languageTag = ""
 
-        /** France and Belgium French keep a space before ? ! : ; (fr_CA and fr_CH don't, as on iOS). */
-        private fun keepsSpaceBeforeMarks(): Boolean {
-            val t = languageTag.replace('_', '-').lowercase()
-            return t == "fr" || t.startsWith("fr-fr") || t.startsWith("fr-be")
-        }
+        /** The layout language's rules (its pack's rules.json): France and Belgium French keep a space before ? ! : ;. */
+        private fun languageRules() = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry.rulesFor(
+            dev.patrickgold.florisboard.FlorisApplication.getHack().assets, languageTag,
+        )
 
         private fun wordEngineAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
@@ -1887,7 +1886,6 @@ class ImeController(
         private val SWAP_AFTER_TYPED_SPACE = setOf(".", ",", "!", "?")
 
         /** DogBoard: marks French typography spaces off (iOS fr_FR / fr_BE keep the space before them). */
-        private val FRENCH_SPACED = setOf("?", "!", ":", ";")
     }
 }
 
