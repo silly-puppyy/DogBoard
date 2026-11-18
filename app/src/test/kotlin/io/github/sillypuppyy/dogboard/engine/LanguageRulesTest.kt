@@ -32,6 +32,11 @@ class LanguageRulesTest : FunSpec({
         io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput("\"", "Hallo", "", true, false, de)?.insert shouldBe "“"
         LanguageRules.parse("""{"quotes": "xx"}""").smartQuotes shouldBe en // malformed: the default set
     }
+    test("the double-space replacement is a rule: \". \" by default") {
+        LanguageRules().doubleSpace shouldBe ". "
+        LanguageRules.ENGLISH.doubleSpace shouldBe ". "
+        LanguageRules.parse("""{"double_space": "। "}""").doubleSpace shouldBe "। "
+    }
     test("pack tags are normalised as the layouts give them") {
         val n = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry::normalize
         n("fr_FR") shouldBe "fr-FR"; n("fr-fr") shouldBe "fr-FR"; n("FR") shouldBe "fr"; n("fr-be-x") shouldBe "fr-BE"; n("") shouldBe ""

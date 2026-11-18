@@ -38,6 +38,12 @@ data class LanguageRules(
      * the English set every layout used so far; a pack sets its own (German "„“‚‘’", French "«»‹›’").
      */
     @SerialName("quotes") val quotes: String = "“”‘’’",
+    /**
+     * What a double space becomes (iOS UIKeyboardDoubleSpaceReplacement, per language): ". " by default,
+     * "। " for Hindi and the other Indic modes, "۔ " Urdu, "։ " Armenian, "። " Amharic, "။ " Burmese, "。"
+     * without a space for Yi and Ainu; two plain spaces (Japanese, Thai) mean no replacement at all.
+     */
+    @SerialName("double_space") val doubleSpace: String = ". ",
 ) {
     /** [quotes] as SmartPunctuation takes them (the default set when the rule is malformed). */
     val smartQuotes: io.github.sillypuppyy.dogboard.feel.SmartPunctuation.Quotes
