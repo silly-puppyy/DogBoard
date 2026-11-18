@@ -143,8 +143,9 @@ def summarize(pool, per_person):
         "wobble RMS (keys)": m("wobble"),
         "wobble Hz": m("wobble_hz"),
         "veer share": m("veer"),
-        "corner slow (v/median)": m("corner_slow"),
-        "pass slow (v/median)": m("pass_slow"),
+        # medians: a swipe standing still most of the time has a near-zero median speed and a huge ratio
+        "corner slow (v/median)": float(np.median(pool["corner_slow"])) if pool.get("corner_slow") else float("nan"),
+        "pass slow (v/median)": float(np.median(pool["pass_slow"])) if pool.get("pass_slow") else float("nan"),
         "hesitation share": m("hesitation"),
         "start dwell ms": m("start_dwell"),
         "corner overshoot (keys)": m("overshoot"),

@@ -89,6 +89,9 @@ def gen_of(spec):
         return Library.load(spec[4:])
     if spec.startswith("finger:"):
         return FingerParams(**json.load(open(spec[7:])))
+    if spec.startswith("each:"):
+        from fit_each import Sampler
+        return Sampler(spec[5:])
     if spec.startswith("cvae:"):
         from cvae import Generator
         return Generator(spec[5:])
@@ -115,7 +118,7 @@ def main():
     ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     ap.add_argument("--aspect", type=float, default=0.42, help="phys: the keyboard's letter area height / width")
     ap.add_argument("--aspect-max", type=float, default=0.0, help="phys: each swipe its own aspect, between --aspect and this")
-    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library), finger:PARAMS.json (physics.py) or cvae:MODEL.pt (cvae.py)")
+    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library), finger:PARAMS.json (physics.py), cvae:MODEL.pt (cvae.py) or each:EACH.jsonl[,PARAMS.json] (fit_each.py)")
     a = ap.parse_args()
     torch.set_num_threads(1)
     lay = json.load(open(a.layout))

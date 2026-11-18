@@ -112,6 +112,12 @@ def main():
                 loss += (float(np.hypot(*(np.mean(al, 0) - real_mean[w]).T).mean()) / 0.05) ** 2 / len(common)
         return loss, S
 
+    import os
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    import track
+    run = track.start("swipe", "en", "fit-" + os.path.basename(a.out).removesuffix(".json"), layout="qwerty",
+                      data="futo-real", config={"kind": "finger-fit", "n": a.n, "evals": a.evals})
     x0 = [to(getattr(base, name)) for name, to, _ in FIT]
     es = cma.CMAEvolutionStrategy(x0, 0.3, {"maxfevals": a.evals, "verbose": -9, "seed": 2, "popsize": 12})
     best = (math.inf, None, None)
@@ -125,6 +131,7 @@ def main():
                 best = (l, x, S)
         gen += 1
         print(f"gen {gen}: best loss {best[0]:.3f}", flush=True)
+        run.log({"gen": gen, "best_loss": best[0], **{f"model/{k}": v for k, v in best[2].items()}})
         p = params_of(best[1])
         json.dump({k: v for k, v in dataclasses.asdict(p).items()}, open(a.out, "w"), indent=1)
     print("\nfitted:", {name: round(getattr(params_of(best[1]), name), 4) for name, _, _ in FIT})
@@ -132,6 +139,8 @@ def main():
     print(f"  {'phenomenon':26s} {'real':>9s} {'model':>9s}")
     for k in R:
         print(f"  {k:26s} {R[k]:9.3f} {S[k]:9.3f}")
+    run.summary.update({f"real/{k}": v for k, v in R.items()})
+    run.finish()
 
 
 if __name__ == "__main__":

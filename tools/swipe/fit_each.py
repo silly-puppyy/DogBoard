@@ -139,8 +139,86 @@ def cmd_fit(a, keys, sx, sy):
                 print(f"{done} fitted", flush=True)
 
 
+class Sampler:
+    """prepare_synth.py's --human each:EACH.jsonl[,PARAMS.json]: new swipes drawn from the fitted space (the sample
+    space the user asked for). Per swipe, the motion numbers of one real fitted swipe (resampled whole, so any links
+    between them stay); per key its aim offset from real ones at the same position (first / middle / last); per
+    stroke a bend from real strokes of similar length (in key widths, the measured size does not scale with length),
+    a hesitation from real strokes (17.5 % > 40 ms in the first fits); the motor noise of the fitted finger on top
+    (fit_stroke.py's stroke-v1.json)."""
+
+    def __init__(self, spec):
+        each, _, params = spec.partition(",")
+        rows = []
+        for line in open(each):
+            try:
+                rows.append(json.loads(line.strip("\0\n")))
+            except json.JSONDecodeError:
+                pass
+        self.rows = rows
+        self.motion = [r["motion"] for r in rows]
+        self.aims = {k: [] for k in ("first", "mid", "last")}
+        self.bows = {k: [] for k in range(4)}
+        self.hes = []
+        for r in rows:
+            q = r["aims"]
+            self.aims["first"].append(q[0]); self.aims["last"].append(q[-1]); self.aims["mid"] += q[1:-1]
+            for b, L, h in zip(r["bows"], r["stroke_len"], r["hes"]):
+                self.bows[self._bin(L)].append(b * L)
+                self.hes.append(h)
+        self.base = FingerParams(**json.load(open(params))) if params else FingerParams()
+
+    @staticmethod
+    def _bin(L):
+        return 0 if L < 1.5 else 1 if L < 3 else 2 if L < 5 else 3
+
+    def path(self, word, centres, rng):
+        ks = route_keys(word, centres)
+        if len(ks) < 2:
+            x, y = ks[0]
+            return [(x, y, 0.0), (x + rng.gauss(0, 0.05), y + rng.gauss(0, 0.05), 24.0)]
+        # one real fitted swipe gives the motion, the first and last aims and the pauses together (the fit trades
+        # them against each other: drawn apart, the run-on came out twice the real one); middle aims are its own,
+        # cycled; bends come from real strokes of a similar length (a bend belongs to the stroke, not the person)
+        r = rng.choice(self.rows)
+        m = r["motion"]
+        n = len(ks)
+        own = r["aims"]
+        mids = own[1:-1] or [rng.choice(self.aims["mid"])]
+        offs = [own[0]] + [mids[i % len(mids)] for i in range(n - 2)] + [own[-1]]
+        aims = [(k[0] + o[0], k[1] + o[1]) for k, o in zip(ks, offs)]
+        bows, hes = [], []
+        for i in range(n - 1):
+            L = math.hypot(aims[i + 1][0] - aims[i][0], aims[i + 1][1] - aims[i][1]) or 1.0
+            bows.append(rng.choice(self.bows[self._bin(L)]) / L)
+            hes.append(tuple(r["hes"][i % len(r["hes"])]))
+        p = self.base.__class__(**{**self.base.__dict__, **{k: m[k] for k in ("zeta", "fitts_a", "fitts_b", "overlap", "dwell")},
+                                   "mode": "stroke"})
+        who = {"speed": 1.0, "omega": m["omega"], "fixed": {"aims": aims, "follow": m["follow"], "bows": bows + [0.0],
+                                                           "hes": hes + [(0.0, 0.0)]}}
+        return _stroke("x" * n, {}, rng, p, who)
+
+    def paths(self, words, centres, rng):
+        return [[(x, y) for x, y, _ in self.path(w, centres, rng)] for w in words]
+
+
 def cmd_stats(a):
-    rows = [json.loads(l) for l in open(a.each)]
+    rows = []
+    for line in open(a.each):
+        try:
+            rows.append(json.loads(line.strip("\0\n")))
+        except json.JSONDecodeError:
+            pass  # a line cut by a crash (2026-11-18: the machine froze mid-run)
+    import os
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    import track
+    run = track.start("swipe", "en", "each-" + os.path.basename(a.each).removesuffix(".jsonl"), layout="qwerty",
+                      data="futo-real", config={"kind": "per-swipe-fit", "n": len(rows)})
+    run.summary.update({"shape_err_mean": float(np.mean([r["shape_err"] for r in rows])),
+                        "time_err_mean": float(np.mean([r["time_err"] for r in rows])),
+                        **{f"motion_median/{k}": float(np.median([r["motion"][k] for r in rows])) for k in G}})
+    run.finish()
     print(f"{len(rows)} swipes fitted; leftover shape {np.mean([r['shape_err'] for r in rows]):.3f} key widths "
           f"(median {np.median([r['shape_err'] for r in rows]):.3f}), at equal times {np.mean([r['time_err'] for r in rows]):.3f}")
     M = np.array([[r["motion"][k] for k in G] for r in rows])
