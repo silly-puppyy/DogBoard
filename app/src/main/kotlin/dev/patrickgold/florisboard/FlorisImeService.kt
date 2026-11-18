@@ -491,6 +491,22 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
     }
 
+    /**
+     * DogBoard: the input window fills the screen height, as Gboard's (its frame is full height either way;
+     * the root view is MATCH_PARENT and the insets say where the keyboard is). InputMethodService sets the
+     * height to WRAP_CONTENT when it updates the fullscreen mode, and with that every layout request made
+     * the window relayout with the window manager: ~2 round trips per keystroke, 680 in a minute of fast
+     * typing, Gboard 0 (perf 2026-11-18, system trace).
+     */
+    override fun updateFullscreenMode() {
+        super.updateFullscreenMode()
+        window.window?.let { w ->
+            if (w.attributes.height != android.view.ViewGroup.LayoutParams.MATCH_PARENT) {
+                w.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT)
+            }
+        }
+    }
+
     override fun onEvaluateFullscreenMode(): Boolean {
         val config = resources.configuration
         if (config.orientation != Configuration.ORIENTATION_LANDSCAPE) {
