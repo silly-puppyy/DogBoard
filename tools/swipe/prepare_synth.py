@@ -136,7 +136,20 @@ def main():
         even = int(n * a.uniform)
         return rng.choices(words, weights=weights, k=n - even) + rng.choices(words, k=even)
 
-    with Pool(a.workers, initializer=init, initargs=(centres, gen_of(a.human), {"layout": lay, "range": (a.aspect, a.aspect_max)} if a.aspect_max > a.aspect else None)) as pool:
+    gen = gen_of(a.human)
+    shape = {"layout": lay, "range": (a.aspect, a.aspect_max)} if a.aspect_max > a.aspect else None
+    if hasattr(gen, "to_gpu"):  # the learned model draws on the GPU in this process (no forked workers)
+        gen.to_gpu()
+        init(centres, gen, shape)
+
+        class InProcess:
+            @staticmethod
+            def map(f, jobs):
+                return [f(j) for j in jobs]
+        pool_cm = __import__("contextlib").nullcontext(InProcess())
+    else:
+        pool_cm = Pool(a.workers, initializer=init, initargs=(centres, gen, shape))
+    with pool_cm as pool:
         def build(n, seed0):
             ws = draw(n)
             rng.shuffle(ws)

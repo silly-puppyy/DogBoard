@@ -199,6 +199,16 @@ class Generator:
         self.net = CVAE(s["z"]).eval()
         self.net.load_state_dict(s["model"])
         self.temp = float(temp) if temp else 1.0
+        self.device, self.batch = "cpu", 256
+
+    def to_gpu(self):
+        """Draw on the GPU, thousands of swipes a batch (prepare_synth.py does this when it runs in one process:
+        a CUDA model can't be shared with forked workers). 2026-11-18: one layout's 400k swipes took ~25 min on
+        one CPU core."""
+        if torch.cuda.is_available():
+            self.device, self.batch = "cuda", 4096
+            self.net.to("cuda")
+        return self
 
     @torch.no_grad()
     def paths(self, words, centres, rng):
@@ -220,15 +230,16 @@ class Generator:
                 out[i] = [(x, y), (x + rng.gauss(0, 0.05), y + rng.gauss(0, 0.05))]
             elif len(r) > 1:
                 items.append((i, *features(r)))
-        for s in range(0, len(items), 256):
-            part = items[s:s + 256]
+        items.sort(key=lambda it: len(it[1]))  # similar lengths per batch: less padding
+        for s in range(0, len(items), self.batch):
+            part = items[s:s + self.batch]
             P = max(len(f) for _, f, _ in part)
             F = torch.zeros(len(part), P, NF)
             for j, (_, f, _) in enumerate(part):
                 F[j, :len(f)] = torch.from_numpy(f)
             g = torch.Generator().manual_seed(rng.getrandbits(31))
             z = torch.randn(len(part), self.net.z, generator=g) * self.temp
-            Y = self.net.decode(F, z).numpy()
+            Y = self.net.decode(F.to(self.device), z.to(self.device)).float().cpu().numpy()
             for j, (i, f, b) in enumerate(part):
                 out[i] = [tuple(p) for p in (b + Y[j, :len(b)])]
         return out
