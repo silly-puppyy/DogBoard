@@ -318,6 +318,9 @@ class NlpManager(context: Context) {
         }*/
         val isSelection = imeController.snapshotState().content.selection.isNotCollapsed()
         val isExpanded = list1.isNullOrEmpty() && list2.isNullOrEmpty() || isSelection
+        // DogBoard: written only when it changes (each write saves the whole preference file; this ran on
+        // every suggestion update, perf 2026-11-18)
+        if (prefs.smartbar.sharedActionsExpanded.get() == isExpanded) return
         scope.launch {
             prefs.smartbar.sharedActionsExpandWithAnimation.set(false)
             prefs.smartbar.sharedActionsExpanded.set(isExpanded)

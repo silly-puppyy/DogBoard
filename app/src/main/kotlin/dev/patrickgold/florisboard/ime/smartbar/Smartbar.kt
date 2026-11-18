@@ -319,7 +319,7 @@ private fun SmartbarMainRow(modifier: Modifier = Modifier) {
     }
 
     SideEffect {
-        if (!shouldAnimate) {
+        if (!shouldAnimate && !prefs.smartbar.sharedActionsExpandWithAnimation.get()) {
             scope.launch {
                 prefs.smartbar.sharedActionsExpandWithAnimation.set(true)
             }

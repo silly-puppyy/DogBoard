@@ -1072,9 +1072,9 @@ object TypingEngine {
 
     /** The decoder's hook for the personal model, or null while it has nothing to add. */
     /** The last mix handed out, reused while nothing it depends on changes (the decoder then continues its search). */
-    private var lastMix: Triple<Any?, Int, ((Int, Double) -> Double)?>? = null
+    private var lastMix: Triple<Any?, Int, PersonalMix?>? = null
 
-    private fun personalMix(engine: Loaded, previous: String?, previous2: String? = null): ((Int, Double) -> Double)? {
+    private fun personalMix(engine: Loaded, previous: String?, previous2: String? = null): PersonalMix? {
         val p = personal
         val version = p.version
         val key = Triple(engine, previous, previous2)
@@ -1083,7 +1083,7 @@ object TypingEngine {
         return makeMix(engine, p, previous, previous2).also { lastMix = Triple(key, version, it) }
     }
 
-    private fun makeMix(engine: Loaded, p: PersonalModel, previous: String?, previous2: String?): (Int, Double) -> Double {
+    private fun makeMix(engine: Loaded, p: PersonalModel, previous: String?, previous2: String?): PersonalMix {
         // the start of a text has no word before it
         val p2 = previous2?.takeIf { previous != null && previous != Bigrams.START && it != Bigrams.START }
         return p.decoderMix(engine.lexicon, previous, p2)

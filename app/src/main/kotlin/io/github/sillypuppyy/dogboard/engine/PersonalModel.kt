@@ -72,6 +72,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         val w = word.lowercase()
         words[w] = bump(words[w], day)
         uses[w] = (uses[w] ?: 0) + 1
+        if (nodes != null) pendingNodes.add(w)
         // the decayed totals move by exactly 1 (bump: decayed value + 1, dated today), so they are
         // updated in place: rebuilding them after every word allocated per learned pair and triple
         // (tens of MB a word with a well-used model: the typing stalls on garbage collection, 2026-11-16)
@@ -95,6 +96,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     @Synchronized
     fun remove(word: String) {
         version++
+        nodes = null
         val w = word.lowercase()
         words.remove(w); uses.remove(w)
         pairs.keys.removeAll { it.first == w || it.second == w }
@@ -106,6 +108,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     @Synchronized
     fun forget(word: String) {
         version++
+        nodes = null
         val w = word.lowercase()
         if ((uses[w] ?: 0) < FORGET_BELOW) {
             words.remove(w); uses.remove(w)
@@ -171,15 +174,36 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
      * largest garbage, perf 2026-11-18). Nodes of the words the model knows (a superset: casings and
      * accents share a node) take the full path.
      */
-    fun decoderMix(lexicon: Lexicon, previous: String?, previous2: String?): (Int, Double) -> Double {
-        val known = java.util.BitSet()
-        for (w in wordKeys()) lexicon.find(w).takeIf { it != Lexicon.NONE }?.let { known.set(it) }
+    fun decoderMix(lexicon: Lexicon, previous: String?, previous2: String?): PersonalMix {
+        val known = knownNodes(lexicon)
         val keep = kotlin.math.ln(1 - weight(previous != null))
         val floor = kotlin.math.ln(1e-300)
-        return { node, logProb ->
+        return PersonalMix { node, logProb ->
             if (!known.get(node)) maxOf(keep + logProb, floor)
             else fullMix(lexicon, node, logProb, previous, previous2)
         }
+    }
+
+    // the lexicon nodes of the model's words, kept between hooks: words accepted since are added, any
+    // other change (forget, remove, clear, a new lexicon) rebuilds it (rebuilding per word end walked the
+    // whole personal vocabulary)
+    private var nodes: java.util.BitSet? = null
+    private var nodesLexicon: Lexicon? = null
+    private var nodesLexiconVersion = -1
+    private val pendingNodes = ArrayList<String>()
+
+    @Synchronized
+    private fun knownNodes(lexicon: Lexicon): java.util.BitSet {
+        val n = nodes
+        if (n == null || nodesLexicon !== lexicon || nodesLexiconVersion != lexicon.version) {
+            val b = java.util.BitSet()
+            for (w in words.keys) lexicon.find(w).takeIf { it != Lexicon.NONE }?.let { b.set(it) }
+            nodes = b; nodesLexicon = lexicon; nodesLexiconVersion = lexicon.version; pendingNodes.clear()
+            return b
+        }
+        for (w in pendingNodes) lexicon.find(w).takeIf { it != Lexicon.NONE }?.let { n.set(it) }
+        pendingNodes.clear()
+        return n
     }
 
     /** [decoderMix] without the shortcut. */
@@ -191,6 +215,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     @Synchronized
     fun clear() {
         version++
+        nodes = null
         words.clear(); pairs.clear(); triples.clear(); uses.clear(); typed = 0; cacheDay = -1
         save()
     }

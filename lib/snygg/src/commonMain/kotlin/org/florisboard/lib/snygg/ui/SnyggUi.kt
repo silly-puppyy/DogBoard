@@ -154,20 +154,27 @@ fun ProvideSnyggTheme(
     content: @Composable () -> Unit,
 ) {
     val (colorPalette, contrastLevel, specVersion) = materialYouFlags
-    val lightScheme = dynamicColorScheme(
-        primary = systemAccentOrDefault(dynamicAccentColor),
-        isDark = false,
-        style = colorPalette,
-        contrastLevel = contrastLevel.value,
-        specVersion = specVersion
-    )
-    val darkScheme = dynamicColorScheme(
-        primary = systemAccentOrDefault(dynamicAccentColor),
-        isDark = true,
-        style = colorPalette,
-        contrastLevel = contrastLevel.value,
-        specVersion = specVersion
-    )
+    // DogBoard: both schemes kept until their inputs change (they were rebuilt on every recomposition,
+    // i.e. every shift and layer change: the UI's largest garbage, perf 2026-11-18)
+    val primary = systemAccentOrDefault(dynamicAccentColor)
+    val lightScheme = remember(primary, colorPalette, contrastLevel, specVersion) {
+        dynamicColorScheme(
+            primary = primary,
+            isDark = false,
+            style = colorPalette,
+            contrastLevel = contrastLevel.value,
+            specVersion = specVersion
+        )
+    }
+    val darkScheme = remember(primary, colorPalette, contrastLevel, specVersion) {
+        dynamicColorScheme(
+            primary = primary,
+            isDark = true,
+            style = colorPalette,
+            contrastLevel = contrastLevel.value,
+            specVersion = specVersion
+        )
+    }
 
     val resolver = LocalFontFamilyResolver.current
     val customFontFamilies = remember(snyggTheme) {

@@ -44,7 +44,7 @@ class EngineSpeedTest : FunSpec({
             var prev: String = Bigrams.START; var prev2: String? = null
             for (w in words) {
                 // the keyboard's personal mix for this context (TypingEngine.makeMix)
-                val mix: ((Int, Double) -> Double)? = personal?.decoderMix(lexicon, prev.takeIf { it != Bigrams.START }, prev2)
+                val mix: PersonalMix? = personal?.decoderMix(lexicon, prev.takeIf { it != Bigrams.START }, prev2)
                 val taps = ArrayList<Tap>()
                 for ((i, c) in w.withIndex()) {
                     val k = keys.getValue(c)

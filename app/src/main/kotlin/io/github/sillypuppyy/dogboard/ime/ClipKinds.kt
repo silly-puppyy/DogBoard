@@ -45,7 +45,11 @@ object ClipKinds {
 
     /** The clip as a colour: #RGB, #RRGGBB, rgb(r g b) or rgb(r, g, b), hsl(h s% l%); else null. */
     fun color(text: String): ClipColor? {
+        // a colour is short and starts with #, rgb or hsl: anything else leaves before the trim and the
+        // regexes (every clip is asked on each keyboard layout, perf 2026-11-18)
+        if (text.length > 64) return null
         val t = text.trim()
+        if (t.isEmpty() || (t[0] != '#' && !t.startsWith("rgb", ignoreCase = true) && !t.startsWith("hsl", ignoreCase = true))) return null
         HEX.matchEntire(t)?.let { m ->
             val h = m.groupValues[1].let { if (it.length == 3) it.map { c -> "$c$c" }.joinToString("") else it }
             return ClipColor(0xFF000000 or h.toLong(16), t)

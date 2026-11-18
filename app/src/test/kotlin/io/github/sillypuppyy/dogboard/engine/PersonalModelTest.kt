@@ -114,7 +114,7 @@ class PersonalModelTest : FunSpec({
             for (w in listOf("park", "dog", "the", "Paris", "café", "zebra")) {
                 val node = lexicon.find(w)
                 for (lp in listOf(-1.0, -7.5, -30.0, -800.0)) {
-                    hook(node, lp) shouldBe (m.fullMix(lexicon, node, lp, prev, prev2) plusOrMinus 1e-9)
+                    hook.logProb(node, lp) shouldBe (m.fullMix(lexicon, node, lp, prev, prev2) plusOrMinus 1e-9)
                 }
             }
         }

@@ -8,6 +8,11 @@ import kotlin.math.ln
  * One tap of the current word, in dp relative to the keyboard's top-left corner, and when it
  * happened ([timeMs], uptime; 0 if unknown).
  */
+/** The personal model's hook in the decoder (a primitive interface: a Kotlin function type boxed both numbers and the result per call). */
+fun interface PersonalMix {
+    fun logProb(node: Int, logProb: Double): Double
+}
+
 data class Tap(val x: Float, val y: Float, val timeMs: Long = 0L)
 
 /**
@@ -446,7 +451,7 @@ class Decoder(
         includeCompletions: Boolean = true,
         previous: Int = -1,
         typed: String? = null,
-        personal: ((node: Int, logProb: Double) -> Double)? = null,
+        personal: PersonalMix? = null,
         /** The word before [previous] (same kind of id), -1 for none: for a two-word-context model. */
         previous2: Int = -1,
     ): List<Candidate> {
@@ -503,10 +508,12 @@ class Decoder(
         refreshShortWords()
         fun lm(node: Int, prev: Int, prev2: Int = -1): Double {
             fun of(n: Int): Double {
-                val base = sr.context?.logProb(prev2, prev, lexicon.wordId(n), lexicon.logProb(n))
-                    ?: bigrams?.logProb(prev, lexicon.wordId(n), lexicon.logProb(n)) ?: lexicon.logProb(n)
+                // no ?. / ?: chains on Doubles here: each boxed the value (per search state)
+                val ctx = sr.context; val bg = bigrams
+                val base = if (ctx != null) ctx.logProb(prev2, prev, lexicon.wordId(n), lexicon.logProb(n))
+                    else if (bg != null) bg.logProb(prev, lexicon.wordId(n), lexicon.logProb(n)) else lexicon.logProb(n)
                 // the personal model mixed in (PersonalModel: iOS dynamic model weights)
-                return personal?.invoke(n, base) ?: base
+                return if (personal != null) personal.logProb(n, base) else base
             }
             val own = of(node)
             val long = shortWordFor(node)
