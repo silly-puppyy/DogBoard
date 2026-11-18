@@ -32,8 +32,20 @@ PARAMS = []
 SHAPE = {}  # layout json and aspect range, when each swipe gets its own keyboard shape
 
 
+# A simulated swipe longer than this (in keyboard-width units: a real one covers a few dozen at most) or not
+# finite is a numerically unstable finger (stiff, barely damped springs with wide spreads fly off): dropped
+# before resampling, which would cut it into millions of points (2026-11-18: the x1.5 / x2 spread sweep ate
+# all memory and the out-of-memory killer took the desktop session twice).
+MAX_PATH = 120.0
+
+
 def feats(xy):
     # plain arrays: torch's tensor sharing between processes is slow for many small tensors
+    total = 0.0
+    for (x0, y0), (x1, y1) in zip(xy, xy[1:]):
+        total += math.hypot(x1 - x0, y1 - y0)
+        if not math.isfinite(total) or total > MAX_PATH:
+            return None
     pts = resample(xy, 0.3)
     return np.array([(x, y, (pts[i + 1][0] if i + 1 < len(pts) else x) - x, (pts[i + 1][1] if i + 1 < len(pts) else y) - y)
                      for i, (x, y) in enumerate(pts)], dtype=np.float32)
@@ -54,12 +66,14 @@ def make(job):
                 out.append((feats(gen.path(w, c, rng)), w))
             else:
                 out.append((feats([(x, y) for x, y, _ in human_path(w, c, rng, gen)]), w))
-        return out
+        return [(f, w) for f, w in out if f is not None]
     if isinstance(gen, FingerParams):
-        return [(feats([(x, y) for x, y, _ in finger_path(w, CENTRES, rng, gen)]), w) for w in words]
-    if isinstance(gen, Library):
-        return [(feats(gen.path(w, CENTRES, rng)), w) for w in words]
-    return [(feats([(x, y) for x, y, _ in human_path(w, CENTRES, rng, gen)]), w) for w in words]
+        out = [(feats([(x, y) for x, y, _ in finger_path(w, CENTRES, rng, gen)]), w) for w in words]
+    elif isinstance(gen, Library):
+        out = [(feats(gen.path(w, CENTRES, rng)), w) for w in words]
+    else:
+        out = [(feats([(x, y) for x, y, _ in human_path(w, CENTRES, rng, gen)]), w) for w in words]
+    return [(f, w) for f, w in out if f is not None]
 
 
 def gen_of(spec):
