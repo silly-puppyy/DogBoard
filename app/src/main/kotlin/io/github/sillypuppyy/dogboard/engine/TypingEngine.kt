@@ -734,13 +734,16 @@ object TypingEngine {
         val phrases = listOf("$typed $after") + cands.keys.map { "$it $after" }
         val t0 = System.nanoTime()
         val s0 = lm.steps
+        // one phrase per hold of the model: a keystroke's refinement waits for one phrase at most, not the
+        // whole check (a trace at fast typing showed keystrokes waiting up to 50 ms, perf 2026-11-18); a
+        // keystroke in between moves the model's context, which the next phrase brings back
         val scores = runCatching {
-            synchronized(lm) {
-                val t1 = System.nanoTime() // waited for the model (predictions hold it while typing)
-                tallySteps(lm, "hindsight") { lm.wordScores(before, phrases, maxSteps = 200) }.also {
-                    android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms " +
-                        "(waited ${(t1 - t0) / 1_000_000} ms, ${lm.steps - s0} model steps)")
+            tallySteps(lm, "hindsight") {
+                HashMap<String, Double>().also { out ->
+                    for (p in phrases) lm.wordScores(before, listOf(p), maxSteps = 200)[p]?.let { out[p] = it }
                 }
+            }.also {
+                android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms (${lm.steps - s0} model steps)")
             }
         }.getOrNull() ?: return null
         val base = scores["$typed $after"] ?: return null
