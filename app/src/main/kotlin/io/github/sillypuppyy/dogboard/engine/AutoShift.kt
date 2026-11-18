@@ -23,7 +23,6 @@ object AutoShift {
     }
 
     private const val SPACE = "[\\u0020\\u00A0]"
-    private const val DELIMITER = "[.?!]"
     private const val TRAILING = "['\"\\u2019\\u201D]"
     private const val PREFIX = "[\\u00A1\\u00BF'\"\\u2018\\u201C(]"
 
@@ -34,34 +33,42 @@ object AutoShift {
     private const val WORD = "[\\p{L}\\p{M}\\p{N}\\p{Pc}]"
 
     /** The sentence-boundary pattern; group 1 is the word plus its delimiter when that is the boundary. */
-    internal val BOUNDARY: Pattern = Pattern.compile(
-        "(?:\\A|\\n|(?:$SPACE){3}|((?:(?<!$WORD)$WORD++(?:\\.$WORD++)*)?(?:$DELIMITER))(?:$TRAILING)*(?:$SPACE))(?:$SPACE)*(?:$PREFIX)*\\z",
-        Pattern.MULTILINE,
-    )
+    internal fun boundary(sentenceEnd: String): Pattern = boundaries.getOrPut(sentenceEnd) {
+        // the sentence-ending characters (LanguageRules.sentenceEnd) as a character class
+        val delimiter = "[" + sentenceEnd.map { "\\u%04X".format(it.code) }.joinToString("") + "]"
+        Pattern.compile(
+            "(?:\\A|\\n|(?:$SPACE){3}|((?:(?<!$WORD)$WORD++(?:\\.$WORD++)*)?(?:$delimiter))(?:$TRAILING)*(?:$SPACE))(?:$SPACE)*(?:$PREFIX)*\\z",
+            Pattern.MULTILINE,
+        )
+    }
+    private val boundaries = java.util.concurrent.ConcurrentHashMap<String, Pattern>()
+
+    /** The pattern for Latin-script sentences (".!?"). */
+    internal val BOUNDARY: Pattern get() = boundary(LanguageRules().sentenceEnd)
 
     /** How far back a capitalised word before a period is checked for being a sentence start. */
     private const val MAX_RECURSION = 2
 
     /** Whether the next letter typed after [before] should be a capital in a field of [type]. */
-    fun shouldShift(before: CharSequence, type: Type, words: WordForms?): Boolean = when (type) {
+    fun shouldShift(before: CharSequence, type: Type, words: WordForms?, sentenceEnd: String = LanguageRules().sentenceEnd): Boolean = when (type) {
         Type.NONE -> false
         Type.ALL -> true
         Type.WORDS -> before.isEmpty() || before.last().let { it == '\n' || it == ' ' || it == ' ' }
-        Type.SENTENCES -> before.isEmpty() || canStartSentenceAfter(before.toString(), words, MAX_RECURSION)
+        Type.SENTENCES -> before.isEmpty() || canStartSentenceAfter(before.toString(), words, MAX_RECURSION, sentenceEnd)
     }
 
-    internal fun canStartSentenceAfter(text: String, words: WordForms?, depth: Int): Boolean {
-        val m = BOUNDARY.matcher(text)
+    internal fun canStartSentenceAfter(text: String, words: WordForms?, depth: Int, sentenceEnd: String = LanguageRules().sentenceEnd): Boolean {
+        val m = boundary(sentenceEnd).matcher(text)
         if (!m.find()) return false
         val start = m.start(1)
         if (start < 0 || m.end(1) == start) return true // start of text, a new line or three spaces
         val last = m.end(1) - 1
-        if (text[last] != '.') return true // ? or !
+        if (text[last] != '.') return true // ? or ! (another sentence end)
         if (last > 0 && text[last - 1] == '.') return false // ".."
         val word = text.substring(start, last)
         if (word.isEmpty()) return true
         val ignoreCase = depth > 0 && capitalization(word) == 1 &&
-            canStartSentenceAfter(text.substring(0, start), words, depth - 1)
+            canStartSentenceAfter(text.substring(0, start), words, depth - 1, sentenceEnd)
         return periodEndsSentenceAfter(word, ignoreCase, words)
     }
 

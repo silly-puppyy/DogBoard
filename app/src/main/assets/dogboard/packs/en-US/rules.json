@@ -1,4 +1,29 @@
 {
-  "short_words": [["u", "you"], ["o", "oh"]],
-  "learned_typo_overrides": {"i": ["o", "O"], "I": ["O", "o"], "can": ["can't"], "and": ["abs"]}
+  "short_words": [
+    [
+      "u",
+      "you"
+    ],
+    [
+      "o",
+      "oh"
+    ]
+  ],
+  "learned_typo_overrides": {
+    "i": [
+      "o",
+      "O"
+    ],
+    "I": [
+      "O",
+      "o"
+    ],
+    "can": [
+      "can't"
+    ],
+    "and": [
+      "abs"
+    ]
+  },
+  "sentence_end": ".!?"
 }

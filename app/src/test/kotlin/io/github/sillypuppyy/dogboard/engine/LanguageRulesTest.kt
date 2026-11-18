@@ -16,6 +16,14 @@ class LanguageRulesTest : FunSpec({
         File("src/main/assets/dogboard/packs/fr-CA").exists() shouldBe false
         LanguageRules.ENGLISH.spaceBeforeMarks shouldBe ""
     }
+    test("sentence ends come from the rules: a Hindi danda or a Chinese full stop starts a sentence when the pack says so") {
+        previousContext("Hello. ") shouldBe Bigrams.START
+        previousContext("नमस्ते। ", "।") shouldBe Bigrams.START
+        previousContext("Hello। ") shouldBe null // not a sentence end here: a mark, no word (as before)
+        AutoShift.shouldShift("你好。", AutoShift.Type.SENTENCES, null, "。！？") shouldBe false // no space after: as for "."
+        AutoShift.shouldShift("नमस्ते। ", AutoShift.Type.SENTENCES, null, ".!?।") shouldBe true
+        AutoShift.shouldShift("नमस्ते। ", AutoShift.Type.SENTENCES, null) shouldBe false
+    }
     test("pack tags are normalised as the layouts give them") {
         val n = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry::normalize
         n("fr_FR") shouldBe "fr-FR"; n("fr-fr") shouldBe "fr-FR"; n("FR") shouldBe "fr"; n("fr-be-x") shouldBe "fr-BE"; n("") shouldBe ""

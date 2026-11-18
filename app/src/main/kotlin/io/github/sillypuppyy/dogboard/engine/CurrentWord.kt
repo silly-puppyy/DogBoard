@@ -137,23 +137,23 @@ fun leadingWord(textAfter: CharSequence, maxLength: Int = 48): String {
  * The word before [previousContext]'s word ([Bigrams.START] at a sentence start, null if none):
  * the second word of context for the two-word-context model.
  */
-fun previousContext2(textBefore: CharSequence): String? {
+fun previousContext2(textBefore: CharSequence, sentenceEnd: String = TypingEngine.rules.sentenceEnd): String? {
     var i = textBefore.length
     while (i > 0 && textBefore[i - 1].isWhitespace()) i--
     if (i == 0) return null
     val last = textBefore[i - 1]
-    if (last == '.' || last == '!' || last == '?') return null
+    if (last in sentenceEnd) return null
     val word = trailingWord(textBefore.subSequence(0, i))
     if (word.isEmpty()) return null
-    return previousContext(textBefore.subSequence(0, i - word.length))
+    return previousContext(textBefore.subSequence(0, i - word.length), sentenceEnd)
 }
 
-fun previousContext(textBefore: CharSequence): String? {
+fun previousContext(textBefore: CharSequence, sentenceEnd: String = TypingEngine.rules.sentenceEnd): String? {
     var i = textBefore.length
     while (i > 0 && textBefore[i - 1].isWhitespace()) i--
     if (i == 0) return Bigrams.START
     val last = textBefore[i - 1]
-    if (last == '.' || last == '!' || last == '?') return Bigrams.START
+    if (last in sentenceEnd) return Bigrams.START
     val word = trailingWord(textBefore.subSequence(0, i))
     return word.takeIf { it.isNotEmpty() }?.lowercase()?.replace('’', '\'')
 }

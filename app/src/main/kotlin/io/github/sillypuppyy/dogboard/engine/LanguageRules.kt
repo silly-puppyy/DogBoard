@@ -27,12 +27,19 @@ data class LanguageRules(
      * keyboard does not move them before that space as it does elsewhere ("word ?" -> "word? ").
      */
     @SerialName("space_before_marks") val spaceBeforeMarks: String = "",
+    /**
+     * Characters that end a sentence: the next word starts without a previous word (CurrentWord) and is
+     * capitalised (AutoShift). The default is Latin-script typography; a pack sets its own (Hindi "।", Chinese
+     * "。！？", Arabic "؟"). A period is still checked for abbreviations ("e.g.") by AutoShift.
+     */
+    @SerialName("sentence_end") val sentenceEnd: String = ".!?",
 ) {
     companion object {
         /** en-US (assets/dogboard/packs/en-US/rules.json). */
         val ENGLISH = LanguageRules(
             shortWords = listOf(listOf("u", "you"), listOf("o", "oh")),
             learnedTypoOverrides = linkedMapOf("i" to listOf("o", "O"), "I" to listOf("O", "o"), "can" to listOf("can't"), "and" to listOf("abs")),
+            sentenceEnd = ".!?",
         )
 
         private val json = Json { ignoreUnknownKeys = true }

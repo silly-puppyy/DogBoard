@@ -1165,7 +1165,7 @@ object TypingEngine {
             val stored = engine?.let { e -> lock.read { e.lexicon.formsOf(word) } }.orEmpty()
             stored + abbreviations[word.lowercase()].orEmpty()
         }
-        return AutoShift.shouldShift(before, type, forms)
+        return AutoShift.shouldShift(before, type, forms, rules.sentenceEnd)
     }
 
     private fun isBlocked(word: String): Boolean = word.lowercase() in blocked

@@ -72,8 +72,8 @@
     "rules": {
       "path": "dogboard/packs/en-US/rules.json",
       "curated": true,
-      "size": 147,
-      "sha256": "78ad804ba8137ccce0601dcda012bd195dd951a4a9e169ac6cfedbb9391b5f9d"
+      "size": 300,
+      "sha256": "3b60c6380153242597ed12f7a568dceaeeb2835405f8270cee7a583be55de6a4"
     }
   },
   "sources": [
