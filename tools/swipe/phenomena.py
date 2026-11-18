@@ -202,6 +202,14 @@ def main():
         print(f"  {k:26s} {R[k]:9.3f} {S[k]:9.3f}")
     if a.json:
         json.dump({"real": R, "model": S}, open(a.json, "w"), indent=1)
+    import os
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    import track
+    run = track.start("swipe", "en", "phenomena-" + os.path.basename(a.params).removesuffix(".json"), layout="qwerty",
+                      data="futo-real", config={"kind": "phenomena", "n": n, "params": a.params})
+    run.summary.update({**{f"real/{k}": v for k, v in R.items()}, **{f"model/{k}": v for k, v in S.items()}})
+    run.finish()
 
 
 if __name__ == "__main__":
