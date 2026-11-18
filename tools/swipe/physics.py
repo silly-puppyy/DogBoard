@@ -57,13 +57,30 @@ class FingerParams:
     drift: float = 0.25          # sideways drift of the guide (sd, key widths): bows on long strokes
     drift_tau: float = 250.0     # ms, how slowly it drifts
     follow: float = 0.3          # the guide runs on straight past the last key this far (lift while moving)
+    # mode "stroke" (2026-11-18, user: "simulate a physical finger"; tools/swipe/phenomena.py measured what the
+    # pursuit model lacks: corner slowing 0.62 vs 0.76 of median speed, longer strokes faster (+0.22 vs -0.10),
+    # 231 vs 180 ms a key, mid-stroke hesitations on 6.2 % of strokes vs 0.2 %). Each key-to-key stroke is an
+    # aimed movement: duration fitts_a + fitts_b * log2(1 + L / 0.5) ms, a minimum-jerk profile (bell-shaped
+    # speed), the next stroke starting before this one ends by overlap x (1 - turn / pi) of its duration (keeps
+    # speed through straight passes, slows at corners); each stroke bows sideways in one arc (a person's bias +
+    # per stroke); a stroke may hesitate (stop hes_ms, log-normal) partway; the finger is the damped spring
+    # chasing that guide, with the drifting motor noise above.
+    fitts_a: float = 60.0
+    fitts_b: float = 70.0
+    overlap: float = 0.45
+    bow_bias: float = 0.03       # sd of a person's own bow (share of stroke length; sign = side)
+    bow_sd: float = 0.07         # sd of a stroke's bow around it
+    hes_p: float = 0.06          # chance a stroke hesitates
+    hes_ms: float = 150.0        # median hesitation
+    hes_spread: float = 0.6      # log-normal sd of a hesitation
 
 
 def person(rng: random.Random, p: FingerParams):
     """One simulated person's own constants."""
     own = {k: getattr(p, k) * math.exp(rng.gauss(0, sd)) for k, sd in p.spreads.items() if sd > 0}
     return dict(
-        speed=math.exp(rng.gauss(0, p.omega_spread)) if p.mode == "pursuit" else 1.0,
+        speed=math.exp(rng.gauss(0, p.omega_spread)) if p.mode in ("pursuit", "stroke") else 1.0,
+        bow=rng.gauss(0, p.bow_bias),
         params=dataclasses.replace(p, **own) if own else p,
         omega=p.omega * math.exp(rng.gauss(0, p.omega_spread)),
         switch=p.switch * math.exp(rng.gauss(0, p.switch_spread)),
@@ -78,6 +95,8 @@ def path(word: str, centres: dict, rng: random.Random, p: FingerParams = FingerP
     p = who.get("params", p)
     if p.mode == "pursuit":
         return _pursuit(word, centres, rng, p, who)
+    if p.mode == "stroke":
+        return _stroke(word, centres, rng, p, who)
     keys = [centres[c] for c in word]
     keys = [k for i, k in enumerate(keys) if i == 0 or k != keys[i - 1]]  # a double letter: no move
     n = len(keys)
@@ -212,3 +231,82 @@ def _pursuit(word, centres, rng, p, who):
         t += p.dt
         out.append((x, y, t))
     return out
+
+
+def _mj(u):
+    """Minimum-jerk position profile, 0..1 for u in 0..1 (bell-shaped speed)."""
+    u = min(1.0, max(0.0, u))
+    return u * u * u * (10 - 15 * u + 6 * u * u)
+
+
+def _stroke(word, centres, rng, p, who):
+    """The physical finger (mode "stroke", see FingerParams): a guide made of overlapping aimed strokes, each a
+    minimum-jerk move with Fitts timing, a sideways bow and maybe a hesitation; a damped spring finger chases it."""
+    aims = _aims(word, centres, rng, p, who)
+    if len(aims) == 1:
+        x, y = aims[0]
+        return [(x, y, 0.0), (x + rng.gauss(0, 0.03), y + rng.gauss(0, 0.03), p.dt * 3)]
+    (ax, ay), (bx, by) = aims[-2], aims[-1]
+    L = math.hypot(bx - ax, by - ay) or 1.0
+    f = p.follow * math.exp(rng.gauss(0, p.lift_spread))
+    route = aims + [(bx + (bx - ax) / L * f, by + (by - ay) / L * f)]
+    speed = who.get("speed", 1.0)
+    strokes = []  # (start ms, duration ms, from, to, normal, bow, hesitation at u, hesitation ms)
+    start = p.dwell
+    for i in range(len(route) - 1):
+        (x0, y0), (x1, y1) = route[i], route[i + 1]
+        d = math.hypot(x1 - x0, y1 - y0)
+        last = i == len(route) - 2  # the run-on past the last key
+        dur = (p.fitts_a + p.fitts_b * math.log2(1 + d / 0.5)) / speed * (0.5 if last else 1.0)
+        nx, ny = ((y0 - y1) / d, (x1 - x0) / d) if d > 0 else (0.0, 0.0)
+        bow = 0.0 if last else (who.get("bow", 0.0) + rng.gauss(0, p.bow_sd)) * d
+        hu, hd = 0.0, 0.0
+        if not last and rng.random() < p.hes_p:
+            hu, hd = rng.uniform(0.2, 0.8), p.hes_ms * math.exp(rng.gauss(0, p.hes_spread))
+        strokes.append((start, dur, (x0, y0), (x1, y1), (nx, ny), bow, hu, hd))
+        if i + 2 < len(route):
+            (x2, y2) = route[i + 2]
+            v1, v2 = (x1 - x0, y1 - y0), (x2 - x1, y2 - y1)
+            n1, n2 = math.hypot(*v1), math.hypot(*v2)
+            turn = 0.0 if n1 == 0 or n2 == 0 else math.acos(max(-1.0, min(1.0, (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2))))
+            start += dur + hd - p.overlap * (1 - turn / math.pi) * dur
+    end = strokes[-1][0] + strokes[-1][1] + strokes[-1][7]
+
+    def guide(t):
+        gx, gy = route[0]
+        for s0, dur, (x0, y0), (x1, y1), (nx, ny), bow, hu, hd in strokes:
+            if t <= s0:
+                break
+            tt = t - s0
+            if hd > 0:  # the hesitation freezes this stroke's progress at hu for hd ms
+                th = hu * dur
+                tt = tt if tt < th else (th if tt < th + hd else tt - hd)
+            u = _mj(tt / dur)
+            gx += (x1 - x0) * u + nx * bow * math.sin(math.pi * u)
+            gy += (y1 - y0) * u + ny * bow * math.sin(math.pi * u)
+        return gx, gy
+
+    dt = p.dt / 1000.0
+    w, z = who["omega"], p.zeta
+    fkeep = math.exp(-p.dt / max(p.noise_tau, 1e-3))
+    fkick = p.noise * math.sqrt(1 - fkeep * fkeep)
+    fx = fy = 0.0
+    x, y = route[0]
+    vx = vy = 0.0
+    out = [(x, y, 0.0)]
+    sub = max(1, math.ceil(w * dt / 0.3))
+    h = dt / sub
+    t = 0.0
+    while t < end and t < p.max_ms:
+        t += p.dt
+        gx, gy = guide(t)
+        fx = fx * fkeep + rng.gauss(0, fkick)
+        fy = fy * fkeep + rng.gauss(0, fkick)
+        for _ in range(sub):
+            vx += (w * w * (gx - x) - 2 * z * w * vx + fx) * h
+            vy += (w * w * (gy - y) - 2 * z * w * vy + fy) * h
+            x += vx * h
+            y += vy * h
+        out.append((x, y, t))
+    return out
+
