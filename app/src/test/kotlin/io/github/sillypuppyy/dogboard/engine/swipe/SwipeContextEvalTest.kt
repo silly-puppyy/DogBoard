@@ -30,7 +30,7 @@ class SwipeContextEvalTest {
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val ngrams = File("src/main/assets/dogboard/en.ngrams.bin").inputStream().use { NgramModel.readBinary(it) }!!
         val scorer = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)
-        class Item(val word: String, val prev2: Int, val prev: Int, val cands: List<SwipeBeam.Candidate>)
+        class Item(val word: String, val prev2: Int, val prev: Int, val cands: List<SwipeBeam.Candidate>, val before: String)
         val items = File(path!!).readLines().map { line ->
             val o = Json.parseToJsonElement(line).jsonObject
             val prev = o["prev"]!!.jsonArray.map { it.jsonPrimitive.content }
@@ -39,7 +39,21 @@ class SwipeContextEvalTest {
             val p1 = if (start) bigrams.sentenceStart else prev.lastOrNull()?.let(::id) ?: -1
             val p2 = if (start) -1 else if (prev.size >= 2) id(prev[0]) else if (prev.size == 1) bigrams.sentenceStart else -1
             val logp = o["logp"]!!.jsonArray.map { it.jsonPrimitive.float }.toFloatArray()
-            Item(o["word"]!!.jsonPrimitive.content, p2, p1, SwipeBeam.decode(logp, logp.size / 27, lexicon, top = 10))
+            Item(o["word"]!!.jsonPrimitive.content, p2, p1, SwipeBeam.decode(logp, logp.size / 27, lexicon, top = 10), o["before"]?.jsonPrimitive?.content ?: "")
+        }
+        // optional: each swipe's candidates with their scores, for the neural model's study (tools/swipe/swipe_neural.py):
+        // text before <TAB> target <TAB> word,path,unigram,trigram|...
+        System.getenv("DOGBOARD_SWIPE_DUMP")?.let { out ->
+            File(out).printWriter().use { w ->
+                for (it in items) {
+                    val cs = it.cands.joinToString("|") { c ->
+                        val uni = lexicon.logProb(c.node)
+                        val tri = scorer.logProb(it.prev2, it.prev, lexicon.wordId(c.node), uni)
+                        "${lexicon.word(c.node)},${"%.4f".format(c.score - uni)},${"%.4f".format(uni)},${"%.4f".format(tri)}"
+                    }
+                    w.println("${it.before}\t${it.word}\t$cs")
+                }
+            }
         }
         val half = items.size / 2
         // score = path (beam score without the prior) + w * ln P(word | two before) [+ u * ln P(word)]

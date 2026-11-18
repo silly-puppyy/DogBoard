@@ -51,7 +51,9 @@ def main():
                 before = []
             with torch.no_grad():
                 lp = m(features(d["data"], 0.3).unsqueeze(0))[0]
-            out.write(json.dumps({"word": w, "prev": before[-2:], "start": d["word_idx"] == 0 or not before,
+            # the sentence as typed before this word (for the neural model, which reads all of it)
+            text_before = " ".join(d["sentence"].split()[:d["word_idx"]])
+            out.write(json.dumps({"word": w, "prev": before[-2:], "start": d["word_idx"] == 0 or not before, "before": text_before,
                                   "logp": [round(v, 3) for v in lp.flatten().tolist()]}) + "\n")
             n += 1
             if n >= a.n:
