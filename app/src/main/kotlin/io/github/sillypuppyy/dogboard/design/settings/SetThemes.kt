@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,14 +70,16 @@ fun SetThemes(state: SetThemesState) {
     val primary = SetColors.primary
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 40.dp, bottom = 40.dp),
+            // below the real status bar (the canvas's fixed 40 dp let the content run under it)
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars).padding(top = 8.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // :18-22 header: back to Look, title, import a theme pack
             Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable { state.onBack() }, contentAlignment = Alignment.Center) { Symbol("arrow_back", 24.sp, SetColors.onSurface) }
                 DText("Themes", Modifier.weight(1f), style = setText(22f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)), contentAlignment = Alignment.Center) { Symbol("file_open", 24.sp, SetColors.onSurfaceVariant) }
+                // the canvas's import button (file_open) is left out until theme packs can be imported
             }
 
             // :24-41 the day and night slots, the status line and Follow system dark mode
@@ -223,15 +227,13 @@ fun SetThemes(state: SetThemesState) {
                             PageSwitch(shown) { state.onHidePack(id, shown) }
                         }
                     }
-                    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).background(SetColors.row).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        DText("Import a theme pack", Modifier.weight(1f), style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        Symbol("file_open", 24.sp, SetColors.onSurfaceVariant)
-                    }
+                    // "Import a theme pack" (canvas) waits for pack import to exist: a row that did nothing
                 }
                 DText("A hidden pack disappears from this list but stays installed, and the theme you are using keeps working.",
                     Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp), maxLines = 4)
             }
         }
+        StatusBarBand()
     }
 }
 
