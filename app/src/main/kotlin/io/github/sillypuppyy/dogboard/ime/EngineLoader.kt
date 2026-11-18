@@ -108,6 +108,8 @@ object EngineLoader {
             // parsed word data, rebuilt when the app (and so its assets) changes
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
             snapshotKey = app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
+            rules = p.path("rules")?.let { r -> runCatching { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(assets.open(r).bufferedReader().use { it.readText() }) }.getOrNull() }
+                ?: io.github.sillypuppyy.dogboard.engine.LanguageRules(),
         )
         android.util.Log.i("DogBoardPerf", "engine ready (suggestions on) after ${android.os.SystemClock.uptimeMillis() - t0} ms")
         nativeMark("engine")

@@ -77,11 +77,16 @@ object TypingEngine {
     /** Words the user taught the keyboard (not in the shipped lexicon), lowercase. */
     private val learnedWords = HashSet<String>()
 
-    private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?) {
+    /** The loaded language's rules ([LanguageRules]). */
+    @Volatile var rules: LanguageRules = LanguageRules.ENGLISH
+        private set
+
+    private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, val rules: LanguageRules) {
         val decoder = Decoder(
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
+            rules = rules,
         )
         val autocorrect = Autocorrect(lexicon)
 
@@ -90,6 +95,7 @@ object TypingEngine {
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
+            rules = rules,
         )
         /**
          * A third decoder for rejoining a word split by a stray space (decoded in the background, on
@@ -100,6 +106,7 @@ object TypingEngine {
             lexicon,
             Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM, splitWords = false),
             bigrams,
+            rules = rules,
         )
         /** Learned words get the probability of a moderately common word. */
         val userWordLogProb = lexicon.logProb(lexicon.nodeOfWord(minOf(USER_WORD_RANK, lexicon.size - 1)))
@@ -143,19 +150,26 @@ object TypingEngine {
         openCharModel: (() -> BufferedReader)? = null,
         /** Known misspellings (en.misspellings.txt): never scored as plausible unknown words. */
         openMisspellings: (() -> BufferedReader)? = null,
+        /** The language's rules (the pack's rules.json). */
+        rules: LanguageRules = LanguageRules.ENGLISH,
     ) {
         if (loaded != null) return
+        // load stages timed for the log (cold start; i18n step 2 decides what to prebuild from this)
+        var tMark = System.nanoTime()
+        val stages = StringBuilder()
+        fun mark(name: String) { val t = System.nanoTime(); stages.append(name).append(' ').append((t - tMark) / 1_000_000).append(" ms, "); tMark = t }
         misspellings = openMisspellings?.let { open ->
             runCatching { open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toHashSet() } }.getOrNull()
         } ?: misspellings
         addedWordsFile = addedWords
         lock.write { this.addedWords.clear(); readLines(addedWords).forEach { this.addedWords.add(it.trim().lowercase()) } }
         if (charModel == null) charModel = openCharModel?.let { open -> runCatching { open().use { CharModel.parse(it) } }.getOrNull() }
+        mark("lists")
         reload = {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, autocorrectStrength, personalOffsetsFile, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
-                openCharModel, openMisspellings,
+                openCharModel, openMisspellings, rules,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -171,17 +185,21 @@ object TypingEngine {
         val bigramSnapshot = snapshot("bigrams")
         // mapped, not read into a byte array: the arrays are copied straight from the file's pages
         fun map(f: File) = java.io.RandomAccessFile(f, "r").channel.use { it.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, it.size()) }
+        mark("small lists")
         val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it)) }.getOrNull() }
         val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.also { lex ->
             snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
             lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
         }
+        mark(if (cachedLexicon != null) "lexicon (snapshot)" else "lexicon (parsed)")
         val bigrams = openBigrams?.let { open ->
             bigramSnapshot?.takeIf { cachedLexicon != null && it.isFile }
                 ?.let { runCatching { Bigrams.readSnapshot(map(it), lexicon) }.getOrNull() }
                 ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
         }
-        val engine = Loaded(lexicon, bigrams)
+        mark("bigrams")
+        this.rules = rules
+        val engine = Loaded(lexicon, bigrams, rules)
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel
         engine.joinDecoder.unknownWords = charModel
@@ -197,7 +215,9 @@ object TypingEngine {
         rejections = Rejections(rejectedCorrections)
         strength = AutocorrectStrength(autocorrectStrength).also { hookStep(it) }
         personalOffsets = PersonalOffsets(personalOffsetsFile)
+        mark("engine + user words + files")
         personal = PersonalModel(personalModel)
+        mark("personal model")
         replacements = TextReplacements(textReplacements)
         emojiUsage = EmojiUsage(emojiUsageFile)
         val tones = openEmojiTones?.let { open -> open().use { EmojiSuggest.parseTones(it) } }.orEmpty()
@@ -207,6 +227,7 @@ object TypingEngine {
             learnedWords.add(w.lowercase())
             lexicon.addWord(w, engine.acceptedWordLogProb)
         }
+        mark("emoji")
         for (n in appNames) if (!lexicon.contains(n)) lexicon.addWord(n, engine.userWordLogProb)
         lock.write {
             blocked.clear()
@@ -214,6 +235,8 @@ object TypingEngine {
         }
         loaded = engine
         ngramModel?.let { attachNgrams(it) }
+        mark("rest")
+        runCatching { android.util.Log.i("DogBoardPerf", "load stages: $stages") }
     }
 
     /**
@@ -893,7 +916,7 @@ object TypingEngine {
             .filter {
                 keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) &&
                     keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
-                    !isCommonLearnedTypo(word.text, it.word) && !isInvalidUserEntry(word.text, it.word)
+                    !isCommonLearnedTypo(word.text, it.word, rules.learnedTypoOverrides) && !isInvalidUserEntry(word.text, it.word)
             }
         // iOS exact-typed-string veto: a typed word the lexicon
         // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
@@ -1283,14 +1306,10 @@ object TypingEngine {
 
 /**
  * iOS FilterCommonLearnedTypos: for these typed words (exact case), corrections people tend to undo
- * are never made (iOS's English adaptation-overrides list, 4 entries).
+ * are never made ([LanguageRules.learnedTypoOverrides], iOS's adaptation-overrides asset).
  */
-private val COMMON_LEARNED_TYPOS = mapOf(
-    "i" to setOf("o", "O"), "I" to setOf("O", "o"), "can" to setOf("can't"), "and" to setOf("abs"),
-)
-
-internal fun isCommonLearnedTypo(typed: String, candidate: String): Boolean =
-    COMMON_LEARNED_TYPOS[typed]?.let { bad -> candidate.split(' ').any { it.replace('’', '\'') in bad } } == true
+internal fun isCommonLearnedTypo(typed: String, candidate: String, overrides: Map<String, List<String>> = LanguageRules.ENGLISH.learnedTypoOverrides): Boolean =
+    overrides[typed]?.let { bad -> candidate.split(' ').any { it.replace('’', '\'') in bad } } == true
 
 /** iOS FilterCharacterCount (#13): a correction keeps at least as many "&" as were typed ("AT&T"). */
 internal fun keepsAmpersands(typed: String, candidate: String): Boolean =

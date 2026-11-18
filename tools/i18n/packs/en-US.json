@@ -43,6 +43,9 @@
     "swipe_qwerty": {
       "path": "dogboard/swipe/en-qwerty.tflite",
       "optional": true
+    },
+    "rules": {
+      "path": "dogboard/packs/en-US/rules.json"
     }
   },
   "sources": [
@@ -145,6 +148,13 @@
         "swipe_qwerty"
       ],
       "url": "https://huggingface.co/datasets/futo-org/swipe.futo.org"
+    },
+    {
+      "name": "DogBoard project (language rules)",
+      "licence": "same as the app",
+      "for": [
+        "rules"
+      ]
     }
   ]
 }

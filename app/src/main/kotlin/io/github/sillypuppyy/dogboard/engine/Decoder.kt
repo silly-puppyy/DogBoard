@@ -52,6 +52,8 @@ class Decoder(
     private val bigrams: Bigrams? = null,
     /** A two-word-context model ([NgramScorer]); when set it scores words instead of [bigrams]. */
     context: ContextScorer? = null,
+    /** The language's rules (its pack's rules.json). */
+    private val rules: LanguageRules = LanguageRules.ENGLISH,
 ) {
     /**
      * [c] (one word) as if it followed [previous] (and [previous2]): its geometry kept, its language
@@ -160,7 +162,6 @@ class Decoder(
          */
         const val MAX_WORDS = 3
 
-        private val SHORT_WORDS = listOf("u" to "you", "o" to "oh")
         private const val LAYER_POOL = 64
         /** Completions this far (ln) below the best reading are not built (odds below 1e-13). */
         private const val COMPLETION_CUT = 30.0
@@ -411,7 +412,7 @@ class Decoder(
 
     private fun refreshShortWords() {
         if (shortWordsVersion != lexicon.version) {
-            val pairs = SHORT_WORDS.mapNotNull { (short, long) ->
+            val pairs = rules.shortWords.filter { it.size == 2 }.mapNotNull { (short, long) ->
                 val a = lexicon.find(short)
                 val b = lexicon.find(long)
                 if (a != Lexicon.NONE && b != Lexicon.NONE && lexicon.isWord(a) && lexicon.isWord(b)) a to b else null

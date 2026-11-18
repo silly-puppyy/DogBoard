@@ -68,6 +68,11 @@
       "optional": true,
       "size": 4390020,
       "sha256": "4966c07d348ffa371ff13beb2c41e2d9828896af983d229adfb38e6a53d4ed46"
+    },
+    "rules": {
+      "path": "dogboard/packs/en-US/rules.json",
+      "size": 147,
+      "sha256": "78ad804ba8137ccce0601dcda012bd195dd951a4a9e169ac6cfedbb9391b5f9d"
     }
   },
   "sources": [
@@ -170,6 +175,13 @@
         "swipe_qwerty"
       ],
       "url": "https://huggingface.co/datasets/futo-org/swipe.futo.org"
+    },
+    {
+      "name": "DogBoard project (language rules)",
+      "licence": "same as the app",
+      "for": [
+        "rules"
+      ]
     }
   ]
 }
