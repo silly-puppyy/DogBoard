@@ -1086,10 +1086,7 @@ object TypingEngine {
     private fun makeMix(engine: Loaded, p: PersonalModel, previous: String?, previous2: String?): (Int, Double) -> Double {
         // the start of a text has no word before it
         val p2 = previous2?.takeIf { previous != null && previous != Bigrams.START && it != Bigrams.START }
-        return { node, logProb ->
-            val word = engine.lexicon.word(node)
-            if (word == null) logProb else ln(p.mix(exp(logProb), previous, word, p2).coerceAtLeast(1e-300))
-        }
+        return p.decoderMix(engine.lexicon, previous, p2)
     }
 
     /**

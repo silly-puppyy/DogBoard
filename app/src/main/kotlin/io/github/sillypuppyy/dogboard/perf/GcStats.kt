@@ -38,5 +38,35 @@ object GcStats {
         return r
     }
 
+    /** [track] split in two, for code that can't go in a lambda (a composable call): -1 = not counting. */
+    @Suppress("DEPRECATION")
+    fun begin(): Long {
+        if (!dev.patrickgold.florisboard.BuildConfig.DEBUG) return -1L
+        if (!counting) { Debug.startAllocCounting(); counting = true }
+        return Debug.getThreadAllocSize().toLong()
+    }
+
+    @Suppress("DEPRECATION")
+    fun end(name: String, a0: Long) {
+        if (a0 < 0) return
+        val used = Debug.getThreadAllocSize() - a0
+        synchronized(sections) { sections[name] = (sections[name] ?: 0L) + used }
+    }
+
+    private var mainLast = -1L
+
+    /**
+     * Debug builds: everything the UI thread allocated since the last call, as section "UI thread (all)"
+     * (called on each key on the UI thread, so the sum per word is the UI thread's whole share).
+     */
+    @Suppress("DEPRECATION")
+    fun markUiThread() {
+        if (!dev.patrickgold.florisboard.BuildConfig.DEBUG) return
+        if (!counting) { Debug.startAllocCounting(); counting = true }
+        val now = Debug.getThreadAllocSize().toLong()
+        if (mainLast >= 0) synchronized(sections) { sections["UI thread (all)"] = (sections["UI thread (all)"] ?: 0L) + (now - mainLast) }
+        mainLast = Debug.getThreadAllocSize().toLong()
+    }
+
     private fun stat(key: String): Long? = Debug.getRuntimeStat(key)?.toLongOrNull()
 }

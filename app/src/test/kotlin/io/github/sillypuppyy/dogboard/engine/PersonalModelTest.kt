@@ -103,6 +103,23 @@ class PersonalModelTest : FunSpec({
         loaded.probability("to", "see", "want") shouldBe (loaded.probability("to", "see", "need") plusOrMinus 1e-12)
     }
 
+    test("the decoder's shortcut for words never typed gives the full mix's value") {
+        val lexicon = Lexicon.of(mapOf("park" to 50L, "dog" to 80L, "the" to 500L, "Paris" to 20L, "café" to 5L, "zebra" to 3L))
+        val m = fresh()
+        repeat(60) { m.accept("the", "dog") }
+        repeat(3) { m.accept("dog", "park", "the") }
+        m.accept(null, "paris"); m.accept(null, "cafe")
+        for ((prev, prev2) in listOf(null to null, "the" to null, "dog" to "the")) {
+            val hook = m.decoderMix(lexicon, prev, prev2)
+            for (w in listOf("park", "dog", "the", "Paris", "café", "zebra")) {
+                val node = lexicon.find(w)
+                for (lp in listOf(-1.0, -7.5, -30.0, -800.0)) {
+                    hook(node, lp) shouldBe (m.fullMix(lexicon, node, lp, prev, prev2) plusOrMinus 1e-9)
+                }
+            }
+        }
+    }
+
     test("totals updated in place after each word match a rebuild from the saved file") {
         val f = kotlin.io.path.createTempFile("personal", ".tsv").toFile()
         val m = fresh(f)

@@ -126,6 +126,10 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     @Synchronized
     fun uses(word: String): Int = uses[word.lowercase()] ?: 0
 
+    /** Every word the model holds (lowercase), unsorted. */
+    @Synchronized
+    fun wordKeys(): List<String> = words.keys.toList()
+
     /** Words the user has accepted, most used first (for learning into the lexicon). */
     @Synchronized
     fun knownWords(): List<String> = words.entries.sortedByDescending { it.value.value }.map { it.key }
@@ -158,6 +162,30 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         val d = weight(previous != null)
         if (d <= 0) return staticProbability
         return (1 - d) * staticProbability + d * probability(previous, word, previous2)
+    }
+
+    /**
+     * The decoder's hook: ln of [mix] for the word at a [lexicon] node given its static ln P. A word the user
+     * never accepted has no personal counts (P_personal = 0): its mix is (1 - d) x P, worked out without
+     * building the word's text and keys (the decoder asks per search state; that was the typing path's
+     * largest garbage, perf 2026-11-18). Nodes of the words the model knows (a superset: casings and
+     * accents share a node) take the full path.
+     */
+    fun decoderMix(lexicon: Lexicon, previous: String?, previous2: String?): (Int, Double) -> Double {
+        val known = java.util.BitSet()
+        for (w in wordKeys()) lexicon.find(w).takeIf { it != Lexicon.NONE }?.let { known.set(it) }
+        val keep = kotlin.math.ln(1 - weight(previous != null))
+        val floor = kotlin.math.ln(1e-300)
+        return { node, logProb ->
+            if (!known.get(node)) maxOf(keep + logProb, floor)
+            else fullMix(lexicon, node, logProb, previous, previous2)
+        }
+    }
+
+    /** [decoderMix] without the shortcut. */
+    fun fullMix(lexicon: Lexicon, node: Int, logProb: Double, previous: String?, previous2: String?): Double {
+        val word = lexicon.word(node) ?: return logProb
+        return kotlin.math.ln(mix(exp(logProb), previous, word, previous2).coerceAtLeast(1e-300))
     }
 
     @Synchronized

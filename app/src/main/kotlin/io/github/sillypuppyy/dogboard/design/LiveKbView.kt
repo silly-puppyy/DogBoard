@@ -133,9 +133,13 @@ fun LiveKbView(
             pressed = themed.pressed.ifEmpty { if (themed.previewFade != null) "" else themed.preview },
             preview = "", previewFade = null, longpress = "", lpSel = 0, lpItems = emptyList(), trackpadX = null,
         )
-        val layout = remember(layoutProps) { KbSpec.layout(layoutProps) }
+        val layout = remember(layoutProps) { io.github.sillypuppyy.dogboard.perf.GcStats.track("layout") { KbSpec.layout(layoutProps) } }
         val render = KbSpec.overlays(layout, themed)
-        androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) { KbView(render) }
+        androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) {
+            val a0 = io.github.sillypuppyy.dogboard.perf.GcStats.begin()
+            KbView(render)
+            io.github.sillypuppyy.dogboard.perf.GcStats.end("KbView (inline part)", a0)
+        }
     }
 }
 

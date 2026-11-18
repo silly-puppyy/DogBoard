@@ -361,6 +361,8 @@ class Decoder(
         val personal: Any?,
         val context: ContextScorer?,
         val lexiconVersion: Int,
+        /** restart's result per (prefix, node) key: the text is built once per new word pair (reused from the last search, cleared). */
+        val restartIds: LongIntMap = LongIntMap(),
     ) {
         val taps = ArrayList<Tap>()
         val info = ArrayList<TapInfo>()
@@ -368,8 +370,6 @@ class Decoder(
         val interior = ArrayList<LayerMap>()
         /** prefixes[0] is "no earlier word". */
         val prefixes = arrayListOf<Prefix?>(null)
-        /** restart's result per (prefix, node) key: the text is built once per new word pair. */
-        val restartIds = LongIntMap()
 
         /** Keeps what the first [m] taps decide; the dropped layers go to [recycle]. */
         fun truncate(m: Int, recycle: (LayerMap) -> Unit) {
@@ -459,7 +459,7 @@ class Decoder(
             sr.lexiconVersion != lexicon.version
         ) {
             sr?.let { old -> old.raw.forEach(::recycleLayer); old.interior.forEach(::recycleLayer) }
-            sr = Search(keys, params, previous, previous2, personal, context, lexicon.version).also { search = it }
+            sr = Search(keys, params, previous, previous2, personal, context, lexicon.version, sr?.restartIds?.also { it.clear() } ?: LongIntMap()).also { search = it }
         }
         var m = 0
         while (m < minOf(n, sr.taps.size) && sr.taps[m] == taps[m]) m++

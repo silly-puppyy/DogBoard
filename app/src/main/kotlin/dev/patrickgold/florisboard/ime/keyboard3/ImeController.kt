@@ -531,7 +531,7 @@ class ImeController(
             super.emit(value)
         }
 
-        override fun emitText(value: K3String) = io.github.sillypuppyy.dogboard.perf.GcStats.track("key (main thread)") { emitTextTracked(value) }
+        override fun emitText(value: K3String) = io.github.sillypuppyy.dogboard.perf.GcStats.also { it.markUiThread() }.track("key (main thread)") { emitTextTracked(value) }
 
         private fun emitTextTracked(raw: K3String) {
             // composed, as other keyboards type it: the layout library keeps accented letters
