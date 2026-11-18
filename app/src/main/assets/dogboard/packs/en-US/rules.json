@@ -25,5 +25,6 @@
       "abs"
     ]
   },
-  "sentence_end": ".!?"
+  "sentence_end": ".!?",
+  "possessive_suffix": "'s"
 }

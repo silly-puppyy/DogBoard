@@ -697,10 +697,10 @@ class Decoder(
                 }
                 // a word plus a lone "s" ("puppy s") is more likely the possessive "puppy's", which
                 // the lexicon stores only when frequent: generated here, the missed apostrophe
-                // priced like the missed space
-                if (p != null && p.count == 1 && lexicon.word(sNode) == "s") {
+                // priced like the missed space (the suffix is the language's, rules.json possessive_suffix)
+                if (p != null && p.count == 1 && rules.possessiveLetters != null && lexicon.word(sNode) == rules.possessiveLetters) {
                     val lp = p.languageModel + POSSESSIVE_LOG_RATIO
-                    add(Candidate(p.text(lexicon) + "'s", sGeometry + w * lp, sGeometry, lp, sEdits, isCompletion = false))
+                    add(Candidate(p.text(lexicon) + rules.possessiveSuffix, sGeometry + w * lp, sGeometry, lp, sEdits, isCompletion = false))
                 }
             }
             if (includeCompletions) {

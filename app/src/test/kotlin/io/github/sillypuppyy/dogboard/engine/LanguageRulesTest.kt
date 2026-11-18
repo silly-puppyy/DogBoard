@@ -37,6 +37,12 @@ class LanguageRulesTest : FunSpec({
         LanguageRules.ENGLISH.doubleSpace shouldBe ". "
         LanguageRules.parse("""{"double_space": "। "}""").doubleSpace shouldBe "। "
     }
+    test("the possessive suffix is a rule: English \"'s\", none by default (a pack must not inherit English's)") {
+        LanguageRules.ENGLISH.possessiveSuffix shouldBe "'s"
+        LanguageRules.ENGLISH.possessiveLetters shouldBe "s"
+        LanguageRules().possessiveLetters shouldBe null
+        LanguageRules.parse("""{"sentence_end": ".!?"}""").possessiveLetters shouldBe null
+    }
     test("pack tags are normalised as the layouts give them") {
         val n = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry::normalize
         n("fr_FR") shouldBe "fr-FR"; n("fr-fr") shouldBe "fr-FR"; n("FR") shouldBe "fr"; n("fr-be-x") shouldBe "fr-BE"; n("") shouldBe ""

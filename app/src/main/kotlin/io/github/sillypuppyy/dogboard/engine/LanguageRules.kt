@@ -44,7 +44,17 @@ data class LanguageRules(
      * without a space for Yi and Ainu; two plain spaces (Japanese, Thai) mean no replacement at all.
      */
     @SerialName("double_space") val doubleSpace: String = ". ",
+    /**
+     * A suffix the decoder adds when a word is followed by its letters typed as a word of their own ("puppy s"
+     * -> "puppy's"; the lexicon keeps possessives only when frequent). English "'s"; empty (the default) for
+     * languages without one, so a pack that does not set it never gets English possessives.
+     */
+    @SerialName("possessive_suffix") val possessiveSuffix: String = "",
 ) {
+    /** [possessiveSuffix]'s letters: the lone word that stands for it ("s"); null when there is none. */
+    @kotlinx.serialization.Transient // worked out once: the decoder checks it for every word
+    val possessiveLetters: String? = possessiveSuffix.filter { it.isLetter() }.ifEmpty { null }
+
     /** [quotes] as SmartPunctuation takes them (the default set when the rule is malformed). */
     val smartQuotes: io.github.sillypuppyy.dogboard.feel.SmartPunctuation.Quotes
         get() = (quotes.takeIf { it.length == 5 } ?: "“”‘’’").let {
@@ -56,6 +66,7 @@ data class LanguageRules(
             shortWords = listOf(listOf("u", "you"), listOf("o", "oh")),
             learnedTypoOverrides = linkedMapOf("i" to listOf("o", "O"), "I" to listOf("O", "o"), "can" to listOf("can't"), "and" to listOf("abs")),
             sentenceEnd = ".!?",
+            possessiveSuffix = "'s",
         )
 
         private val json = Json { ignoreUnknownKeys = true }
