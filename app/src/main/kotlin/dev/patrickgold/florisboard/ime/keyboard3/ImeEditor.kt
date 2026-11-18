@@ -79,11 +79,14 @@ open class ImeEditor(
         // Terminals (Termux, SSH clients) keep no text: a replacement there is appended ("dir" arrived as
         // "ddidir", user 2026-11-18). Such a field types plainly: raw-input fields from the start, others
         // once we are about to replace text the field says it doesn't have, or a replacement was appended.
-        if (!plainMode && replaced > 0) {
+        // Only the first few replacements of a field are checked, and never inside a batch: reading the field in
+        // the middle of the keyboard's batched edit made the app draw every step of it (a picked suggestion
+        // erased the typed word letter by letter before the new one appeared, user 2026-11-18)
+        if (!plainMode && replaced > 0 && checksLeft > 0 && batchDepth == 0) {
             val before = ic.getTextBeforeCursor(replaced + CHECK_CONTEXT, 0)?.toString()
             if (before == null || before.length < replaced) {
                 switchToPlain("keeps no text")
-            } else if (checksLeft > 0) {
+            } else {
                 checksLeft--
                 writeRegion(ic, range, text, newSelection, newComposition)
                 val expected = before.dropLast(replaced) + text
@@ -147,12 +150,17 @@ open class ImeEditor(
     fun <T> batch(block: () -> T): T {
         val ic = ic.get() ?: return block()
         ic.beginBatchEdit()
+        batchDepth++
         try {
             return block()
         } finally {
+            batchDepth--
             ic.endBatchEdit()
         }
     }
+
+    /** DogBoard: the keyboard's own batched edits in progress (see [batch]). */
+    private var batchDepth = 0
 
     /**
      * DogBoard: tells the app that [old] at [offset] was autocorrected to [new]. Android's text views
