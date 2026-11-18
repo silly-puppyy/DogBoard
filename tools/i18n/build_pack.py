@@ -10,10 +10,19 @@ output is missing or older than an input (or with --force / --stage); --dry-run 
 the stages, every component is checked against its size budget ("budget_bytes"), "validate" commands run
 (the evaluations), and the manifest is written (write_manifest.py). notes/design/i18n-pipeline.md.
 
+Hand-made and hand-tuned files are never overwritten (user 2026-11-18: "some manual tweaking per
+localization is fine and expected, so don't auto-generate things that shouldn't be"):
+  - components marked "curated" (rules.json, hand-written lists) have no stage at all;
+  - the pipeline records the SHA-256 of every file it writes (tools/i18n/packs/<tag>.built.json); a stage
+    whose output was changed since (tuned by hand), or was never written by the pipeline (today's English
+    files, made before it), is skipped with a note, even with --force or --stage. Replacing such a file
+    takes --overwrite-edited, named on purpose.
+
 Variables in commands and paths: ${DATA} (downloaded sources, --data), ${WORK} (intermediate files,
 --work/<tag>), ${ASSETS} (app/src/main/assets), ${PACK} (the pack's asset directory), ${REPO}.
 """
 import argparse
+import hashlib
 import json
 import os
 import shlex
@@ -28,6 +37,19 @@ def expand(s, env):
     for k, v in env.items():
         s = s.replace("${" + k + "}", v)
     return s
+
+
+def sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def hand_made(outputs, record):
+    """Outputs that exist but were not written by the pipeline as they are now (edited by hand, or made before it)."""
+    return [o for o in outputs if os.path.exists(o) and record.get(os.path.relpath(o, REPO)) != sha256(o)]
 
 
 def stale(inputs, outputs):
@@ -46,6 +68,7 @@ def main():
     ap.add_argument("--stage", action="append", default=[], help="run only these stages (always)")
     ap.add_argument("--force", action="store_true", help="run every stage")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--overwrite-edited", action="store_true", help="also replace files changed by hand or not made by the pipeline")
     a = ap.parse_args()
     spec_path = os.path.join(REPO, "tools", "i18n", "packs", f"{a.tag}.json")
     spec = json.load(open(spec_path, encoding="utf-8"))
@@ -53,6 +76,11 @@ def main():
            "WORK": a.work or os.path.join(a.data, "packs-work", a.tag)}
     env["PACK"] = os.path.join(env["ASSETS"], "dogboard", "packs", a.tag)
     os.makedirs(env["WORK"], exist_ok=True)
+    record_path = os.path.join(REPO, "tools", "i18n", "packs", f"{a.tag}.built.json")
+    record = json.load(open(record_path)) if os.path.exists(record_path) else {}
+    curated = [c for c, f in spec["files"].items() if f.get("curated")]
+    if curated:
+        print(f"[curated] {', '.join(curated)}: hand-made, never generated")
 
     # 1. stages
     for st in spec.get("build", []):
@@ -62,6 +90,12 @@ def main():
         # "manual" stages (hours of training: KenLM on FineWeb, the neural model) run only when named
         run = name in a.stage or (not st.get("manual") and (a.force or (not a.stage and stale(ins, outs))))
         cmd = [expand(c, env) for c in st["run"]]
+        edited = [] if a.overwrite_edited else hand_made(outs, record)
+        if run and edited:
+            run = False
+            print(f"[keep] {name}: {', '.join(os.path.relpath(e, REPO) for e in edited)} changed by hand or not made by "
+                  f"this pipeline; kept (--overwrite-edited replaces it)")
+            continue
         tag = "run " if run else ("manual" if st.get("manual") else "skip")
         print(f"[{tag}] {name}: {shlex.join(cmd)}")
         if not run or a.dry_run:
@@ -74,6 +108,12 @@ def main():
         if r.returncode != 0:
             sys.exit(f"  {name}: failed ({r.returncode})")
         print(f"  {name}: {time.time() - t0:.0f} s")
+        for o in outs:
+            if os.path.exists(o):
+                record[os.path.relpath(o, REPO)] = sha256(o)
+        with open(record_path, "w") as fh:
+            json.dump(record, fh, indent=1, sort_keys=True)
+            fh.write("\n")
 
     # 2. budgets
     over = []

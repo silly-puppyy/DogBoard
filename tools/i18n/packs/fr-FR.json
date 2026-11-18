@@ -5,7 +5,8 @@
   "version": "2026.11.18",
   "files": {
     "rules": {
-      "path": "dogboard/packs/fr-FR/rules.json"
+      "path": "dogboard/packs/fr-FR/rules.json",
+      "curated": true
     }
   },
   "sources": [

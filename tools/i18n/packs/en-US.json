@@ -51,7 +51,8 @@
       "budget_bytes": 6000000
     },
     "rules": {
-      "path": "dogboard/packs/en-US/rules.json"
+      "path": "dogboard/packs/en-US/rules.json",
+      "curated": true
     }
   },
   "sources": [

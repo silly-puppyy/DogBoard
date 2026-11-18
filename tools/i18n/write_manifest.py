@@ -27,8 +27,9 @@ def main():
     for comp, f in spec["files"].items():
         p = os.path.join(a.assets, f["path"])
         entry = {"path": f["path"]}
-        if f.get("optional"):
-            entry["optional"] = True
+        for k in ("optional", "curated"):
+            if f.get(k):
+                entry[k] = True
         if os.path.exists(p):
             h = hashlib.sha256()
             with open(p, "rb") as fh:
