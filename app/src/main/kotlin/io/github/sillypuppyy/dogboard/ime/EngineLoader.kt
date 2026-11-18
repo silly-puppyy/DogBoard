@@ -100,6 +100,17 @@ object EngineLoader {
         // of the typing path's CPU; without it the trigram alone predicts and scores
         if (neuralTier(app)) TypingEngine.attachNeuralLm(loadNeuralLm(app))
         else android.util.Log.i("DogBoardPerf", "neural model skipped on this device (memory)")
+        // the swipe recogniser (4.4 MB, memory-mapped like the trigram; every phone: ~2 ms of work per
+        // swipe on a desktop core, run only when a swipe ends)
+        TypingEngine.attachSwipeNet(runCatching {
+            app.assets.openFd("dogboard/swipe/en-qwerty.tflite").use { fd ->
+                java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
+                    io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet(
+                        ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), threads = 1,
+                    )
+                }
+            }
+        }.onFailure { android.util.Log.i("DogBoardPerf", "swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull())
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
         TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.bin").use { CharModel.read(it) } }.getOrNull())

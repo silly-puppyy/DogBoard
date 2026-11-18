@@ -73,6 +73,9 @@ import kotlin.time.Duration
 
 private val SPACE = " ".asK3String()
 
+// DogBoard: how far (key widths) a press on a letter has to move to become a swipe
+private const val GLIDE_START_KEYS = 0.6f
+
 sealed interface TrackedPointer {
     val id: PointerId
     val down: PointerInputChange
@@ -157,6 +160,18 @@ class PointerTracker(
     private var heldDeleteStart: String? = null
 
     private var lastUpKeyState: LastUpKey? = null
+
+    /** DogBoard: swipe typing: the finger's path (dp) from a letter key's press; active once it moved far enough. */
+    private class Glide(val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float) {
+        val xs = ArrayList<Float>().apply { add(startX) }
+        val ys = ArrayList<Float>().apply { add(startY) }
+        var active = false
+    }
+    private var glide: Glide? = null
+
+    /** DogBoard: the trail of the swipe in progress (pixels), drawn over the keys; null when none. */
+    val glideTrail: StateFlow<List<Offset>?>
+        field = MutableStateFlow(null)
     // DogBoard: caps lock timing is measured from the first shift press, not its release
     private var lastShiftDownUptime: Long = Long.MIN_VALUE
 
@@ -191,6 +206,15 @@ class PointerTracker(
             typingInterval = typingSpeed.interval,
             letterPrior = imeController.letterPrior(),
         ) ?: return
+        // DogBoard: a press on a letter may become a swipe
+        glide = null
+        glideTrail.value = null
+        if (io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeEnabled &&
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.hasSwipe &&
+            (downKey.attrs.output as? org.k3lp.lib.text.K3String)?.toText()?.let { it.length == 1 && it[0].isLetter() } == true
+        ) {
+            glide = Glide(down.id, downLayerId, down.position.x / density, down.position.y / density)
+        }
         // DogBoard: remember where letter keys were tapped, for the word decoder
         if (downKey.isTextKey()) {
             io.github.sillypuppyy.dogboard.ime.BarTapGuard.lastKeyDownUptime = down.uptimeMillis
@@ -392,6 +416,32 @@ class PointerTracker(
     }
 
     suspend fun handleMove(move: PointerInputChange, size: IntSize) {
+        // DogBoard: swipe typing: past ~0.6 of a key width the press becomes a swipe (its key,
+        // long press and preview are cancelled); from then on the path is drawn
+        glide?.takeIf { it.id == move.id }?.let { g ->
+            val xDp = move.position.x / density
+            val yDp = move.position.y / density
+            g.xs.add(xDp); g.ys.add(yDp)
+            if (!g.active) {
+                val keyWidthDp = size.width / density / 10f
+                val out = trackedOutputPointer.value?.takeIf { it.id == move.id }
+                if (out?.longPress?.shouldShowExtendedPopup() == true) {
+                    glide = null
+                } else if (kotlin.math.hypot(xDp - g.startX, yDp - g.startY) > GLIDE_START_KEYS * keyWidthDp) {
+                    g.active = true
+                    out?.longPress?.extendedJob?.cancel()
+                    out?.repeatJob?.cancel()
+                    trackedOutputPointer.value = null
+                    imeController.notePendingTap(null, emptyMap(), null)
+                }
+            }
+            if (g.active) {
+                if (io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeTrail) {
+                    glideTrail.value = List(g.xs.size) { Offset(g.xs[it] * density, g.ys[it] * density) }
+                }
+                return
+            }
+        }
         trackedPeekPointer.value?.takeIf { it.id == move.id }?.let { trackedPointer ->
             val distanceSq = (move.position - trackedPointer.down.position).getDistanceSquared()
             if (trackedPointer.peekLine != null || distanceSq >= peekDistanceSqMin) {
@@ -470,6 +520,21 @@ class PointerTracker(
                 "DogBoardTouch",
                 "up id=${up.id.value} tracked=${trackedOutputPointer.value?.id?.value} peek=${trackedPeekPointer.value?.id?.value}",
             )
+        }
+        // DogBoard: a finished swipe goes to the recogniser instead of a key
+        glide?.takeIf { it.id == up.id }?.let { g ->
+            glide = null
+            if (g.active) {
+                glideTrail.value = null
+                g.xs.add(up.position.x / density); g.ys.add(up.position.y / density)
+                val (targets, _) = touchKeyboard.letterTargets(g.layerId, size.width / density, size.height / density, typingSpeed.interval)
+                val centres = targets.entries.associate { (c, t) -> c.lowercaseChar() to (t.centerX to t.centerY) }
+                val xs = g.xs.toFloatArray()
+                val ys = g.ys.toFloatArray()
+                scope.launch { imeController.commitSwipe(xs, ys, centres) }
+                lastUpKeyState = null
+                return
+            }
         }
         trackedPeekPointer.value?.takeIf { it.id == up.id }?.let { trackedPointer ->
             imeController.updateState {
@@ -552,6 +617,8 @@ class PointerTracker(
     suspend fun cancelAll() {
         cancelPeek()
         cancelOutput()
+        glide = null
+        glideTrail.value = null
     }
 
     private suspend fun cancelPeek() {

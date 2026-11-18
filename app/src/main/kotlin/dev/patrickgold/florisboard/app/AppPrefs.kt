@@ -865,6 +865,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val deleteWordMs = int(key = "feel__delete_word_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteWordInterval.inWholeMilliseconds.toInt())
         // DogBoard: Settings › Gestures: hold space, then slide to move the cursor (iOS); on by default
         val trackpadEnabled = boolean(key = "feel__trackpad_enabled", default = true)
+        // DogBoard: swipe typing and its trail (user 2026-11-17: on by default, draw the trail)
+        val swipeEnabled = boolean(key = "feel__swipe_enabled", default = true)
+        val swipeTrail = boolean(key = "feel__swipe_trail", default = true)
         // DogBoard: Advanced > Timings: a bar tap this soon after a key is read as a top-row key (BarTapGuard)
         val barTapWindowMs = int(key = "feel__bar_tap_window_ms", default = io.github.sillypuppyy.dogboard.ime.BarTapGuard.WINDOW_MS.toInt())
         val trackpadHoldMs = int(key = "feel__trackpad_hold_ms", default = io.github.sillypuppyy.dogboard.feel.Trackpad.HOLD_MS.toInt())

@@ -82,3 +82,9 @@ clean-urls.json (fetched by tools/links/fetch_clean_urls.py)
   Brave's "Copy clean link" list (https://github.com/brave/adblock-lists, brave-lists/clean-urls.json),
   unchanged, under the Mozilla Public License 2.0, included in licenses/Brave-clean-urls-MPL-2.0.txt.
   Used by Settings > Clipboard > Strip trackers from links.
+
+swipe/en-qwerty.tflite (swipe typing recogniser, tools/swipe)
+  DogBoard's own network (the layer layout of iOS's swipe recogniser), trained from scratch on the
+  FUTO swipe dataset (https://huggingface.co/datasets/futo-org/swipe.futo.org), MIT License,
+  Copyright (c) 2025 FUTO; notice in licenses/FUTO-swipe-dataset-MIT.txt. FUTO's own models and code
+  are not used.

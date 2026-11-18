@@ -42,6 +42,12 @@ object FeelSettings {
     @Volatile var deleteWordMs: Long = Timings.DeleteWordInterval.inWholeMilliseconds
     /** Settings › Gestures: holding space turns it into a trackpad. */
     @Volatile var trackpadEnabled: Boolean = true
+
+    /** Swipe typing (Gestures page; on by default, as iOS and Gboard). */
+    @Volatile var swipeEnabled: Boolean = true
+
+    /** Draw the swipe's trail (Gboard does, iOS doesn't; user 2026-11-17: draw it). */
+    @Volatile var swipeTrail: Boolean = true
     @Volatile var trackpadHoldMs: Long = Trackpad.HOLD_MS
     @Volatile var trackpadStepDp: Float = Trackpad.STEP_DP
 }

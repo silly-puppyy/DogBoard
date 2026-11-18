@@ -163,6 +163,27 @@ class ImeController(
 
     /** DogBoard: the word the cursor rests in (text before and after it) while the bar offers corrections for it. */
     private var wordAroundCursor: Pair<String, String>? = null
+
+    // DogBoard: swipe typing: the text a swipe just put in (word and space) and the other words it may
+    // have been, offered on the bar until something else is typed
+    private var swipeCommitted: String? = null
+    private var swipeOthers: List<String> = emptyList()
+
+    /**
+     * DogBoard: a finished swipe ([xs], [ys]: the finger's path, [centres]: the letter keys, all in dp).
+     * The recogniser runs off the main thread with the two words before as context; its word goes in
+     * as a bar pick would (UpdateImeStateScope.acceptSwipe).
+     */
+    suspend fun commitSwipe(xs: FloatArray, ys: FloatArray, centres: Map<Char, Pair<Float, Float>>) {
+        val textBefore = snapshotState().content.surroundingText.textBefore
+        val words = kotlinx.coroutines.withContext(Dispatchers.Default) {
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeWords(
+                xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
+            )
+        }
+        if (words.isEmpty()) return
+        updateState { acceptSwipe(words) }
+    }
     private var lastCorrection: LastCorrection? = null
 
     // DogBoard: an autocorrection that was made, until the next word shows it was kept (iOS
@@ -291,6 +312,8 @@ class ImeController(
         prefs.typing.deleteWordMs.asFlow().collectIn(scope) { feel.deleteWordMs = it.toLong() }
         prefs.typing.trackpadHoldMs.asFlow().collectIn(scope) { feel.trackpadHoldMs = it.toLong() }
         prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { feel.trackpadEnabled = it }
+        prefs.typing.swipeEnabled.asFlow().collectIn(scope) { feel.swipeEnabled = it }
+        prefs.typing.swipeTrail.asFlow().collectIn(scope) { feel.swipeTrail = it }
         prefs.typing.barTapWindowMs.asFlow().collectIn(scope) { io.github.sillypuppyy.dogboard.ime.BarTapGuard.windowMs = it.toLong() }
         prefs.typing.trackpadStepDp.asFlow().collectIn(scope) { feel.trackpadStepDp = it.toFloat() }
         combine(
@@ -923,8 +946,53 @@ class ImeController(
             return true
         }
 
+        /**
+         * DogBoard: puts in a swiped word as a bar pick would (word, then an automatic space that
+         * punctuation can take back), after a space if the text doesn't end in one, in the case shift
+         * asks for. Letters typed before the swipe are finished first, as space would. The bar then
+         * offers the other words the swipe may have been.
+         */
+        fun acceptSwipe(words: List<String>) {
+            if (!currentWord.isEmpty) emit(SPACE)
+            val textBefore = state.content.surroundingText.textBefore
+            val shift = state.flags.inputShiftState
+            fun cased(w: String) = when (shift) {
+                InputShiftState.CAPS_LOCK -> w.uppercase()
+                InputShiftState.SHIFTED_MANUAL, InputShiftState.SHIFTED_AUTOMATIC -> w.replaceFirstChar { it.titlecase() }
+                else -> w
+            }
+            val word = cased(words.first())
+            val gap = if (textBefore.isEmpty() || textBefore.last().isWhitespace() || textBefore.last() in "([{\"'“‘¿¡") "" else " "
+            val previous = wordContext()
+            if (!replaceBeforeCursor("", "$gap$word ")) return
+            confirmKeptCorrection()
+            confirmPendingRetro()
+            confirmAcceptedWord()
+            noteFinishedWord(previous, word, wordContext2())
+            lastCorrection = null
+            rejectedWord = null
+            lastSpaceUptime = SystemClock.uptimeMillis()
+            autoSpace = true
+            swipeCommitted = "$word "
+            swipeOthers = words.drop(1).map(::cased)
+            reevaluateInputShiftState()
+            publishSuggestions()
+        }
+
+        /** DogBoard: another reading of a swipe picked from the bar replaces the swiped word. */
+        private fun acceptSwipeAlternative(suggestion: Suggestion, old: String): Boolean {
+            if (!replaceBeforeCursor(old, suggestion.word + " ")) return false
+            val oldWord = old.trimEnd()
+            swipeOthers = (listOf(oldWord) + swipeOthers).filter { it != suggestion.word }
+            swipeCommitted = suggestion.word + " "
+            autoSpace = true
+            publishSuggestions()
+            return true
+        }
+
         /** Commits a suggestion-strip pick in place of the current word, followed by a space. */
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
+            suggestion.swipeOf?.let { old -> return acceptSwipeAlternative(suggestion, old) }
             if (currentWord.isEmpty && wordAroundCursor != null) return acceptForWordAroundCursor(suggestion)
             val typed = currentWord.text
             // a chip from a strip built for an earlier keystroke must not replace the newer word
@@ -1172,6 +1240,14 @@ class ImeController(
             }
             suggestionJob?.cancel()
             wordAroundCursor = null
+            // DogBoard: right after a swipe the bar offers what else it may have been
+            swipeCommitted?.let { committed ->
+                if (currentWord.isEmpty && state.content.surroundingText.textBefore.endsWith(committed) && swipeOthers.isNotEmpty()) {
+                    sink(swipeOthers.take(SuggestionStrip.SLOTS).map { Suggestion(it, Suggestion.Kind.WORD).also { s -> s.swipeOf = committed } })
+                    return
+                }
+                swipeCommitted = null
+            }
             if (!suggestionsAllowed() || state.content.selection.isNotCollapsed()) {
                 sink(emptyList())
                 return

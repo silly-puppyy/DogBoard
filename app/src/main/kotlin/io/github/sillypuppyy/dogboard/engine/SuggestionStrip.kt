@@ -8,6 +8,9 @@ data class Suggestion(val word: String, val kind: Kind) {
     /** Set on the original of a recent autocorrection: picking it undoes that correction. */
     var revertOf: String? = null
 
+    /** Set on another reading of a swipe: picking it replaces this text (the swiped word and its space). */
+    var swipeOf: String? = null
+
     enum class Kind {
         /** Exactly what was typed, shown in quotes; picking it keeps the word as typed. */
         LITERAL,

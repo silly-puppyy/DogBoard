@@ -251,6 +251,51 @@ object TypingEngine {
 
     val hasNeuralLm: Boolean get() = neuralLm != null
 
+    // swipe typing: the recogniser (tools/swipe: trained on FUTO's MIT swipe data), when its file is in the app
+    @Volatile private var swipeNet: io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet? = null
+
+    fun attachSwipeNet(net: io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet?) {
+        swipeNet = net
+    }
+
+    val hasSwipe: Boolean get() = swipeNet != null && loaded != null
+
+    /** Trigram weight in swipe decoding (SwipeContextEvalTest: 0.7 chosen on held-out FUTO swipes, 88.3 -> 89.9 % top-1). */
+    const val SWIPE_CONTEXT_WEIGHT = 0.7
+
+    /**
+     * The words a swipe most likely spells, best first, in their stored casing ("I", "Paris"). [xs], [ys]:
+     * the finger's path; [centres]: where the letter keys are, in the same units (any: the path is mapped
+     * onto the recogniser's key grid by a fit to the keys). [previous], [previous2]: the two words before
+     * (or "<s>"). As iOS: the network reads the path, a beam over the lexicon spells words, then the
+     * sentence context reorders them.
+     */
+    fun swipeWords(
+        xs: FloatArray, ys: FloatArray, centres: Map<Char, Pair<Float, Float>>,
+        previous: String?, previous2: String?, top: Int = 5,
+    ): List<String> {
+        val net = swipeNet ?: return emptyList()
+        val engine = loaded ?: return emptyList()
+        if (xs.size < 2) return emptyList()
+        val map = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.ToKeyUnits(centres)
+        val f = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.features(
+            FloatArray(xs.size) { map.x(xs[it]) }, FloatArray(ys.size) { map.y(ys[it]) },
+        )
+        val logp = net.run(f)
+        return lock.read {
+            val lex = engine.lexicon
+            val beam = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.decode(logp, logp.size / 27, lex, top = 10)
+            val scorer = engine.decoder.context
+            val p1 = engine.contextId(previous)
+            val p2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2)
+            beam.sortedByDescending { c ->
+                val uni = lex.logProb(c.node)
+                val path = c.score - uni
+                if (scorer != null && p1 >= 0) path + SWIPE_CONTEXT_WEIGHT * scorer.logProb(p2, p1, lex.wordId(c.node), uni) else path + uni
+            }.mapNotNull { lex.firstForm(it.node) }.filter { it.lowercase() !in blocked }.distinct().take(top)
+        }
+    }
+
     /**
      * Lets the neural model go when the system is short of memory (iOS releases its language model
      * buffers under memory pressure); the keyboard loads it again when typing resumes.

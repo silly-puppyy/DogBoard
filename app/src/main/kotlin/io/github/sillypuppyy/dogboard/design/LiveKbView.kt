@@ -132,6 +132,13 @@ fun LiveKbView(
     }
 }
 
+/** The chosen theme's accent (the return key's colour): the swipe trail. */
+@androidx.compose.runtime.Composable
+fun liveAccent(): androidx.compose.ui.graphics.Color {
+    val p = liveTheme().apply(KbProps(dark = liveDark()))
+    return KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance).act
+}
+
 /**
  * The keyboard window's own background (the strip around the navigation handle too): the design
  * theme's body colour, so it matches the keys' surroundings (it was the older stopgap theme's grey).

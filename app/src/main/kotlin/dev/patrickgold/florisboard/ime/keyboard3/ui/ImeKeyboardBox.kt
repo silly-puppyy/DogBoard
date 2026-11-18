@@ -230,6 +230,10 @@ fun ImeKeyboardBox(
         val livePanel by io.github.sillypuppyy.dogboard.ime.LiveUi.panel.collectAsState()
         val keyboardRowHeightDp = FlorisImeSizing.keyboardRowBaseHeight
         val peekLineWidthPx = with(density) { 8.dp.toPx() }
+        // DogBoard: the swipe trail, in the theme's accent, newest part opaque, the tail fading
+        val glideTrail by pointerTracker.glideTrail.collectAsState()
+        val trailColor = io.github.sillypuppyy.dogboard.design.liveAccent()
+        val trailWidthPx = with(density) { 5.dp.toPx() }
 
         Box(
             modifier = modifier
@@ -258,6 +262,18 @@ fun ImeKeyboardBox(
                 }
                 .drawWithContent {
                     drawContent()
+                    glideTrail?.let { pts ->
+                        val n = pts.size
+                        for (i in 1 until n) {
+                            val age = (n - i).toFloat() / n
+                            drawLine(
+                                color = trailColor.copy(alpha = 0.85f * (1f - age * 0.8f)),
+                                start = pts[i - 1], end = pts[i],
+                                strokeWidth = trailWidthPx * (1f - age * 0.5f),
+                                cap = StrokeCap.Round,
+                            )
+                        }
+                    }
                     trackedPeekPointer?.let { trackedPeekPointer ->
                         val peekLine = trackedPeekPointer.peekLine
                         if (peekLine != null) {
