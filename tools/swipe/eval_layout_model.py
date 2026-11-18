@@ -48,14 +48,21 @@ def main():
     have = {w for w, _ in lex}
     root = Trie.build(lex + [(w, floor) for w in sorted({w for _, w in items} - have)])
     t1 = t3 = t10 = 0
+    by_len = {}  # word length bucket -> [right, total] (2026-11-18: German fell behind; long compounds?)
     with torch.no_grad():
         for f, w in items:
             c = [x for x, _ in beam(m(f.unsqueeze(0))[0].numpy().astype(np.float64), root, letters, width=100, top=10)]
             t1 += c[:1] == [w]; t3 += w in c[:3]; t10 += w in c
+            b = by_len.setdefault(min(len(w), 13) // 3 * 3, [0, 0])
+            b[0] += c[:1] == [w]; b[1] += 1
     n = len(items)
     r = {"top1": 100 * t1 / n, "top3": 100 * t3 / n, "top10": 100 * t10 / n, "n": n}
     tag = f"{lay['name'] if 'name' in lay else os.path.basename(a.layout)[:-5]}-real"
     print(f"{tag}: n {n}, top-1 {r['top1']:.2f}, top-3 {r['top3']:.2f}, top-10 {r['top10']:.2f}", flush=True)
+    print("  top-1 by word length: " + ", ".join(f"{k}-{k + 2 if k < 12 else '+'}: {100 * v[0] / v[1]:.1f} (n {v[1]})"
+                                                 for k, v in sorted(by_len.items())), flush=True)
+    for k, v in by_len.items():
+        r[f"top1_len{k}"] = 100 * v[0] / v[1]
     run = track.start("swipe", a.lang, a.name or os.path.basename(os.path.dirname(os.path.abspath(a.model))),
                       layout=os.path.basename(a.layout)[:-5])
     for k, v in r.items():
