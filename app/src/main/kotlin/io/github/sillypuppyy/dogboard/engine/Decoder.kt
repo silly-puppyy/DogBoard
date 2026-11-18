@@ -156,6 +156,9 @@ class Decoder(
         const val MAX_WORDS = 3
 
         private val SHORT_WORDS = listOf("u" to "you", "o" to "oh")
+        private const val LAYER_POOL = 64
+        /** Completions this far (ln) below the best reading are not built (odds below 1e-13). */
+        private const val COMPLETION_CUT = 30.0
 
         /**
          * ln of how often a word's possessive occurs relative to the word: about the 25th
@@ -172,7 +175,19 @@ class Decoder(
      * segment (UnigramTypingModel extending_key_could_terminate_input_segment: any key may begin
      * a new word once the letters before it are a whole word, at the cost of that word ending).
      */
-    private class Prefix(val text: String, val languageModel: Double, val support: Double, val last: Int, val count: Int, val secondLast: Int = -1)
+    private class Prefix(
+        /** The words before: the earlier prefix and the word at [node] (in its first casing). */
+        val parent: Prefix?, val node: Int,
+        val languageModel: Double, val support: Double, val last: Int, val count: Int, val secondLast: Int = -1,
+    ) {
+        // built when a candidate needs it: most restarts end in no candidate (their text was a fifth
+        // of a keystroke's garbage)
+        private var textCache: String? = null
+        fun text(lexicon: Lexicon): String = textCache ?: run {
+            val form = lexicon.firstForm(node)!!
+            (if (parent == null) form else parent.text(lexicon) + " " + form).also { textCache = it }
+        }
+    }
 
     /**
      * A search layer: states by (prefix, node) key, in insertion order. Primitive keys and open
@@ -238,8 +253,13 @@ class Decoder(
             size = 0
         }
 
-        /** A copy just large enough for its states. */
-        fun copy(): LayerMap = LayerMap(maxOf(16, size)).also { it.loadFrom(this) }
+        /** Empty, with room for [capacity] states (reused from the pool: keeps larger arrays). */
+        fun reset(capacity: Int) {
+            if (keys.size < capacity) { keys = LongArray(capacity); geometry = DoubleArray(capacity); edits = IntArray(capacity); rank = DoubleArray(capacity) }
+            val t = tableSizeFor(capacity)
+            if (table.size < t) table = IntArray(t) else java.util.Arrays.fill(table, 0)
+            size = 0
+        }
 
         /** Replaces the contents with [o]'s states (keeps this map's arrays). */
         fun loadFrom(o: LayerMap) {
@@ -315,7 +335,17 @@ class Decoder(
         val qRaw: Double,
         /** The tap read as the space bar (log-likelihood), when the keys include it (' '). */
         val space: Double? = null,
-    )
+    ) {
+        // the same lookups without boxing a Char (the search asks per lexicon child: accented letters
+        // are boxed afresh each time, a tenth of a keystroke's garbage)
+        private val ascii = DoubleArray(128) { Double.NaN }.also { a -> for ((c, v) in likelihood) if (c.code < 128) a[c.code] = v }
+        private val asciiNear = BooleanArray(128).also { a -> for (c in nearby) if (c.code < 128) a[c.code] = true }
+        private val wide = likelihood.keys.any { it.code >= 128 }
+
+        /** ln likelihood of key [c] for this tap, NaN when [c] is no key. */
+        fun ll(c: Char): Double = if (c.code < 128) ascii[c.code] else if (!wide) Double.NaN else likelihood[c] ?: Double.NaN
+        fun near(c: Char): Boolean = if (c.code < 128) asciiNear[c.code] else wide && c in nearby
+    }
 
     /**
      * The search so far, kept between keystrokes: layer i (states after i taps) depends only on
@@ -338,25 +368,30 @@ class Decoder(
         val interior = ArrayList<LayerMap>()
         /** prefixes[0] is "no earlier word". */
         val prefixes = arrayListOf<Prefix?>(null)
-        val prefixIds = HashMap<String, Int>()
         /** restart's result per (prefix, node) key: the text is built once per new word pair. */
         val restartIds = LongIntMap()
 
-        /** Keeps what the first [m] taps decide. */
-        fun truncate(m: Int) {
+        /** Keeps what the first [m] taps decide; the dropped layers go to [recycle]. */
+        fun truncate(m: Int, recycle: (LayerMap) -> Unit) {
             while (taps.size > m) taps.removeAt(taps.size - 1)
             while (info.size > m) info.removeAt(info.size - 1)
-            while (raw.size > m + 1) raw.removeAt(raw.size - 1)
-            while (interior.size > m) interior.removeAt(interior.size - 1)
+            while (raw.size > m + 1) recycle(raw.removeAt(raw.size - 1))
+            while (interior.size > m) recycle(interior.removeAt(interior.size - 1))
             if (m == 0) { // a new word: no state refers to an earlier word any more
                 while (prefixes.size > 1) prefixes.removeAt(prefixes.size - 1)
-                prefixIds.clear()
                 restartIds.clear()
             }
         }
     }
 
     private var search: Search? = null
+
+    // layers dropped by a backspace or a new word, reused (a new layer per tap and a copy of it per
+    // keystroke were a quarter of the typing path's garbage)
+    private val layerPool = ArrayList<LayerMap>()
+    private fun obtainLayer(capacity: Int): LayerMap =
+        if (layerPool.isEmpty()) LayerMap(capacity) else layerPool.removeAt(layerPool.size - 1).also { it.reset(capacity) }
+    private fun recycleLayer(l: LayerMap) { if (layerPool.size < LAYER_POOL) layerPool.add(l) }
 
     /**
      * iOS RescoreShortWords (English): "u" and "o" score as well as "you" and "oh" would in the
@@ -423,11 +458,12 @@ class Decoder(
         if (sr == null || sr.keys !== keys || sr.params != params || sr.previous != previous || sr.previous2 != previous2 || sr.personal !== personal || sr.context !== context ||
             sr.lexiconVersion != lexicon.version
         ) {
+            sr?.let { old -> old.raw.forEach(::recycleLayer); old.interior.forEach(::recycleLayer) }
             sr = Search(keys, params, previous, previous2, personal, context, lexicon.version).also { search = it }
         }
         var m = 0
         while (m < minOf(n, sr.taps.size) && sr.taps[m] == taps[m]) m++
-        sr.truncate(m)
+        sr.truncate(m, ::recycleLayer)
         for (i in m until n) {
             sr.taps.add(taps[i])
             val dtS = if (i > 0 && taps[i].timeMs > 0 && taps[i - 1].timeMs > 0) {
@@ -452,13 +488,14 @@ class Decoder(
         // a tap read as key c: the score (NaN: no match) and whether it costs an edit, apart (no
         // Pair: this runs for every child of every state on every keystroke)
         fun tapCost(c: Char, i: Int): Double {
-            val ll = info[i].likelihood[c] ?: return Double.NaN
+            val ll = info[i].ll(c)
+            if (ll.isNaN()) return Double.NaN
             if (ll < prune) return config.farTap?.let { it + info[i].q + prune } ?: Double.NaN
-            return if (c in info[i].nearby) ll else SUBSTITUTION + info[i].q + ll
+            return if (info[i].near(c)) ll else SUBSTITUTION + info[i].q + ll
         }
         fun tapEdit(c: Char, i: Int): Int {
-            val ll = info[i].likelihood.getValue(c)
-            return if (ll >= prune && c in info[i].nearby) 0 else 1
+            val ll = info[i].ll(c)
+            return if (ll >= prune && info[i].near(c)) 0 else 1
         }
 
         fun context(prefix: Int) = prefixes[prefix]?.last ?: previous
@@ -477,14 +514,14 @@ class Decoder(
         }
         /** The prefix for [sPrefix]'s words plus the word at [sNode]. */
         fun newRestart(sPrefix: Int, sNode: Int): Int {
+            // one prefix per (earlier prefix, word): restartIds keeps that, and distinct words have distinct
+            // first forms, so no two prefixes share a text
             val p = prefixes[sPrefix]
-            val form = lexicon.firstForm(sNode) ?: return -1
-            val text = if (p == null) form else p.text + " " + form
-            sr.prefixIds[text]?.let { return it }
+            if (!lexicon.isWord(sNode)) return -1
             val l = lm(sNode, context(sPrefix), context2(sPrefix))
             val support = (p?.support ?: 0.0) + (l - lexicon.logProb(sNode))
-            prefixes.add(Prefix(text, (p?.languageModel ?: 0.0) + l, support, lexicon.wordId(sNode), (p?.count ?: 0) + 1, context(sPrefix)))
-            return (prefixes.size - 1).also { sr.prefixIds[text] = it }
+            prefixes.add(Prefix(p, sNode, (p?.languageModel ?: 0.0) + l, support, lexicon.wordId(sNode), (p?.count ?: 0) + 1, context(sPrefix)))
+            return prefixes.size - 1
         }
         fun restart(sPrefix: Int, sNode: Int): Int = sr.restartIds.getOrPut(key(sPrefix, sNode)) { newRestart(sPrefix, sNode) }
 
@@ -498,7 +535,7 @@ class Decoder(
         /** Layer i as reached from layers i-1 (tap i-1) and i-2 (taps i-2 and i-1 swapped). */
         fun pull(i: Int): LayerMap {
             // sized from the layer it grows from (each state reaches a few nearby keys' children)
-            val out = LayerMap(if (i == 0) 16 else maxOf(64, sr.interior[i - 1].size * 4))
+            val out = obtainLayer(if (i == 0) 16 else maxOf(64, sr.interior[i - 1].size * 4))
             if (i == 0) {
                 offer(out, Lexicon.ROOT, 0.0, 0, 0)
                 return out
@@ -531,11 +568,11 @@ class Decoder(
                 for (j in 0 until from2.size) {
                     val sNode = from2.node(j); val sGeometry = from2.geometry(j); val sEdits = from2.edits(j); val sPrefix = from2.prefix(j)
                     lexicon.forEachChild(sNode) { c, child ->
-                        val ll1 = info[t2 + 1].likelihood[c]
-                        if (ll1 != null && ll1 >= prune) {
+                        val ll1 = info[t2 + 1].ll(c)
+                        if (ll1 >= prune) { // NaN (no key) fails
                             lexicon.forEachChild(child) { c2, grandchild ->
-                                val ll2 = info[t2].likelihood[c2]
-                                if (c2 != c && ll2 != null && ll2 >= prune) {
+                                val ll2 = info[t2].ll(c2)
+                                if (c2 != c && ll2 >= prune) {
                                     offer(out, grandchild, sGeometry + TRANSPOSITION + info[t2 + 1].qRaw + ll1 + ll2, sEdits + 1, sPrefix)
                                 }
                             }
@@ -610,7 +647,7 @@ class Decoder(
             // kept at its pruned size
             val layer = work.also { it.loadFrom(sr.raw[i]) }
             process(layer, i)
-            if (i < n) sr.interior.add(layer.copy()) else last = layer
+            if (i < n) sr.interior.add(obtainLayer(maxOf(16, layer.size)).also { it.loadFrom(layer) }) else last = layer
         }
 
         val results = HashMap<String, Candidate>()
@@ -618,7 +655,9 @@ class Decoder(
         // last tap: iOS inserts a key before the space touch) keeps that reading over its completion
         // reading, which may score higher but autocorrect never applies ("befor" -> "before" was
         // hidden behind the completion "befor..." and left as typed).
+        var bestScore = Double.NEGATIVE_INFINITY
         fun add(candidate: Candidate) {
+            if (candidate.score > bestScore) bestScore = candidate.score
             val old = results[candidate.word]
             val replace = when {
                 old == null -> true
@@ -633,7 +672,7 @@ class Decoder(
             val p = prefixes[sPrefix]
             val prev = context(sPrefix)
             val prev2 = context2(sPrefix)
-            fun words(lastWord: String) = if (p == null) lastWord else p.text + " " + lastWord
+            fun words(lastWord: String) = if (p == null) lastWord else p.text(lexicon) + " " + lastWord
             val before = p?.languageModel ?: 0.0
             val count = (p?.count ?: 0) + 1
             if (lexicon.isWord(sNode)) {
@@ -653,7 +692,7 @@ class Decoder(
                 // priced like the missed space
                 if (p != null && p.count == 1 && lexicon.word(sNode) == "s") {
                     val lp = p.languageModel + POSSESSIVE_LOG_RATIO
-                    add(Candidate(p.text + "'s", sGeometry + w * lp, sGeometry, lp, sEdits, isCompletion = false))
+                    add(Candidate(p.text(lexicon) + "'s", sGeometry + w * lp, sGeometry, lp, sEdits, isCompletion = false))
                 }
             }
             if (includeCompletions) {
@@ -663,6 +702,10 @@ class Decoder(
                 val added = lexicon.depth(best) - depth
                 val geometry = sGeometry + w * (PREDICTION_COSTS[minOf(depth, 5)] + (added - 1) * PREDICTION_PER_LETTER)
                 val l = lm(best, prev, prev2)
+                // a completion far below the best reading so far can't be among the results (a
+                // completion never replaces another reading of its word): no candidate, no text built
+                // (most states' completions; they were most of a keystroke's garbage)
+                if (geometry + w * (before + l) < bestScore - COMPLETION_CUT) continue
                 val support = if (p == null) 0.0 else p.support + (l - lexicon.logProb(best))
                 add(Candidate(words(lexicon.word(best)!!), geometry + w * (before + l), geometry, before + l, sEdits, isCompletion = true, words = count, contextSupport = support))
             }

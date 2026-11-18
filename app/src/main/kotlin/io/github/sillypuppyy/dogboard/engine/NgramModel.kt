@@ -67,8 +67,12 @@ class NgramModel private constructor(
      * ln P([w] | [a] [b]): [a] and [b] the two words before (-1 when there is none, [b] the nearer);
      * null when [w] is not in the model (the caller falls back to its own unigram).
      */
-    fun logProb(a: Int, b: Int, w: Int): Double? {
-        if (w < 0 || w >= vocab.size) return null
+    val vocabSize: Int get() = vocab.size
+
+    fun logProb(a: Int, b: Int, w: Int): Double? = if (w < 0 || w >= vocab.size) null else logProbOf(a, b, w)
+
+    /** [logProb] for a [w] in the model, unboxed (the decoder asks per state: a boxed Double each was garbage). */
+    fun logProbOf(a: Int, b: Int, w: Int): Double {
         if (a >= 0 && b >= 0) {
             val t = triSearch(tri(a, b, w))
             if (t >= 0) return triPBook[triP.get(t).toInt() and 0xff].toDouble()
@@ -311,7 +315,7 @@ class NgramScorer(private val model: NgramModel, private val lexicon: Lexicon, p
         if (w < 0) return unigramLogProb
         val b = contextToModel(prev)
         val a = if (b >= 0) contextToModel(prev2) else -1
-        return model.logProb(a, b, w) ?: unigramLogProb
+        return if (w >= model.vocabSize) unigramLogProb else model.logProbOf(a, b, w)
     }
 }
 
