@@ -241,14 +241,16 @@ def _mj(u):
 
 def _stroke(word, centres, rng, p, who):
     """The physical finger (mode "stroke", see FingerParams): a guide made of overlapping aimed strokes, each a
-    minimum-jerk move with Fitts timing, a sideways bow and maybe a hesitation; a damped spring finger chases it."""
-    aims = _aims(word, centres, rng, p, who)
+    minimum-jerk move with Fitts timing, a sideways bow and maybe a hesitation; a damped spring finger chases it.
+    who["fixed"] (fit_each.py) replaces the random draws: aims, follow, bows and hesitations ((u, ms) per stroke)."""
+    fixed = who.get("fixed")
+    aims = fixed["aims"] if fixed else _aims(word, centres, rng, p, who)
     if len(aims) == 1:
         x, y = aims[0]
         return [(x, y, 0.0), (x + rng.gauss(0, 0.03), y + rng.gauss(0, 0.03), p.dt * 3)]
     (ax, ay), (bx, by) = aims[-2], aims[-1]
     L = math.hypot(bx - ax, by - ay) or 1.0
-    f = p.follow * math.exp(rng.gauss(0, p.lift_spread))
+    f = fixed["follow"] if fixed else p.follow * math.exp(rng.gauss(0, p.lift_spread))
     route = aims + [(bx + (bx - ax) / L * f, by + (by - ay) / L * f)]
     speed = who.get("speed", 1.0)
     strokes = []  # (start ms, duration ms, from, to, normal, bow, hesitation at u, hesitation ms)
@@ -259,9 +261,12 @@ def _stroke(word, centres, rng, p, who):
         last = i == len(route) - 2  # the run-on past the last key
         dur = (p.fitts_a + p.fitts_b * math.log2(1 + d / 0.5)) / speed * (0.5 if last else 1.0)
         nx, ny = ((y0 - y1) / d, (x1 - x0) / d) if d > 0 else (0.0, 0.0)
-        bow = 0.0 if last else (who.get("bow", 0.0) + rng.gauss(0, p.bow_sd)) * d
+        bow = 0.0 if last else (fixed["bows"][i] if fixed else who.get("bow", 0.0) + rng.gauss(0, p.bow_sd)) * d
         hu, hd = 0.0, 0.0
-        if not last and rng.random() < p.hes_p:
+        if fixed:
+            if not last:
+                hu, hd = fixed["hes"][i]
+        elif not last and rng.random() < p.hes_p:
             hu, hd = rng.uniform(0.2, 0.8), p.hes_ms * math.exp(rng.gauss(0, p.hes_spread))
         strokes.append((start, dur, (x0, y0), (x1, y1), (nx, ny), bow, hu, hd))
         if i + 2 < len(route):
