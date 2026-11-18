@@ -572,11 +572,25 @@ object TypingEngine {
      * nothing to refine. The keyboard runs it as a second stage after publishing the decoder's
      * candidates, so a word end never waits for it.
      */
+    private val stepTally = java.util.concurrent.ConcurrentHashMap<String, LongArray>()
+    private val tallyCalls = java.util.concurrent.atomic.AtomicLong()
+
+    /** Model steps per feature, logged every 200 calls (perf: where the neural time goes). */
+    private inline fun <T> tallySteps(lm: io.github.sillypuppyy.dogboard.engine.lm.NeuralLm, what: String, block: () -> T): T {
+        val s0 = lm.steps; val t0 = System.nanoTime()
+        try { return block() } finally {
+            val a = stepTally.getOrPut(what) { LongArray(3) }
+            synchronized(a) { a[0]++; a[1] += lm.steps - s0; a[2] += System.nanoTime() - t0 }
+            if (tallyCalls.incrementAndGet() % 50 == 0L) android.util.Log.i("DogBoardPerf", "neural steps: " +
+                stepTally.entries.joinToString { (k, v) -> "$k ${v[0]} calls ${v[1]} steps ${v[2] / 1_000_000} ms" })
+        }
+    }
+
     fun refineWithNeural(decoded: List<Candidate>, textBefore: String): List<Candidate>? {
         val engine = loaded ?: return null
         val lm = neuralLm?.takeIf { decoded.size > 1 } ?: return null
         val t0 = System.nanoTime()
-        val scores = runCatching { lm.wordScores(textBefore, decoded.map { it.word }) }.getOrNull() ?: return null
+        val scores = runCatching { tallySteps(lm, "refine") { lm.wordScores(textBefore, decoded.map { it.word }) } }.getOrNull() ?: return null
         lastNeuralScoreMillis = (System.nanoTime() - t0) / 1_000_000
         val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
         return withNeural(decoded, { scores[it] }, NEURAL_WEIGHT, power)
@@ -602,7 +616,7 @@ object TypingEngine {
         val phrases = retroPairs(previousDecoded, current).map { (p, c) -> "${p.word} ${c.word}" }.distinct()
         if (phrases.size < 2) return null
         val t0 = System.nanoTime()
-        val scores = runCatching { lm.wordScores(textBeforePrevious, phrases, maxSteps = 48) }.getOrNull() ?: return null
+        val scores = runCatching { tallySteps(lm, "retro") { lm.wordScores(textBeforePrevious, phrases, maxSteps = 48) } }.getOrNull() ?: return null
         lastNeuralRetroMillis = (System.nanoTime() - t0) / 1_000_000
         return scores
     }
@@ -707,7 +721,7 @@ object TypingEngine {
         val scores = runCatching {
             synchronized(lm) {
                 val t1 = System.nanoTime() // waited for the model (predictions hold it while typing)
-                lm.wordScores(before, phrases, maxSteps = 200).also {
+                tallySteps(lm, "hindsight") { lm.wordScores(before, phrases, maxSteps = 200) }.also {
                     android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms " +
                         "(waited ${(t1 - t0) / 1_000_000} ms, ${lm.steps - s0} model steps)")
                 }
@@ -954,7 +968,7 @@ object TypingEngine {
         // takes milliseconds), its words kept to ones the lexicon knows, in the lexicon's casing
         val fromNeural = neuralLm?.takeIf { textBefore != null }?.let { lm ->
             val t0 = System.nanoTime()
-            val words = runCatching { lm.predict(textBefore!!, n = want, isWord = { w -> lock.read { engine.lexicon.contains(w) } }, stillWanted = stillWanted) }.getOrDefault(emptyList())
+            val words = runCatching { tallySteps(lm, "predict") { lm.predict(textBefore!!, n = want, isWord = { w -> lock.read { engine.lexicon.contains(w) } }, stillWanted = stillWanted) } }.getOrDefault(emptyList())
             lastNeuralMillis = (System.nanoTime() - t0) / 1_000_000
             lock.read {
                 words.mapNotNull { (w, _) ->

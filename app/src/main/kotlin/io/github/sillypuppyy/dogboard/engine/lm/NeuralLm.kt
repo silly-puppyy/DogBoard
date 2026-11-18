@@ -9,7 +9,9 @@ import kotlin.math.exp
 /**
  * The neural language model for next-word predictions (12 x 384 transformer, int8, LiteRT; trained in
  * tmp/llm, v3): one token per call with fixed key/value caches ([layers, kv_heads, CTX, head_dim]) that
- * go in and come out. The tokens of the last call stay cached, so the next call only runs what is new
+ * go in; the step returns the token's own keys/values ([layers, kv_heads, head_dim]) and they are
+ * written at its slot here (tools/lm/export_kv2.py: 11x faster a step than the older export, whose
+ * caches also came out and were swapped; that format still loads). The tokens of the last call stay cached, so the next call only runs what is new
  * (a space and a word: a few steps). Tries after the context (the capitalised path, word
  * continuations) write cache slots past the context, which the next real token overwrites, so they
  * need no copy. Not thread-safe on its own: [predict] is synchronized.
@@ -23,6 +25,9 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     private val cacheBytes: Int
     // two cache pairs: the call reads one and writes the other, then they swap
     private var kA: ByteBuffer; private var vA: ByteBuffer; private var kB: ByteBuffer; private var vB: ByteBuffer
+    /** Whether the step returns only the new token's K/V (written into kA/vA at its slot). */
+    private val appCache: Boolean
+    private val layers: Int; private val kvHeads: Int; private val headDim: Int
     private val logits: ByteBuffer
     private val idBuf = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
     private val posBuf = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
@@ -49,9 +54,13 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         val cacheOuts = outs.indices.filter { it != logitsOut }
         kOut = cacheOuts[0]; vOut = cacheOuts[1]
         ctx = ins[kIn].shape()[2]
+        layers = ins[kIn].shape()[0]; kvHeads = ins[kIn].shape()[1]; headDim = ins[kIn].shape()[3]
         cacheBytes = ins[kIn].numBytes()
+        appCache = outs[kOut].shape().size == 3
         fun cache() = ByteBuffer.allocateDirect(cacheBytes).order(ByteOrder.nativeOrder())
-        kA = cache(); vA = cache(); kB = cache(); vB = cache()
+        fun direct(bytes: Int) = ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder())
+        kA = cache(); vA = cache()
+        if (appCache) { kB = direct(outs[kOut].numBytes()); vB = direct(outs[vOut].numBytes()) } else { kB = cache(); vB = cache() }
         logits = ByteBuffer.allocateDirect(4 * vocab).order(ByteOrder.nativeOrder())
         pBuf = FloatArray(vocab); qBuf = FloatArray(vocab); nBuf = FloatArray(vocab)
         isWordStart = BooleanArray(vocab) { val p = tokenizer.piece(it); p.length > 1 && p[0] == PieceTokenizer.SPACE && p[1].isLetter() }
@@ -71,7 +80,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         inputs[idIn] = idBuf; inputs[posIn] = posBuf; inputs[kIn] = kA; inputs[vIn] = vA
         outputs[logitsOut] = logits; outputs[kOut] = kB; outputs[vOut] = vB
         interpreter.runForMultipleInputsOutputs(inputs, outputs)
-        kA = kB.also { kB = kA }; vA = vB.also { vB = vA }
+        if (appCache) { writeSlot(kB, kA, pos); writeSlot(vB, vA, pos) } else { kA = kB.also { kB = kA }; vA = vB.also { vB = vA } }
         logits.rewind()
         logits.asFloatBuffer().get(out)
         var max = Float.NEGATIVE_INFINITY
@@ -81,6 +90,15 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         val inv = (1.0 / sum).toFloat()
         for (i in out.indices) out[i] *= inv
         return out
+    }
+
+    /** The token's K or V ([layers, kv_heads, head_dim]) into the cache ([layers, kv_heads, CTX, head_dim]) at [pos]. */
+    private fun writeSlot(new: ByteBuffer, cache: ByteBuffer, pos: Int) {
+        val rowBytes = headDim * 4
+        for (lh in 0 until layers * kvHeads) {
+            val src = lh * rowBytes; val dst = (lh * ctx + pos) * rowBytes
+            for (b in 0 until rowBytes step 8) cache.putLong(dst + b, new.getLong(src + b)) // absolute: no garbage
+        }
     }
 
     private val inputs = arrayOfNulls<Any>(4)
