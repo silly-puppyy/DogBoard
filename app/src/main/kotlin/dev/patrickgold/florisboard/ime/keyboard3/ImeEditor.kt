@@ -75,6 +75,35 @@ open class ImeEditor(
         newComposition: K3TextRange?,
     ) {
         val ic = ic.get() ?: return
+        val replaced = range.last + 1 - range.first
+        // Terminals (Termux, SSH clients) keep no text: a replacement there is appended ("dir" arrived as
+        // "ddidir", user 2026-11-18). Such a field types plainly: raw-input fields from the start, others
+        // once we are about to replace text the field says it doesn't have, or a replacement was appended.
+        if (!plainMode && replaced > 0) {
+            val before = ic.getTextBeforeCursor(replaced + CHECK_CONTEXT, 0)?.toString()
+            if (before == null || before.length < replaced) {
+                switchToPlain("keeps no text")
+            } else if (checksLeft > 0) {
+                checksLeft--
+                writeRegion(ic, range, text, newSelection, newComposition)
+                val expected = before.dropLast(replaced) + text
+                val after = ic.getTextBeforeCursor(expected.length + replaced, 0)?.toString()
+                if (after != null && !after.endsWith(expected) && after.endsWith(before + text)) {
+                    // the old text was kept and the new appended: take the extra back
+                    ic.finishComposingText()
+                    repeat(replaced + text.length) { sendDownUpKeyEvent(KeyEvent.KEYCODE_DEL) }
+                    ic.commitText(text, 1)
+                    switchToPlain("ignores replacements")
+                }
+                remember(range, text)
+                return
+            }
+        }
+        if (plainMode) plainReplace(ic, range, replaced, text) else writeRegion(ic, range, text, newSelection, newComposition)
+        remember(range, text)
+    }
+
+    private fun writeRegion(ic: InputConnection, range: IntRange, text: String, newSelection: K3TextRange, newComposition: K3TextRange?) {
         ic.beginBatchEdit()
         ic.setComposingRegion(range.first, range.last + 1)
         ic.commitText(text, 1)
@@ -82,6 +111,37 @@ open class ImeEditor(
         setComposition(newComposition)
         ic.endBatchEdit()
     }
+
+    /**
+     * DogBoard: plain typing for an editor that cannot replace text: only the difference goes out, the old
+     * text's unmatched tail as backspaces (which terminals understand) and the rest of the new text. The old
+     * text is what was last sent there (a terminal can't tell us), else what the field reports.
+     */
+    private fun plainReplace(ic: InputConnection, range: IntRange, replaced: Int, text: String) {
+        val old = if (replaced == 0) "" else if (range.first == lastStart && lastText.length == replaced) lastText
+            else ic.getTextBeforeCursor(replaced, 0)?.toString().orEmpty()
+        var p = 0
+        while (p < old.length && p < text.length && old[p] == text[p]) p++
+        ic.finishComposingText()
+        repeat(replaced - p) { sendDownUpKeyEvent(KeyEvent.KEYCODE_DEL) }
+        if (p < text.length) ic.commitText(text.substring(p), 1)
+    }
+
+    private fun remember(range: IntRange, text: String) { lastStart = range.first; lastText = text }
+
+    private fun switchToPlain(why: String) {
+        plainMode = true
+        checksLeft = 0
+        android.util.Log.i("DogBoardEditor", "${info.packageName}: the field $why; plain typing (inputType 0x%x)".format(info.base.inputType))
+    }
+
+    private var lastStart = -1
+    private var lastText = ""
+
+    /** DogBoard: this field can't replace text (see [replaceText]); the word engine stays off in it. */
+    @Volatile var plainMode = info.isRawInputEditor
+        private set
+    private var checksLeft = CHECKS
 
     /** DogBoard: runs [block]'s edits as one batch, so the app sees one change (batch edits nest). */
     fun <T> batch(block: () -> T): T {
@@ -244,6 +304,10 @@ open class ImeEditor(
          * MUST NOT contain filter flags, as these behave strangely with some editors!!
          */
         const val CURSOR_UPDATES = InputConnection.CURSOR_UPDATE_MONITOR or InputConnection.CURSOR_UPDATE_IMMEDIATE
+
+        /** DogBoard: how many replacements per field are checked for an editor that appends instead. */
+        private const val CHECKS = 6
+        private const val CHECK_CONTEXT = 32
 
         val Disconnected = ImeEditor(
             ic = WeakReference(null),

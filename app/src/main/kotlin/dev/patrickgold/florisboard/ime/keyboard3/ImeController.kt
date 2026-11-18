@@ -1264,7 +1264,7 @@ class ImeController(
             val attrs = state.editor.info.inputAttributes
             // the word engine is English for now: other layouts type plainly until the
             // internationalisation pass brings their word lists and language models
-            return englishLayout() &&
+            return englishLayout() && !state.editor.plainMode &&
                 attrs.type == InputAttributes.Type.TEXT &&
                 attrs.variation !in NO_DOUBLE_SPACE_VARIATIONS &&
                 !attrs.flagTextNoSuggestions

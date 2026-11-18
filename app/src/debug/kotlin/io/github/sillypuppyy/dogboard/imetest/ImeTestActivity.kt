@@ -57,6 +57,22 @@ class ImeTestActivity : Activity() {
                 "multiline" -> inputType = inputType or InputType.TYPE_TEXT_FLAG_MULTI_LINE
             }
         }
+        if (intent.getStringExtra("field") == "noregion") {
+            // an editor that keeps its text but ignores composing regions, so a replacement is appended
+            // (what the SSH client Terminus did: "dir" arrived as "ddidir")
+            val term = NoRegionView(this)
+            setContentView(term)
+            term.requestFocus()
+            return
+        }
+        if (intent.getStringExtra("field") == "terminal") {
+            // a terminal-like field (Termux, SSH clients): Android's non-editor input connection turns
+            // committed text into key events and keeps no text, so the keyboard cannot replace what it typed
+            val term = TerminalView(this)
+            setContentView(term)
+            term.requestFocus()
+            return
+        }
         setContentView(field)
         field.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
@@ -111,3 +127,66 @@ class ImeTestActivity : Activity() {
         }
     }
 }
+
+/** Debug: a terminal-like view (no editable text; keys arrive as key events), logging what it received. */
+private class TerminalView(context: android.content.Context) : android.view.View(context) {
+    private val received = StringBuilder()
+
+    init { isFocusable = true; isFocusableInTouchMode = true }
+
+    override fun onCheckIsTextEditor() = true
+
+    override fun onCreateInputConnection(outAttrs: EditorInfo): android.view.inputmethod.InputConnection {
+        outAttrs.inputType = InputType.TYPE_CLASS_TEXT
+        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN
+        return android.view.inputmethod.BaseInputConnection(this, false)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        when {
+            keyCode == android.view.KeyEvent.KEYCODE_DEL -> if (received.isNotEmpty()) received.setLength(received.length - 1)
+            event.characters != null -> received.append(event.characters)
+            event.unicodeChar != 0 -> received.append(event.unicodeChar.toChar())
+            else -> return super.onKeyDown(keyCode, event)
+        }
+        android.util.Log.i("DogBoardText", "text=[$received]")
+        return true
+    }
+
+    override fun onKeyMultiple(keyCode: Int, repeatCount: Int, event: android.view.KeyEvent): Boolean {
+        event.characters?.let { received.append(it); android.util.Log.i("DogBoardText", "text=[$received]"); return true }
+        return super.onKeyMultiple(keyCode, repeatCount, event)
+    }
+}
+
+/** Debug: keeps text but ignores composing regions (replacements are appended), logging its text. */
+private class NoRegionView(context: android.content.Context) : android.view.View(context) {
+    val text: android.text.Editable = android.text.SpannableStringBuilder()
+
+    init { isFocusable = true; isFocusableInTouchMode = true }
+
+    override fun onCheckIsTextEditor() = true
+
+    override fun onCreateInputConnection(outAttrs: EditorInfo): android.view.inputmethod.InputConnection {
+        outAttrs.inputType = InputType.TYPE_CLASS_TEXT
+        outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN
+        return object : android.view.inputmethod.BaseInputConnection(this, true) {
+            override fun getEditable(): android.text.Editable = text
+            override fun setComposingRegion(start: Int, end: Int): Boolean = true // ignored
+            override fun commitText(t: CharSequence, newCursorPosition: Int): Boolean {
+                val r = super.commitText(t, newCursorPosition)
+                android.util.Log.i("DogBoardText", "text=[$text]")
+                return r
+            }
+            override fun sendKeyEvent(event: android.view.KeyEvent): Boolean {
+                if (event.action == android.view.KeyEvent.ACTION_DOWN && event.keyCode == android.view.KeyEvent.KEYCODE_DEL && text.isNotEmpty()) {
+                    text.delete(text.length - 1, text.length)
+                    android.text.Selection.setSelection(text, text.length)
+                    android.util.Log.i("DogBoardText", "text=[$text]")
+                }
+                return true
+            }
+        }
+    }
+}
+
