@@ -5,17 +5,21 @@
   "version": "2026.11.18",
   "files": {
     "lexicon": {
-      "path": "dogboard/en.lexicon.tsv"
+      "path": "dogboard/en.lexicon.tsv",
+      "budget_bytes": 6000000
     },
     "bigrams": {
-      "path": "dogboard/en.bigrams.tsv"
+      "path": "dogboard/en.bigrams.tsv",
+      "budget_bytes": 4000000
     },
     "ngrams": {
       "path": "dogboard/en.ngrams.bin",
-      "optional": true
+      "optional": true,
+      "budget_bytes": 64000000
     },
     "charlm": {
-      "path": "dogboard/en.charlm.bin"
+      "path": "dogboard/en.charlm.bin",
+      "budget_bytes": 4000000
     },
     "abbreviations": {
       "path": "dogboard/en.abbreviations.txt"
@@ -34,7 +38,8 @@
     },
     "lm_model": {
       "path": "dogboard/lm/v3.tflite",
-      "optional": true
+      "optional": true,
+      "budget_bytes": 32000000
     },
     "lm_pieces": {
       "path": "dogboard/lm/v3.pieces.tsv",
@@ -42,7 +47,8 @@
     },
     "swipe_qwerty": {
       "path": "dogboard/swipe/en-qwerty.tflite",
-      "optional": true
+      "optional": true,
+      "budget_bytes": 6000000
     },
     "rules": {
       "path": "dogboard/packs/en-US/rules.json"
@@ -155,6 +161,196 @@
       "for": [
         "rules"
       ]
+    }
+  ],
+  "build": [
+    {
+      "stage": "lexicon",
+      "run": [
+        "python3",
+        "tools/data/build_lexicon.py",
+        "--data",
+        "${DATA}",
+        "--casing",
+        "${DATA}/casing/casing.tsv",
+        "--out",
+        "${ASSETS}/dogboard/en.lexicon.tsv"
+      ],
+      "inputs": [
+        "tools/data/build_lexicon.py",
+        "${DATA}/scowl/scowl-2020.12.07",
+        "${DATA}/wordfreq/whl/wordfreq/data/large_en.msgpack.gz",
+        "${DATA}/wikipedia/common_misspellings.txt"
+      ],
+      "outputs": [
+        "${ASSETS}/dogboard/en.lexicon.tsv"
+      ]
+    },
+    {
+      "stage": "misspellings",
+      "run": [
+        "python3",
+        "tools/data/build_misspellings.py",
+        "${DATA}/wikipedia/common_misspellings.txt",
+        "${ASSETS}/dogboard/en.lexicon.tsv",
+        "${ASSETS}/dogboard/en.misspellings.txt"
+      ],
+      "inputs": [
+        "tools/data/build_misspellings.py",
+        "${ASSETS}/dogboard/en.lexicon.tsv"
+      ],
+      "outputs": [
+        "${ASSETS}/dogboard/en.misspellings.txt"
+      ]
+    },
+    {
+      "stage": "nosuggest",
+      "run": [
+        "python3",
+        "tools/data/build_nosuggest.py",
+        "${REPO}/../data/ldnoobw/en"
+      ],
+      "inputs": [
+        "tools/data/build_nosuggest.py",
+        "${ASSETS}/dogboard/en.lexicon.tsv"
+      ],
+      "outputs": [
+        "${ASSETS}/dogboard/en.nosuggest.txt"
+      ]
+    },
+    {
+      "stage": "bigrams",
+      "run": [
+        "python3",
+        "tools/data/bigrams_from_tatoeba.py",
+        "${DATA}/tatoeba/eng_sentences.tsv"
+      ],
+      "inputs": [
+        "tools/data/bigrams_from_tatoeba.py",
+        "${ASSETS}/dogboard/en.lexicon.tsv"
+      ],
+      "outputs": [
+        "${ASSETS}/dogboard/en.bigrams.tsv"
+      ]
+    },
+    {
+      "stage": "abbreviations",
+      "run": [
+        "python3",
+        "tools/data/build_abbreviations.py",
+        "${DATA}/cldr/segments-en.xml"
+      ],
+      "inputs": [
+        "tools/data/build_abbreviations.py",
+        "${DATA}/cldr/segments-en.xml"
+      ],
+      "outputs": [
+        "${ASSETS}/dogboard/en.abbreviations.txt"
+      ]
+    },
+    {
+      "stage": "emoji",
+      "run": [
+        "python3",
+        "tools/data/build_emoji_keywords.py",
+        "${DATA}/cldr/annotations-en.xml",
+        "${DATA}/wordfreq/whl/wordfreq/data/large_en.msgpack.gz"
+      ],
+      "inputs": [
+        "tools/data/build_emoji_keywords.py",
+        "${DATA}/cldr/annotations-en.xml"
+      ],
+      "outputs": [
+        "${ASSETS}/dogboard/en.emoji.tsv",
+        "${ASSETS}/dogboard/en.emoji-tones.tsv"
+      ]
+    },
+    {
+      "stage": "charlm",
+      "manual": true,
+      "run": [
+        "sh",
+        "-c",
+        "echo 'tools/data/count_unigrams.py (FineWeb) -> tools/data/build_charlm.py UNIGRAMS ${ASSETS}/dogboard/en.lexicon.tsv ${ASSETS}/dogboard/en.charlm.tsv --misspellings ${DATA}/wikipedia/common_misspellings.txt -> binary ${ASSETS}/dogboard/en.charlm.bin'"
+      ],
+      "inputs": [],
+      "outputs": [
+        "${ASSETS}/dogboard/en.charlm.bin"
+      ]
+    },
+    {
+      "stage": "ngrams",
+      "manual": true,
+      "run": [
+        "sh",
+        "-c",
+        "echo 'FineWeb sentences (tools/data/fineweb_sentences.py) -> KenLM lmplz -o 3 -> tools/data/arpa_to_dogboard.py MODEL.arpa ${ASSETS}/dogboard/en.ngrams.bin'"
+      ],
+      "inputs": [],
+      "outputs": [
+        "${ASSETS}/dogboard/en.ngrams.bin"
+      ]
+    },
+    {
+      "stage": "neural_lm",
+      "manual": true,
+      "run": [
+        "sh",
+        "-c",
+        "echo 'tools/lm: train (wandb dogboard-llm), then tools/lm/export_kv2.py CKPT OUT 64 -> ${ASSETS}/dogboard/lm/v3.tflite'"
+      ],
+      "inputs": [],
+      "outputs": [
+        "${ASSETS}/dogboard/lm/v3.tflite"
+      ]
+    },
+    {
+      "stage": "swipe",
+      "manual": true,
+      "run": [
+        "sh",
+        "-c",
+        "echo 'tools/swipe: train (wandb dogboard-swipe), export_tflite.py -> ${ASSETS}/dogboard/swipe/en-qwerty.tflite'"
+      ],
+      "inputs": [],
+      "outputs": [
+        "${ASSETS}/dogboard/swipe/en-qwerty.tflite"
+      ]
+    }
+  ],
+  "validate": [
+    {
+      "name": "autocorrect eval",
+      "run": [
+        "./gradlew",
+        "--no-daemon",
+        "--max-workers=2",
+        "-q",
+        ":app:testDebugUnitTest",
+        "--tests",
+        "io.github.sillypuppyy.dogboard.engine.EngineEvalTest",
+        "--rerun"
+      ],
+      "env": {
+        "DOGBOARD_EVAL": "1"
+      }
+    },
+    {
+      "name": "context eval",
+      "run": [
+        "./gradlew",
+        "--no-daemon",
+        "--max-workers=2",
+        "-q",
+        ":app:testDebugUnitTest",
+        "--tests",
+        "io.github.sillypuppyy.dogboard.engine.EngineContextEvalTest",
+        "--rerun"
+      ],
+      "env": {
+        "DOGBOARD_EVAL": "1",
+        "DOGBOARD_NGRAMS": "${ASSETS}/dogboard/en.ngrams.bin"
+      }
     }
   ]
 }
