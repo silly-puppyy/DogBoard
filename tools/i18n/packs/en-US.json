@@ -1,0 +1,150 @@
+{
+  "tag": "en-US",
+  "name": "English (US)",
+  "script": "Latn",
+  "version": "2026.11.18",
+  "files": {
+    "lexicon": {
+      "path": "dogboard/en.lexicon.tsv"
+    },
+    "bigrams": {
+      "path": "dogboard/en.bigrams.tsv"
+    },
+    "ngrams": {
+      "path": "dogboard/en.ngrams.bin",
+      "optional": true
+    },
+    "charlm": {
+      "path": "dogboard/en.charlm.bin"
+    },
+    "abbreviations": {
+      "path": "dogboard/en.abbreviations.txt"
+    },
+    "nosuggest": {
+      "path": "dogboard/en.nosuggest.txt"
+    },
+    "misspellings": {
+      "path": "dogboard/en.misspellings.txt"
+    },
+    "emoji": {
+      "path": "dogboard/en.emoji.tsv"
+    },
+    "emoji_tones": {
+      "path": "dogboard/en.emoji-tones.tsv"
+    },
+    "lm_model": {
+      "path": "dogboard/lm/v3.tflite",
+      "optional": true
+    },
+    "lm_pieces": {
+      "path": "dogboard/lm/v3.pieces.tsv",
+      "optional": true
+    },
+    "swipe_qwerty": {
+      "path": "dogboard/swipe/en-qwerty.tflite",
+      "optional": true
+    }
+  },
+  "sources": [
+    {
+      "name": "SCOWL 2020.12.07",
+      "licence": "SCOWL copyright notice (licenses/SCOWL-Copyright.txt)",
+      "for": [
+        "lexicon"
+      ],
+      "url": "http://wordlist.aspell.net/"
+    },
+    {
+      "name": "wordfreq 3.1.1",
+      "licence": "CC BY-SA 4.0",
+      "for": [
+        "lexicon",
+        "emoji"
+      ],
+      "url": "https://github.com/rspeer/wordfreq"
+    },
+    {
+      "name": "Wikidata",
+      "licence": "CC0",
+      "for": [
+        "lexicon"
+      ],
+      "url": "https://www.wikidata.org"
+    },
+    {
+      "name": "US Census name lists (1990 first names, 2010 surnames)",
+      "licence": "public domain",
+      "for": [
+        "lexicon"
+      ]
+    },
+    {
+      "name": "GeoNames",
+      "licence": "CC BY 4.0",
+      "for": [
+        "lexicon"
+      ],
+      "url": "https://www.geonames.org"
+    },
+    {
+      "name": "Wikipedia common misspellings",
+      "licence": "CC BY-SA 4.0",
+      "for": [
+        "lexicon",
+        "misspellings"
+      ]
+    },
+    {
+      "name": "Tatoeba",
+      "licence": "CC BY 2.0 FR",
+      "for": [
+        "bigrams"
+      ],
+      "url": "https://tatoeba.org"
+    },
+    {
+      "name": "FineWeb sample-10BT",
+      "licence": "ODC-By 1.0 (Common Crawl terms apply)",
+      "for": [
+        "charlm",
+        "ngrams",
+        "lm_model"
+      ],
+      "url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb"
+    },
+    {
+      "name": "Unicode CLDR",
+      "licence": "Unicode License v3",
+      "for": [
+        "abbreviations",
+        "emoji",
+        "emoji_tones"
+      ],
+      "url": "https://github.com/unicode-org/cldr"
+    },
+    {
+      "name": "LDNOOBW (English)",
+      "licence": "CC BY 4.0",
+      "for": [
+        "nosuggest"
+      ],
+      "url": "https://github.com/LDNOOBW"
+    },
+    {
+      "name": "Neural model training text (see ATTRIBUTION.txt: Webis TLDR-17, SODA, WildChat-1M, Synthetic-Persona-Chat, Leipzig Corpora, Common Voice, Ubuntu IRC, SmolLM2-written chats)",
+      "licence": "various (ATTRIBUTION.txt)",
+      "for": [
+        "lm_model",
+        "lm_pieces"
+      ]
+    },
+    {
+      "name": "FUTO swipe dataset",
+      "licence": "MIT (licenses/FUTO-swipe-dataset-MIT.txt)",
+      "for": [
+        "swipe_qwerty"
+      ],
+      "url": "https://huggingface.co/datasets/futo-org/swipe.futo.org"
+    }
+  ]
+}

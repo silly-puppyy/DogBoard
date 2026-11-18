@@ -1,0 +1,175 @@
+{
+  "format": 1,
+  "tag": "en-US",
+  "name": "English (US)",
+  "script": "Latn",
+  "version": "2026.11.18",
+  "files": {
+    "lexicon": {
+      "path": "dogboard/en.lexicon.tsv",
+      "size": 4255767,
+      "sha256": "a12d2cc3f7f132750235b61d56f302752b332a9a86dfce0e81982e454348b143"
+    },
+    "bigrams": {
+      "path": "dogboard/en.bigrams.tsv",
+      "size": 2887013,
+      "sha256": "0ce1895f73d17252e42969cd26d259252d003574da2d2dae0da951c2be94f25a"
+    },
+    "ngrams": {
+      "path": "dogboard/en.ngrams.bin",
+      "optional": true,
+      "size": 51116337,
+      "sha256": "50e6b7857bd72bac6676fbb20b129f77812eaabb30e5a701531fa37fdfe7dcc4"
+    },
+    "charlm": {
+      "path": "dogboard/en.charlm.bin",
+      "size": 2720200,
+      "sha256": "8e49e2a6c028b698e7bd8433e6bd3c68adc6a02a84b225fe015318f2157721ce"
+    },
+    "abbreviations": {
+      "path": "dogboard/en.abbreviations.txt",
+      "size": 602,
+      "sha256": "56df628412912c1b057bd33abb6457a20e2493839e0bd3e3172ded8670d3d03e"
+    },
+    "nosuggest": {
+      "path": "dogboard/en.nosuggest.txt",
+      "size": 1443,
+      "sha256": "2873d593c98b5130bd3c2367f0290e23304b1ad78beba2dc8c83693f116dc1b5"
+    },
+    "misspellings": {
+      "path": "dogboard/en.misspellings.txt",
+      "size": 42413,
+      "sha256": "76ec11a782e4911b32d2ad7f48eb7196e5f6147d328bc4b999e08374bbdfae15"
+    },
+    "emoji": {
+      "path": "dogboard/en.emoji.tsv",
+      "size": 93331,
+      "sha256": "b7c1c3a61ec986f0b15a5c32edb1d4353a1b224f29150acce846c8275cc4b14c"
+    },
+    "emoji_tones": {
+      "path": "dogboard/en.emoji-tones.tsv",
+      "size": 25393,
+      "sha256": "f69c8e4e0c57722060ad4eb2de3cea7fe29914a1ff08e4aef02b70cf2c999940"
+    },
+    "lm_model": {
+      "path": "dogboard/lm/v3.tflite",
+      "optional": true,
+      "size": 25887328,
+      "sha256": "2cb4dce684b02e256e7932db56cda77c53fc08989dbbfd03a0d95dca656e5e3b"
+    },
+    "lm_pieces": {
+      "path": "dogboard/lm/v3.pieces.tsv",
+      "optional": true,
+      "size": 359040,
+      "sha256": "60936154a11db67eeec3dd45c57f438af6005fced38afcdeeac08dfaa2646446"
+    },
+    "swipe_qwerty": {
+      "path": "dogboard/swipe/en-qwerty.tflite",
+      "optional": true,
+      "size": 4390020,
+      "sha256": "4966c07d348ffa371ff13beb2c41e2d9828896af983d229adfb38e6a53d4ed46"
+    }
+  },
+  "sources": [
+    {
+      "name": "SCOWL 2020.12.07",
+      "licence": "SCOWL copyright notice (licenses/SCOWL-Copyright.txt)",
+      "for": [
+        "lexicon"
+      ],
+      "url": "http://wordlist.aspell.net/"
+    },
+    {
+      "name": "wordfreq 3.1.1",
+      "licence": "CC BY-SA 4.0",
+      "for": [
+        "lexicon",
+        "emoji"
+      ],
+      "url": "https://github.com/rspeer/wordfreq"
+    },
+    {
+      "name": "Wikidata",
+      "licence": "CC0",
+      "for": [
+        "lexicon"
+      ],
+      "url": "https://www.wikidata.org"
+    },
+    {
+      "name": "US Census name lists (1990 first names, 2010 surnames)",
+      "licence": "public domain",
+      "for": [
+        "lexicon"
+      ]
+    },
+    {
+      "name": "GeoNames",
+      "licence": "CC BY 4.0",
+      "for": [
+        "lexicon"
+      ],
+      "url": "https://www.geonames.org"
+    },
+    {
+      "name": "Wikipedia common misspellings",
+      "licence": "CC BY-SA 4.0",
+      "for": [
+        "lexicon",
+        "misspellings"
+      ]
+    },
+    {
+      "name": "Tatoeba",
+      "licence": "CC BY 2.0 FR",
+      "for": [
+        "bigrams"
+      ],
+      "url": "https://tatoeba.org"
+    },
+    {
+      "name": "FineWeb sample-10BT",
+      "licence": "ODC-By 1.0 (Common Crawl terms apply)",
+      "for": [
+        "charlm",
+        "ngrams",
+        "lm_model"
+      ],
+      "url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb"
+    },
+    {
+      "name": "Unicode CLDR",
+      "licence": "Unicode License v3",
+      "for": [
+        "abbreviations",
+        "emoji",
+        "emoji_tones"
+      ],
+      "url": "https://github.com/unicode-org/cldr"
+    },
+    {
+      "name": "LDNOOBW (English)",
+      "licence": "CC BY 4.0",
+      "for": [
+        "nosuggest"
+      ],
+      "url": "https://github.com/LDNOOBW"
+    },
+    {
+      "name": "Neural model training text (see ATTRIBUTION.txt: Webis TLDR-17, SODA, WildChat-1M, Synthetic-Persona-Chat, Leipzig Corpora, Common Voice, Ubuntu IRC, SmolLM2-written chats)",
+      "licence": "various (ATTRIBUTION.txt)",
+      "for": [
+        "lm_model",
+        "lm_pieces"
+      ]
+    },
+    {
+      "name": "FUTO swipe dataset",
+      "licence": "MIT (licenses/FUTO-swipe-dataset-MIT.txt)",
+      "for": [
+        "swipe_qwerty"
+      ],
+      "url": "https://huggingface.co/datasets/futo-org/swipe.futo.org"
+    }
+  ]
+}

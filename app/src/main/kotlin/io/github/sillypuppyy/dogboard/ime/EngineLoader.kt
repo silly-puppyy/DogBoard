@@ -11,8 +11,15 @@ import java.io.File
  * comes first loads it. Call off the main thread.
  */
 object EngineLoader {
+    /** The language pack in use (notes/design/i18n-pipeline.md); English until the keyboard picks packs by language. */
+    @Volatile var pack: LanguagePack? = null
+        private set
+
+    private fun pack(app: Context): LanguagePack =
+        pack ?: (LanguagePack.open(app.assets, LanguagePack.DEFAULT_TAG) ?: error("no language pack ${LanguagePack.DEFAULT_TAG}")).also { pack = it }
+
     private fun loadNgrams(app: Context): io.github.sillypuppyy.dogboard.engine.NgramModel? = runCatching {
-        app.assets.openFd("dogboard/en.ngrams.bin").use { fd ->
+        app.assets.openFd(pack(app).path("ngrams") ?: return null).use { fd ->
             java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
                 val t0 = android.os.SystemClock.uptimeMillis()
                 io.github.sillypuppyy.dogboard.engine.NgramModel.fromBuffer(
@@ -27,10 +34,13 @@ object EngineLoader {
 
     private fun loadNeuralLm(app: Context): io.github.sillypuppyy.dogboard.engine.lm.NeuralLm? = runCatching {
         val t0 = android.os.SystemClock.uptimeMillis()
-        val tokenizer = app.assets.open("dogboard/lm/v3.pieces.tsv").bufferedReader().use {
+        val p = pack(app)
+        val pieces = p.path("lm_pieces") ?: return null
+        val model = p.path("lm_model") ?: return null
+        val tokenizer = app.assets.open(pieces).bufferedReader().use {
             io.github.sillypuppyy.dogboard.engine.lm.PieceTokenizer.parse(it)
         }
-        app.assets.openFd("dogboard/lm/v3.tflite").use { fd ->
+        app.assets.openFd(model).use { fd ->
             java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
                 io.github.sillypuppyy.dogboard.engine.lm.NeuralLm(
                     ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), tokenizer,
@@ -76,23 +86,25 @@ object EngineLoader {
         val app = context.applicationContext
         val assets = app.assets
         val files = app.filesDir
+        val p = pack(app)
+        fun asset(component: String) = p.path(component) ?: error("${p.tag}: no $component")
         TypingEngine.load(
-            openLexicon = { assets.open("dogboard/en.lexicon.tsv").bufferedReader() },
-            openBigrams = { assets.open("dogboard/en.bigrams.tsv").bufferedReader() },
+            openLexicon = { assets.open(asset("lexicon")).bufferedReader() },
+            openBigrams = { assets.open(asset("bigrams")).bufferedReader() },
             userWords = File(files, "dogboard/user_words.txt"),
             blockedWords = File(files, "dogboard/blocked_words.txt"),
             rejectedCorrections = File(files, "dogboard/rejected_corrections.txt"),
             autocorrectStrength = File(files, "dogboard/autocorrect_strength.txt"),
             personalOffsetsFile = File(files, "dogboard/personal_offsets.txt"),
-            openAbbreviations = { assets.open("dogboard/en.abbreviations.txt").bufferedReader() },
-            openNoSuggest = { assets.open("dogboard/en.nosuggest.txt").bufferedReader() },
+            openAbbreviations = { assets.open(asset("abbreviations")).bufferedReader() },
+            openNoSuggest = { assets.open(asset("nosuggest")).bufferedReader() },
             personalModel = File(files, "dogboard/personal.tsv"),
             textReplacements = File(files, "dogboard/text_replacements.tsv"),
-            openEmojiIndex = { assets.open("dogboard/en.emoji.tsv").bufferedReader() },
-            openEmojiTones = { assets.open("dogboard/en.emoji-tones.tsv").bufferedReader() },
+            openEmojiIndex = { assets.open(asset("emoji")).bufferedReader() },
+            openEmojiTones = { assets.open(asset("emoji_tones")).bufferedReader() },
             emojiUsageFile = File(files, "dogboard/emoji_usage.tsv"),
             addedWords = File(files, "dogboard/added_words.txt"),
-            openMisspellings = { assets.open("dogboard/en.misspellings.txt").bufferedReader() },
+            openMisspellings = { assets.open(asset("misspellings")).bufferedReader() },
             // parsed word data, rebuilt when the app (and so its assets) changes
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
             snapshotKey = app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
@@ -115,7 +127,7 @@ object EngineLoader {
         // the swipe recogniser (4.4 MB, memory-mapped like the trigram; every phone: ~2 ms of work per
         // swipe on a desktop core, run only when a swipe ends)
         TypingEngine.attachSwipeNet(runCatching {
-            app.assets.openFd("dogboard/swipe/en-qwerty.tflite").use { fd ->
+            app.assets.openFd(p.path("swipe_qwerty") ?: error("no swipe model")).use { fd ->
                 java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
                     io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet(
                         ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), threads = 1,
@@ -126,7 +138,7 @@ object EngineLoader {
         nativeMark("swipe")
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
-        TypingEngine.attachCharModel(runCatching { assets.open("dogboard/en.charlm.bin").use { CharModel.read(it) } }.getOrNull())
+        TypingEngine.attachCharModel(runCatching { assets.open(asset("charlm")).use { CharModel.read(it) } }.getOrNull())
         android.util.Log.i("DogBoardPerf", "letter model attached after ${android.os.SystemClock.uptimeMillis() - t1} ms")
         nativeMark("letter model")
     }
