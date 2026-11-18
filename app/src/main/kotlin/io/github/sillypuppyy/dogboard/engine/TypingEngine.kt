@@ -591,8 +591,12 @@ object TypingEngine {
         val engine = loaded ?: return null
         val lm = neuralLm?.takeIf { decoded.size > 1 } ?: return null
         val t0 = System.nanoTime()
-        val scores = runCatching { tallySteps(lm, "refine") { lm.wordScores(textBefore, decoded.map { it.word }) } }.getOrNull() ?: return null
+        val scores = runCatching { tallySteps(lm, "refine") {
+            lm.wordScores(textBefore, decoded.map { it.word }, maxSteps = NEURAL_REFINE_STEPS, deadlineNanos = t0 + NEURAL_REFINE_MS * 1_000_000)
+        } }.getOrNull() ?: return null
         lastNeuralScoreMillis = (System.nanoTime() - t0) / 1_000_000
+        lastNeuralUnscored = decoded.count { it.word !in scores }
+        lastNeuralUnscoredMulti = decoded.count { it.word !in scores && ' ' in it.word }
         val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
         return withNeural(decoded, { scores[it] }, NEURAL_WEIGHT, power)
     }
@@ -624,6 +628,17 @@ object TypingEngine {
 
     @Volatile
     var lastNeuralRetroMillis = -1L
+    /** Candidates the last refinement left unscored (its step budget ran out), and of those the multi-word ones. */
+    @Volatile var lastNeuralUnscored = 0
+    /**
+     * Model steps a keystroke's refinement may run (words of several pieces and multi-word readings need
+     * them; unscored ones keep the n-gram score). 6 left ~8 % of candidates unscored, a third of them
+     * multi-word readings ("do you"); with the faster model (export_kv2) more fit well within a keystroke.
+     */
+    const val NEURAL_REFINE_STEPS = 16
+    /** ...and stops starting new ones after this long (well inside the ~100 ms between a fast typist's keys). */
+    const val NEURAL_REFINE_MS = 40L
+    @Volatile var lastNeuralUnscoredMulti = 0
 
     /**
      * Hindsight retrocorrection (user 2026-11-18: one general mechanism, as iOS's retrocorrection: the

@@ -206,7 +206,7 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
      * for the context, so the next keystroke goes on); words not reached are left out.
      */
     @Synchronized
-    fun wordScores(textBefore: String, words: Collection<String>, maxSteps: Int = 6): Map<String, Double> {
+    fun wordScores(textBefore: String, words: Collection<String>, maxSteps: Int = 6, deadlineNanos: Long = Long.MAX_VALUE): Map<String, Double> {
         ensureContext(textBefore, 3)
         val pos = cached.size
         var steps = 0
@@ -227,7 +227,8 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
             // the rest piece by piece
             val extra = seq.size - i - 1
             if (extra > 0) {
-                if (steps + i + extra > maxSteps || pos + seq.size >= ctx) continue
+                // a slow phone stops at the deadline: the rest wait for the next keystroke (results are kept per context)
+                if (steps + i + extra > maxSteps || pos + seq.size >= ctx || System.nanoTime() > deadlineNanos) continue
                 var at = pos
                 for (k in 0 until seq.size - 1) {
                     val next = step(seq[k], at, nBuf); at++; steps++

@@ -1424,11 +1424,13 @@ class ImeController(
                 // stage 2: refined by the neural model, when it finishes before the next key
                 if (neuralContext != null && isActive) {
                     val refined = io.github.sillypuppyy.dogboard.perf.GcStats.track("neural") { TypingEngine.refineWithNeural(decoded, neuralContext) }
-                    TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let { android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms") }
+                    TypingEngine.lastNeuralScoreMillis.takeIf { it >= 0 }?.let {
+                        android.util.Log.i("DogBoardPerf", "neural candidate scores took ${it}ms; unscored ${TypingEngine.lastNeuralUnscored} of ${decoded.size} (multi-word ${TypingEngine.lastNeuralUnscoredMulti})")
+                    }
                     if (refined != null && isActive && latestDecode?.first == key) {
                         latestDecode = key to refined
                         publish(refined)
-                    }
+                    } else if (refined != null) android.util.Log.i("DogBoardPerf", "neural late: the next key came first")
                     // stage 3 (experimental): the look back at the previous word, scored by the neural model
                     val prevDecoded = back?.decoded
                     if (neuralRetro && prevDecoded != null && isActive && neuralContext.endsWith(back.committed + " ")) {
