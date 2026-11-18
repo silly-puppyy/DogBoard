@@ -4,6 +4,7 @@
 # them alone, top-1 on swipe-5's 3,000 real QWERTY swipes (never used to fit anything). Baselines on the same
 # test: real-trained 82.8, pursuit-v1 73.8, stitched (real pieces) 76.9.
 #   synth_sweep.sh TAG "GEN [GEN2 ...]" [N] [EPOCHS]
+#   EXTRA_PREP (env): more prepare_synth.py options (e.g. "--aspect 0.55 --aspect-max 0.8", "--uniform 0.2")
 #   GEN: finger:PARAMS.json (physics.py), h1 / h2, lib:LIBRARY.pkl; two = equal shares mixed (train.py --extra)
 D=/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data
 PY=$D/venv-llm/bin/python
@@ -15,7 +16,7 @@ share=$((N / ${#GENS[@]}))
 dirs=()
 for i in "${!GENS[@]}"; do
   out=$D/swipe/synth-$TAG-$i
-  [ -f "$out/done" ] || { taskset -c 1,3 nice $PY prepare_synth.py --lexicon $EN --layout $L/qwerty.json --out $out -n $share --units phys --aspect 0.674 --human "${GENS[$i]}" --workers 2 2>&1 | grep -v Warn | tail -1 && touch "$out/done"; }
+  [ -f "$out/done" ] || { taskset -c 1,3 nice $PY prepare_synth.py --lexicon $EN --layout $L/qwerty.json --out $out -n $share --units phys --aspect 0.674 --human "${GENS[$i]}" --workers 2 $EXTRA_PREP 2>&1 | grep -v Warn | tail -1 && touch "$out/done"; }
   dirs+=("$out")
 done
 extra=""; [ ${#dirs[@]} -gt 1 ] && extra="--extra ${dirs[1]}"   # train.py mixes one extra folder
