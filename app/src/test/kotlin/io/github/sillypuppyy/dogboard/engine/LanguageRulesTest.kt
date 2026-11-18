@@ -23,6 +23,13 @@ class LanguageRulesTest : FunSpec({
         AutoShift.shouldShift("你好。", AutoShift.Type.SENTENCES, null, "。！？") shouldBe false // no space after: as for "."
         AutoShift.shouldShift("नमस्ते। ", AutoShift.Type.SENTENCES, null, ".!?।") shouldBe true
         AutoShift.shouldShift("नमस्ते। ", AutoShift.Type.SENTENCES, null) shouldBe false
+        // the pack's quotes: German „…“ and French «…» around a sentence end
+        AutoShift.shouldShift("Er sagte „Ja.“ ", AutoShift.Type.SENTENCES, null, ".!?", "„“‚‘’") shouldBe true
+        AutoShift.shouldShift("Er sagte „Ja.“ ", AutoShift.Type.SENTENCES, null) shouldBe false
+        AutoShift.shouldShift("Fin. „", AutoShift.Type.SENTENCES, null, ".!?", "„“‚‘’") shouldBe true
+        AutoShift.shouldShift("Il a dit « Oui. » ", AutoShift.Type.SENTENCES, null, ".!?", "«»‹›’") shouldBe false // a space before »: not a closer directly after the period
+        AutoShift.shouldShift("Fin. «", AutoShift.Type.SENTENCES, null, ".!?", "«»‹›’") shouldBe true
+        AutoShift.shouldShift("He said “Yes.” ", AutoShift.Type.SENTENCES, null, ".!?", LanguageRules.ENGLISH.quotes) shouldBe true
     }
     test("quotes come from the rules: English by default, a pack's own set when it has one") {
         val en = LanguageRules.ENGLISH.smartQuotes

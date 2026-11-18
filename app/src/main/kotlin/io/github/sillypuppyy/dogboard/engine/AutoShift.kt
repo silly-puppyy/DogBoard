@@ -32,12 +32,20 @@ object AutoShift {
      */
     private const val WORD = "[\\p{L}\\p{M}\\p{N}\\p{Pc}]"
 
-    /** The sentence-boundary pattern; group 1 is the word plus its delimiter when that is the boundary. */
-    internal fun boundary(sentenceEnd: String): Pattern = boundaries.getOrPut(sentenceEnd) {
+    /**
+     * The sentence-boundary pattern; group 1 is the word plus its delimiter when that is the boundary. [quotes]:
+     * the language's five quote characters (LanguageRules.quotes); its closing quotes may follow the sentence end
+     * and its opening ones start the next sentence, besides the fixed sets (German „…“, French «…»).
+     */
+    internal fun boundary(sentenceEnd: String, quotes: String = ""): Pattern = boundaries.getOrPut(sentenceEnd + "\u0000" + quotes) {
+        fun cls(chars: String) = chars.map { "\\u%04X".format(it.code) }.joinToString("")
         // the sentence-ending characters (LanguageRules.sentenceEnd) as a character class
-        val delimiter = "[" + sentenceEnd.map { "\\u%04X".format(it.code) }.joinToString("") + "]"
+        val delimiter = "[" + cls(sentenceEnd) + "]"
+        val q = quotes.takeIf { it.length == 5 }
+        val trailing = if (q == null) TRAILING else TRAILING.dropLast(1) + cls("${q[1]}${q[3]}") + "]"
+        val prefix = if (q == null) PREFIX else PREFIX.dropLast(1) + cls("${q[0]}${q[2]}") + "]"
         Pattern.compile(
-            "(?:\\A|\\n|(?:$SPACE){3}|((?:(?<!$WORD)$WORD++(?:\\.$WORD++)*)?(?:$delimiter))(?:$TRAILING)*(?:$SPACE))(?:$SPACE)*(?:$PREFIX)*\\z",
+            "(?:\\A|\\n|(?:$SPACE){3}|((?:(?<!$WORD)$WORD++(?:\\.$WORD++)*)?(?:$delimiter))(?:$trailing)*(?:$SPACE))(?:$SPACE)*(?:$prefix)*\\z",
             Pattern.MULTILINE,
         )
     }
@@ -50,15 +58,19 @@ object AutoShift {
     private const val MAX_RECURSION = 2
 
     /** Whether the next letter typed after [before] should be a capital in a field of [type]. */
-    fun shouldShift(before: CharSequence, type: Type, words: WordForms?, sentenceEnd: String = LanguageRules().sentenceEnd): Boolean = when (type) {
+    fun shouldShift(
+        before: CharSequence, type: Type, words: WordForms?, sentenceEnd: String = LanguageRules().sentenceEnd, quotes: String = "",
+    ): Boolean = when (type) {
         Type.NONE -> false
         Type.ALL -> true
         Type.WORDS -> before.isEmpty() || before.last().let { it == '\n' || it == ' ' || it == ' ' }
-        Type.SENTENCES -> before.isEmpty() || canStartSentenceAfter(before.toString(), words, MAX_RECURSION, sentenceEnd)
+        Type.SENTENCES -> before.isEmpty() || canStartSentenceAfter(before.toString(), words, MAX_RECURSION, sentenceEnd, quotes)
     }
 
-    internal fun canStartSentenceAfter(text: String, words: WordForms?, depth: Int, sentenceEnd: String = LanguageRules().sentenceEnd): Boolean {
-        val m = boundary(sentenceEnd).matcher(text)
+    internal fun canStartSentenceAfter(
+        text: String, words: WordForms?, depth: Int, sentenceEnd: String = LanguageRules().sentenceEnd, quotes: String = "",
+    ): Boolean {
+        val m = boundary(sentenceEnd, quotes).matcher(text)
         if (!m.find()) return false
         val start = m.start(1)
         if (start < 0 || m.end(1) == start) return true // start of text, a new line or three spaces
@@ -68,7 +80,7 @@ object AutoShift {
         val word = text.substring(start, last)
         if (word.isEmpty()) return true
         val ignoreCase = depth > 0 && capitalization(word) == 1 &&
-            canStartSentenceAfter(text.substring(0, start), words, depth - 1, sentenceEnd)
+            canStartSentenceAfter(text.substring(0, start), words, depth - 1, sentenceEnd, quotes)
         return periodEndsSentenceAfter(word, ignoreCase, words)
     }
 
