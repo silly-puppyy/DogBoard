@@ -10,13 +10,14 @@ object DoubleSpace {
      * Returns true when the space about to be typed should replace the previous space with ". ".
      *
      * [textBefore] is the text before the cursor, [msSinceLastSpace] the time since the previous
-     * space key press, or null when anything else was typed or deleted since then.
+     * space key press, or null when anything else was typed or deleted since then. [closingQuotes]: the
+     * language's own closing quotes (its pack's quotes rule, German "“‘"), closers as well as the fixed set.
      */
-    fun shouldInsertPeriod(textBefore: CharSequence, msSinceLastSpace: Long?): Boolean {
+    fun shouldInsertPeriod(textBefore: CharSequence, msSinceLastSpace: Long?, closingQuotes: String = ""): Boolean {
         if (msSinceLastSpace == null || msSinceLastSpace > FeelSettings.doubleSpaceMs) return false
         val n = textBefore.length
         if (n < 2 || textBefore[n - 1] != ' ') return false
         val c = textBefore[n - 2]
-        return c.isLetterOrDigit() || c in CLOSERS
+        return c.isLetterOrDigit() || c in CLOSERS || c in closingQuotes
     }
 }

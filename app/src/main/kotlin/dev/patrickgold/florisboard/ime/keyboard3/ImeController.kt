@@ -630,9 +630,10 @@ class ImeController(
             if (value == SPACE) {
                 val now = SystemClock.uptimeMillis()
                 val since = lastSpaceUptime?.let { now - it }
-                val doubleSpace = languageRules().doubleSpace
+                val rules = languageRules()
+                val doubleSpace = rules.doubleSpace
                 if (doubleSpacePeriodAllowed() && doubleSpace != "  " &&
-                    DoubleSpace.shouldInsertPeriod(state.content.surroundingText.textBefore, since)
+                    DoubleSpace.shouldInsertPeriod(state.content.surroundingText.textBefore, since, rules.closingQuotes)
                 ) {
                     rawBackspace()
                     super.emitText(if (doubleSpace == ". ") PERIOD_SPACE else doubleSpace.asK3String())

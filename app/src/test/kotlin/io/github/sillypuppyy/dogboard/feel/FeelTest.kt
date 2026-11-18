@@ -68,6 +68,9 @@ class FeelTest : FunSpec({
             DoubleSpace.shouldInsertPeriod("hello ", 300) shouldBe true
             DoubleSpace.shouldInsertPeriod("see 42 ", 1200) shouldBe true
             DoubleSpace.shouldInsertPeriod("(really) ", 300) shouldBe true
+            // German closing quotes come from the pack's quotes rule
+            DoubleSpace.shouldInsertPeriod("„Hallo“ ", 300) shouldBe false
+            DoubleSpace.shouldInsertPeriod("„Hallo“ ", 300, "“‘") shouldBe true
         }
         test("too slow, or something else typed in between, does nothing") {
             DoubleSpace.shouldInsertPeriod("hello ", 1201) shouldBe false

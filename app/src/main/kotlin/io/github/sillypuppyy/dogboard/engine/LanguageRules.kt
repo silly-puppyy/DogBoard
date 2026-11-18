@@ -56,6 +56,10 @@ data class LanguageRules(
      */
     @SerialName("always_capitalised") val alwaysCapitalised: List<String> = emptyList(),
 ) {
+    /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
+    val closingQuotes: String
+        get() = quotes.takeIf { it.length == 5 }?.let { "${it[1]}${it[3]}" } ?: ""
+
     /** Whether [word] is one of [alwaysCapitalised] or starts with one and an apostrophe ("I'm"). */
     fun isAlwaysCapitalised(word: String): Boolean =
         alwaysCapitalised.any { word == it || word.startsWith("$it'") || word.startsWith("$it’") }
