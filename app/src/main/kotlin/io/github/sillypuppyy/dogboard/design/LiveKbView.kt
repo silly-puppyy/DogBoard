@@ -133,7 +133,12 @@ fun LiveKbView(
             pressed = themed.pressed.ifEmpty { if (themed.previewFade != null) "" else themed.preview },
             preview = "", previewFade = null, longpress = "", lpSel = 0, lpItems = emptyList(), trackpadX = null,
         )
-        val layout = remember(layoutProps) { io.github.sillypuppyy.dogboard.perf.GcStats.track("layout") { KbSpec.layout(layoutProps) } }
+        // one layout per pressed key for this keyboard state, kept: typing presses the same keys again
+        // (a press and a release each rebuilt it, perf 2026-11-18)
+        val byPressed = remember(layoutProps.copy(pressed = "")) { HashMap<String, KbRender>() }
+        val layout = byPressed.getOrPut(layoutProps.pressed) {
+            io.github.sillypuppyy.dogboard.perf.GcStats.track("layout") { KbSpec.layout(layoutProps) }
+        }
         val render = KbSpec.overlays(layout, themed)
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) {
             val a0 = io.github.sillypuppyy.dogboard.perf.GcStats.begin()
