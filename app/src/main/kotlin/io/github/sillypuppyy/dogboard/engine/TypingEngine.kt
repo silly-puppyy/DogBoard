@@ -692,7 +692,7 @@ object TypingEngine {
     fun hindsightEligible(typed: String): Boolean {
         val engine = loaded ?: return false
         if (typed.length < 2 || typed.any { it.isDigit() }) return false
-        if (typed.first().isUpperCase() && typed != "I" && !typed.startsWith("I'")) return false
+        if (typed.first().isUpperCase() && !rules.isAlwaysCapitalised(typed)) return false
         return lock.read { engine.lexicon.contains(typed) }
     }
 

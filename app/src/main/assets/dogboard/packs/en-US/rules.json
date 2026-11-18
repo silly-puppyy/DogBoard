@@ -26,5 +26,8 @@
     ]
   },
   "sentence_end": ".!?",
-  "possessive_suffix": "'s"
+  "possessive_suffix": "'s",
+  "always_capitalised": [
+    "I"
+  ]
 }

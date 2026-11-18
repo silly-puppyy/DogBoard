@@ -43,6 +43,14 @@ class LanguageRulesTest : FunSpec({
         LanguageRules().possessiveLetters shouldBe null
         LanguageRules.parse("""{"sentence_end": ".!?"}""").possessiveLetters shouldBe null
     }
+    test("always-capitalised words are a rule: English \"I\" and its contractions, none by default") {
+        LanguageRules.ENGLISH.isAlwaysCapitalised("I") shouldBe true
+        LanguageRules.ENGLISH.isAlwaysCapitalised("I'm") shouldBe true
+        LanguageRules.ENGLISH.isAlwaysCapitalised("I’ll") shouldBe true
+        LanguageRules.ENGLISH.isAlwaysCapitalised("Paris") shouldBe false
+        LanguageRules.ENGLISH.isAlwaysCapitalised("Ice") shouldBe false
+        LanguageRules().isAlwaysCapitalised("I") shouldBe false
+    }
     test("pack tags are normalised as the layouts give them") {
         val n = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry::normalize
         n("fr_FR") shouldBe "fr-FR"; n("fr-fr") shouldBe "fr-FR"; n("FR") shouldBe "fr"; n("fr-be-x") shouldBe "fr-BE"; n("") shouldBe ""

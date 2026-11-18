@@ -50,7 +50,16 @@ data class LanguageRules(
      * languages without one, so a pack that does not set it never gets English possessives.
      */
     @SerialName("possessive_suffix") val possessiveSuffix: String = "",
+    /**
+     * Words written with a capital mid-sentence that are not names (English "I", also as the start of "I'm",
+     * "I'll"): the look-back (hindsight) reconsiders them, while other capitalised words are left alone as names.
+     */
+    @SerialName("always_capitalised") val alwaysCapitalised: List<String> = emptyList(),
 ) {
+    /** Whether [word] is one of [alwaysCapitalised] or starts with one and an apostrophe ("I'm"). */
+    fun isAlwaysCapitalised(word: String): Boolean =
+        alwaysCapitalised.any { word == it || word.startsWith("$it'") || word.startsWith("$it’") }
+
     /** [possessiveSuffix]'s letters: the lone word that stands for it ("s"); null when there is none. */
     @kotlinx.serialization.Transient // worked out once: the decoder checks it for every word
     val possessiveLetters: String? = possessiveSuffix.filter { it.isLetter() }.ifEmpty { null }
@@ -67,6 +76,7 @@ data class LanguageRules(
             learnedTypoOverrides = linkedMapOf("i" to listOf("o", "O"), "I" to listOf("O", "o"), "can" to listOf("can't"), "and" to listOf("abs")),
             sentenceEnd = ".!?",
             possessiveSuffix = "'s",
+            alwaysCapitalised = listOf("I"),
         )
 
         private val json = Json { ignoreUnknownKeys = true }
