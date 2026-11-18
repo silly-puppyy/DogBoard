@@ -611,46 +611,110 @@ object TypingEngine {
     var lastNeuralRetroMillis = -1L
 
     /**
-     * Hindsight apostrophes (user 2026-11-18; an extension of iOS's retrocorrection, which adds a word's
-     * apostrophe twin as a candidate (AddAlternativesForRetrocorrection) but looks one word ahead):
-     * a word typed without an apostrophe whose twin has one, checked again once [APOSTROPHE_AFTER_WORDS]
-     * more words are typed. Only the pairs measured as trustworthy (tools/lm/apostrophe_trust.py,
-     * Tatoeba, 3 words of hindsight; lets/let's and wont/won't left out: 1.7 % and 12 % false alarms).
+     * Hindsight retrocorrection (user 2026-11-18: one general mechanism, as iOS's retrocorrection: the
+     * language model judges word sequences, no hand lists). A finished word kept as typed is read again
+     * once [HINDSIGHT_WORDS] more words follow: its alternatives come from the lexicon alone (apostrophe
+     * twins: its/it's; real words one typo away: form/from), each read with the words after it by the
+     * neural model; it changes when ln P(alternative ...) - ln P(typed ...) - [HINDSIGHT_EDIT_PENALTY] x
+     * typos > [HINDSIGHT_THRESHOLD]. Measured (tools/lm/retro_general.py, Tatoeba, unseen by the model):
+     * 0.05 % of right words changed (4 of 8,000), 92 % of dropped apostrophes and 87 % of real-word typos
+     * fixed (lowercase dictionary words; names and words the lexicon lacks are left alone).
      */
-    val APOSTROPHE_TWINS = mapOf(
-        "its" to "it's", "were" to "we're", "well" to "we'll", "hell" to "he'll", "shed" to "she'd",
-        "ill" to "I'll", "cant" to "can't", "id" to "I'd", "wed" to "we'd", "shell" to "she'll",
-    )
-    const val APOSTROPHE_AFTER_WORDS = 3
+    const val HINDSIGHT_WORDS = 3
+    const val HINDSIGHT_EDIT_PENALTY = 5.0
+    const val HINDSIGHT_THRESHOLD = 1.0
+    const val HINDSIGHT_CANDIDATES = 4
 
-    /**
-     * How much more likely the twin reads than the typed word, followed by the same words (ln, the
-     * neural model): above it the word changes. 5.0 is the cautious point measured: 0.2 % of right
-     * words changed, 66 % of dropped apostrophes fixed (0.5 % / 94 % at 2.0).
-     */
-    const val APOSTROPHE_MARGIN = 5.0
+    /** Words rarer than the 120,000th most frequent aren't offered (as measured). */
+    @Volatile private var hindsightFloor: Double = Double.NEGATIVE_INFINITY
 
-    /** The apostrophe twin of [typed] in its case ("Its" -> "It's", "ill" -> "I'll"), or null. */
-    fun apostropheTwin(typed: String): String? {
-        val twin = APOSTROPHE_TWINS[typed.lowercase()] ?: return null
-        return if (typed.first().isUpperCase()) twin.replaceFirstChar { it.uppercase() } else twin
+    private fun hindsightFloorOf(lex: Lexicon): Double {
+        if (hindsightFloor != Double.NEGATIVE_INFINITY) return hindsightFloor
+        val lps = DoubleArray(lex.size) { lex.logProb(lex.nodeOfWord(it)) }
+        lps.sortDescending()
+        return lps.getOrElse(119_999) { Double.NEGATIVE_INFINITY }.also { hindsightFloor = it }
+    }
+
+    /** Whether [typed] is a word the look back may reconsider: in the lexicon, not a name typed mid-sentence. */
+    fun hindsightEligible(typed: String): Boolean {
+        val engine = loaded ?: return false
+        if (typed.length < 2 || typed.any { it.isDigit() }) return false
+        if (typed.first().isUpperCase() && typed != "I" && !typed.startsWith("I'")) return false
+        return lock.read { engine.lexicon.contains(typed) }
     }
 
     /**
-     * ln P(twin + [after] | [before]) - ln P(typed + [after] | [before]) by the neural model, or null
-     * without it. Runs the model in its own context: call it off the main thread.
+     * [typed]'s alternatives from the lexicon alone, with how many typos apart (0: the same letters with
+     * or without an apostrophe): apostrophe twins and real words one typo away (an adjacent key, a missed
+     * or extra letter, two letters swapped), in their stored casing.
      */
-    fun apostropheMargin(before: String, typed: String, twin: String, after: String): Double? {
+    fun hindsightCandidates(typed: String): Map<String, Int> {
+        val engine = loaded ?: return emptyMap()
+        return lock.read {
+            val lex = engine.lexicon
+            val floor = hindsightFloorOf(lex)
+            val low = typed.lowercase()
+            val out = LinkedHashMap<String, Int>()
+            val plausibility = HashMap<String, Double>()
+            fun offer(v: String, edits: Int) {
+                if (v == low || v.isEmpty()) return
+                val node = lex.find(v)
+                if (node == Lexicon.NONE || !lex.isWord(node) || lex.logProb(node) < floor) return
+                val form = lex.firstForm(node) ?: return
+                if (form !in out && !isBlocked(form) && !isNotSuggestible(form)) {
+                    out[form] = edits
+                    plausibility[form] = lex.logProb(node) - HINDSIGHT_EDIT_PENALTY * edits
+                }
+            }
+            // apostrophe twins
+            if ('\'' in low) offer(low.replace("'", ""), 0)
+            else for (i in 1 until low.length) offer(low.substring(0, i) + "'" + low.substring(i), 0)
+            // one typo away
+            val letters = low.filter { it != '\'' }
+            if (letters == low) {
+                for (i in low.indices) {
+                    for (n in neighbourKeys(low[i])) offer(low.substring(0, i) + n + low.substring(i + 1), 1)
+                    offer(low.removeRange(i, i + 1), 1)
+                    if (i + 1 < low.length) offer(low.substring(0, i) + low[i + 1] + low[i] + low.substring(i + 2), 1)
+                }
+                for (i in 0..low.length) for (c in 'a'..'z') offer(low.substring(0, i) + c + low.substring(i), 1)
+            }
+            // only the most plausible few reach the model (measured: the top 4 decide exactly as all of them,
+            // at a fraction of the model time)
+            out.entries.sortedByDescending { plausibility[it.key] }.take(HINDSIGHT_CANDIDATES).associate { it.key to it.value }
+        }
+    }
+
+    private fun neighbourKeys(c: Char): List<Char> {
+        val (x, y) = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.KEY_UNITS[c] ?: return emptyList()
+        return io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.KEY_UNITS.filter { (k, p) ->
+            k != c && kotlin.math.abs(p.second - y) <= 1.01f && kotlin.math.abs(p.first - x) <= 1.01f
+        }.keys.toList()
+    }
+
+    /**
+     * The alternative [typed] should become, read with [after] (the words typed after it) given [before],
+     * or null (keep it). Runs the neural model in its own context: call it off the main thread; null
+     * without the model.
+     */
+    fun hindsightFix(before: String, typed: String, after: String): Pair<String, Double>? {
         val lm = neuralLm ?: return null
-        val a = "$twin $after"; val b = "$typed $after"
-        val scores = runCatching { lm.wordScores(before, listOf(a, b), maxSteps = 64) }.getOrNull() ?: return null
-        val sa = scores[a] ?: return null
-        val sb = scores[b] ?: return null
-        return sa - sb
+        val cands = hindsightCandidates(typed)
+        if (cands.isEmpty()) return null
+        val phrases = listOf("$typed $after") + cands.keys.map { "$it $after" }
+        val t0 = System.nanoTime()
+        val scores = runCatching { lm.wordScores(before, phrases, maxSteps = 200) }.getOrNull() ?: return null
+        android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms")
+        val base = scores["$typed $after"] ?: return null
+        val best = cands.entries.mapNotNull { (c, edits) ->
+            scores["$c $after"]?.let { c to it - base - HINDSIGHT_EDIT_PENALTY * edits }
+        }.maxByOrNull { it.second } ?: return null
+        val cased = if (typed.first().isUpperCase() && !best.first.first().isUpperCase()) best.first.replaceFirstChar { it.uppercase() } else best.first
+        return cased to best.second
     }
 
-    /** True when the user undid this fix before (an apostrophe fix shares the rejections of corrections). */
-    fun apostropheFixRejected(typed: String, twin: String): Boolean = rejections.isBlocked(typed, twin)
+    /** True when the user undid this change before (the look back shares the rejections of corrections). */
+    fun hindsightRejected(typed: String, fix: String): Boolean = rejections.isBlocked(typed, fix)
 
     /**
      * What [word] should become when it is finished, or null to keep it as typed.
