@@ -89,13 +89,8 @@ fun KbPanelHeader(r: KbRender) {
                         Symbol("search", 20.sp, t.barMuted)
                         DText("Search emoji", style = text(15, 400, t.barMuted), overflow = TextOverflow.Visible)
                     }
-                    Box(Modifier.size(44.dp, 48.dp), contentAlignment = Alignment.Center) {
-                        Box(
-                            Modifier.size(22.dp)
-                                .cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, t.div), CssShadow(false, 0f, 0f, 0f, 2f, t.bg)).reversed(), PILL)
-                                .background(css("#e0b48c"), PILL),
-                        )
-                    }
+                    // the canvas's skin-tone dot (a static circle) is left out: as Gboard, a tone is picked by
+                    // long press on each emoji and stays with it (user 2026-11-18)
                 }
             }
             x.pTools -> {

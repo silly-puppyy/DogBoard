@@ -53,6 +53,10 @@ fun LiveEmojiPanel(
     skinTone: EmojiSkinTone,
     onEmoji: (Emoji) -> Unit,
     onAbc: () -> Unit,
+    /** Variants picked by long press before, by the emoji in the default tone (shown instead of [skinTone]'s). */
+    toneChoices: Map<String, String> = emptyMap(),
+    /** A variant picked by long press: (the emoji in the default tone, the picked variant). */
+    onToneChoice: (String, String) -> Unit = { _, _ -> },
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,7 +91,7 @@ fun LiveEmojiPanel(
                     }
                     items(s.sets.size, contentType = { "emoji" }) { i ->
                         val set = s.sets[i]
-                        val emoji = set.base(skinTone)
+                        val emoji = toneChoices[set.base(EmojiSkinTone.DEFAULT).value]?.let { v -> set.emojis.firstOrNull { it.value == v } } ?: set.base(skinTone)
                         Box(
                             Modifier.height(32.dp).fillMaxWidth().combinedClickable(
                                 onClick = { onEmoji(emoji) },
@@ -110,7 +114,7 @@ fun LiveEmojiPanel(
                         Box(
                             Modifier.size(38.dp, 44.dp)
                                 .background(if (e.skinTone == skinTone) t.sel else Color.Transparent, RoundedCornerShape(12.dp))
-                                .clickable { skinPicker = null; onEmoji(e) },
+                                .clickable { skinPicker = null; onToneChoice(set.base(EmojiSkinTone.DEFAULT).value, e.value); onEmoji(e) },
                             contentAlignment = Alignment.Center,
                         ) { DText(e.value, style = designTextStyle(26.sp, 400, Color.Black)) }
                     }

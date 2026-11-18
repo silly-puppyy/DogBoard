@@ -234,9 +234,18 @@ private fun DogBoardEmojiPanel(data: EmojiData, modifier: Modifier) {
             DogBoardEmojiSearch(recents = sections.firstOrNull { it.category == 0 }?.sets?.map { it.base(skinTone) }.orEmpty(), skinTone = skinTone, onEmoji = markUsed)
             return@Column
         }
+        val toneChoicesText by prefs.emoji.toneChoices.collectAsState()
+        val toneChoices = remember(toneChoicesText) {
+            toneChoicesText.lineSequence().mapNotNull { l -> l.split('\t').takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
+        }
         io.github.sillypuppyy.dogboard.design.LiveEmojiPanel(
             sections = sections,
             skinTone = skinTone,
+            toneChoices = toneChoices,
+            onToneChoice = { base, picked ->
+                val next = toneChoices + (base to picked)
+                scope.launch { prefs.emoji.toneChoices.set(next.entries.joinToString("\n") { "${it.key}\t${it.value}" }) }
+            },
             onEmoji = { emoji ->
                 scope.launch {
                     imeController.updateState { emitText(emoji.value.asK3String()) }

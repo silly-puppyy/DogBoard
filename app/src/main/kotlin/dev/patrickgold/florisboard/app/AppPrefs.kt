@@ -264,6 +264,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "emoji__preferred_skin_tone",
             default = EmojiSkinTone.DEFAULT,
         )
+        // DogBoard: the variant last picked by long press, per emoji (as Gboard: no tone selector in
+        // the panel, the choice stays with each emoji): lines "emoji in the default tone<TAB>picked"
+        val toneChoices = string(key = "emoji__tone_choices", default = "")
         val preferredHairStyle = enum(
             key = "emoji__preferred_hair_style",
             default = EmojiHairStyle.DEFAULT,
