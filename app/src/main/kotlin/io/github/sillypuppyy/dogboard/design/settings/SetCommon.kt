@@ -87,14 +87,16 @@ object SetColors {
     private val lErrorContainer = css("#ffdad6")
     private val lOnErrorContainer = css("#93000a")
 
-    val screen get() = role(lScreen, { it.surfaceContainerLow }) { it.surface } // page background
+    // dark: page and rows two container tones apart, as in light (FlorisBoard's theme moves the dark
+    // "surface" up to surfaceContainerHighest, which made page and rows the same colour: no containers)
+    val screen get() = role(lScreen, { it.surfaceContainerLow }) { it.surfaceContainerLowest } // page background
     val onSurface get() = role(lOnSurface, { it.onSurface }) { it.onSurface }
     val onSurfaceVariant get() = role(lOnSurfaceVariant, { it.onSurfaceVariant }) { it.onSurfaceVariant }
     val primary get() = role(lPrimary, { it.primary }) { it.primary }
     val outline get() = role(lOutline, { it.outline }) { it.outline }
     val outlineVariant get() = role(lOutlineVariant, { it.outlineVariant }) { it.outlineVariant }
     val surfaceContainerHighest get() = role(lSurfaceContainerHighest, { it.surfaceContainerHighest }) { it.surfaceContainerHighest }
-    val row get() = role(lRow, { it.surfaceContainerLowest }) { it.surfaceContainer } // rows sit a step above the page
+    val row get() = role(lRow, { it.surfaceContainerLowest }) { it.surfaceContainerHigh } // rows sit a step above the page
     val secondaryContainer get() = role(lSecondaryContainer, { it.secondaryContainer }) { it.secondaryContainer }
     val onSecondaryContainer get() = role(lOnSecondaryContainer, { it.onSecondaryContainer }) { it.onSecondaryContainer }
     val errorContainer get() = role(lErrorContainer, { it.errorContainer }) { it.errorContainer } // SetDict:67
@@ -363,16 +365,20 @@ fun TryItDock(modifier: Modifier = Modifier, live: Boolean = false) {
 @Composable
 fun PawLogo(sizeDp: Float = 36f) {
     val paw = remember { PathParser().parsePathString(PAW_PATH).toPath() }
+    // the live app: the paw in the scheme's colours (user 2026-11-18: the logo follows the colour
+    // scheme); the design gallery keeps the brand's Fur and Ink
+    val fur = SetColors.scheme?.primary ?: SetColors.brandFur
+    val ink = SetColors.scheme?.onPrimary ?: SetColors.brandInk
     Canvas(Modifier.size(sizeDp.dp)) {
         val k = size.width / 108f
-        drawCircle(SetColors.brandFur, 54f * k, Offset(54f * k, 54f * k))
+        drawCircle(fur, 54f * k, Offset(54f * k, 54f * k))
         // transform="translate(54 54) scale(0.56) translate(-51.3 -48.75)"
         withTransform({
             scale(k, k, Offset.Zero)
             translate(54f, 54f)
             scale(0.56f, 0.56f, Offset.Zero)
             translate(-51.3f, -48.75f)
-        }) { drawPath(paw, SetColors.brandInk) }
+        }) { drawPath(paw, ink) }
     }
 }
 

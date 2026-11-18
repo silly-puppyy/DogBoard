@@ -5,6 +5,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -53,7 +54,7 @@ object SetHomeSpec {
         s("palette", "Theme", "Day and night themes, photo background", T),
         s("spellcheck", "Autocorrect and typing", "Autocorrect, suggestions, your words", P),
         s("vibration", "Sound and vibration", "Vibration style, volume, when they play", S),
-        s("swipe", "Gestures", "Hold the space bar to move the cursor", T),
+        s("swipe", "Gestures", "Swipe typing, space-bar cursor", T),
         s("mood", "Emoji and GIFs", "Skin tone, recent emoji", P),
         s("content_paste", "Clipboard", "History, how long clips are kept", S),
         s("shield_person", "Privacy", "Incognito, contact names, your data", T),
@@ -100,7 +101,10 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
             Column(
                 Modifier.fillMaxWidth()
                     .then(if (actions != null) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                    .padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 104.dp),
+                    // live: below the real status bar (its band covered the logo and title with the
+                    // canvas's fixed 40 dp); the gallery keeps the canvas's spacing
+                    .then(if (actions != null) Modifier.windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars) else Modifier)
+                    .padding(start = 16.dp, end = 16.dp, top = if (actions != null) 16.dp else 40.dp, bottom = 104.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 // SetHome:18-24 top bar

@@ -41,6 +41,8 @@ object SettingsSearch {
         Entry("Vibration", "Sound and vibration", "feedback", "haptics haptic buzz tap feel style rich plain soft"),
         Entry("Sound", "Sound and vibration", "feedback", "click audio noise volume"),
         Entry("Move the cursor", "Gestures", "gestures", "swipe trackpad cursor space bar hold slide"),
+        Entry("Swipe to type", "Gestures", "gestures", "swipe glide gesture typing slide letters"),
+        Entry("Show the trail", "Gestures", "gestures", "swipe glide trail line"),
         Entry("Emoji", "Emoji and GIFs", "emoji", "skin tone recent gif"),
         Entry("Clipboard history", "Clipboard", "clipboard", "copy paste clips keep history"),
         Entry("Suggest what you copied", "Clipboard", "clipboard", "paste chip copy recent bar"),

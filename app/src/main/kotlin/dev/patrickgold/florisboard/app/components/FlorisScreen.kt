@@ -100,7 +100,8 @@ fun FlorisScreenNg(
             ) },
         bottomBar = bottomBar,
         floatingActionButton = fab,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        // DogBoard: the design's page colour (SetColors.screen), so rows (SetColors.row) stand out in dark too
+        containerColor = io.github.sillypuppyy.dogboard.design.settings.SetColors.screen,
         content = content,
     )
 }
@@ -112,8 +113,8 @@ fun FlorisAppBar(
     actions: @Composable RowScope.() -> Unit = { },
     scrollBehavior: TopAppBarScrollBehavior,
     colors: TopAppBarColors = TopAppBarDefaults.topAppBarColors(
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = io.github.sillypuppyy.dogboard.design.settings.SetColors.screen,
+        scrolledContainerColor = io.github.sillypuppyy.dogboard.design.settings.SetColors.screen,
     ),
 ) {
     MediumFlexibleTopAppBar(
