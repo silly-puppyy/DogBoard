@@ -32,6 +32,7 @@ def main():
     ap.add_argument("-n", type=int, default=0)
     ap.add_argument("--lang", default="en")
     ap.add_argument("--name", default="")
+    ap.add_argument("--misses", default="", help="write each missed word (truth, top-1) to this file")
     a = ap.parse_args()
     torch.set_num_threads(1)
     lay = json.load(open(a.layout))
@@ -48,6 +49,7 @@ def main():
     have = {w for w, _ in lex}
     root = Trie.build(lex + [(w, floor) for w in sorted({w for _, w in items} - have)])
     t1 = t3 = t10 = 0
+    misses = []
     by_len = {}  # word length bucket -> [right, total] (2026-11-18: German fell behind; long compounds?)
     with torch.no_grad():
         for f, w in items:
@@ -55,6 +57,10 @@ def main():
             t1 += c[:1] == [w]; t3 += w in c[:3]; t10 += w in c
             b = by_len.setdefault(min(len(w), 13) // 3 * 3, [0, 0])
             b[0] += c[:1] == [w]; b[1] += 1
+            if a.misses and c[:1] != [w]:
+                misses.append(f"{w}\t{c[0] if c else ''}\t{w in c}")
+    if a.misses:
+        open(a.misses, "w").write("\n".join(misses) + "\n")
     n = len(items)
     r = {"top1": 100 * t1 / n, "top3": 100 * t3 / n, "top10": 100 * t10 / n, "n": n}
     tag = f"{lay['name'] if 'name' in lay else os.path.basename(a.layout)[:-5]}-real"
