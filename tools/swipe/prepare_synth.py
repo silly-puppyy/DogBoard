@@ -55,6 +55,14 @@ def make(job):
     seed, words = job
     rng = random.Random(seed)
     gen = PARAMS[0]
+    if hasattr(gen, "paths"):  # cvae.Generator: a batch of words at once
+        if SHAPE:
+            sx, sy = units.scale("phys", SHAPE["layout"], 1.0, rng.uniform(*SHAPE["range"]))
+            c = units.keys(SHAPE["layout"], sx, sy)
+        else:
+            c = CENTRES
+        out = [(feats(p), w) for p, w in zip(gen.paths(words, c, rng), words) if p is not None]
+        return [(f, w) for f, w in out if f is not None]
     if SHAPE:
         out = []
         for w in words:
@@ -81,6 +89,9 @@ def gen_of(spec):
         return Library.load(spec[4:])
     if spec.startswith("finger:"):
         return FingerParams(**json.load(open(spec[7:])))
+    if spec.startswith("cvae:"):
+        from cvae import Generator
+        return Generator(spec[5:])
     return PRESETS[spec]
 
 
@@ -104,7 +115,7 @@ def main():
     ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     ap.add_argument("--aspect", type=float, default=0.42, help="phys: the keyboard's letter area height / width")
     ap.add_argument("--aspect-max", type=float, default=0.0, help="phys: each swipe its own aspect, between --aspect and this")
-    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library) or finger:PARAMS.json (physics.py)")
+    ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library), finger:PARAMS.json (physics.py) or cvae:MODEL.pt (cvae.py)")
     a = ap.parse_args()
     torch.set_num_threads(1)
     lay = json.load(open(a.layout))
