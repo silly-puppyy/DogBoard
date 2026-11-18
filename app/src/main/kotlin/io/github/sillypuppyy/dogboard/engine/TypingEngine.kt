@@ -703,8 +703,16 @@ object TypingEngine {
         if (cands.isEmpty()) return null
         val phrases = listOf("$typed $after") + cands.keys.map { "$it $after" }
         val t0 = System.nanoTime()
-        val scores = runCatching { lm.wordScores(before, phrases, maxSteps = 200) }.getOrNull() ?: return null
-        android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms")
+        val s0 = lm.steps
+        val scores = runCatching {
+            synchronized(lm) {
+                val t1 = System.nanoTime() // waited for the model (predictions hold it while typing)
+                lm.wordScores(before, phrases, maxSteps = 200).also {
+                    android.util.Log.i("DogBoardPerf", "hindsight: ${cands.size} alternatives in ${(System.nanoTime() - t0) / 1_000_000} ms " +
+                        "(waited ${(t1 - t0) / 1_000_000} ms, ${lm.steps - s0} model steps)")
+                }
+            }
+        }.getOrNull() ?: return null
         val base = scores["$typed $after"] ?: return null
         val best = cands.entries.mapNotNull { (c, edits) ->
             scores["$c $after"]?.let { c to it - base - HINDSIGHT_EDIT_PENALTY * edits }

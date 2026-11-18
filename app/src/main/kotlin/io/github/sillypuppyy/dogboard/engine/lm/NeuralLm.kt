@@ -59,7 +59,12 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     }
 
     /** Runs [token] at position [pos] (cache in A, out to B, then swapped); next-token probabilities into [out]. */
+    /** Model steps run so far (for the perf log). */
+    @Volatile var steps = 0L
+        private set
+
     private fun step(token: Int, pos: Int, out: FloatArray): FloatArray {
+        steps++
         idBuf.rewind(); idBuf.putInt(token); idBuf.rewind()
         posBuf.rewind(); posBuf.putInt(pos); posBuf.rewind()
         kA.rewind(); vA.rewind(); kB.rewind(); vB.rewind(); logits.rewind()

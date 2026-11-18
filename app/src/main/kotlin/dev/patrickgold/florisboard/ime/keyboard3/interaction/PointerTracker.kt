@@ -76,6 +76,11 @@ private val SPACE = " ".asK3String()
 // DogBoard: how far (key widths) a press on a letter has to move to become a swipe
 private const val GLIDE_START_KEYS = 0.6f
 
+// DogBoard: a swipe lasts at least this long (Gboard's min_gesture_time_threshold) and its path is at least
+// this long (key widths); shorter or quicker slides are taps
+private const val GLIDE_MIN_MS = 150L
+private const val GLIDE_MIN_PATH_KEYS = 1.2f
+
 /** DogBoard: how long a point of the swipe trail stays visible (ms), shrinking from the tail (Gboard-like). */
 const val TRAIL_MS = 700L
 
@@ -168,7 +173,12 @@ class PointerTracker(
     private var lastUpKeyState: LastUpKey? = null
 
     /** DogBoard: swipe typing: the finger's path (dp) from a letter key's press; active once it moved far enough. */
-    private class Glide(val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float, startT: Long) {
+    private class Glide(val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float, val startT: Long) {
+        /** The press as a tap (key, touch, targets), typed if the slide turns out too short or quick to be a swipe. */
+        var tapKey: TouchKey? = null
+        var tap: Tap? = null
+        var tapTargets: Map<Char, io.github.sillypuppyy.dogboard.touch.KeyTarget> = emptyMap()
+        var tapParams: io.github.sillypuppyy.dogboard.touch.GaussianTouch.Params? = null
         val xs = ArrayList<Float>().apply { add(startX) }
         val ys = ArrayList<Float>().apply { add(startY) }
         val ts = ArrayList<Long>().apply { add(startT) }
@@ -229,7 +239,9 @@ class PointerTracker(
             val heightDp = size.height / density
             val (letterKeys, params) = touchKeyboard.letterTargets(downLayerId, widthDp, heightDp, typingSpeed.interval)
             val normalized = down.position.normalized(size)
-            imeController.notePendingTap(Tap(normalized.x * widthDp, normalized.y * heightDp, down.uptimeMillis), letterKeys, params)
+            val tap = Tap(normalized.x * widthDp, normalized.y * heightDp, down.uptimeMillis)
+            imeController.notePendingTap(tap, letterKeys, params)
+            glide?.let { g -> g.tapKey = downKey; g.tap = tap; g.tapTargets = letterKeys; g.tapParams = params }
         } else {
             imeController.notePendingTap(null, emptyMap(), null)
             // DogBoard: where the space bar was tapped (a word split by a stray space may be rejoined)
@@ -536,6 +548,20 @@ class PointerTracker(
             if (g.active) {
                 glideTrail.value = null
                 g.xs.add(up.position.x / density); g.ys.add(up.position.y / density)
+                // a quick or short slide is a tap (user 2026-11-18: fast typing came out as swipes, the
+                // phone's log showed 4-5 point "swipes"): Gboard needs 150 ms (min_gesture_time_threshold)
+                val keyWidthDp = size.width / density / 10f
+                var pathDp = 0f
+                for (i in 1 until g.xs.size) pathDp += kotlin.math.hypot(g.xs[i] - g.xs[i - 1], g.ys[i] - g.ys[i - 1])
+                if (up.uptimeMillis - g.startT < GLIDE_MIN_MS || pathDp < GLIDE_MIN_PATH_KEYS * keyWidthDp) {
+                    val key = g.tapKey
+                    if (key != null) {
+                        g.tap?.let { imeController.notePendingTap(it, g.tapTargets, g.tapParams) }
+                        imeController.updateState { key.attrs.output?.let { emit(it) } }
+                        lastUpKeyState = LastUpKey(key, up.uptimeMillis)
+                    }
+                    return
+                }
                 val (targets, _) = touchKeyboard.letterTargets(g.layerId, size.width / density, size.height / density, typingSpeed.interval)
                 val centres = targets.entries.associate { (c, t) -> c.lowercaseChar() to (t.centerX to t.centerY) }
                 val xs = g.xs.toFloatArray()
