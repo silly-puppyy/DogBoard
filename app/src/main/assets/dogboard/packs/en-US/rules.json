@@ -29,5 +29,22 @@
   "possessive_suffix": "'s",
   "always_capitalised": [
     "I"
+  ],
+  "ordinal_suffixes": {
+    "last_two": {
+      "11": "th",
+      "12": "th",
+      "13": "th"
+    },
+    "last_one": {
+      "1": "st",
+      "2": "nd",
+      "3": "rd"
+    },
+    "other": "th"
+  },
+  "hour_suffixes": [
+    "am",
+    "pm"
   ]
 }

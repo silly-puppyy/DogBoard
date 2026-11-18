@@ -55,6 +55,10 @@ data class LanguageRules(
      * "I'll"): the look-back (hindsight) reconsiders them, while other capitalised words are left alone as names.
      */
     @SerialName("always_capitalised") val alwaysCapitalised: List<String> = emptyList(),
+    /** Ordinal endings typed after a number ("1st", French "1er", "2e"), for DigitWords' slipped-key fix. */
+    @SerialName("ordinal_suffixes") val ordinalSuffixes: OrdinalSuffixes = OrdinalSuffixes(),
+    /** Letters after an hour 1-12 ("5pm"), for the same fix; none by default. */
+    @SerialName("hour_suffixes") val hourSuffixes: List<String> = emptyList(),
 ) {
     /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
     val closingQuotes: String
@@ -81,10 +85,34 @@ data class LanguageRules(
             sentenceEnd = ".!?",
             possessiveSuffix = "'s",
             alwaysCapitalised = listOf("I"),
+            ordinalSuffixes = OrdinalSuffixes(
+                lastTwo = mapOf("11" to "th", "12" to "th", "13" to "th"),
+                lastOne = mapOf("1" to "st", "2" to "nd", "3" to "rd"),
+                other = "th",
+            ),
+            hourSuffixes = listOf("am", "pm"),
         )
 
         private val json = Json { ignoreUnknownKeys = true }
 
         fun parse(text: String): LanguageRules = json.decodeFromString(text)
+    }
+}
+
+/**
+ * A language's ordinal endings, looked up in order: the whole number ([exact], French "1" -> "er"), its last two
+ * digits ([lastTwo], English "11"-"13" -> "th"), its last digit ([lastOne], "1" -> "st"), else [other] ("" = none).
+ */
+@Serializable
+data class OrdinalSuffixes(
+    @SerialName("exact") val exact: Map<String, String> = emptyMap(),
+    @SerialName("last_two") val lastTwo: Map<String, String> = emptyMap(),
+    @SerialName("last_one") val lastOne: Map<String, String> = emptyMap(),
+    @SerialName("other") val other: String = "",
+) {
+    /** The ending for [number] (digits only), or null when the language has none. */
+    fun of(number: String): String? {
+        val n = number.trimStart('0').ifEmpty { "0" }
+        return (exact[n] ?: lastTwo[n.takeLast(2).trimStart('0')] ?: lastOne[n.takeLast(1)] ?: other).ifEmpty { null }
     }
 }

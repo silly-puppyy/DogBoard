@@ -1220,7 +1220,7 @@ class ImeController(
             val before = state.content.surroundingText.textBefore
             if (!before.endsWith(word)) return null
             val digits = before.substring(0, before.length - word.length).takeLastWhile { it.isDigit() }
-            return io.github.sillypuppyy.dogboard.engine.DigitWords.fix(digits, word)
+            return io.github.sillypuppyy.dogboard.engine.DigitWords.fix(digits, word, languageRules())
         }
 
         private fun cursorInsideWord(): Boolean =

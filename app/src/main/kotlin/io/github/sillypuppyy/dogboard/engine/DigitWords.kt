@@ -10,11 +10,14 @@ package io.github.sillypuppyy.dogboard.engine
 object DigitWords {
     private val ROWS = listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")
 
-    /** The suffix [letters] should be after [number] (its digits), or null to keep what was typed. */
-    fun fix(number: String, letters: String): String? {
+    /**
+     * The suffix [letters] should be after [number] (its digits), or null to keep what was typed. The suffixes are
+     * the language's ([rules]: ordinal_suffixes, hour_suffixes).
+     */
+    fun fix(number: String, letters: String, rules: LanguageRules = LanguageRules.ENGLISH): String? {
         if (number.isEmpty() || !number.all { it.isDigit() } || letters.isEmpty() || letters.length > 2) return null
         val lower = letters.lowercase()
-        val targets = suffixes(number)
+        val targets = suffixes(number, rules)
         if (lower in targets) return null
         val match = targets.filter { it.length == lower.length && it.indices.all { i -> near(lower[i], it[i]) } }
         val fixed = match.singleOrNull() ?: return null
@@ -22,18 +25,10 @@ object DigitWords {
         return if (letters.all { it.isUpperCase() }) fixed.uppercase() else fixed
     }
 
-    /** The suffixes that fit [number]: its ordinal ending, and am/pm for an hour 1-12. */
-    fun suffixes(number: String): List<String> {
-        val n = number.takeLast(2).toInt()
-        val ordinal = when {
-            n % 100 in 11..13 -> "th"
-            n % 10 == 1 -> "st"
-            n % 10 == 2 -> "nd"
-            n % 10 == 3 -> "rd"
-            else -> "th"
-        }
+    /** The suffixes that fit [number]: its ordinal ending, and the hour suffixes (am/pm) for an hour 1-12. */
+    fun suffixes(number: String, rules: LanguageRules = LanguageRules.ENGLISH): List<String> {
         val hour = number.length <= 2 && number.toInt() in 1..12
-        return if (hour) listOf(ordinal, "am", "pm") else listOf(ordinal)
+        return listOfNotNull(rules.ordinalSuffixes.of(number)) + (if (hour) rules.hourSuffixes else emptyList())
     }
 
     /**

@@ -28,4 +28,12 @@ class DigitWordsTest : FunSpec({
         DigitWords.fix("4", "x") shouldBe null
         DigitWords.fix("", "st") shouldBe null
     }
+    test("the suffixes are the language's: none by default, French 1er / 2e from a pack") {
+        DigitWords.suffixes("1", LanguageRules()) shouldBe emptyList()
+        DigitWords.fix("1", "sr", LanguageRules()) shouldBe null
+        val fr = LanguageRules.parse("""{"ordinal_suffixes": {"exact": {"1": "er"}, "other": "e"}}""")
+        DigitWords.suffixes("1", fr) shouldBe listOf("er")
+        DigitWords.suffixes("21", fr) shouldBe listOf("e")
+        DigitWords.fix("1", "rr", fr) shouldBe "er" // r is next to e
+    }
 })
