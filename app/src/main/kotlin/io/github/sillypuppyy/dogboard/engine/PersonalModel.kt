@@ -9,11 +9,16 @@ import kotlin.math.min
  * fade with time, mixed with the static model the way iOS mixes its dynamic model:
  *
  *     P(w | prev) = (1 − d) · P_static(w | prev) + d · P_personal(w | prev)
- *     d = (0.65 with a previous word, else 0.45) · min(1, (words typed / 1000)²)
+ *     d = 0.65 with a previous word, else 0.45
  *
- * Counts decay by exp(−0.007 · days) (half-life 99 days). P_personal interpolates the triple
- * (two words of context, when that context was seen), the pair and the word counts; iOS's dynamic
- * model goes to order 5, ours to 3. Words are added by [accept] (a word typed and kept, a correction kept, a
+ * iOS ramps d in over the first 1000 words, but fills its counts from the user's sent messages
+ * first, so it is at full weight from day one; we can't read messages, and Gboard has no ramp
+ * either: full weight from the start (user 2026-11-18). Counts decay by exp(−0.007 · days)
+ * (half-life 99 days). P_personal, as iOS's dynamic model (decompile 2026-11-18): each order n
+ * the context allows (word, pair, triple; iOS goes to 5) adds min(1, c(n-gram) / c(its context))
+ * at weight 1/n_orders, but only once that n-gram was used twice (count ≥ 1.01, so one use, or
+ * a faded second, adds nothing) and words only at count ≥ 2 once the model holds 50 uses: a
+ * typo or a one-off word typed once moves nothing. Words are added by [accept] (a word typed and kept, a correction kept, a
  * suggestion picked); [forget] removes a word used fewer than 7 times, else lowers it.
  */
 class PersonalModel(private val file: File? = null, private val now: () -> Long = System::currentTimeMillis) {
@@ -125,10 +130,10 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     @Synchronized
     fun knownWords(): List<String> = words.entries.sortedByDescending { it.value.value }.map { it.key }
 
-    /** The personal model's weight in the mix (iOS: 0.65 / 0.45, ramped over the first 1000 words). */
+    /** The personal model's weight in the mix (iOS: 0.65 / 0.45; nothing before the first word). */
     @Synchronized
     fun weight(hasPrevious: Boolean): Double =
-        (if (hasPrevious) WEIGHT_CONTEXT else WEIGHT_NO_CONTEXT) * min(1.0, (typed / RAMP_WORDS).let { it * it })
+        if (typed == 0L) 0.0 else if (hasPrevious) WEIGHT_CONTEXT else WEIGHT_NO_CONTEXT
 
     /** P_personal(word | previous2 previous): triple, pair and word counts interpolated; 0 for unseen words. */
     @Synchronized
@@ -137,18 +142,15 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         val day = today()
         val w = word.lowercase()
         totals(day)
-        val total = totalCache.takeIf { it > 0 } ?: return 0.0
-        val unigram = (words[w]?.decayed(day) ?: 0.0) / total
-        val p = previous?.lowercase() ?: return unigram
-        val after = afterCache[p] ?: 0.0
-        if (after <= 0) return unigram
-        val bigram = (pairs[p to w]?.decayed(day) ?: 0.0) / after
-        val pairMix = PAIR_SHARE * bigram + (1 - PAIR_SHARE) * unigram
-        val p2 = previous2?.lowercase() ?: return pairMix
-        val after2 = after2Cache[p2 to p] ?: 0.0
-        if (after2 <= 0) return pairMix
-        val trigram = (triples[Triple(p2, p, w)]?.decayed(day) ?: 0.0) / after2
-        return PAIR_SHARE * trigram + (1 - PAIR_SHARE) * pairMix
+        fun order(count: Double, context: Double, threshold: Double): Double =
+            if (context > 0 && count >= threshold) min(1.0, count / context) else 0.0
+        val total = totalCache
+        var sum = if (total > UNIGRAM_TOTAL_MIN) order(words[w]?.decayed(day) ?: 0.0, total, UNIGRAM_MIN) else 0.0
+        val p = previous?.lowercase() ?: return sum
+        sum += order(pairs[p to w]?.decayed(day) ?: 0.0, afterCache[p] ?: 0.0, NGRAM_MIN)
+        val p2 = previous2?.lowercase() ?: return sum / 2
+        sum += order(triples[Triple(p2, p, w)]?.decayed(day) ?: 0.0, after2Cache[p2 to p] ?: 0.0, NGRAM_MIN)
+        return sum / 3
     }
 
     /** Mixes a static probability with the personal model ([PersonalModel] doc). */
@@ -202,9 +204,11 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         const val DECAY_PER_DAY = -0.007
         const val WEIGHT_CONTEXT = 0.65
         const val WEIGHT_NO_CONTEXT = 0.45
-        const val RAMP_WORDS = 1000.0
+        // iOS DynamicNgramCountThreshold, DynamicUnigramCountThreshold, DynamicTotalUnigramCountThreshold
+        const val NGRAM_MIN = 1.01
+        const val UNIGRAM_MIN = 2.0
+        const val UNIGRAM_TOTAL_MIN = 50.0
         const val FORGET_BELOW = 7
-        private const val PAIR_SHARE = 0.6
         private const val SAVE_EVERY = 20
         private const val MS_PER_DAY = 86_400_000L
     }

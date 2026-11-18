@@ -13,14 +13,29 @@ class PersonalModelTest : FunSpec({
     var t = 1_000_000_000_000L
     fun fresh(file: File? = null) = PersonalModel(file) { t }
 
-    test("weight ramps over the first 1000 words to 0.65 with context, 0.45 without") {
+    test("full weight from the first word: 0.65 with context, 0.45 without") {
         val m = fresh()
         m.weight(true) shouldBe 0.0
-        repeat(500) { m.accept(null, "word") }
-        m.weight(true) shouldBe (0.65 * 0.25 plusOrMinus 1e-9)
-        repeat(600) { m.accept(null, "word") }
+        m.accept(null, "word")
         m.weight(true) shouldBe 0.65
         m.weight(false) shouldBe 0.45
+    }
+    test("one use moves nothing; the second does (iOS count thresholds)") {
+        val m = fresh()
+        repeat(60) { m.accept(null, "filler") }
+        m.accept("the", "dogpark")
+        m.probability(null, "dogpark") shouldBe 0.0
+        m.probability("the", "dogpark") shouldBe 0.0
+        m.accept("the", "dogpark")
+        m.probability("the", "dogpark") shouldBeGreaterThan 0.5
+        m.probability(null, "dogpark") shouldBeGreaterThan 0.0
+    }
+    test("words count only once the model holds 50 uses") {
+        val m = fresh()
+        repeat(10) { m.accept(null, "woof") }
+        m.probability(null, "woof") shouldBe 0.0
+        repeat(41) { m.accept(null, "bark") }
+        m.probability(null, "woof") shouldBe (10.0 / 51 plusOrMinus 1e-9)
     }
     test("words the user uses get probability; pairs follow context") {
         val m = fresh()
@@ -31,6 +46,7 @@ class PersonalModelTest : FunSpec({
     }
     test("counts fade with a 99-day half-life") {
         val m = fresh()
+        repeat(60) { m.accept(null, "filler") }
         repeat(4) { m.accept(null, "old") }
         t += 99 * day
         repeat(2) { m.accept(null, "new") }
@@ -47,7 +63,7 @@ class PersonalModelTest : FunSpec({
         val m = fresh()
         repeat(3) { m.accept(null, "typo") }
         repeat(10) { m.accept(null, "dogboard") }
-        repeat(10) { m.accept(null, "other") } // so a lower count shows as a lower share
+        repeat(50) { m.accept(null, "other") } // so a lower count shows as a lower share (words count from 50 uses)
         m.forget("typo")
         m.knows("typo") shouldBe false
         val before = m.probability(null, "dogboard")
@@ -60,7 +76,7 @@ class PersonalModelTest : FunSpec({
         fresh(f).apply { repeat(25) { accept("hi", "there") }; save() }
         val loaded = fresh(f)
         loaded.wordsTyped shouldBe 25L
-        loaded.probability("hi", "there") shouldBeGreaterThan 0.5
+        loaded.probability("hi", "there") shouldBe (0.5 plusOrMinus 1e-9) // the pair (1.0) of two orders; too few uses for words
     }
 
     test("two words of context: triples tell apart what one word can't") {
@@ -72,8 +88,8 @@ class PersonalModelTest : FunSpec({
         m.probability("to", "go", "have") shouldBeGreaterThan m.probability("to", "see", "have")
         // one word of context alone: the two are even
         m.probability("to", "see") shouldBe (m.probability("to", "go") plusOrMinus 1e-12)
-        // an unseen two-word context falls back to the pair
-        m.probability("to", "see", "need") shouldBe (m.probability("to", "see") plusOrMinus 1e-12)
+        // an unseen two-word context still counts as an order (iOS normalises over every order asked)
+        m.probability("to", "see", "need") shouldBe (m.probability("to", "see") * 2 / 3 plusOrMinus 1e-12)
     }
     test("triples are saved, loaded and forgotten with their words") {
         val f = File.createTempFile("personal", ".tsv").apply { deleteOnExit() }
@@ -84,7 +100,7 @@ class PersonalModelTest : FunSpec({
         val loaded = fresh(f)
         loaded.probability("to", "see", "want") shouldBeGreaterThan loaded.probability("to", "see")
         loaded.remove("want")
-        loaded.probability("to", "see", "want") shouldBe (loaded.probability("to", "see") plusOrMinus 1e-12)
+        loaded.probability("to", "see", "want") shouldBe (loaded.probability("to", "see", "need") plusOrMinus 1e-12)
     }
 
     test("totals updated in place after each word match a rebuild from the saved file") {
