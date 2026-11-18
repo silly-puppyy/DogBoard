@@ -60,7 +60,7 @@ object KbThemes {
 
     // Kb:364
     private val DEF = mapOf(
-        "radius" to "10", "fw" to "400", "fsScale" to "1", "hintFs" to "10", "hintFw" to "500",
+        "radius" to "6.5", "fw" to "400", "fsScale" to "1", "hintFs" to "10", "hintFw" to "500",
         "retIcon" to "keyboard_return", "keyShadow" to "none", "fnShadow" to "none", "actShadow" to "none",
     )
 

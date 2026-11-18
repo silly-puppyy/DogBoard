@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.layout
@@ -232,7 +233,15 @@ fun ImeKeyboardBox(
         val peekLineWidthPx = with(density) { 8.dp.toPx() }
         // DogBoard: the swipe trail, in the theme's accent, newest part opaque, the tail fading
         val glideTrail by pointerTracker.glideTrail.collectAsState()
-        val trailColor = io.github.sillypuppyy.dogboard.design.liveAccent()
+        // the theme's accent at Gboard's tones (measured 2026-11-18: light #566791, dark #a6b3d7, i.e.
+        // Material's primary tone 40 / 80): it always stands out from the keys (user: the return key's
+        // own colour hardly showed on dark themes)
+        val accent = io.github.sillypuppyy.dogboard.design.liveAccent()
+        val darkKeys = io.github.sillypuppyy.dogboard.design.liveDark()
+        val trailColor = remember(accent, darkKeys) {
+            val h = com.materialkolor.hct.Hct.fromInt(accent.toArgb())
+            Color(com.materialkolor.hct.Hct.from(h.hue, h.chroma, if (darkKeys) 80.0 else 40.0).toInt())
+        }
         val trailWidthPx = with(density) { 11.dp.toPx() }
         // the trail keeps shrinking from its tail even while the finger rests: redraw every frame
         var trailNow by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
@@ -272,7 +281,23 @@ fun ImeKeyboardBox(
                     // ~0.7 s behind; in the theme's accent
                     glideTrail?.let { all ->
                         val now = maxOf(trailNow, all.last().t)
-                        val pts = all.filter { now - it.t <= dev.patrickgold.florisboard.ime.keyboard3.interaction.TRAIL_MS }
+                        val raw = all.filter { now - it.t <= dev.patrickgold.florisboard.ime.keyboard3.interaction.TRAIL_MS }
+                        // a smooth curve through the touch points every ~3 px (Catmull-Rom): a fast swipe
+                        // reports points 30-50 px apart, which showed as facets in the taper (user 2026-11-18)
+                        val pts = ArrayList<dev.patrickgold.florisboard.ime.keyboard3.interaction.TrailPoint>(raw.size * 4)
+                        for (i in 0 until raw.size - 1) {
+                            val p0 = raw[maxOf(i - 1, 0)]; val p1 = raw[i]; val p2 = raw[i + 1]; val p3 = raw[minOf(i + 2, raw.size - 1)]
+                            val steps = maxOf(1, (kotlin.math.hypot(p2.x - p1.x, p2.y - p1.y) / 3f).toInt())
+                            for (k in 0 until steps) {
+                                val u = k.toFloat() / steps; val u2 = u * u; val u3 = u2 * u
+                                fun cr(a: Float, b: Float, c: Float, d: Float) =
+                                    0.5f * (2 * b + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u2 + (-a + 3 * b - 3 * c + d) * u3)
+                                pts.add(dev.patrickgold.florisboard.ime.keyboard3.interaction.TrailPoint(
+                                    cr(p0.x, p1.x, p2.x, p3.x), cr(p0.y, p1.y, p2.y, p3.y), p1.t + ((p2.t - p1.t) * u).toLong(),
+                                ))
+                            }
+                        }
+                        raw.lastOrNull()?.let { pts.add(it) }
                         if (pts.size >= 2) {
                             val life = dev.patrickgold.florisboard.ime.keyboard3.interaction.TRAIL_MS.toFloat()
                             val left = ArrayList<androidx.compose.ui.geometry.Offset>(pts.size)

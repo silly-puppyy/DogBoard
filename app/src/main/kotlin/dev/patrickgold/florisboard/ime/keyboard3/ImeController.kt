@@ -966,7 +966,11 @@ class ImeController(
             val word = cased(words.first())
             val gap = if (textBefore.isEmpty() || textBefore.last().isWhitespace() || textBefore.last() in "([{\"'“‘¿¡") "" else " "
             val previous = wordContext()
-            if (!replaceBeforeCursor("", "$gap$word ")) return
+            if (state.content.selection.isNotCollapsed()) {
+                // a swipe over selected text replaces it, as typing does (user 2026-11-18: swiping did
+                // nothing while text was selected)
+                state.editor.batch { rawText("$gap$word ") }
+            } else if (!replaceBeforeCursor("", "$gap$word ")) return
             confirmKeptCorrection()
             confirmPendingRetro()
             confirmAcceptedWord()
