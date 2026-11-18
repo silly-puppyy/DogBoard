@@ -54,8 +54,8 @@
     "lm_model": {
       "path": "dogboard/lm/v3.tflite",
       "optional": true,
-      "size": 25887328,
-      "sha256": "2cb4dce684b02e256e7932db56cda77c53fc08989dbbfd03a0d95dca656e5e3b"
+      "size": 25887424,
+      "sha256": "d5e8ba13358204be639aceaa9469d50afcdb768d1752812d05bb98ccaafe29ec"
     },
     "lm_pieces": {
       "path": "dogboard/lm/v3.pieces.tsv",

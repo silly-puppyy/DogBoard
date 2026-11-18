@@ -10,6 +10,9 @@ layer, repeated it per query head (GQA) and returned it: at CTX 64 that cache tr
 ([kv_heads, heads / kv_heads, head_dim]) instead of a repeated cache, and the token's own key is scored
 separately (softmax over cache slots < pos, then itself).
 Checks step-by-step logits against the full forward pass, then exports int8 (dynamic).
+LOGSOFTMAX=1 (2026-11-18): the step returns log-probabilities (log_softmax in the graph) instead of logits, so
+the app reads ln P directly: the 16,000-entry softmax in Kotlin took 1.1 ms a step on the phone (debug build),
+a third of the model's own 3 ms. Output file *-kvb<CTX>-lsm-int8.tflite.
 """
 import os
 import sys
@@ -29,6 +32,7 @@ c = Config(**s['config']); net = Student(c).eval(); net.load_state_dict(s['model
 assert c.family == 'modern'
 L, KV, HD = c.layers, c.kv_heads, c.width // c.heads
 REP = c.heads // KV
+LSM = os.environ.get("LOGSOFTMAX") == "1"
 
 
 class Step(torch.nn.Module):
@@ -56,6 +60,8 @@ class Step(torch.nn.Module):
             h = b.n2(x)
             x = x + b.down(F.silu(b.gate(h)) * b.up(h))
         logits = (self.m.norm(x) @ self.m.emb.weight.T)[:, -1, :]
+        if LSM:
+            logits = torch.log_softmax(logits, -1)
         return logits, torch.stack(ks), torch.stack(vs)
 
 
@@ -69,7 +75,8 @@ with torch.no_grad():
     for t in range(ids.shape[1]):
         lg, kn, vn = step(ids[:, t:t + 1], torch.tensor([t]), k_cache, v_cache)
         k_cache[:, :, t] = kn; v_cache[:, :, t] = vn
-        worst = max(worst, (lg[0] - full[t]).abs().max().item())
+        ref = torch.log_softmax(full[t], -1) if LSM else full[t]
+        worst = max(worst, (lg[0] - ref).abs().max().item())
 print(f'step vs full forward over 20 tokens: max |diff| {worst:.2e}')
 assert worst < 1e-3
 
@@ -78,5 +85,5 @@ sample = (torch.tensor([[5]], dtype=torch.int32), torch.tensor([0], dtype=torch.
 name = os.path.basename(ckpt)[:-3]
 from litert_torch.generative.quantize import quant_recipes  # noqa: E402
 m = litert_torch.convert(step, sample, quant_config=quant_recipes.full_dynamic_recipe())
-p = os.path.join(out, f'{name}-kvb{CTX}-int8.tflite'); m.export(p)
+p = os.path.join(out, f'{name}-kvb{CTX}{"-lsm" if LSM else ""}-int8.tflite'); m.export(p)
 print(f'int8: {os.path.getsize(p) / 1e6:.1f} MB -> {p}')

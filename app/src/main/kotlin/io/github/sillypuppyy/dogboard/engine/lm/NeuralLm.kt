@@ -92,6 +92,8 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
         if (appCache) { writeSlot(kB, kA, pos); writeSlot(vB, vA, pos) } else { kA = kB.also { kB = kA }; vA = vB.also { vB = vA } }
         logits.rewind()
         logits.asFloatBuffer().get(out, 0, vocab)
+        if (logProbOutput == null) logProbOutput = looksLikeLogProbs(out)
+        if (logProbOutput == true) { softmaxNanos += System.nanoTime() - t1; return out } // the model gave ln P itself
         var max = Float.NEGATIVE_INFINITY
         for (i in 0 until vocab) if (out[i] > max) max = out[i]
         // logits more than SOFTMAX_CUT below the best add < e^-20 each (all 16,000: < 4e-5 of the sum):
@@ -131,10 +133,26 @@ class NeuralLm(model: ByteBuffer, private val tokenizer: PieceTokenizer, threads
     }
 
     /** P(token [i]) from a [step] output: 0 for the tokens it left without an exp. */
-    private fun prob(a: FloatArray, i: Int): Float = if (a[i] > 0f) a[i] else 0f
+    private fun prob(a: FloatArray, i: Int): Float = if (logProbOutput == true) exp(a[i]) else if (a[i] > 0f) a[i] else 0f
+
+    /**
+     * Whether the model's output already is ln P (tools/lm/export_kv2.py LOGSOFTMAX=1: log_softmax in the graph,
+     * so the app skips its own 16,000-entry softmax, 1.1 ms a step on the phone): all values <= 0, summing to 1.
+     */
+    @Volatile private var logProbOutput: Boolean? = null
+
+    private fun looksLikeLogProbs(a: FloatArray): Boolean {
+        var max = Float.NEGATIVE_INFINITY
+        for (i in 0 until vocab) if (a[i] > max) max = a[i]
+        if (max > 1e-3f) return false
+        var sum = 0.0
+        for (i in 0 until vocab) sum += exp(a[i].toDouble())
+        return kotlin.math.abs(sum - 1.0) < 1e-2
+    }
 
     /** ln P(token [i]) from a [step] output, exact for every token. */
     private fun lnP(a: FloatArray, i: Int): Double = when {
+        logProbOutput == true -> a[i].toDouble()
         a[i] > 0f -> ln(a[i].toDouble())
         a[i] < 0f -> (a[i] - a[vocab]).toDouble()
         else -> ln(1e-30)
