@@ -100,6 +100,23 @@ def field_text():
     return ""
 
 
+# The lowest a stroke may go (px): below it is Android's navigation gesture area. 2026-11-19: a sloppy swipe that
+# reached the bottom edge was a home gesture; the test app closed and every later swipe went to the launcher's search
+# (FUTO 47 right, then 253 empty in a row).
+MAX_Y = 2230
+
+
+def focused():
+    return "ImeTestActivity" in adb("shell", "dumpsys", "window", "|", "grep", "mCurrentFocus")
+
+
+def open_field():
+    adb("shell", "am", "start", "-n", TEST)  # never -S: it would also stop DogBoard's keyboard (same package)
+    time.sleep(3)
+    adb("shell", "input", "tap", "300", "1210")
+    time.sleep(1.5)
+
+
 def clear_field():
     adb("shell", "input", "keycombination", "113", "29")  # Ctrl+A
     adb("shell", "input", "keyevent", "67")               # Delete
@@ -109,11 +126,14 @@ def clear_field():
 def run_keyboard(name, swipes, unit):
     ime, xs, ys = KEYBOARDS[name]
     adb("shell", "ime", "set", ime)
-    adb("shell", "am", "start", "-n", TEST)  # never -S: it would also stop DogBoard's keyboard (same package)
-    time.sleep(4)
-    adb("shell", "input", "tap", "300", "1210")
-    time.sleep(2)
-    m = to_screen(unit, xs, ys)
+    adb("shell", "input", "keyevent", "KEYCODE_HOME")
+    time.sleep(1)
+    open_field()
+    m0 = to_screen(unit, xs, ys)
+
+    def m(x, y):
+        sx, sy = m0(x, y)
+        return min(max(sx, 1.0), 1079.0), min(sy, MAX_Y)
     strokes = "\n".join(" ".join(f"{m(x, y)[0]:.1f},{m(x, y)[1]:.1f},{t:.0f}" for x, y, t in pts) for _, pts in swipes)
     open("/tmp/claude-1000/replay-strokes.txt", "w").write(strokes + "\n")
     adb("push", "/tmp/claude-1000/replay-strokes.txt", "/data/local/tmp/strokes.txt")
@@ -121,7 +141,7 @@ def run_keyboard(name, swipes, unit):
     adb("logcat", "-c")
     p = subprocess.Popen(ADB + ["shell", "CLASSPATH=/data/local/tmp/replay.dex app_process / Replay /data/local/tmp/strokes.txt"],
                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
-    right, rows = 0, []
+    right, rows, lost = 0, [], 0
     before = ""
     for i, (word, _) in enumerate(swipes):
         assert p.stdout.readline().strip() == "done"
@@ -129,6 +149,12 @@ def run_keyboard(name, swipes, unit):
         after = field_text()
         got = after[len(before):].strip() if after.startswith(before) else (after.split() or [""])[-1]
         got = got.split()[-1] if got.split() else ""
+        if not focused():  # the field lost focus during this swipe: not counted, field reopened
+            lost += 1
+            rows.append((word, None))
+            open_field(); clear_field(); before = field_text()
+            p.stdin.write("\n"); p.stdin.flush()
+            continue
         ok = got.lower().strip(".,!?") == word
         right += ok
         rows.append((word, got))
@@ -139,6 +165,7 @@ def run_keyboard(name, swipes, unit):
         if (i + 1) % 50 == 0:
             print(f"  {name}: {i + 1} swipes, {100 * right / (i + 1):.1f} %", flush=True)
     p.stdin.close(); p.wait(timeout=30)
+    print(f"  {name}: {lost} swipes not counted (field lost focus)", flush=True)
     return right, rows
 
 
@@ -154,8 +181,9 @@ def main():
     res = {}
     for name in a.kb.split(","):
         right, rows = run_keyboard(name, swipes, unit)
-        res[name] = {"top1": 100 * right / len(swipes), "rows": rows}
-        print(f"{name}: {100 * right / len(swipes):.1f} % ({right} of {len(swipes)})", flush=True)
+        counted = sum(g is not None for _, g in rows)
+        res[name] = {"top1": 100 * right / max(counted, 1), "counted": counted, "rows": rows}
+        print(f"{name}: {100 * right / max(counted, 1):.1f} % ({right} of {counted} counted)", flush=True)
         json.dump(res, open(a.out, "w"), indent=1)
     sys.path.insert(0, "/home/syn/Documents/Code/AI/keyboard/dogboard-batch8/tools")
     import track
