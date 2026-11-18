@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -94,10 +96,10 @@ fun SetLayout(state: SetLayoutState) {
     val preset = when (st) { LayoutElements.SIMPLE -> "simple"; LayoutElements.CLASSIC -> "classic"; else -> "custom" }
     var field by remember { mutableStateOf("text") } // :98 the preview's field, not stored
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 40.dp, bottom = 112.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        // user 2026-11-18: the header sits below the real status bar (the canvas's fixed 40 dp let the
+        // status band cover it), and the preview stays in view, at the keyboard's real size, while the
+        // options scroll under it (round keys, hold for symbols, space label, action key showed nothing)
+        Column(Modifier.fillMaxSize().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars)) {
             // :18-22 header: back, title + language, Reset all while anything differs from Simple
             Row(Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable { state.onBack() }, contentAlignment = Alignment.Center) { Symbol("arrow_back", 24.sp, SetColors.onSurface) }
@@ -111,9 +113,9 @@ fun SetLayout(state: SetLayoutState) {
                     }
                 }
             }
-            // :24-29 the preview card: field chips and the keyboard as set
+            // :24-29 the preview: field chips and the keyboard as set, full width at its real size
             Column(
-                Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(SetColors.row, RoundedCornerShape(24.dp)).padding(top = 12.dp),
+                Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -128,18 +130,28 @@ fun SetLayout(state: SetLayoutState) {
                     }
                 }
                 val dark = liveDark()
-                val props = liveTheme().apply(
-                    KbProps(
-                        dark = dark, width = 358f, field = field, bar = "bal",
-                        ret = when (field) { "url" -> "go"; "email" -> "next"; else -> "send" },
-                        kstyle = if (st.bottom == "classic") "android" else "ios",
-                        numRow = st.numRow, hintKind = st.hints, spaceLabel = st.space,
-                        actionStyle = st.action, caseMode = st.caseMode, symbols = st.symbols, pillKeys = st.pill,
-                    ),
-                )
-                val render = remember(props) { KbSpec.render(props) }
-                Box(Modifier.width(358.dp)) { KbView(render) }
+                androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    // the keyboard's rows at their real pitch (57.9 dp at 100 %, measured on the
+                    // emulator, as Gboard's); a number row adds 0.58 of a row, as on the keyboard
+                    val rows = 4f + if (st.numRow == "on") 0.58f else 0f
+                    val keyH = ROW_PITCH_DP * rows * (state.heightPercent ?: 100) / 100f
+                    val props = liveTheme().apply(
+                        KbProps(
+                            dark = dark, width = maxWidth.value, keyH = keyH, field = field, bar = "bal",
+                            ret = when (field) { "url" -> "go"; "email" -> "next"; else -> "send" },
+                            kstyle = if (st.bottom == "classic") "android" else "ios",
+                            numberRow = st.numRow == "on", numRow = st.numRow, hintKind = st.hints, spaceLabel = st.space,
+                            actionStyle = st.action, caseMode = st.caseMode, symbols = st.symbols, pillKeys = st.pill,
+                        ),
+                    )
+                    val render = remember(props) { KbSpec.render(props) }
+                    KbView(render)
+                }
             }
+            Column(
+                Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(top = 16.dp, bottom = 112.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
             // DogBoard: the letter layout (moved here from the old Typing screen, 2026-11-17)
             state.layoutId?.let { id ->
                 SetGroup("Letters") {
@@ -206,12 +218,16 @@ fun SetLayout(state: SetLayoutState) {
                     style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4,
                 )
             }
+            }
         }
         // :85-90 Try it
         TryItDock(Modifier.align(Alignment.BottomCenter), live = true)
         StatusBarBand()
     }
 }
+
+/** The keyboard's row pitch at 100 % height (dp): 57.9, measured on the emulator (Gboard: 57.9). */
+private const val ROW_PITCH_DP = 57.9f
 
 /** :47-52 an element: title, sub, and the 44 dp reset disc while it differs from Simple. */
 @Composable
@@ -248,7 +264,9 @@ private fun BottomRowCard(selected: Boolean, label: String, keys: List<Mk>, onPi
     Column(
         Modifier.fillMaxWidth().padding(bottom = 8.dp)
             .cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, if (selected) 2f else 1f, if (selected) SetColors.primary else SetColors.outlineVariant)), shape)
-            .background(if (selected) SetColors.screen else SetColors.row, shape).clip(shape).clickable(onClick = onPick).padding(10.dp),
+            // the chosen card keeps the card colour with a 2 dp accent outline (the page colour behind it
+            // looked like a hole in the page, user 2026-11-18)
+            .background(SetColors.row, shape).clip(shape).clickable(onClick = onPick).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(Modifier.fillMaxWidth().height(34.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
