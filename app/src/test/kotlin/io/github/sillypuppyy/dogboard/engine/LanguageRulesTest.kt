@@ -24,6 +24,14 @@ class LanguageRulesTest : FunSpec({
         AutoShift.shouldShift("नमस्ते। ", AutoShift.Type.SENTENCES, null, ".!?।") shouldBe true
         AutoShift.shouldShift("नमस्ते। ", AutoShift.Type.SENTENCES, null) shouldBe false
     }
+    test("quotes come from the rules: English by default, a pack's own set when it has one") {
+        val en = LanguageRules.ENGLISH.smartQuotes
+        io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput("\"", "", "", true, false, en)?.insert shouldBe "“"
+        val de = LanguageRules.parse("""{"quotes": "„“‚‘’"}""").smartQuotes
+        io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput("\"", "", "", true, false, de)?.insert shouldBe "„"
+        io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput("\"", "Hallo", "", true, false, de)?.insert shouldBe "“"
+        LanguageRules.parse("""{"quotes": "xx"}""").smartQuotes shouldBe en // malformed: the default set
+    }
     test("pack tags are normalised as the layouts give them") {
         val n = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry::normalize
         n("fr_FR") shouldBe "fr-FR"; n("fr-fr") shouldBe "fr-FR"; n("FR") shouldBe "fr"; n("fr-be-x") shouldBe "fr-BE"; n("") shouldBe ""

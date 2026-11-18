@@ -574,7 +574,7 @@ class ImeController(
             if (wordEngineAllowed()) {
                 val smart = io.github.sillypuppyy.dogboard.feel.SmartPunctuation.forInput(
                     text, state.content.surroundingText.textBefore, state.content.surroundingText.textAfter,
-                    prefs.typing.smartQuotes.get(), prefs.typing.smartDashes.get(),
+                    prefs.typing.smartQuotes.get(), prefs.typing.smartDashes.get(), languageRules().smartQuotes,
                 )
                 if (smart != null && (smart.deleteBefore > 0 || smart.insert != text)) {
                     repeat(smart.deleteBefore) { rawBackspace() }

@@ -33,7 +33,17 @@ data class LanguageRules(
      * "。！？", Arabic "؟"). A period is still checked for abbreviations ("e.g.") by AutoShift.
      */
     @SerialName("sentence_end") val sentenceEnd: String = ".!?",
+    /**
+     * Smart quotes, five characters: left and right double, left and right single, apostrophe. The default is
+     * the English set every layout used so far; a pack sets its own (German "„“‚‘’", French "«»‹›’").
+     */
+    @SerialName("quotes") val quotes: String = "“”‘’’",
 ) {
+    /** [quotes] as SmartPunctuation takes them (the default set when the rule is malformed). */
+    val smartQuotes: io.github.sillypuppyy.dogboard.feel.SmartPunctuation.Quotes
+        get() = (quotes.takeIf { it.length == 5 } ?: "“”‘’’").let {
+            io.github.sillypuppyy.dogboard.feel.SmartPunctuation.Quotes(it[0], it[1], it[2], it[3], it[4])
+        }
     companion object {
         /** en-US (assets/dogboard/packs/en-US/rules.json). */
         val ENGLISH = LanguageRules(
