@@ -62,6 +62,9 @@ class SetThemesState(
     /** The settings follow the keyboard theme's light or dark (user 2026-11-19), else the system's. */
     val appFollows: Boolean = true,
     val onAppFollows: (Boolean) -> Unit = {},
+    /** Return key per theme ("id=always;id=actions", ThemeChoice.retAlways) and its setter. */
+    val retPref: String = "",
+    val onRet: (String, Boolean) -> Unit = { _, _ -> },
 )
 
 /** Settings › Look › Themes (SetThemes.dc.html, 390 wide). */
@@ -134,11 +137,31 @@ fun SetThemes(state: SetThemesState) {
                 }
             }
 
+            // user 2026-11-19: the return key's colour, a choice per theme in use
+            for (id in (if (c.follow) listOf(c.day, c.night) else listOf(c.day)).distinct().filter { it != "dalmatian" }) {
+                val always = ThemeChoice.retAlways(state.retPref, id)
+                Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(SetColors.row, RoundedCornerShape(24.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                        DText(ThemeChoice.theme(id).name, style = setText(16f, 600)); DText("Theme options", style = setText(12f, color = SetColors.onSurfaceVariant))
+                    }
+                    DText("Return key", style = setText(14f, color = SetColors.onSurfaceVariant))
+                    Segmented("th:ret:$id", listOf("For actions", "Always coloured"), if (always) 1 else 0) { k -> state.onRet(id, k == 1) }
+                    DText(
+                        if (always) "The return key takes the theme's colour everywhere, as on Gboard." else "Coloured when it sends or searches, plain for a new line, as on an iPhone.",
+                        style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8,
+                    )
+                }
+            }
             // :43-61 Dalmatian's options while it is in use
             if (c.day == "dalmatian" || c.night == "dalmatian") {
                 Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(SetColors.row, RoundedCornerShape(24.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                         DText("Dalmatian", style = setText(16f, 600)); DText("Theme options", style = setText(12f, color = SetColors.onSurfaceVariant))
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val always = ThemeChoice.retAlways(state.retPref, "dalmatian")
+                        DText("Return key", style = setText(14f, color = SetColors.onSurfaceVariant))
+                        Segmented("th:ret:dalmatian", listOf("For actions", "Always coloured"), if (always) 1 else 0) { k -> state.onRet("dalmatian", k == 1) }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DText("New spots", style = setText(14f, color = SetColors.onSurfaceVariant))

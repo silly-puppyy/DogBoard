@@ -42,6 +42,9 @@ data class KbProps(
     val devCtrl: String = "off", // off, armed, locked
     /** Kb:428, 730: the action key greyed, "unavailable until you type" (an empty field that can't be sent). */
     val actionOff: Boolean = false,
+    /** The return key in the accent colour on plain fields too (Gboard), not only for an action (Send, Go: iPhone);
+     *  the user's choice per theme (user 2026-11-19), off unless set. */
+    val retAlways: Boolean = false,
     val devAlt: String = "off",
     val dev: Boolean = false,
     val incognito: Boolean = false,
@@ -680,7 +683,8 @@ object KbSpec {
                         else icon = RET_ICON[ret] ?: "arrow_forward"
                     } else if (t.retText.isNotEmpty()) { // Kb:776
                         label = t.retText; fs = 15f; fw = t.fw; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return"
-                    } else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return" }
+                    } else if (P.retAlways) { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.act; bgG = t.grad["actG"]; fg = t.actFg; shadow = t.actShadow; ts = t.actTs; aria = "Return" }
+                    else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return" }
                 }
                 // Kb:779-781
                 val spot = t.spots?.takeIf { "$ri:$ci" in spotOf }

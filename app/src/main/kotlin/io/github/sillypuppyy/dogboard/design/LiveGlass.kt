@@ -42,9 +42,11 @@ data class LiveTheme(
     val actFg: String? = null,
     /** "center top", "center" or "center bottom": which part of the photo shows. */
     val photoPos: String = "center",
+    /** Settings › Themes › Return key: the accent colour on plain fields too. */
+    val retAlways: Boolean = false,
 ) {
     /** [p] with the Glass tokens when Glass is on; the photo itself is drawn by [LiveGlassBackdrop]. */
-    fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed) else p.copy(
+    fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed, retAlways = retAlways) else p.copy(retAlways = retAlways, 
         theme = "glass", dim = dim, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
         glassFg = glassFg, halo = halo, actColor = actColor, actFg = actFg,
     )
@@ -64,6 +66,7 @@ fun liveTheme(): LiveTheme {
     val follow by prefs.keyboard.themeFollow.collectAsState()
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val keptSeed by prefs.keyboard.spotSeed.collectAsState()
+    val retPref by prefs.keyboard.retColour.collectAsState()
     val (id, dark) = ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
     // Dalmatian "every time it opens": a new coat each time the keyboard is shown, else the kept one (the view
     // lives on between showings, so remembering per view gave one coat for good; user 2026-11-19)
@@ -79,7 +82,8 @@ fun liveTheme(): LiveTheme {
     val analysis by produceState<GlassPhoto.Analysis?>(null, stamp) { value = withContext(Dispatchers.IO) { GlassPhoto.analysis(context) } }
     val acc = analysis?.accents?.let { it.getOrNull(accent) ?: it.firstOrNull() }
     return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
-        dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp, labels, halo, acc?.first, acc?.second, pos)
+        dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp, labels, halo, acc?.first, acc?.second, pos,
+        retAlways = ThemeChoice.retAlways(retPref, if (glass) "glass" else id))
 }
 
 /**

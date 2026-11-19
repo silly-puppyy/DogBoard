@@ -92,6 +92,14 @@ object ThemeChoice {
      * system, the night theme at night; a pair draws its own night version then, a light or dark
      * theme is what it is, one look for both stays one look.
      */
+    /** Settings › Themes › Return key, stored as "id=always;id=actions": whether [id]'s return key is coloured on plain fields. */
+    fun retAlways(pref: String, id: String): Boolean =
+        pref.split(';').firstOrNull { it.substringBefore('=') == id }?.substringAfter('=') == "always"
+
+    /** [pref] with [id] set to [always]. */
+    fun withRet(pref: String, id: String, always: Boolean): String =
+        (pref.split(';').filter { it.isNotBlank() && it.substringBefore('=') != id } + "$id=${if (always) "always" else "actions"}").joinToString(";")
+
     fun resolve(c: Choice, systemDark: Boolean): Pair<String, Boolean> {
         val id = if (c.follow && systemDark) c.night else c.day
         val dark = when (theme(id).mode) {

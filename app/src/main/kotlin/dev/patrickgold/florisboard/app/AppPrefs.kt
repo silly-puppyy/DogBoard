@@ -592,6 +592,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val themeFollow = boolean(key = "keyboard__theme_follow", default = true)
         // Dalmatian: "open" = new spots each time the keyboard opens, "keep" = until shuffled; the kept coat
         val spotReroll = string(key = "keyboard__spot_reroll", default = "open")
+        // DogBoard: Themes › Return key per theme (user 2026-11-19), "id=always;id=actions" (ThemeChoice.retAlways)
+        val retColour = string(key = "keyboard__ret_colour", default = "")
         val spotSeed = int(key = "keyboard__spot_seed", default = 3)
         // theme packs hidden from the Themes page (section ids, comma separated)
         val hiddenThemePacks = string(key = "keyboard__hidden_theme_packs", default = "")

@@ -23,6 +23,7 @@ fun ThemesScreen() {
     val night by prefs.keyboard.themeNight.collectAsState()
     val follow by prefs.keyboard.themeFollow.collectAsState()
     val appFollows by prefs.other.settingsFollowKeyboard.collectAsState()
+    val retPref by prefs.keyboard.retColour.collectAsState()
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val seed by prefs.keyboard.spotSeed.collectAsState()
     val hidden by prefs.keyboard.hiddenThemePacks.collectAsState()
@@ -44,6 +45,8 @@ fun ThemesScreen() {
         onFollow = { on -> scope.launch { store(choice.copy(follow = on, night = choice.day)) } },
         onReroll = { mode -> scope.launch { prefs.keyboard.spotReroll.set(mode) } },
         appFollows = appFollows,
+        retPref = retPref,
+        onRet = { id, always -> scope.launch { prefs.keyboard.retColour.set(io.github.sillypuppyy.dogboard.design.ThemeChoice.withRet(retPref, id, always)) } },
         onAppFollows = { on -> scope.launch { prefs.other.settingsFollowKeyboard.set(on) } },
         // :216 the canvas's next coat: (seed x 7 + 13) mod 97, never 0
         onShuffle = { scope.launch { prefs.keyboard.spotSeed.set(((seed * 7 + 13) % 97).takeIf { it != 0 } ?: 3) } },
