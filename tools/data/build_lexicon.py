@@ -391,7 +391,7 @@ def main():
             add(w, z, "us-variant", level)
     extra = load_extra_words()
     for w in extra:
-        if w not in forms:
+        if w not in forms[w.lower()]:  # (forms is keyed by the lowercase word: "hm" beside "HM")
             add(w, zipf.get(w.lower(), EXTRA_ZIPF_FLOOR), "extra")
 
     # casings: when SCOWL lists a word in more than one casing (google/Google, may/May), keep each
@@ -401,6 +401,8 @@ def main():
     lexicon = {}
     with_variants = set()
     for key, cands in forms.items():
+        if key in extra:  # a lowercase spelling reviewed by hand: chosen below
+            continue
         variants = {f: n for f, n in casing.get(key, {}).items() if f in cands}
         if len(variants) > 1:
             total = sum(variants.values()) + 0.5 * len(variants)
@@ -427,7 +429,9 @@ def main():
         # ("WhatsApp", "YouTube") or to a casing reviewed by hand in the extra words ("Gmail"): no
         # dictionary lists the lowercase one
         brand = [f for f in proper if any(c.isupper() for c in f[1:]) or f in extra]
-        if key in cands and key not in scowl and brand:
+        if key in extra:  # reviewed by hand in its lowercase spelling (bc, rn, hm: not BC, RN, HM)
+            surface = key
+        elif key in cands and key not in scowl and brand:
             surface = max(brand, key=lambda f: (cands[f], f))
         elif key in cands and not (proper and lowercase_rare):
             surface = key
@@ -470,7 +474,7 @@ def main():
         recased = []
         for w in list(lexicon):
             letters = sum(c.isalpha() for c in w)
-            if letters > 5 or "'" in w or w == "I":
+            if letters > 5 or "'" in w or w == "I" or w in extra:
                 continue
             level, kind = scowl.get(w, (99, ""))
             z = lexicon[w]

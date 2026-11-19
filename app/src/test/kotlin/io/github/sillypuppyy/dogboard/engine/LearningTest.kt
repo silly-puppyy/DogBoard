@@ -211,6 +211,20 @@ class DictionaryListsTest : FunSpec({
         }
     }
 
+    test("texting words stay as typed, not recased to an acronym (Hm, bc, rn)") {
+        // user 2026-11-19: "Hm" at a sentence start became "HM" (the lexicon held only the acronym casing)
+        TypingEngine.unloadForTest()
+        TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+        try {
+            finished("Hm") shouldBe "Hm"
+            finished("bc") shouldBe "bc"
+            finished("rn") shouldBe "rn"
+            finished("FBI") shouldBe "FBI"
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
+
     test("a lowercase word kept beside a capitalised-only one is learned in its casing") {
         // emulator 2026-11-19: "hom" (the lexicon has only the name "Hom") kept twice was then corrected to "Hom"
         val dir = Files.createTempDirectory("dogboard-casing").toFile()

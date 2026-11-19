@@ -101,3 +101,13 @@ WhatsApp
 AirPods
 iMessage
 Gmail
+# texting words written in lowercase that web text mostly capitalises as acronyms (2026-11-19, user: 'Hm' became 'HM')
+bc
+hm
+rn
+idc
+rl
+ic
+fk
+pj
+www
