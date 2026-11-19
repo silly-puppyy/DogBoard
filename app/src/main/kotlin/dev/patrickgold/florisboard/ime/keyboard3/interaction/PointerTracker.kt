@@ -79,7 +79,14 @@ private const val GLIDE_START_KEYS = 0.6f
 // DogBoard: a swipe lasts at least this long (Gboard's min_gesture_time_threshold) and its path is at least
 // this long (key widths); shorter or quicker slides are taps
 private const val GLIDE_MIN_MS = 150L
-private const val GLIDE_MIN_PATH_KEYS = 1.2f
+// 0.8 (was 1.2): a two-letter word on neighbouring keys ("we", one key apart) is a swipe too (user 2026-11-19, after the
+// How We Swipe replay typed "w" for "we"; FUTO Keyboard reads it); the 150 ms minimum still keeps quick taps taps
+private const val GLIDE_MIN_PATH_KEYS = 0.8f
+
+// DogBoard: a finger that rests on a key until its accent popup opens and then sets off is still swiping (user
+// 2026-11-19: the replay of real swipes lost 17 of 300 that way, FUTO Keyboard read most): once it is this far (key
+// widths) from where it went down and outside the popup, the popup closes and the whole path is a swipe
+private const val GLIDE_AFTER_POPUP_KEYS = 1.5f
 
 /** DogBoard: how long a point of the swipe trail stays visible (ms), shrinking from the tail (Gboard-like). */
 const val TRAIL_MS = 700L
@@ -434,6 +441,17 @@ class PointerTracker(
         return Offset(xPx, target.centerY * density)
     }
 
+    /**
+     * DogBoard: whether [position] (normalised) is where a finger choosing in the open accent popup would be: across
+     * the popup's width (half a key either side) and not below the pressed key (half a row of slack).
+     */
+    private fun TrackedPointer.Output.isOverPopup(position: Offset): Boolean {
+        val ext = longPress.extendedBounds
+        val key = downKey.bounds
+        return position.x >= ext.left - key.width / 2 && position.x <= ext.right + key.width / 2 &&
+            position.y <= key.bottom + key.height / 2
+    }
+
     suspend fun handleMove(move: PointerInputChange, size: IntSize) {
         // DogBoard: swipe typing: past ~0.6 of a key width the press becomes a swipe (its key,
         // long press and preview are cancelled); from then on the path is drawn
@@ -444,9 +462,11 @@ class PointerTracker(
             if (!g.active) {
                 val keyWidthDp = size.width / density / 10f
                 val out = trackedOutputPointer.value?.takeIf { it.id == move.id }
-                if (out?.longPress?.shouldShowExtendedPopup() == true) {
-                    glide = null
-                } else if (kotlin.math.hypot(xDp - g.startX, yDp - g.startY) > GLIDE_START_KEYS * keyWidthDp) {
+                val moved = kotlin.math.hypot(xDp - g.startX, yDp - g.startY)
+                val popupOpen = out?.longPress?.shouldShowExtendedPopup() == true
+                if (popupOpen && (moved <= GLIDE_AFTER_POPUP_KEYS * keyWidthDp || out!!.isOverPopup(move.position.normalized(size)))) {
+                    // choosing in the accent popup (the path keeps recording, in case the finger sets off)
+                } else if (popupOpen || moved > GLIDE_START_KEYS * keyWidthDp) {
                     g.active = true
                     out?.longPress?.extendedJob?.cancel()
                     out?.repeatJob?.cancel()

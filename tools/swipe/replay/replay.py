@@ -43,14 +43,17 @@ def adb(*args, **kw):
     return subprocess.run(ADB + list(args), capture_output=True, text=True, **kw).stdout
 
 
-def hws(n):
-    """n How We Swipe swipes: (word, [(cx, cy, t)]) in the dataset layout's 0..1 units (qwerty.json)."""
+def hws(n, sentences=False):
+    """n How We Swipe swipes: (word, [(cx, cy, t)]) in the dataset layout's 0..1 units (qwerty.json). With
+    [sentences], whole sentences in their order (each one's swipes kept together; the field is cleared between them),
+    so the keyboard sees the words before as context, as in real typing (2026-11-19: single words after unrelated
+    random ones misled the sentence model: "you" -> "to", "be" -> "he")."""
     lay = json.load(open(f"{D}/swipe/futo/swipe-5/layouts/qwerty.json"))
     unit = {k["letter"]: (k["cx"], k["cy"]) for k in lay["keys"]}
     zf = zipfile.ZipFile(f"{D}/swipe/howweswipe/swipelogs.zip")
     names = sorted(x for x in zf.namelist() if x.endswith(".log"))
     random.Random(5).shuffle(names)
-    data = []
+    data = []; sent_of = []
     for name in names:
         cur, word, bad = [], None, False
         for r in io.TextIOWrapper(zf.open(name), encoding="utf-8").read().splitlines()[1:]:
@@ -58,13 +61,14 @@ def hws(n):
             if len(f) < 12:
                 continue
             ev, t, x, y, w, err = f[4], int(f[1]), float(f[5]), float(f[6]), f[10], f[11] == "1"
+            sentence = name + "/" + f[0]
             if ev == "touchstart":
                 cur, word, bad = [(x, y, t)], w.lower(), err
             elif cur:
                 cur.append((x, y, t))
                 if ev == "touchend":
                     if not bad and word.isascii() and word.isalpha() and len(word) >= 2:
-                        data.append((word, cur))
+                        data.append((word, cur)); sent_of.append(sentence)
                     cur = []
         if len(data) >= max(4 * n, 4000):
             break
@@ -75,12 +79,23 @@ def hws(n):
     letters = [c for c in unit if len(acc.get(c, [])) >= 20]
     px = np.array([np.median(np.array(acc[c]), axis=0) for c in letters]); ux = np.array([unit[c] for c in letters])
     fx, fy = np.polyfit(px[:, 0], ux[:, 0], 1), np.polyfit(px[:, 1], ux[:, 1], 1)
-    random.Random(6).shuffle(data)
+    if sentences:  # whole sentences, in order, until n swipes
+        order = list(dict.fromkeys(sent_of)); random.Random(6).shuffle(order)
+        by = {}
+        for (w, p), sid in zip(data, sent_of): by.setdefault(sid, []).append((w, p))
+        picked = []
+        for sid in order:
+            if len(picked) >= n: break
+            picked += [(w, p, sid) for w, p in by[sid]]
+        data = [(w, p) for w, p, _ in picked]; sent_of = [sid for _, _, sid in picked]
+    else:
+        idx = list(range(len(data))); random.Random(6).shuffle(idx)
+        data = [data[i] for i in idx]; sent_of = [sent_of[i] for i in idx]
     out = []
     for word, pts in data[:n]:
         t0 = pts[0][2]
         out.append((word, [(float(np.polyval(fx, x)), float(np.polyval(fy, y)), t - t0) for x, y, t in pts]))
-    return out, unit
+    return out, unit, sent_of[:len(out)]
 
 
 def to_screen(unit, xs, ys):
@@ -123,7 +138,12 @@ def clear_field():
     time.sleep(0.4)
 
 
-def run_keyboard(name, swipes, unit):
+def norm(w):
+    """Scoring: case and apostrophes ignored (How We Swipe stores "im", "whats"; a keyboard rightly types I'm, what's)."""
+    return w.lower().strip(".,!?").replace("'", "").replace("’", "")
+
+
+def run_keyboard(name, swipes, unit, sent_of=None):
     ime, xs, ys = KEYBOARDS[name]
     adb("shell", "ime", "set", ime)
     adb("shell", "input", "keyevent", "KEYCODE_HOME")
@@ -155,11 +175,12 @@ def run_keyboard(name, swipes, unit):
             open_field(); clear_field(); before = field_text()
             p.stdin.write("\n"); p.stdin.flush()
             continue
-        ok = got.lower().strip(".,!?") == word
+        ok = norm(got) == word
         right += ok
         rows.append((word, got))
         before = after
-        if (i + 1) % 15 == 0:
+        new_sentence = sent_of is not None and i + 1 < len(sent_of) and sent_of[i + 1] != sent_of[i]
+        if new_sentence if sent_of is not None else (i + 1) % 15 == 0:
             clear_field(); before = field_text()
         p.stdin.write("\n"); p.stdin.flush()
         if (i + 1) % 50 == 0:
@@ -175,12 +196,13 @@ def main():
     ap.add_argument("-n", type=int, default=300)
     ap.add_argument("--kb", default="dogboard,futo,gboard")
     ap.add_argument("--out", default=f"{D}/swipe/replay-hws.json")
+    ap.add_argument("--sentences", action="store_true", help="whole sentences in order (context as in real typing)")
     a = ap.parse_args()
-    swipes, unit = hws(a.n)
+    swipes, unit, sent_of = hws(a.n, a.sentences)
     print(f"{len(swipes)} How We Swipe swipes", flush=True)
     res = {}
     for name in a.kb.split(","):
-        right, rows = run_keyboard(name, swipes, unit)
+        right, rows = run_keyboard(name, swipes, unit, sent_of if a.sentences else None)
         counted = sum(g is not None for _, g in rows)
         res[name] = {"top1": 100 * right / max(counted, 1), "counted": counted, "rows": rows}
         print(f"{name}: {100 * right / max(counted, 1):.1f} % ({right} of {counted} counted)", flush=True)
