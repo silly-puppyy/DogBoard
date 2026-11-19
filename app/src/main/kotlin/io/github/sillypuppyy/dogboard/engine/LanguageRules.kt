@@ -59,6 +59,8 @@ data class LanguageRules(
     @SerialName("ordinal_suffixes") val ordinalSuffixes: OrdinalSuffixes = OrdinalSuffixes(),
     /** Letters after an hour 1-12 ("5pm"), for the same fix; none by default. */
     @SerialName("hour_suffixes") val hourSuffixes: List<String> = emptyList(),
+    /** The letter keys by row ([LetterRows]); English QWERTY when a pack doesn't set them. */
+    @SerialName("letter_rows") val letterRows: LetterRows = LetterRows(),
 ) {
     /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
     val closingQuotes: String

@@ -960,7 +960,7 @@ class ImeController(
             val whole = before + after
             // before the first letter tap there is no live key geometry: the standard QWERTY one
             // decodes key-centre taps the same way
-            val keys = lastLetterKeys.ifEmpty { io.github.sillypuppyy.dogboard.engine.QwertyGeometry.letterKeys(375f, 216f) }
+            val keys = lastLetterKeys.ifEmpty { io.github.sillypuppyy.dogboard.engine.QwertyGeometry.letterKeys(375f, 216f, languageRules().letterRows) }
             val params = lastLetterParams ?: io.github.sillypuppyy.dogboard.touch.GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
             val word = CurrentWord().apply { seedFrom(whole, keys, params) }
             if (word.tapsOrNull() == null || whole.none { it.isLetter() }) {

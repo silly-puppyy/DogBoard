@@ -58,6 +58,16 @@ class LanguageRulesTest : FunSpec({
         LanguageRules.ENGLISH.isAlwaysCapitalised("Ice") shouldBe false
         LanguageRules().isAlwaysCapitalised("I") shouldBe false
     }
+    test("letter rows are one source: QWERTY by default, neighbours and closeness from it") {
+        val q = LanguageRules.ENGLISH.letterRows
+        q.neighbours('g').sorted() shouldBe listOf('b', 'c', 'f', 'h', 't', 'v', 'y')
+        q.neighbours('a').sorted() shouldBe listOf('q', 's', 'w', 'z')
+        q.near('r', 't') shouldBe true
+        q.near('t', 's') shouldBe false
+        val azerty = LetterRows(listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), listOf(0f, 0f, 1.5f))
+        azerty.neighbours('a').sorted() shouldBe listOf('q', 's', 'z')
+        QwertyGeometry.letterKeys(375f, 216f).keys shouldBe q.centres.keys
+    }
     test("pack tags are normalised as the layouts give them") {
         val n = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry::normalize
         n("fr_FR") shouldBe "fr-FR"; n("fr-fr") shouldBe "fr-FR"; n("FR") shouldBe "fr"; n("fr-be-x") shouldBe "fr-BE"; n("") shouldBe ""

@@ -738,12 +738,7 @@ object TypingEngine {
         }
     }
 
-    private fun neighbourKeys(c: Char): List<Char> {
-        val (x, y) = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.KEY_UNITS[c] ?: return emptyList()
-        return io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.KEY_UNITS.filter { (k, p) ->
-            k != c && kotlin.math.abs(p.second - y) <= 1.01f && kotlin.math.abs(p.first - x) <= 1.01f
-        }.keys.toList()
-    }
+    private fun neighbourKeys(c: Char): List<Char> = rules.letterRows.neighbours(c)
 
     /**
      * The alternative [typed] should become, read with [after] (the words typed after it) given [before],
