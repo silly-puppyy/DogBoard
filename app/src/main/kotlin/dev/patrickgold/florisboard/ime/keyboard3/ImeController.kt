@@ -184,6 +184,9 @@ class ImeController(
         val textBefore = snapshotState().content.surroundingText.textBefore
         val t0 = SystemClock.uptimeMillis()
         val words = kotlinx.coroutines.withContext(Dispatchers.Default) {
+            // debug builds, after `adb shell setprop log.tag.DogBoardSwipe DEBUG`: each swipe's beam in the log
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeDebugLog =
+                BuildConfig.DEBUG && android.util.Log.isLoggable("DogBoardSwipe", android.util.Log.DEBUG)
             io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeWords(
                 xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
             )

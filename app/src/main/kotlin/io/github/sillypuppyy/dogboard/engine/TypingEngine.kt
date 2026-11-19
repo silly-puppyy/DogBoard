@@ -313,14 +313,20 @@ object TypingEngine {
             val scorer = engine.decoder.context
             val p1 = engine.contextId(previous)
             val p2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2)
-            beam.sortedByDescending { c ->
+            fun total(c: io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.Candidate): Double {
                 val uni = lex.logProb(c.node)
                 val path = c.score - uni
-                if (scorer != null && p1 >= 0) path + SWIPE_CONTEXT_WEIGHT * scorer.logProb(p2, p1, lex.wordId(c.node), uni) else path + uni
-            }.mapNotNull { lex.firstForm(it.node) }.filter { it.lowercase() !in blocked }.distinct().take(top)
+                return if (scorer != null && p1 >= 0) path + SWIPE_CONTEXT_WEIGHT * scorer.logProb(p2, p1, lex.wordId(c.node), uni) else path + uni
+            }
+            if (swipeDebugLog) android.util.Log.d("DogBoardSwipe", "prev=" + previous + " steps=" + f.size / 4 + " beam=" +
+                beam.take(6).joinToString { c -> lex.firstForm(c.node) + ":" + "%.1f".format(java.util.Locale.ROOT, c.score - lex.logProb(c.node)) + "/" + "%.1f".format(java.util.Locale.ROOT, total(c)) })
+            beam.sortedByDescending { total(it) }.mapNotNull { lex.firstForm(it.node) }.filter { it.lowercase() !in blocked }.distinct().take(top)
                 .also { lastSwipeTiming = "network ${(t1 - t0) / 1_000_000} ms, search ${(System.nanoTime() - t1) / 1_000_000} ms, ${f.size / 4} steps" }
         }
     }
+
+    /** Debug builds: log each swipe's beam (word: path score / total with context), for the replay diagnosis. */
+    @Volatile var swipeDebugLog: Boolean = false
 
     /** The last swipe's timing (for the DogBoardPerf log). */
     @Volatile var lastSwipeTiming: String = ""

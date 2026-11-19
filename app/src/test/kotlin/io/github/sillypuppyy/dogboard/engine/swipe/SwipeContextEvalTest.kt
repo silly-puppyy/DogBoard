@@ -75,8 +75,9 @@ class SwipeContextEvalTest {
         val (b1, b3) = accuracy(test, 0.0, 1.0)
         println("SWIPECTX unigram only (test half, n ${test.size}): top-1 ${"%.3f".format(b1)} top-3 ${"%.3f".format(b3)}")
         var best = Triple(0.0, 0.0, -1.0)
-        for (w in listOf(0.3, 0.5, 0.7, 1.0, 1.3)) for (u in listOf(0.0, 0.3)) {
+        for (w in listOf(0.3, 0.5, 0.7, 1.0, 1.3, 1.6)) for (u in listOf(0.0, 0.3, 0.6)) {
             val (a1, _) = accuracy(tune, w, u)
+            println("SWIPECTX grid trigram $w + unigram $u: tune half top-1 ${"%.3f".format(a1)}, all ${"%.3f".format(accuracy(items, w, u).first)}")
             if (a1 > best.third) best = Triple(w, u, a1)
         }
         val (c1, c3) = accuracy(test, best.first, best.second)
