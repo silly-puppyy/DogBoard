@@ -160,6 +160,27 @@ def batches(data, bs, shuffle, rng):
         yield f, y, m
 
 
+def augment_routes(f, y, rng_t):
+    """Mirror and rotate each swipe and its route together (2026-11-19: the CVAE learned QWERTY's routes and drew loose,
+    biased paths on rearranged layouts, Dvorak / Kasroz; other stroke directions come from turning the real ones).
+    f [B, P, NF] features, y [B, P, 2] offsets; positions (cols 0-1) turn about the keyboard's middle, the route
+    vectors (2-7) and the offsets turn with them; lengths, progress and kinds stay."""
+    B = f.shape[0]
+    dev = f.device
+    flip = (torch.rand(B, device=dev) < 0.5).float() * -2 + 1          # x mirrored for half
+    ang = (torch.rand(B, device=dev) * 2 - 1) * math.radians(25)
+    c, s = torch.cos(ang), torch.sin(ang)
+    R = torch.stack([torch.stack([c * flip, -s], -1), torch.stack([s * flip, c], -1)], -2)  # [B, 2, 2]: rotate(mirror(v))
+    def turn(v):  # v [B, P, 2]
+        return torch.einsum("bij,bpj->bpi", R, v)
+    centre = torch.tensor([5.0, 2.0], device=dev)
+    f = f.clone()
+    f[..., 0:2] = turn(f[..., 0:2] - centre) + centre
+    for k in (2, 4, 6):
+        f[..., k:k + 2] = turn(f[..., k:k + 2])
+    return f, turn(y)
+
+
 def cmd_train(a):
     import os
     import sys
@@ -184,6 +205,8 @@ def cmd_train(a):
         tot = n = 0
         for f, y, m in batches(train, a.bs, True, rng):
             f, y, m = f.to(dev), y.to(dev), m.to(dev)
+            if a.turn:
+                f, y = augment_routes(f, y, None)
             mu, lv = net.encode(f, y, m)
             z = mu + torch.randn_like(mu) * (0.5 * lv).exp()
             pred = net.decode(f, z)
@@ -321,6 +344,7 @@ def main():
     ap.add_argument("--beta", type=float, default=1.0)
     ap.add_argument("--free-bits", type=float, default=0.05)
     ap.add_argument("--name", default="cvae-v1")
+    ap.add_argument("--turn", action="store_true", help="train: mirror and rotate routes with their swipes (other stroke directions)")
     ap.add_argument("--swipe5-repeat", type=int, default=0, help="prep: add swipe-5's tall-keyboard QWERTY swipes, this many times")
     ap.add_argument("--exclude-layouts", default="clearflow,dvorak,german", help="prep: sessions that swiped these stay out")
     a = ap.parse_args()
