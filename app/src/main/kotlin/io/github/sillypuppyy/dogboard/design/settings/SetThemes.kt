@@ -79,6 +79,10 @@ class SetThemesState(
     /** A new photo theme in pack id; a new empty pack. */
     val onNewPhotoIn: (String) -> Unit = {},
     val onNewPack: () -> Unit = {},
+    /** The gradient creator, for a new gradient in pack [String] (null: the default pack). */
+    val onNewGradientIn: (String?) -> Unit = {},
+    /** The theme ids in use now (day and night), so a gradient tile knows it is chosen. */
+    val inUse: Set<String> = emptySet(),
     /** Import a shared .dogtheme pack. */
     val onImportPack: () -> Unit = {},
 )
@@ -252,7 +256,7 @@ fun SetThemes(state: SetThemesState) {
                     for (row in cells.chunked(2)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             for (id in row) {
-                                if (id == null) NewTile(add!!.first, add.second) { if (sec.id == "yours") state.onEditPhoto() }
+                                if (id == null) NewTile(add!!.first, add.second) { if (sec.id == "yours") state.onEditPhoto() else if (sec.id == "gradients") state.onNewGradientIn(null) }
                                 else ThemeTile(id, c, state.seed, primary) { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m }
                             }
                         }
@@ -386,14 +390,17 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                     }
                 }
             }
-            val cells: List<io.github.sillypuppyy.dogboard.design.UserThemes.Theme?> = pack.themes + listOf(null)
+            // the pack's themes, then its two "new" tiles
+            val cells: List<Any> = pack.themes + listOf("photo", "gradient")
             for (row in cells.chunked(2)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    for (t in row) {
-                        if (t == null) { NewTile("add_photo_alternate", "From a photo") { state.onNewPhotoIn(pack.id) }; continue }
-                        val sel = state.userTheme == t.id
+                    for (cell in row) {
+                        if (cell == "photo") { NewTile("add_photo_alternate", "From a photo") { state.onNewPhotoIn(pack.id) }; continue }
+                        if (cell == "gradient") { NewTile("gradient", "New gradient") { state.onNewGradientIn(pack.id) }; continue }
+                        val t = cell as io.github.sillypuppyy.dogboard.design.UserThemes.Theme
+                        val sel = if (t.spec != null) t.spec in state.inUse else state.userTheme == t.id
                         val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, t.id) {
-                            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            if (t.spec == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                 val f = io.github.sillypuppyy.dogboard.design.UserThemes.photo(context, t.id)
                                 runCatching {
                                     val o = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }
@@ -412,14 +419,16 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                         .border(if (sel) 3.dp else 1.dp, if (sel) primary else SetColors.outlineVariant, RoundedCornerShape(16.dp)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    thumb?.let { androidx.compose.foundation.Image(it, t.name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+                                    // a gradient shows its keyboard, a photo its picture
+                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) { Preview(t.spec, false, 0, 162f, 128f, 162f / 375f, null) }
+                                    else thumb?.let { androidx.compose.foundation.Image(it, t.name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
                                     if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
                                 }
                                 Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                     DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                                     if (sel) Symbol("edit", 18.sp, SetColors.onSurfaceVariant)
                                 }
-                                DText(if (sel) "In use. Tap to edit" else "Photo. Hold for more", Modifier.padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                                DText(if (sel) "In use. Tap to edit" else if (t.spec != null) "Gradient. Hold for more" else "Photo. Hold for more", Modifier.padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                             }
                             androidx.compose.material3.DropdownMenu(menu, { menu = false }) {
                                 androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Rename") }, { menu = false; state.onThemeAction(t.id, "rename") })

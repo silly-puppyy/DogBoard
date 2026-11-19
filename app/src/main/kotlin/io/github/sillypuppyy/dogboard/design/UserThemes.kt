@@ -17,7 +17,8 @@ import java.io.File
  * came from ([FlorisPreferenceModel.Keyboard.userTheme]).
  */
 object UserThemes {
-    data class Theme(val id: String, val name: String, val kind: String)
+    /** [spec]: a gradient theme's theme id (GradientSpec), null for a photo theme. */
+    data class Theme(val id: String, val name: String, val kind: String, val spec: String? = null)
     data class Pack(val id: String, val name: String, val themes: List<Theme>)
 
     const val DEFAULT_PACK = "My themes"
@@ -43,7 +44,7 @@ object UserThemes {
 
     fun theme(context: Context, id: String): Theme? = runCatching {
         val j = JSONObject(File(dir(context, id), "theme.json").readText())
-        Theme(id, j.getString("name"), j.getString("kind"))
+        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.parse(it) != null })
     }.getOrNull()
 
     @Synchronized
@@ -74,13 +75,38 @@ object UserThemes {
         GlassPhoto.analysisFile(context).takeIf { it.isFile }?.copyTo(File(d, "analysis.txt"), overwrite = true)
         File(d, "theme.json").writeText(JSONObject().put("name", name).put("kind", "photo").put("created", System.currentTimeMillis())
             .put("params", photoParams(prefs)).toString(1))
+        addToPack(context, id, pack)
+        return id
+    }
+
+    /** A new gradient theme ([spec]: its GradientSpec id) in [pack] (the default pack when null). */
+    @Synchronized
+    fun createGradient(context: Context, name: String, spec: String, pack: String? = null): String {
+        val id = "g" + System.currentTimeMillis().toString(36)
+        dir(context, id).apply { mkdirs() }.resolve("theme.json").writeText(JSONObject().put("name", name).put("kind", "gradient")
+            .put("created", System.currentTimeMillis()).put("params", JSONObject().put("spec", spec)).toString(1))
+        addToPack(context, id, pack)
+        return id
+    }
+
+    /** Gradient theme [id] given new colours ([spec]) and [name]. */
+    @Synchronized
+    fun updateGradient(context: Context, id: String, name: String, spec: String) {
+        val f = File(dir(context, id), "theme.json")
+        val j = runCatching { JSONObject(f.readText()) }.getOrNull() ?: return
+        f.writeText(j.put("name", name).put("params", JSONObject().put("spec", spec)).toString(1))
+    }
+
+    /** How many saved gradients there are (names a new one "Gradient N"). */
+    fun gradientCount(context: Context): Int = packs(context).sumOf { p -> p.themes.count { it.kind == "gradient" } }
+
+    private fun addToPack(context: Context, id: String, pack: String?) {
         val packs = rawPacks(context)
         val target = pack ?: packs.firstOrNull { it.second.first == DEFAULT_PACK }?.first
         val i = packs.indexOfFirst { it.first == target }
         if (i >= 0) packs[i] = packs[i].first to (packs[i].second.first to packs[i].second.second + id)
         else packs.add(0, "k" + System.currentTimeMillis().toString(36) to (DEFAULT_PACK to listOf(id)))
         writePacks(context, packs)
-        return id
     }
 
     private fun photoParams(prefs: FlorisPreferenceModel): JSONObject = JSONObject()
@@ -237,13 +263,20 @@ object UserThemes {
                 if (!Regex("^[a-z0-9]{1,24}$").matches(old)) continue
                 val src = File(tmp, old)
                 val meta = runCatching { JSONObject(File(src, "theme.json").readText()) }.getOrNull() ?: continue
-                if (meta.optString("kind") != "photo" || !File(src, "photo.jpg").isFile) continue
-                // the photo must decode as an image
-                val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                android.graphics.BitmapFactory.decodeFile(File(src, "photo.jpg").absolutePath, o)
-                if (o.outWidth <= 0) continue
-                val id = "p" + System.currentTimeMillis().toString(36) + i
-                src.copyRecursively(dir(context, id), overwrite = true)
+                val gradient = meta.optString("kind") == "gradient"
+                if (gradient) {
+                    if (GradientSpec.parse(meta.optJSONObject("params")?.optString("spec").orEmpty()) == null) continue
+                } else if (meta.optString("kind") != "photo" || !File(src, "photo.jpg").isFile) continue
+                if (!gradient) {
+                    // the photo must decode as an image
+                    val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    android.graphics.BitmapFactory.decodeFile(File(src, "photo.jpg").absolutePath, o)
+                    if (o.outWidth <= 0) continue
+                }
+                val id = (if (gradient) "g" else "p") + System.currentTimeMillis().toString(36) + i
+                // a gradient is its theme.json alone
+                if (gradient) dir(context, id).apply { mkdirs() }.resolve("theme.json").writeText(meta.toString(1))
+                else src.copyRecursively(dir(context, id), overwrite = true)
                 newIds.add(id)
             }
             if (newIds.isEmpty()) return null

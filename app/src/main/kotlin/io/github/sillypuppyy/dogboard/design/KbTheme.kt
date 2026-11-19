@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 /**
  * Keyboard theme tokens, ported 1:1 from Kb.dc.html:364-412 (`DEF`, `T`, the glass formula and
@@ -187,7 +188,8 @@ object KbThemes {
         themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f,
         glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null,
     ): KbTokens {
-        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg) else {
+        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg)
+        else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light") else {
             val th = T[themeId] ?: T.getValue("dogboard")
             // the default theme in the system's Material You colours, when the live keyboard set them
             MaterialYouTheme.override?.takeIf { themeId == "dogboard" || T[themeId] == null }?.let { (l, d) -> if (dark) d else l }
@@ -252,9 +254,55 @@ object KbThemes {
         } else emptyMap()
     }
 
+    /**
+     * A user's gradient theme (the gradient creator): Dusk's and Lagoon's recipe for white labels (translucent white
+     * keys, a pale action key from the lightest colour), Peach's for dark ones (milky keys, labels and action key a
+     * deep shade of the darkest colour). Colours the user picks, so contrast is checked rather than assumed.
+     */
+    private fun gradient(g: GradientSpec): Map<String, String> {
+        val cols = g.colors
+        val bg = "linear-gradient(${g.angle}deg, ${cols.joinToString(", ")})"
+        val lightest = cols.maxBy { lumHex(it) }
+        val darkest = cols.minBy { lumHex(it) }
+        fun a(x: Double) = "rgba(255,255,255,$x)"
+        return if (g.white) {
+            val act = mix(lightest, "#ffffff", 0.65)
+            val actFg = mix(darkest, "#000000", 0.55).let { if (contrast(it, act) >= 4.5) it else "#1b1c1e" }
+            mapOf(
+                "bg" to bg, "key" to a(0.14), "keyFg" to "#ffffff", "fn" to a(0.07), "fnFg" to mix(lightest, "#ffffff", 0.88),
+                "act" to act, "actFg" to actFg, "chip" to a(0.22), "chipFg" to "#ffffff", "pop" to mix(darkest, "#ffffff", 0.12), "popFg" to "#ffffff",
+                "sel" to act, "selFg" to actFg, "hint" to a(0.72), "div" to a(0.22), "barFg" to "#ffffff", "barMuted" to a(0.8),
+                "tile" to a(0.12), "tileFg" to "#ffffff", "pressKey" to a(0.26), "pressFn" to a(0.18), "lock" to "#ffffff", "lockFg" to actFg, "linkFg" to act,
+            )
+        } else {
+            val ink = mix(darkest, "#000000", 0.75).let { if (contrast(it, mix(lightest, "#ffffff", 0.75)) >= 4.5) it else "#1b1c1e" }
+            val act = mix(darkest, "#000000", 0.45).let { if (contrast("#ffffff", it) >= 4.5) it else mix(darkest, "#000000", 0.7) }
+            mapOf(
+                "bg" to bg, "key" to "rgba(255,255,255,0.75)", "keyFg" to ink, "fn" to "rgba(255,255,255,0.4)", "fnFg" to ink,
+                "act" to act, "actFg" to "#ffffff", "chip" to "rgba(255,255,255,0.85)", "chipFg" to act, "pop" to "#ffffff", "popFg" to ink,
+                "sel" to act, "selFg" to "#ffffff", "hint" to mix(ink, "#ffffff", 0.3), "div" to mix(ink, lightest, 0.82), "barFg" to ink,
+                "barMuted" to mix(ink, "#ffffff", 0.2), "tile" to "rgba(255,255,255,0.7)", "tileFg" to ink, "pressKey" to "rgba(255,255,255,0.5)",
+                "pressFn" to "rgba(255,255,255,0.65)", "lock" to act, "lockFg" to "#ffffff",
+            )
+        }
+    }
+
+    /** [a] moved [t] of the way to [b], both #rrggbb. */
+    fun mix(a: String, b: String, t: Double): String {
+        val x = a.substring(1).toInt(16); val y = b.substring(1).toInt(16)
+        fun ch(s: Int) = (((x shr s) and 255) * (1 - t) + ((y shr s) and 255) * t).roundToInt().coerceIn(0, 255)
+        return "#%02x%02x%02x".format(ch(16), ch(8), ch(0))
+    }
+
+    /** WCAG contrast of two #rrggbb colours. */
+    fun contrast(a: String, b: String): Double {
+        val la = lumHex(a); val lb = lumHex(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
     // Kb:396-397
     private fun lin(c: Double): Double { val x = c / 255; return if (x <= 0.03928) x / 12.92 else ((x + 0.055) / 1.055).pow(2.4) }
-    private fun lumHex(h: String): Double {
+    fun lumHex(h: String): Double {
         val n = h.substring(1).toInt(16)
         return 0.2126 * lin(((n shr 16) and 255).toDouble()) + 0.7152 * lin(((n shr 8) and 255).toDouble()) + 0.0722 * lin((n and 255).toDouble())
     }
@@ -372,4 +420,34 @@ private fun splitTopLevel(s: String): List<String> {
     }
     out.add(s.substring(start))
     return out
+}
+
+/**
+ * A gradient theme as its theme id, so the keyboard needs no file to draw it and every tile previews its own:
+ * `grad_<rrggbb>_<rrggbb>[_<rrggbb>]_<angle>_<w|d>` (w: white labels). Underscores only, as theme ids also sit
+ * in prefs joined by ',', ';' and '='.
+ */
+data class GradientSpec(val colors: List<String>, val angle: Int, val white: Boolean) {
+    val id: String get() = "grad_" + colors.joinToString("_") { it.removePrefix("#").lowercase() } + "_${angle}_" + if (white) "w" else "d"
+
+    companion object {
+        private val RE = Regex("^grad_((?:[0-9a-f]{6}_){2,3})(\\d{1,3})_([wd])$")
+        fun isSpec(id: String) = id.startsWith("grad_")
+        fun parse(id: String): GradientSpec? {
+            val m = RE.matchEntire(id) ?: return null
+            return GradientSpec(m.groupValues[1].trimEnd('_').split('_').map { "#$it" }, m.groupValues[2].toInt() % 360, m.groupValues[3] == "w")
+        }
+
+        /**
+         * White labels when their weakest spot reads better than dark labels' weakest (an average picked white over
+         * navy-to-orange, 2.2:1 on the orange end; 2026-11-19).
+         */
+        fun autoWhite(colors: List<String>): Boolean = weakest(colors, true) >= weakest(colors, false)
+
+        /** The label's contrast against its key over each colour, the lowest (keys tinted as KbThemes.gradient draws them). */
+        fun weakest(colors: List<String>, white: Boolean): Double = colors.minOf { c ->
+            if (white) KbThemes.contrast("#ffffff", KbThemes.mix(c, "#ffffff", 0.14))
+            else KbThemes.contrast(KbThemes.mix(colors.minBy { KbThemes.lumHex(it) }, "#000000", 0.75), KbThemes.mix(c, "#ffffff", 0.75))
+        }
+    }
 }

@@ -43,6 +43,8 @@ fun ThemesScreen() {
             io.github.sillypuppyy.dogboard.design.UserThemes.migrate(context, prefs)
             io.github.sillypuppyy.dogboard.design.UserThemes.packs(context)
         }
+        // the Themes page's messages name a gradient by its saved name
+        ThemeChoice.userNames = value.flatMap { it.themes }.mapNotNull { t -> t.spec?.let { it to t.name } }.toMap()
     }
     suspend fun store(c: ThemeChoice.Choice) {
         prefs.keyboard.themeDay.set(c.day)
@@ -106,10 +108,18 @@ fun ThemesScreen() {
         userTheme = userTheme.takeIf { (day == "glass" || (follow && night == "glass")) },
         onPickUser = { id ->
             scope.launch {
-                if (io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id)) store(ThemeChoice.pick(choice, "glass").first)
+                // a gradient is drawn from its id; a photo goes through the photo slot
+                val spec = userPacks.flatMap { it.themes }.firstOrNull { it.id == id }?.spec
+                if (spec != null) { store(ThemeChoice.pick(choice, spec).first); prefs.keyboard.userTheme.set(id) }
+                else if (io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id)) store(ThemeChoice.pick(choice, "glass").first)
             }
         },
-        onEditUser = { id -> scope.launch { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) } },
+        onEditUser = { id ->
+            if (userPacks.flatMap { it.themes }.firstOrNull { it.id == id }?.spec != null) navController.navigate(Routes.Settings.Gradient(id = id))
+            else scope.launch { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) }
+        },
+        onNewGradientIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty())) },
+        inUse = if (follow) setOf(day, night) else setOf(day),
         onNewPhotoIn = { packId ->
             targetPack = packId
             pickNewPhoto.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))

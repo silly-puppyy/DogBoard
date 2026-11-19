@@ -31,7 +31,12 @@ object ThemeChoice {
         Theme("gloss", "Gloss", "Glossy caps, pressed-in labels", "light"),
     )
     private val byId = THEMES.associateBy { it.id }
-    fun theme(id: String): Theme = byId[id] ?: byId.getValue("dogboard")
+    fun theme(id: String): Theme = byId[id] ?: GradientSpec.parse(id)?.let { g ->
+        Theme(id, userNames[id] ?: "Your gradient", "${g.colors.size} colours", if (g.white) "dark" else "light")
+    } ?: byId.getValue("dogboard")
+
+    /** The user's gradient themes' names by spec id (the Themes page sets it from the saved themes), for its messages. */
+    @Volatile var userNames: Map<String, String> = emptyMap()
 
     /** :158-164 sections; [pack]: a theme pack the page can hide (:217). */
     data class Section(val id: String, val title: String, val sub: String, val ids: List<String>, val pack: Boolean = false, val add: Pair<String, String>? = null)
