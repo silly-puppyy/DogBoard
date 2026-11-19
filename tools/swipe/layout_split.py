@@ -6,8 +6,8 @@
 User 2026-11-19: for layouts with text but little swipe data, is simulated training data good enough? swipe-5 has
 1,000-12,000 real swipes per layout; the people are split in two (seeded), so a model can learn from one half's real
 swipes and be tested on people it never saw: synthetic only vs real only vs synthetic then fine-tuned on the real
-half. Writes train-0.pt and dev.pt (training people; dev = 10 % of them) and test.pt (the other people), in
-prepare_futo.py's format, physical units (y scaled by each swipe's own canvas height / width), the layout's letters.
+half. Writes train-0.pt and dev.pt (training people; dev = 10 % of them; items (features, word, sy)) and test.pt
+(the other people; (features, word)), in prepare_futo.py's format, physical units (y scaled by each swipe's own canvas height / width), the layout's letters.
 """
 import argparse
 import json
@@ -42,7 +42,8 @@ def main():
     test_people = set(people[: len(people) // 2])
     def item(d, w):
         return features(d["data"], 0.3, 10.0, 10.0 * d["canvas_height"] / d["canvas_width"]), w
-    train = [item(d, w) for s, w, d in rows if s not in test_people]
+    # training items keep their vertical scale (uni.py places the layout's keys in the same units)
+    train = [item(d, w) + (10.0 * d["canvas_height"] / d["canvas_width"],) for s, w, d in rows if s not in test_people]
     test = [item(d, w) for s, w, d in rows if s in test_people]
     random.Random(5).shuffle(train)
     n_dev = max(50, len(train) // 10)

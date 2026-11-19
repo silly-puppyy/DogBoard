@@ -5,6 +5,7 @@ keyboard-data/venv-executorch, which has torch and the ExecuTorch runtime).
     compare_futo.py hws [-n 3000]                 # How We Swipe (neither model trained on it)
     compare_futo.py futo-test [-n 3000]           # FUTO's own test set (both trained on FUTO's training set)
     compare_futo.py layout german de              # swipe-5, the held-out half's people (layout_split.py's split)
+    compare_futo.py layout kasroz en --all        # every person (a layout no model trained on)
 
 User 2026-11-19: "how do we do vs FUTO and Gboard, can't we extract their models?" FUTO Keyboard 0.1.30 ships its
 swipe models (assets/futo-swipe) under the FUTO Model Weights License 1.0: any use, including commercial, with a
@@ -74,6 +75,43 @@ def score(name, items, logp_fn, root, alphabet):
     print(f"  {name:28s} top-1 {100 * t1 / len(items):5.1f}  top-10 {100 * t10 / len(items):5.1f}  (n {len(items)})", flush=True)
 
 
+def rec(d):
+    """A swipe-5 / FUTO record as the scorers read it."""
+    return {"x": [q["x"] for q in d["data"]], "y": [q["y"] for q in d["data"]], "t": [q["t"] for q in d["data"]],
+            "canvas_width": d.get("canvas_width"), "canvas_height": d.get("canvas_height")}
+
+
+def hws_items(n):
+    sys.path.insert(0, os.path.join(HERE, "replay"))
+    from replay import hws
+    sw, _, _ = hws(n, True)
+    # hws(): qwerty.json 0..1 units plus ms -> records
+    return [(w, {"x": [p[0] for p in pts], "y": [p[1] for p in pts], "t": [p[2] for p in pts]}) for w, pts in sw]
+
+
+def swipe5_items(lay_name, lang, all_people=False):
+    """One layout's real swipes from the held-out half's people (layout_split.py's split; all people with
+    [all_people]), with the language's lexicon trie (the test words added) and the layout's letters."""
+    lay = json.load(open(f"{D}/swipe/futo/swipe-5/layouts/{lay_name}.json"))
+    letters = {k["letter"] for k in lay["keys"]}
+    rows = []
+    for line in open(f"{D}/swipe/futo/swipe-5/swipe5.jsonl"):
+        d = json.loads(line)
+        if d.get("layout") != lay_name or (d.get("lang") or d.get("language")) != lang or not isinstance(d.get("data"), list) or not d["data"]:
+            continue
+        w = clean(d["word"])
+        if w and all(c in letters for c in w) and len(w) <= 24:
+            rows.append(d)
+    people = sorted({d["session"] for d in rows}); random.Random(17).shuffle(people)
+    test_people = set(people) if all_people else set(people[: len(people) // 2])  # as layout_split.py
+    items = [(clean(d["word"]), rec(d)) for d in rows if d["session"] in test_people]
+    lexpath = EN if lang == "en" else f"{D}/swipe/lexicons/{lang}.tsv"
+    alphabet = "".join(sorted(letters))
+    lex = load_lexicon(lexpath, top=160000, letters=None if alphabet == "abcdefghijklmnopqrstuvwxyz" else alphabet)
+    root = Trie.build(lex + [(w, min(lp for _, lp in lex)) for w in sorted({w for w, _ in items} - {w for w, _ in lex})])
+    return items, root, alphabet
+
+
 def main():
     mode = sys.argv[1]
     n = int(sys.argv[sys.argv.index("-n") + 1]) if "-n" in sys.argv else 3000
@@ -81,11 +119,7 @@ def main():
     if mode in ("hws", "futo-test"):
         lay = json.load(open(f"{D}/swipe/futo/swipe-5/layouts/qwerty.json"))
         if mode == "hws":
-            sys.path.insert(0, os.path.join(HERE, "replay"))
-            from replay import hws
-            sw, _, _ = hws(n, True)
-            # hws(): qwerty.json 0..1 units plus ms -> records
-            items = [(w, {"x": [p[0] for p in pts], "y": [p[1] for p in pts], "t": [p[2] for p in pts]}) for w, pts in sw]
+            items = hws_items(n)
         else:
             rows = [json.loads(l) for l in open(f"{D}/swipe/futo/test.jsonl")]
             rows = [d for d in rows if (w := clean(d.get("word", ""))) and w.isascii() and w.isalpha() and d.get("data")]
@@ -104,32 +138,17 @@ def main():
         return
     lay_name, lang = sys.argv[2], sys.argv[3]
     lay = json.load(open(f"{D}/swipe/futo/swipe-5/layouts/{lay_name}.json"))
-    letters = {k["letter"] for k in lay["keys"]}
-    rows = []
-    for line in open(f"{D}/swipe/futo/swipe-5/swipe5.jsonl"):
-        d = json.loads(line)
-        if d.get("layout") != lay_name or (d.get("lang") or d.get("language")) != lang or not isinstance(d.get("data"), list) or not d["data"]:
-            continue
-        w = clean(d["word"])
-        if w and all(c in letters for c in w) and len(w) <= 24:
-            rows.append(d)
-    people = sorted({d["session"] for d in rows}); random.Random(17).shuffle(people)
-    test_people = set(people[: len(people) // 2])  # as layout_split.py
-    items = [(clean(d["word"]), d) for d in rows if d["session"] in test_people]
-    lexpath = EN if lang == "en" else f"{D}/swipe/lexicons/{lang}.tsv"
-    alphabet = "".join(sorted(letters))
-    lex = load_lexicon(lexpath, top=160000, letters=None if alphabet == "abcdefghijklmnopqrstuvwxyz" else alphabet)
-    root = Trie.build(lex + [(w, min(lp for _, lp in lex)) for w in sorted({w for w, _ in items} - {w for w, _ in lex})])
+    items, root, alphabet = swipe5_items(lay_name, lang, all_people="--all" in sys.argv)
     fu = Futo(lay)
     print(f"{lay_name}-{lang}, held-out half's people:")
-    score("FUTO encoder", items, lambda d: fu.logp([q["x"] for q in d["data"]], [q["y"] for q in d["data"]], [q["t"] for q in d["data"]]), root, fu.letters)
+    score("FUTO encoder", items, lambda r: fu.logp(r["x"], r["y"], r["t"]), root, fu.letters)
     for tag in ("cvae2", "cvae2ft"):
         p = f"{D}/swipe/runs/{tag}-{lay_name}-{lang}/best.pt"
         if not os.path.exists(p):
             continue
         net = SwipeNet(letters=len(alphabet)); net.load_state_dict(torch.load(p, map_location="cpu")); net.eval()
-        def ours(d, net=net):
-            f = features(d["data"], 0.3, 10.0, 10.0 * d["canvas_height"] / d["canvas_width"])
+        def ours(r, net=net):
+            f = features([{"x": x, "y": y} for x, y in zip(r["x"], r["y"])], 0.3, 10.0, 10.0 * r["canvas_height"] / r["canvas_width"])
             with torch.no_grad():
                 return net(f.unsqueeze(0))[0].numpy().astype(np.float64)
         score(f"DogBoard {tag}", items, ours, root, alphabet)
