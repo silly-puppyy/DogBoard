@@ -7,6 +7,10 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -326,7 +330,11 @@ private fun KbPopups(r: KbRender) {
 fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
     var m = this
     for (l in layers.filter { !it.inset }.reversed()) {
-        m = m.dropShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
+        // a hard outer ring (`0 0 0 3px`, selection rings): the shape grown by the spread with its corners grown too,
+        // as CSS draws it; the drop shadow kept the corner radius, so a ring around a circle came out squarish
+        // (user 2026-11-19: "rounded corners look weird on the photo theme page")
+        m = if (l.blur == 0f && l.x == 0f && l.y == 0f && l.spread > 0f && shape is androidx.compose.foundation.shape.CornerBasedShape) m.ring(shape, l.spread.dp, l.color)
+            else m.dropShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
     }
     for (l in layers.filter { it.inset }) {
         // a hard ring (`inset 0 0 0 1px`, the design's outline) is a border: Compose's inner shadow keeps the full
@@ -337,6 +345,21 @@ fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
     }
     return m
 }
+
+/** A ring [width] wide outside a rounded [shape], its corners [shape]'s grown by [width] (CSS box-shadow spread). */
+private fun Modifier.ring(shape: androidx.compose.foundation.shape.CornerBasedShape, width: androidx.compose.ui.unit.Dp, color: Color): Modifier =
+    drawBehind {
+        val w = width.toPx()
+        fun corner(c: androidx.compose.foundation.shape.CornerSize) = c.toPx(size, this) + w
+        val outer = androidx.compose.foundation.shape.RoundedCornerShape(
+            corner(shape.topStart).toDp(), corner(shape.topEnd).toDp(), corner(shape.bottomEnd).toDp(), corner(shape.bottomStart).toDp(),
+        ).createOutline(androidx.compose.ui.geometry.Size(size.width + 2 * w, size.height + 2 * w), layoutDirection, this)
+        val inner = shape.createOutline(size, layoutDirection, this)
+        val innerPath = androidx.compose.ui.graphics.Path().apply { addOutline(inner) }
+        clipPath(innerPath, androidx.compose.ui.graphics.ClipOp.Difference) {
+            translate(-w, -w) { drawOutline(outer, color) }
+        }
+    }
 
 /** Lays this element out at [rect] (dp, parent-relative), each edge rounded to a whole pixel. */
 fun Modifier.placeAt(rect: Rect): Modifier = layout { measurable, _ ->

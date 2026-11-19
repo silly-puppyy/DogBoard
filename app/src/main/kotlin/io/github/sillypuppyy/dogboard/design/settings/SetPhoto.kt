@@ -79,13 +79,16 @@ fun SetPhoto(state: SetPhotoState) {
             }
 
             // :24-26 the keyboard on the photo, as set
-            Box(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SetColors.row).padding(top = 16.dp), contentAlignment = Alignment.TopCenter) {
+            // the keyboard inset 16 dp on every side, its corners 24 - 16 = 8 dp so the two curves are concentric (the
+            // keyboard ran flush to the bottom with 16 dp top corners, cut by the card's 24 dp ones; user 2026-11-19)
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SetColors.row).padding(16.dp), contentAlignment = Alignment.TopCenter) {
+                val kbWidth = maxWidth.value
                 val props = KbProps(
-                    theme = "glass", bar = "bal", ret = "send", width = 358f, dim = st.dim.toFloat(), blur = st.blur, keyOpacity = st.tint.toFloat(),
+                    theme = "glass", bar = "bal", ret = "send", width = kbWidth, dim = st.dim.toFloat(), blur = st.blur, keyOpacity = st.tint.toFloat(),
                     glassFg = m?.fg ?: st.labels, halo = st.halo, actColor = acc?.first, actFg = acc?.second, backdrop = false,
                 )
                 val render = remember(props) { KbSpec.render(props) }
-                Box(Modifier.width(358.dp).height(render.H.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))) {
+                Box(Modifier.width(kbWidth.dp).height(render.H.dp).clip(RoundedCornerShape(8.dp))) {
                     state.photo?.let { p ->
                         Image(p, null, Modifier.fillMaxSize().then(if (st.blur > 0) Modifier.blur(st.blur.dp, androidx.compose.ui.draw.BlurredEdgeTreatment.Rectangle) else Modifier), contentScale = ContentScale.Crop,
                             alignment = when (state.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
