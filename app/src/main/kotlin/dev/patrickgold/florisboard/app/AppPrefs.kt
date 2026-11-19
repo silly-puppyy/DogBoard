@@ -610,6 +610,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val glassKeyOpacity = int(key = "keyboard__glass_key_opacity", default = 30)
         val glassPhotoLuminance = int(key = "keyboard__glass_photo_luminance", default = 300)
         val glassPhotoStamp = long(key = "keyboard__glass_photo_stamp", default = 0L)
+        // DogBoard: the photo theme's versions (bright, dark or both, each its own look; PhotoVersions JSON). Empty:
+        // a photo set before versions, read from the glass_* prefs above
+        val glassLooks = string(key = "keyboard__glass_looks", default = "")
         // DogBoard: draw the keys with the ported design (stage 2); off = FlorisBoard's drawing
         val dogboardDesign = boolean(
             key = "keyboard__dogboard_design",

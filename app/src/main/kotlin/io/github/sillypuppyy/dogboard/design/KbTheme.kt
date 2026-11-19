@@ -186,9 +186,9 @@ object KbThemes {
      */
     fun tokens(
         themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f,
-        glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null,
+        glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null, wash: Float = 0f,
     ): KbTokens {
-        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg)
+        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg, wash)
         else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light") else {
             val th = T[themeId] ?: T.getValue("dogboard")
             // the default theme in the system's Material You colours, when the live keyboard set them
@@ -228,9 +228,10 @@ object KbThemes {
      */
     private fun glass(
         dim: Float, kop: Float, photoLuminance: Float = 0.3f,
-        glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null,
+        glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null, wash: Float = 0f,
     ): Map<String, String> {
-        val under = photoLuminance * (1.0 - dim).pow(2.2)  // Kb:538
+        // Kb:538, and the white wash of a brightened photo (sRGB-encoded level washed toward white)
+        val under = (photoLuminance.toDouble().pow(1 / 2.2) * (1.0 - dim) * (1 - wash) + wash).pow(2.2)
         val capL = kop * 1 + (1 - kop) * under
         val cW = 1.05 / (capL + 0.05)
         val cB = (capL + 0.05) / (lumHex("#1b1c1e") + 0.05)

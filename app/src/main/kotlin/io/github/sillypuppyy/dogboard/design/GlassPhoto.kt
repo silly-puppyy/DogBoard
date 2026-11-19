@@ -15,22 +15,23 @@ import kotlin.math.pow
 object GlassPhoto {
     private const val MAX_SIDE = 1080
 
-    fun file(context: Context) = File(context.filesDir, "dogboard/glass.jpg")
+    /** The photo slot's photo; [dark]: the dark version's own photo, when it has one. */
+    fun file(context: Context, dark: Boolean = false) = File(context.filesDir, if (dark) "dogboard/glass-dark.jpg" else "dogboard/glass.jpg")
 
     /**
      * Copies [uri] (from the photo picker) downscaled, and returns its average relative luminance
      * (0..1) for the label-contrast rule, or null if it can't be read.
      */
-    fun save(context: Context, uri: Uri): Double? = runCatching {
+    fun save(context: Context, uri: Uri, dark: Boolean = false): Double? = runCatching {
         val src = ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, info, _ ->
             val side = maxOf(info.size.width, info.size.height)
             if (side > MAX_SIDE) decoder.setTargetSampleSize((side + MAX_SIDE - 1) / MAX_SIDE)
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         }
-        val out = file(context)
+        val out = file(context, dark)
         out.parentFile?.mkdirs()
         out.outputStream().use { src.compress(Bitmap.CompressFormat.JPEG, 90, it) }
-        analysisFile(context).writeText(analyse(src).encode())
+        analysisFile(context, dark).writeText(analyse(src).encode())
         luminance(src)
     }.getOrNull()
 
@@ -64,12 +65,12 @@ object GlassPhoto {
 
     val BLURS = listOf(0f, 4f, 8f, 12f, 16f, 20f, 25f)
 
-    fun analysisFile(context: Context) = File(context.filesDir, "dogboard/glass.txt")
+    fun analysisFile(context: Context, dark: Boolean = false) = File(context.filesDir, if (dark) "dogboard/glass-dark.txt" else "dogboard/glass.txt")
 
     /** The stored analysis of the current photo (made when it was picked; older photos get one now). */
-    fun analysis(context: Context): Analysis? =
-        analysisFile(context).takeIf { it.isFile }?.let { Analysis.decode(it.readText()) }
-            ?: load(context)?.let { b -> analyse(b).also { runCatching { analysisFile(context).writeText(it.encode()) } } }
+    fun analysis(context: Context, dark: Boolean = false): Analysis? =
+        analysisFile(context, dark).takeIf { it.isFile }?.let { Analysis.decode(it.readText()) }
+            ?: load(context, dark)?.let { b -> analyse(b).also { runCatching { analysisFile(context, dark).writeText(it.encode()) } } }
 
     fun analyse(b: Bitmap): Analysis {
         // the photo as the keyboard shows it, ~411 dp wide: 96 px, so 1 px is about 4.3 dp
@@ -126,7 +127,7 @@ object GlassPhoto {
         }.ifEmpty { listOf(Triple("#f0b46a", "#3a2200", "#f0b46a")) }
     }
 
-    fun load(context: Context): Bitmap? = file(context).takeIf { it.isFile }?.let { BitmapFactory.decodeFile(it.absolutePath) }
+    fun load(context: Context, dark: Boolean = false): Bitmap? = file(context, dark).takeIf { it.isFile }?.let { BitmapFactory.decodeFile(it.absolutePath) }
 
     /** Mean WCAG relative luminance over a coarse grid of pixels. */
     fun luminance(b: Bitmap): Double {

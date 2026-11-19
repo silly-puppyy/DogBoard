@@ -31,9 +31,12 @@ object ThemeChoice {
         Theme("gloss", "Gloss", "Glossy caps, pressed-in labels", "light"),
     )
     private val byId = THEMES.associateBy { it.id }
-    fun theme(id: String): Theme = byId[id] ?: GradientSpec.parse(id)?.let { g ->
+    fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").copy(mode = glassMode) else byId[id] ?: GradientSpec.parse(id)?.let { g ->
         Theme(id, userNames[id] ?: "Your gradient", "${g.colors.size} colours", if (g.white) "dark" else "light")
     } ?: byId.getValue("dogboard")
+
+    /** The Photo theme's mode from its versions (PhotoVersions.mode): bright only is light, dark only dark, both a pair. */
+    @Volatile var glassMode: String = "pair"
 
     /** The user's gradient themes' names by spec id (the Themes page sets it from the saved themes), for its messages. */
     @Volatile var userNames: Map<String, String> = emptyMap()

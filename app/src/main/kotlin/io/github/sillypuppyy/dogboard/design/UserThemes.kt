@@ -67,29 +67,64 @@ object UserThemes {
         }.toMutableList()
     }
 
+    /** A theme folder's files and the photo slot's: the photo and analysis, and the dark version's own when it has one. */
+    private val SLOT_FILES = listOf(Triple("photo.jpg", false, true), Triple("analysis.txt", false, false), Triple("photo-dark.jpg", true, true), Triple("analysis-dark.txt", true, false))
+
+    private fun slotFile(context: Context, dark: Boolean, photo: Boolean) = if (photo) GlassPhoto.file(context, dark) else GlassPhoto.analysisFile(context, dark)
+
+    /** The photo slot's files into theme folder [d] (dark ones only when the dark version has its own photo). */
+    private fun copySlotTo(context: Context, d: File, darkPhoto: Boolean) {
+        for ((name, dark, photo) in SLOT_FILES) {
+            val src = slotFile(context, dark, photo)
+            if ((!dark || darkPhoto) && src.isFile) src.copyTo(File(d, name), overwrite = true) else if (dark) File(d, name).delete()
+        }
+    }
+
     /** A new photo theme from what the photo slot holds now, added to [pack] (the default pack when null). */
     @Synchronized
     fun createPhoto(context: Context, prefs: FlorisPreferenceModel, name: String, pack: String? = null): String? {
         if (!GlassPhoto.file(context).isFile) return null
         val id = "p" + System.currentTimeMillis().toString(36)
         val d = dir(context, id).apply { mkdirs() }
-        GlassPhoto.file(context).copyTo(File(d, "photo.jpg"), overwrite = true)
-        GlassPhoto.analysisFile(context).takeIf { it.isFile }?.copyTo(File(d, "analysis.txt"), overwrite = true)
+        val params = photoParams(context, prefs)
+        copySlotTo(context, d, versionsOf(params, null).darkPhoto)
         File(d, "theme.json").writeText(JSONObject().put("name", name).put("kind", "photo").put("created", System.currentTimeMillis())
-            .put("params", photoParams(prefs)).toString(1))
+            .put("params", params).toString(1))
         addToPack(context, id, pack)
         return id
     }
 
-    /** What a photo theme's tile draws over its photo: the keyboard as the theme sets it (Glass tokens). */
-    data class PhotoLook(val dim: Float, val keyOpacity: Float, val luminance: Float, val labels: String, val halo: Boolean, val actColor: String?, val actFg: String?, val pos: String)
+    /** One version of a photo theme as its tile draws it: the keyboard as the theme sets it (Glass tokens). */
+    data class PhotoLook(val dim: Float, val keyOpacity: Float, val luminance: Float, val labels: String, val halo: Boolean, val actColor: String?, val actFg: String?, val pos: String, val wash: Float = 0f)
 
-    fun photoLook(context: Context, id: String): PhotoLook? = runCatching {
-        val p = JSONObject(File(dir(context, id), "theme.json").readText()).getJSONObject("params")
-        val acc = File(dir(context, id), "analysis.txt").takeIf { it.isFile }?.let { GlassPhoto.Analysis.decode(it.readText()) }?.accents
-        val a = acc?.getOrNull(p.optInt("accent", 0)) ?: acc?.firstOrNull()
-        PhotoLook(p.optInt("dim", 35) / 100f, p.optInt("keyOpacity", 30) / 100f, p.optInt("luminance", 300) / 1000f,
-            p.optString("labels", "auto"), p.optBoolean("halo", true), a?.first, a?.second, p.optString("pos", "center"))
+    /** A photo theme's tile: its versions in order (bright first), each with the photo it draws (dark: maybe its own). */
+    data class PhotoTile(val versions: List<Pair<PhotoLook, Boolean>>)
+
+    /** A saved theme's versions; a theme saved before versions is read from its one look ([a]: its photo's analysis). */
+    private fun versionsOf(p: JSONObject, a: GlassPhoto.Analysis?): PhotoVersions {
+        p.optJSONObject("looks")?.let { return PhotoVersions.decode(it.toString()) }
+        val old = PhotoReadability.Look(1 - p.optInt("dim", 35) / 100.0, p.optInt("keyOpacity", 30) / 100.0, p.optInt("blur", 12).toFloat(),
+            p.optString("labels", "auto"), p.optBoolean("halo", true), p.optInt("accent", 0))
+        return PhotoVersions.decode(null, old, a)
+    }
+
+    private fun analysisIn(d: File, dark: Boolean) = File(d, if (dark) "analysis-dark.txt" else "analysis.txt").takeIf { it.isFile }?.let { GlassPhoto.Analysis.decode(it.readText()) }
+
+    fun photoTile(context: Context, id: String): PhotoTile? = runCatching {
+        val d = dir(context, id)
+        val p = JSONObject(File(d, "theme.json").readText()).getJSONObject("params")
+        val v = versionsOf(p, analysisIn(d, false))
+        val list = ArrayList<Pair<PhotoLook, Boolean>>()
+        for (dark in listOf(false, true)) {
+            if (if (dark) !v.hasDark else !v.hasBright) continue
+            val own = dark && v.darkPhoto && File(d, "photo-dark.jpg").isFile
+            val l = v.look(dark)
+            val acc = analysisIn(d, own)?.accents
+            val a = acc?.getOrNull(l.accent) ?: acc?.firstOrNull()
+            val lum = if (own) v.darkLuminance.toFloat() else p.optInt("luminance", 300) / 1000f
+            list.add(PhotoLook(l.dim.toFloat(), l.tint.toFloat(), lum, l.labels, l.halo, a?.first, a?.second, p.optString("pos", "center"), l.wash.toFloat()) to own)
+        }
+        PhotoTile(list)
     }.getOrNull()
 
     /** A new gradient theme ([spec]: its GradientSpec id) in [pack] (the default pack when null). */
@@ -122,11 +157,10 @@ object UserThemes {
         writePacks(context, packs)
     }
 
-    private fun photoParams(prefs: FlorisPreferenceModel): JSONObject = JSONObject()
-        .put("dim", prefs.keyboard.glassDim.get()).put("blur", prefs.keyboard.glassBlur.get())
-        .put("keyOpacity", prefs.keyboard.glassKeyOpacity.get()).put("luminance", prefs.keyboard.glassPhotoLuminance.get())
-        .put("labels", prefs.keyboard.glassLabels.get()).put("halo", prefs.keyboard.glassHalo.get())
-        .put("accent", prefs.keyboard.glassAccent.get()).put("pos", prefs.keyboard.glassPhotoPos.get())
+    /** The photo slot's settings as a theme's params: its versions ("looks"), the photo's brightness and position. */
+    private fun photoParams(context: Context, prefs: FlorisPreferenceModel): JSONObject = JSONObject()
+        .put("looks", JSONObject(PhotoSlot.versions(context, prefs).encode()))
+        .put("luminance", prefs.keyboard.glassPhotoLuminance.get()).put("pos", prefs.keyboard.glassPhotoPos.get())
 
     /** Loads photo theme [id] into the photo slot the keyboard draws, and marks it as the one being used. */
     suspend fun apply(context: Context, prefs: FlorisPreferenceModel, id: String): Boolean {
@@ -134,12 +168,14 @@ object UserThemes {
         val j = runCatching { JSONObject(File(d, "theme.json").readText()) }.getOrNull() ?: return false
         if (j.getString("kind") != "photo") return false
         val p = j.getJSONObject("params")
-        File(d, "photo.jpg").copyTo(GlassPhoto.file(context), overwrite = true)
-        File(d, "analysis.txt").takeIf { it.isFile }?.copyTo(GlassPhoto.analysisFile(context), overwrite = true)
-        prefs.keyboard.glassDim.set(p.optInt("dim", 35)); prefs.keyboard.glassBlur.set(p.optInt("blur", 12))
-        prefs.keyboard.glassKeyOpacity.set(p.optInt("keyOpacity", 30)); prefs.keyboard.glassPhotoLuminance.set(p.optInt("luminance", 300))
-        prefs.keyboard.glassLabels.set(p.optString("labels", "auto")); prefs.keyboard.glassHalo.set(p.optBoolean("halo", true))
-        prefs.keyboard.glassAccent.set(p.optInt("accent", 0)); prefs.keyboard.glassPhotoPos.set(p.optString("pos", "center"))
+        val v = versionsOf(p, analysisIn(d, false))
+        for ((name, dark, photo) in SLOT_FILES) {
+            val src = File(d, name)
+            if (src.isFile && (!dark || v.darkPhoto)) src.copyTo(slotFile(context, dark, photo), overwrite = true) else if (dark) slotFile(context, dark, photo).delete()
+        }
+        prefs.keyboard.glassLooks.set(v.encode())
+        ThemeChoice.glassMode = v.mode
+        prefs.keyboard.glassPhotoLuminance.set(p.optInt("luminance", 300)); prefs.keyboard.glassPhotoPos.set(p.optString("pos", "center"))
         prefs.keyboard.userTheme.set(id)
         prefs.keyboard.glassEnabled.set(true)
         prefs.keyboard.glassPhotoStamp.set(System.currentTimeMillis())
@@ -153,11 +189,9 @@ object UserThemes {
         val d = dir(context, id)
         val f = File(d, "theme.json")
         val j = runCatching { JSONObject(f.readText()) }.getOrNull() ?: return
-        f.writeText(j.put("params", photoParams(prefs)).toString(1))
-        if (photoToo) {
-            GlassPhoto.file(context).takeIf { it.isFile }?.copyTo(File(d, "photo.jpg"), overwrite = true)
-            GlassPhoto.analysisFile(context).takeIf { it.isFile }?.copyTo(File(d, "analysis.txt"), overwrite = true)
-        }
+        val params = photoParams(context, prefs)
+        f.writeText(j.put("params", params).toString(1))
+        if (photoToo) copySlotTo(context, d, versionsOf(params, null).darkPhoto)
     }
 
     // managing packs and themes (the Themes page's pack and theme menus)
@@ -218,7 +252,7 @@ object UserThemes {
     // sharing (user 2026-11-19: packs "become easily shareable"): a pack is one .dogtheme file, a zip of pack.json
     // (format, name, its themes in order) and each theme's folder (theme.json, photo.jpg, analysis.txt)
     private const val FORMAT = 1
-    private val ENTRY = Regex("^[a-z0-9]{1,24}/(theme\\.json|photo\\.jpg|analysis\\.txt)$")
+    private val ENTRY = Regex("^[a-z0-9]{1,24}/(theme\\.json|photo(-dark)?\\.jpg|analysis(-dark)?\\.txt)$")
     private const val MAX_FILE = 20L * 1024 * 1024
     private const val MAX_THEMES = 100
 
@@ -233,7 +267,7 @@ object UserThemes {
             for (t in ids) {
                 val th = theme(context, t) ?: continue
                 themes.put(JSONObject().put("id", t).put("name", th.name).put("kind", th.kind))
-                for (f in listOf("theme.json", "photo.jpg", "analysis.txt")) {
+                for (f in listOf("theme.json", "photo.jpg", "analysis.txt", "photo-dark.jpg", "analysis-dark.txt")) {
                     val src = File(dir(context, t), f)
                     if (!src.isFile) continue
                     zip.putNextEntry(java.util.zip.ZipEntry("$t/$f")); src.inputStream().use { it.copyTo(zip) }; zip.closeEntry()
@@ -330,14 +364,12 @@ object UserThemes {
             val p = list.getJSONObject(i)
             val bmp = context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { android.graphics.BitmapFactory.decodeStream(it) } ?: continue
             val a = GlassPhoto.analyse(bmp)
-            val look = PhotoReadability.auto(a)
+            val v = PhotoVersions.auto(a)
             val id = "p" + System.currentTimeMillis().toString(36) + i
             val d = dir(context, id).apply { mkdirs() }
             context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { inp -> File(d, "photo.jpg").outputStream().use { inp.copyTo(it) } }
             File(d, "analysis.txt").writeText(a.encode())
-            val params = JSONObject().put("dim", (look.dim * 100).roundToInt()).put("blur", look.blur.roundToInt())
-                .put("keyOpacity", (look.tint * 100).roundToInt()).put("luminance", (GlassPhoto.luminance(bmp) * 1000).roundToInt())
-                .put("labels", look.labels).put("halo", look.halo).put("accent", look.accent).put("pos", "center")
+            val params = JSONObject().put("looks", JSONObject(v.encode())).put("luminance", (GlassPhoto.luminance(bmp) * 1000).roundToInt()).put("pos", "center")
             val credit = p.getString("by") + ", " + if (p.getString("source") == "Unsplash") "Unsplash" else p.getString("license")
             File(d, "theme.json").writeText(JSONObject().put("name", p.getString("name")).put("kind", "photo").put("created", System.currentTimeMillis())
                 .put("credit", credit).put("params", params).toString(1))

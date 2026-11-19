@@ -35,6 +35,10 @@ data class LiveTheme(
     val blur: Float = 12f,
     val keyOpacity: Float = 0.3f,
     val photoLuminance: Float = 0.3f,
+    /** The white wash of a photo brightened past 100 %. */
+    val wash: Float = 0f,
+    /** The dark version draws its own photo (glass-dark.jpg). */
+    val photoDark: Boolean = false,
     val photoStamp: Long = 0L,
     val glassFg: String = "auto",
     val halo: Boolean = true,
@@ -47,7 +51,7 @@ data class LiveTheme(
 ) {
     /** [p] with the Glass tokens when Glass is on; the photo itself is drawn by [LiveGlassBackdrop]. */
     fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed, retAlways = retAlways) else p.copy(retAlways = retAlways, 
-        theme = "glass", dim = dim, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
+        theme = "glass", dim = dim, wash = wash, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
         glassFg = glassFg, halo = halo, actColor = actColor, actFg = actFg,
     )
 }
@@ -57,9 +61,7 @@ fun liveTheme(): LiveTheme {
     val prefs by FlorisPreferenceStore
     val enabled by prefs.keyboard.glassEnabled.collectAsState()
     val stamp by prefs.keyboard.glassPhotoStamp.collectAsState()
-    val dim by prefs.keyboard.glassDim.collectAsState()
-    val blur by prefs.keyboard.glassBlur.collectAsState()
-    val kop by prefs.keyboard.glassKeyOpacity.collectAsState()
+    val looks by prefs.keyboard.glassLooks.collectAsState()
     val lum by prefs.keyboard.glassPhotoLuminance.collectAsState()
     val day by prefs.keyboard.themeDay.collectAsState()
     val night by prefs.keyboard.themeNight.collectAsState()
@@ -67,6 +69,9 @@ fun liveTheme(): LiveTheme {
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val keptSeed by prefs.keyboard.spotSeed.collectAsState()
     val retPref by prefs.keyboard.retColour.collectAsState()
+    val context = LocalContext.current
+    // the photo theme's versions (bright, dark or both); they also set its day / night mode for resolve()
+    val versions by produceState<PhotoVersions?>(null, stamp, looks) { value = withContext(Dispatchers.IO) { PhotoSlot.versions(context, prefs) } }
     val (id, dark) = ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
     // Dalmatian "every time it opens": a new coat each time the keyboard is shown, else the kept one (the view
     // lives on between showings, so remembering per view gave one coat for good; user 2026-11-19)
@@ -74,15 +79,18 @@ fun liveTheme(): LiveTheme {
     val openSeed = androidx.compose.runtime.remember(shown) { (1..96).random() }
     // the Photo theme draws the glass photo when one is set, else the default look
     val glass = (id == "glass" || enabled) && stamp != 0L
-    val labels by prefs.keyboard.glassLabels.collectAsState()
-    val halo by prefs.keyboard.glassHalo.collectAsState()
-    val accent by prefs.keyboard.glassAccent.collectAsState()
     val pos by prefs.keyboard.glassPhotoPos.collectAsState()
-    val context = LocalContext.current
-    val analysis by produceState<GlassPhoto.Analysis?>(null, stamp) { value = withContext(Dispatchers.IO) { GlassPhoto.analysis(context) } }
-    val acc = analysis?.accents?.let { it.getOrNull(accent) ?: it.firstOrNull() }
+    val v = versions ?: PhotoVersions()
+    // which version: both follow the day / night choice, one version is what it is
+    val useDark = if (v.hasBright && v.hasDark) dark else v.hasDark
+    val look = v.look(useDark)
+    val photoDark = useDark && v.darkPhoto
+    val analysis by produceState<GlassPhoto.Analysis?>(null, stamp, photoDark) { value = withContext(Dispatchers.IO) { GlassPhoto.analysis(context, photoDark) } }
+    val acc = analysis?.accents?.let { it.getOrNull(look.accent) ?: it.firstOrNull() }
     return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
-        dim / 100f, blur.toFloat(), kop / 100f, lum / 1000f, stamp, labels, halo, acc?.first, acc?.second, pos,
+        look.dim.toFloat(), look.blur, look.tint.toFloat(), (if (photoDark) v.darkLuminance.toFloat() else lum / 1000f),
+        wash = look.wash.toFloat(), photoDark = photoDark, photoStamp = stamp, glassFg = look.labels, halo = look.halo,
+        actColor = acc?.first, actFg = acc?.second, photoPos = pos,
         retAlways = ThemeChoice.retAlways(retPref, if (glass) "glass" else id))
 }
 
@@ -94,8 +102,8 @@ fun liveTheme(): LiveTheme {
 fun LiveGlassBackdrop(theme: LiveTheme, modifier: Modifier = Modifier) {
     if (!theme.glass) return
     val context = LocalContext.current
-    val photo by produceState<Bitmap?>(null, theme.photoStamp) {
-        value = withContext(Dispatchers.IO) { GlassPhoto.load(context) }
+    val photo by produceState<Bitmap?>(null, theme.photoStamp, theme.photoDark) {
+        value = withContext(Dispatchers.IO) { GlassPhoto.load(context, theme.photoDark) }
     }
     Box(modifier.fillMaxSize().clipToBounds()) {
         photo?.let { b ->
@@ -106,5 +114,6 @@ fun LiveGlassBackdrop(theme: LiveTheme, modifier: Modifier = Modifier) {
             )
         }
         Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, theme.dim)))
+        if (theme.wash > 0f) Box(Modifier.fillMaxSize().background(Color(1f, 1f, 1f, theme.wash)))
     }
 }

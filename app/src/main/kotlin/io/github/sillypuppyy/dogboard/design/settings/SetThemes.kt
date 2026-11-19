@@ -345,7 +345,7 @@ private fun NewTile(icon: String, label: String, onClick: () -> Unit) {
 private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?, name: String) {
     val l = look ?: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook(0.35f, 0.3f, 0.3f, "auto", true, null, null, "center")
     val render = remember(l) {
-        KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
+        KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, wash = l.wash, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
             glassFg = l.labels, halo = l.halo, actColor = l.actColor, actFg = l.actFg, backdrop = false))
     }
     val scale = 162f / 375f
@@ -355,6 +355,7 @@ private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io
             androidx.compose.foundation.Image(img, name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 alignment = when (l.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
             Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, l.dim)))
+            if (l.wash > 0f) Box(Modifier.fillMaxSize().background(Color(1f, 1f, 1f, l.wash)))
             Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, 0f) }) {
                 KbView(render)
             }
@@ -422,13 +423,14 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                         val t = cell as io.github.sillypuppyy.dogboard.design.UserThemes.Theme
                         val sel = if (t.spec != null) t.spec in state.inUse else state.userTheme == t.id
                         // a photo tile: the photo and its look (as saved; the version counter reloads it after an edit)
-                        val thumb by androidx.compose.runtime.produceState<Pair<androidx.compose.ui.graphics.ImageBitmap, io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?>?>(null, t.id, state.userPacks) {
+                        val thumb by androidx.compose.runtime.produceState<Pair<List<androidx.compose.ui.graphics.ImageBitmap?>, io.github.sillypuppyy.dogboard.design.UserThemes.PhotoTile?>?>(null, t.id, state.userPacks) {
                             if (t.spec == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                val f = io.github.sillypuppyy.dogboard.design.UserThemes.photo(context, t.id)
-                                runCatching {
+                                fun bmp(f: java.io.File) = runCatching {
                                     val o = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }
                                     android.graphics.BitmapFactory.decodeFile(f.absolutePath, o)?.asImageBitmap()
-                                }.getOrNull()?.let { it to io.github.sillypuppyy.dogboard.design.UserThemes.photoLook(context, t.id) }
+                                }.getOrNull()
+                                val main = io.github.sillypuppyy.dogboard.design.UserThemes.photo(context, t.id)
+                                listOf(bmp(main), bmp(java.io.File(main.parentFile, "photo-dark.jpg"))) to io.github.sillypuppyy.dogboard.design.UserThemes.photoTile(context, t.id)
                             }
                         }
                         var menu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -444,7 +446,15 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                 ) {
                                     // a gradient shows its keyboard, a photo its picture
                                     if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) { Preview(t.spec, false, 0, 162f, 128f, 162f / 375f, null) }
-                                    else thumb?.let { (img, look) -> PhotoPreview(img, look, t.name) }
+                                    else thumb?.let { (imgs, tile) ->
+                                        val vs = tile?.versions.orEmpty()
+                                        val first = vs.firstOrNull()
+                                        imgs[0]?.let { PhotoPreview(if (first?.second == true) imgs[1] ?: it else it, first?.first, t.name) }
+                                        // bright and dark: the dark version in the lower-right triangle, as the built-in pairs
+                                        if (vs.size == 2) Box(Modifier.fillMaxSize().clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
+                                            (if (vs[1].second) imgs[1] else imgs[0])?.let { PhotoPreview(it, vs[1].first, t.name) }
+                                        }
+                                    }
                                     if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
                                 }
                                 Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {

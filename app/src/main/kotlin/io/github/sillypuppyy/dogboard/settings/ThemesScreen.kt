@@ -42,6 +42,8 @@ fun ThemesScreen() {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.design.UserThemes.migrate(context, prefs)
             io.github.sillypuppyy.dogboard.design.UserThemes.installPhotos(context)
+            // the Photo theme's mode (light, dark or a pair) from its versions, for picking and the tiles
+            if (prefs.keyboard.glassPhotoStamp.get() != 0L) io.github.sillypuppyy.dogboard.design.PhotoSlot.versions(context, prefs)
             io.github.sillypuppyy.dogboard.design.UserThemes.packs(context)
         }
         // the Themes page's messages name a gradient by its saved name
@@ -70,11 +72,11 @@ fun ThemesScreen() {
             val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val lum = io.github.sillypuppyy.dogboard.design.GlassPhoto.save(context, uri) ?: return@withContext null
                 prefs.keyboard.glassPhotoLuminance.set((lum * 1000).toInt())
+                // a new photo theme starts with both versions matched to the photo (user 2026-11-19); no dark photo of its own
+                io.github.sillypuppyy.dogboard.design.GlassPhoto.file(context, true).delete()
+                io.github.sillypuppyy.dogboard.design.GlassPhoto.analysisFile(context, true).delete()
                 io.github.sillypuppyy.dogboard.design.GlassPhoto.analysis(context)?.let { a ->
-                    val l = io.github.sillypuppyy.dogboard.design.PhotoReadability.auto(a)
-                    prefs.keyboard.glassDim.set((l.dim * 100).toInt()); prefs.keyboard.glassKeyOpacity.set((l.tint * 100).toInt())
-                    prefs.keyboard.glassBlur.set(l.blur.toInt()); prefs.keyboard.glassLabels.set(l.labels)
-                    prefs.keyboard.glassHalo.set(l.halo); prefs.keyboard.glassAccent.set(l.accent)
+                    prefs.keyboard.glassLooks.set(io.github.sillypuppyy.dogboard.design.PhotoVersions.auto(a).encode())
                 }
                 val n = io.github.sillypuppyy.dogboard.design.UserThemes.packs(context).sumOf { it.themes.size } + 1
                 io.github.sillypuppyy.dogboard.design.UserThemes.createPhoto(context, prefs, "Photo $n", targetPack)

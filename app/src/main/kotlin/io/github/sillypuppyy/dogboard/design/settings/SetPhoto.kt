@@ -36,6 +36,7 @@ import io.github.sillypuppyy.dogboard.design.KbProps
 import io.github.sillypuppyy.dogboard.design.KbSpec
 import io.github.sillypuppyy.dogboard.design.KbView
 import io.github.sillypuppyy.dogboard.design.PhotoReadability
+import io.github.sillypuppyy.dogboard.design.PhotoVersions
 import io.github.sillypuppyy.dogboard.design.Symbol
 import io.github.sillypuppyy.dogboard.design.css
 import io.github.sillypuppyy.dogboard.design.cssShadow
@@ -43,27 +44,42 @@ import kotlin.math.roundToInt
 
 /** What the photo page shows and does; the screen stores each change. */
 class SetPhotoState(
+    /** The photo, and the dark version's own photo when it has one (with their analyses). */
     val photo: ImageBitmap?,
     val analysis: GlassPhoto.Analysis?,
-    val look: PhotoReadability.Look,
+    val darkPhoto: ImageBitmap?,
+    val darkAnalysis: GlassPhoto.Analysis?,
+    /** The theme's versions (user 2026-11-19: a bright and a dark version, or one of them). */
+    val versions: PhotoVersions,
+    /** The version being edited. */
+    val tabDark: Boolean,
     val pos: String,
-    /** "day", "night" or "both": which of the Themes page's slots the photo theme fills. */
-    val use: String,
+    val onVersions: (String) -> Unit,
+    val onTab: (Boolean) -> Unit,
+    /** The edited version's look. */
     val onLook: (PhotoReadability.Look) -> Unit,
     val onPos: (String) -> Unit,
-    val onUse: (String) -> Unit,
     val onPickPhoto: () -> Unit,
+    val onPickDarkPhoto: () -> Unit,
+    /** The dark version back to the main photo. */
+    val onDarkSamePhoto: () -> Unit,
     val onBack: () -> Unit,
-)
+) {
+    val editingDark: Boolean get() = if (versions.hasBright && versions.hasDark) tabDark else versions.hasDark
+    val ownPhoto: Boolean get() = editingDark && versions.darkPhoto && darkPhoto != null
+    val shownPhoto: ImageBitmap? get() = if (ownPhoto) darkPhoto else photo
+    val shownAnalysis: GlassPhoto.Analysis? get() = if (ownPhoto) darkAnalysis else analysis
+    val look: PhotoReadability.Look get() = versions.look(editingDark)
+}
 
 private val START = TextAlign.Start
 
 /** Settings › Look › Themes › Photo theme (SetPhoto.dc.html, 390 wide). */
 @Composable
 fun SetPhoto(state: SetPhotoState) {
-    val a = state.analysis
+    val a = state.shownAnalysis
     val st = state.look
-    val auto = remember(a) { a?.let { PhotoReadability.auto(it) } ?: PhotoReadability.Look() }
+    val auto = remember(a, state.editingDark) { a?.let { PhotoReadability.auto(it, state.editingDark) } ?: PhotoReadability.Look() }
     val m = a?.let { PhotoReadability.measure(it, st) }
     val accents = a?.accents ?: emptyList()
     val acc = accents.getOrNull(st.accent) ?: accents.firstOrNull()
@@ -78,22 +94,44 @@ fun SetPhoto(state: SetPhotoState) {
                 }
             }
 
+            // versions: bright, dark or both (a day-and-night pair); with both, which one is being edited
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val vOpts = listOf("bright" to "Bright", "dark" to "Dark", "both" to "Bright and dark")
+                Segmented("photo:versions", vOpts.map { it.second }, vOpts.indexOfFirst { it.first == state.versions.versions }.coerceAtLeast(0)) { state.onVersions(vOpts[it].first) }
+                if (state.versions.hasBright && state.versions.hasDark) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        DText("Editing", Modifier.padding(start = 4.dp, end = 4.dp), style = setText(14f, 500, SetColors.onSurfaceVariant))
+                        for ((dark, label, icon) in listOf(Triple(false, "Bright", "light_mode"), Triple(true, "Dark", "dark_mode"))) {
+                            val on = state.tabDark == dark
+                            Row(
+                                Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(if (on) SetColors.primary else SetColors.row).clickable { state.onTab(dark) }.padding(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Symbol(icon, 18.sp, if (on) Color.White else SetColors.onSurfaceVariant)
+                                DText(label, style = setText(14f, 500, if (on) Color.White else SetColors.onSurface))
+                            }
+                        }
+                    }
+                }
+            }
+
             // :24-26 the keyboard on the photo, as set
             // the keyboard inset 16 dp on every side, its corners 24 - 16 = 8 dp so the two curves are concentric (the
             // keyboard ran flush to the bottom with 16 dp top corners, cut by the card's 24 dp ones; user 2026-11-19)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SetColors.row).padding(16.dp), contentAlignment = Alignment.TopCenter) {
                 val kbWidth = maxWidth.value
                 val props = KbProps(
-                    theme = "glass", bar = "bal", ret = "send", width = kbWidth, dim = st.dim.toFloat(), blur = st.blur, keyOpacity = st.tint.toFloat(),
+                    theme = "glass", bar = "bal", ret = "send", width = kbWidth, dim = st.dim.toFloat(), wash = st.wash.toFloat(), blur = st.blur, keyOpacity = st.tint.toFloat(),
                     glassFg = m?.fg ?: st.labels, halo = st.halo, actColor = acc?.first, actFg = acc?.second, backdrop = false,
                 )
                 val render = remember(props) { KbSpec.render(props) }
                 Box(Modifier.width(kbWidth.dp).height(render.H.dp).clip(RoundedCornerShape(8.dp))) {
-                    state.photo?.let { p ->
+                    state.shownPhoto?.let { p ->
                         Image(p, null, Modifier.fillMaxSize().then(if (st.blur > 0) Modifier.blur(st.blur.dp, androidx.compose.ui.draw.BlurredEdgeTreatment.Rectangle) else Modifier), contentScale = ContentScale.Crop,
                             alignment = when (state.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
                     }
                     Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, st.dim.toFloat())))
+                    if (st.wash > 0) Box(Modifier.fillMaxSize().background(Color(1f, 1f, 1f, st.wash.toFloat())))
                     KbView(render)
                 }
             }
@@ -109,7 +147,7 @@ fun SetPhoto(state: SetPhotoState) {
                     val fg = css(if (pass) "#2c3a00" else "#4a3200")
                     Symbol(if (pass) "check_circle" else "info", 20.sp, fg)
                     DText(
-                        (if (m.fg == "white") "White" else "Dark") + " labels, " + "%.1f".format(m.ratio) + ":1 on the brightest spots. " +
+                        (if (m.fg == "white") "White" else "Dark") + " labels, " + "%.1f".format(m.ratio) + ":1 on the " + (if (m.fg == "white") "brightest" else "darkest") + " spots. " +
                             if (pass) "Easy to read." else "Letters there may be hard to read.",
                         Modifier.weight(1f), style = setText(14f, color = fg).copy(textAlign = START, lineHeight = (14 * 1.4f).sp), maxLines = 8,
                     )
@@ -123,12 +161,18 @@ fun SetPhoto(state: SetPhotoState) {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Photo", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
                 Column(Modifier.fillMaxWidth().background(SetColors.row, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        state.photo?.let { p ->
+                    // the dark version of a two-version theme may have its own photo (user 2026-11-19)
+                    val darkTab = state.editingDark && state.versions.hasBright
+                    if (darkTab) {
+                        val own = state.versions.darkPhoto
+                        Segmented("photo:darkphoto", listOf("Same photo", "Its own photo"), if (own) 1 else 0) { if (it == 1) state.onPickDarkPhoto() else state.onDarkSamePhoto() }
+                    }
+                    if (!darkTab || state.versions.darkPhoto) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        state.shownPhoto?.let { p ->
                             Image(p, "Your photo", Modifier.size(56.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.row), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
                         }
                         Box(
-                            Modifier.size(56.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).clickable { state.onPickPhoto() },
+                            Modifier.size(56.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).clickable { if (darkTab) state.onPickDarkPhoto() else state.onPickPhoto() },
                             contentAlignment = Alignment.Center,
                         ) { Symbol("add_photo_alternate", 24.sp, SetColors.primary) }
                     }
@@ -182,7 +226,9 @@ fun SetPhoto(state: SetPhotoState) {
                     }
                     // :159-162 dimming, key background, blur
                     fun pc(v: Float) = "${(v * 100).roundToInt()}%"
-                    SetSliderRow("photo:dim", "Dim the photo", "", st.dim.toFloat(), auto.dim.toFloat(), 0f..0.8f, 0.05f, ::pc) { state.onLook(st.copy(dim = it.toDouble())) }
+                    // brightness, 0-200 % (user 2026-11-19): below 100 % darker, above it a soft white wash
+                    SetSliderRow("photo:bright", "Brightness", if (st.bright > 1.0) "Brightened with a soft white wash" else if (st.bright < 1.0) "Darkened" else "As shot",
+                        st.bright.toFloat(), auto.bright.toFloat(), 0f..2f, 0.05f, ::pc) { state.onLook(st.copy(bright = it.toDouble())) }
                     SetSliderRow("photo:tint", "Key background", if (st.tint == 0.0) "Clear keys with a hairline edge" else "White behind each key; more helps dark labels",
                         st.tint.toFloat(), auto.tint.toFloat(), 0f..0.9f, 0.05f, { if (it == 0f) "Clear" else pc(it) }) { state.onLook(st.copy(tint = it.toDouble())) }
                     SetSliderRow("photo:blur", "Blur", "Off keeps your photo sharp", st.blur, auto.blur, 0f..25f, 1f, { if (it == 0f) "Off" else it.roundToInt().toString() }) { state.onLook(st.copy(blur = it)) }
@@ -191,14 +237,6 @@ fun SetPhoto(state: SetPhotoState) {
                 }
             }
 
-            // :97-106 which slot the photo theme fills
-            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DText("Use it for", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
-                Box(Modifier.fillMaxWidth().background(SetColors.row, RoundedCornerShape(20.dp)).padding(16.dp)) {
-                    val opts = listOf("day" to "Day", "night" to "Night", "both" to "Day and night")
-                    Segmented("photo:use", opts.map { it.second }, opts.indexOfFirst { it.first == state.use }.coerceAtLeast(0)) { state.onUse(opts[it].first) }
-                }
-            }
         }
         StatusBarBand()
     }
