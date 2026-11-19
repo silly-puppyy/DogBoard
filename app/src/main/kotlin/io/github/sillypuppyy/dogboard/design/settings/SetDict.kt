@@ -79,6 +79,7 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
     }.filter { query.isBlank() || it.word.contains(query.trim(), ignoreCase = true) }
 
     // SetDict:16: 390 wide (the screen), bg, padding 40 0 32, gap 16
+    Box(Modifier.fillMaxSize()) {
     Column(
         modifier.fillMaxSize().background(SetColors.screen).verticalScroll(rememberScrollState()).padding(top = 40.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -186,6 +187,8 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
                 style = setText(13f, color = SetColors.onSurfaceVariant).copy(lineHeight = (13 * 1.45).sp, textAlign = TextAlign.Center),
             )
         }
+    }
+    StatusBarBand() // a scrolled page doesn't run under the clock
     }
 }
 

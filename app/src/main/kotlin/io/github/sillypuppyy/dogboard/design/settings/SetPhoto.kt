@@ -200,5 +200,6 @@ fun SetPhoto(state: SetPhotoState) {
                 }
             }
         }
+        StatusBarBand()
     }
 }
