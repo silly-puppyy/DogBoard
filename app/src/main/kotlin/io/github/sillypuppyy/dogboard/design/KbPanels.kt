@@ -23,6 +23,9 @@ data class KbClipData(
     val sensitive: Boolean = false,
     /** Seconds until a sensitive clip clears itself (the clipboard setting), or null when it doesn't. */
     val clearsInSec: Int? = null,
+    /** Link marks (clipboard rows): null = the step doesn't change this link; true = applied; false = undone. */
+    val expanded: Boolean? = null,
+    val cleaned: Boolean? = null,
 )
 
 /**
@@ -85,6 +88,10 @@ data class KbExtras(
     val panel: String, val showPanel: Boolean,
     val pClip: Boolean, val pEmoji: Boolean, val pTools: Boolean, val pEdit: Boolean,
     val clips: List<KbClip>, val clipList: Boolean, val clipMsg: Boolean,
+    /** The clipboard as rows (KbClipRows.kt): the live clips, or the canvas's. */
+    val clipRows: List<KbClipRow> = emptyList(),
+    /** The row whose hold menu is open in the design's "select" frame, or -1. */
+    val clipHeld: Int = -1,
     /** Kb:41-43: the clipboard filter picked: 0 All, 1 Links, 2 Media (ours filters; the canvas draws All). */
     val clipFilter: Int = 0,
     /** The emoji panel is searching. */
@@ -183,7 +190,7 @@ object KbExtrasSpec {
             dev = P.dev && panel.isEmpty(), devKeys = devKeys,
             panel = panel, showPanel = panel.isNotEmpty() && !barless,
             pClip = pClip, pEmoji = pEmoji, pTools = pTools, pEdit = pEdit,
-            clips = clips, clipFilter = P.clipFilter, emojiSearch = P.emojiSearch, clipList = pClip && (pvar == "default" || pvar == "select"), clipMsg = pClip && (pvar == "locked" || pvar == "empty"),
+            clips = clips, clipRows = P.clips?.map(::clipRow) ?: demoClipRows(), clipHeld = if (pvar == "select") 2 else -1, clipFilter = P.clipFilter, emojiSearch = P.emojiSearch, clipList = pClip && (pvar == "default" || pvar == "select"), clipMsg = pClip && (pvar == "locked" || pvar == "empty"),
             clipMsgIcon = if (pvar == "locked") "lock" else "content_paste_off",
             clipMsgTitle = if (pvar == "locked") "Unlock to see your clipboard" else "Clipboard history is off",
             clipMsgBody = if (pvar == "locked") "Clips stay hidden on the lock screen, pinned ones too." else "Keep what you copy for an hour, including images and videos. Pin a clip to keep it longer.",

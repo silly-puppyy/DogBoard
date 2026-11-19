@@ -241,24 +241,12 @@ fun KbPanelBody(r: KbRender) {
     val t = r.t; val x = r.x
     Box(Modifier.fillMaxWidth().height(r.keyAreaH.dp)) {
         if (x.clipList) {
-            // Kb:203-212: 2 columns, rows share the height
-            // up to the design's six clips the rows share the height; a longer live history scrolls
-            // with rows of the same height
-            val scrolls = x.clips.size > 6
-            val rows = maxOf((x.clips.size + 1) / 2, 3) // the design's three rows, also when there are fewer clips
-            val rowH = ((r.keyAreaH - 4f - 8f - 2 * 8f) / 3f).dp
-            Column(
-                Modifier.fillMaxSize().then(if (scrolls) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                    .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                for (row in x.clips.withIndex().chunked(2)) {
-                    Row(if (scrolls) Modifier.height(rowH) else Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        for ((i, c) in row) ClipTile(r, c, i)
-                        if (row.size == 1) Spacer(Modifier.weight(1f)) // a lone clip keeps its column width
-                    }
-                }
-                if (!scrolls) repeat(rows - (x.clips.size + 1) / 2) { Spacer(Modifier.weight(1f)) } // ...and its row height
+            // the clipboard as rows (KbClipRows.kt; canvas "Clipboard: columns vs rows", user 2026-11-20); a tap
+            // pastes through the panel's actions when the live keyboard gives no row actions of its own
+            val kb = LocalKbActions.current
+            val rowActions = LocalKbClipActions.current ?: androidx.compose.runtime.remember(kb) { KbClipActions(onPaste = { i -> kb?.onClip?.invoke(i) }) }
+            androidx.compose.runtime.CompositionLocalProvider(LocalKbClipActions provides rowActions) {
+                KbClipList(t, x.clipRows, initialHeld = x.clipHeld)
             }
         }
         if (x.clipMsg) {
@@ -338,73 +326,6 @@ fun KbPanelBody(r: KbRender) {
         }
     }
 }
-
-/** Kb:232-240: one clipboard tile: a typed clip (lead, title, sub-line) or two lines of text. */
-@Composable
-private fun RowScope.ClipTile(r: KbRender, c: KbClip, index: Int) {
-    val t = r.t
-    val actions = LocalKbActions.current
-    // DogBoard: a media clip's preview fills the lead, like Gboard's thumbnails (stripes until it loads)
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, c.thumbnail) {
-        value = c.thumbnail?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 40.dp.roundToPx() }) } }
-    }
-    val id = "clip:${c.text}${c.lead?.title.orEmpty()}"
-    Box(
-        Modifier.weight(1f).fillMaxHeight().clip(TILE).tap(actions?.let { a -> { a.onClip(index) } })
-            .background(c.bg).cssShadow(c.ring, TILE).lint(id),
-    ) { LintParent(id) {
-        Row(
-            Modifier.matchParentSize().padding(start = 8.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val l = c.lead
-            if (l != null) {
-                val shape = if (l.round) PILL else RoundedCornerShape(10.dp)
-                Box(
-                    Modifier.size(40.dp).clip(shape)
-                        .then(if (l.bg != null) Modifier.background(l.bg) else Modifier.stripes(t.fn, t.pop, 5f))
-                        .cssShadow(LEAD_RING, shape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val b = thumb
-                    when {
-                        b != null -> androidx.compose.foundation.Image(
-                            b, contentDescription = l.title, modifier = Modifier.matchParentSize(),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        )
-                        l.icon.isNotEmpty() -> Symbol(l.icon, 22.sp, l.fg)
-                        l.letter.isNotEmpty() -> DText(l.letter, style = text(17, 600, l.fg))
-                    }
-                }
-                Column(Modifier.weight(1f).padding(end = 10.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                    val title = text(14, 500, t.tileFg).let { if (l.mono) it.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace) else it }
-                    DText(l.title, style = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (l.sub.isNotEmpty()) DText(l.sub, style = text(12, 400, t.barMuted), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            } else {
-                DText(
-                    c.text, Modifier.padding(start = 4.dp, end = 14.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    style = text(14, 400, t.tileFg).copy(lineHeight = (14 * 1.3).sp, textAlign = TextAlign.Start),
-                )
-            }
-        }
-        if (c.pinned) Symbol("push_pin", 16.sp, t.linkFg, Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp), fill = 1)
-        if (c.selected) {
-            // Kb:239: pin / delete pill
-            Row(
-                Modifier.align(Alignment.BottomEnd).padding(end = 6.dp, bottom = 6.dp)
-                    .cssShadow(CssShadow.parse("0 1px 3px rgba(0,0,0,0.2)"), PILL).background(t.pop, PILL).padding(2.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                for (icon in listOf("push_pin", "delete")) Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { Symbol(icon, 18.sp, t.popFg) }
-            }
-        }
-    } }
-}
-
-/** Kb:233: the lead's hairline. */
-private val LEAD_RING = listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(127, 127, 127, (0.18f * 255).toInt())))
 
 /** Kb:224-248: emoji panel. */
 @Composable

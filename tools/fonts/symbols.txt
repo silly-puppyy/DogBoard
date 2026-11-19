@@ -4,8 +4,10 @@ arrow_back
 arrow_downward
 arrow_forward
 arrow_upward
+auto_fix_high
 backspace
 brightness_auto
+bug_report
 cake
 call
 cancel
@@ -26,6 +28,7 @@ delete_forever
 delete_sweep
 domino_mask
 done
+draft
 edit
 email
 emoji_symbols
@@ -35,6 +38,8 @@ file_open
 first_page
 flag
 flight
+format_color_fill
+format_quote
 front_hand
 function
 globe
@@ -46,6 +51,7 @@ home
 image
 info
 ios_share
+keep
 key
 keyboard
 keyboard_arrow_down
@@ -64,6 +70,8 @@ link
 location_on
 lock
 mail
+map
+match_case
 # Material Symbols Rounded names bundled in the app (subset_fonts.py).
 menu_book
 mic
@@ -72,14 +80,17 @@ mood
 more_horiz
 more_vert
 open_in_full
+open_in_new
 open_with
 palette
+password
 person
 pets
 phone
 photo
 picture_in_picture
 pill
+pin
 play_circle
 preview
 public
@@ -96,6 +107,7 @@ select
 select_all
 send
 settings
+share
 shield_person
 shift
 shift_lock
@@ -114,13 +126,8 @@ try
 tune
 undo
 vibration
+visibility
+visibility_off
 warning
 widgets
 work
-auto_fix_high
-format_quote
-match_case
-pin
-visibility
-visibility_off
-format_color_fill
