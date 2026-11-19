@@ -21,6 +21,8 @@ object PhotoReadability {
         val sat: Double = 1.0, val contrast: Double = 1.0,
         /** A return-key colour the user picked (#rrggbb), in place of the photo's colour [accent]. */
         val actColor: String? = null,
+        /** The key background [tint] is black rather than white (dark versions; user 2026-11-19). */
+        val keyDark: Boolean = false,
     ) {
         val dim: Double get() = (1 - bright).coerceIn(0.0, 1.0)
         val wash: Double get() = ((bright - 1) * WASH).coerceIn(0.0, WASH)
@@ -52,8 +54,10 @@ object PhotoReadability {
         val (v5, v95) = a.at(s.blur)
         val k = s.tint
         fun con(v: Double) = ((v - 0.5) * s.contrast + 0.5).coerceIn(0.0, 1.0)
-        val hi = toLin(k + (1 - k) * lit(con(v95), s.bright))
-        val lo = toLin(k + (1 - k) * lit(con(v5), s.bright))
+        // the key's tint mixes the photo toward white, or toward black with dark keys
+        val kw = if (s.keyDark) 0.0 else k
+        val hi = toLin(kw + (1 - k) * lit(con(v95), s.bright))
+        val lo = toLin(kw + (1 - k) * lit(con(v5), s.bright))
         val white = 1.05 / (hi + 0.05)
         val dark = (lo + 0.05) / (0.0118 + 0.05)
         val fg = if (s.labels == "auto") (if (white >= dark) "white" else "dark") else s.labels
@@ -69,9 +73,10 @@ object PhotoReadability {
      */
     fun auto(a: GlassPhoto.Analysis, dark: Boolean = true): Look {
         if (dark) {
+            // dark keys (a 20 % black tint) under white labels, then the least darkening that reads
             var b = 1.0
-            while (b >= 0.1999) { val s = Look(bright = r2(b), labels = "white"); if (measure(a, s).white >= 4.5) return s; b -= 0.05 }
-            return Look(bright = 0.2, labels = "white")
+            while (b >= 0.1999) { val s = Look(bright = r2(b), tint = 0.2, labels = "white", keyDark = true); if (measure(a, s).white >= 4.5) return s; b -= 0.05 }
+            return Look(bright = 0.2, tint = 0.2, labels = "white", keyDark = true)
         }
         var b = 1.0
         while (b <= 1.5001) { val s = Look(bright = r2(b), labels = "dark"); if (measure(a, s).dark >= 4.5) return s; b += 0.05 }
@@ -129,10 +134,10 @@ data class PhotoVersions(
     companion object {
         private fun enc(l: PhotoReadability.Look) = org.json.JSONObject().put("b", (l.bright * 100).toInt()).put("k", (l.tint * 100).toInt())
             .put("blur", l.blur.toInt()).put("labels", l.labels).put("halo", l.halo).put("accent", l.accent)
-            .put("s", (l.sat * 100).toInt()).put("c", (l.contrast * 100).toInt()).apply { l.actColor?.let { put("ac", it) } }
+            .put("s", (l.sat * 100).toInt()).put("c", (l.contrast * 100).toInt()).apply { l.actColor?.let { put("ac", it) } }.put("kd", l.keyDark)
         private fun dec(j: org.json.JSONObject?) = if (j == null) null else PhotoReadability.Look(j.optInt("b", 100) / 100.0, j.optInt("k", 0) / 100.0,
             j.optInt("blur", 0).toFloat(), j.optString("labels", "auto"), j.optBoolean("halo", true), j.optInt("accent", 0),
-            j.optInt("s", 100) / 100.0, j.optInt("c", 100) / 100.0, j.optString("ac").takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) })
+            j.optInt("s", 100) / 100.0, j.optInt("c", 100) / 100.0, j.optString("ac").takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) }, j.optBoolean("kd", false))
 
         /**
          * From [json]; a theme saved before versions ([old] its one look, [a] its photo's analysis) keeps that look

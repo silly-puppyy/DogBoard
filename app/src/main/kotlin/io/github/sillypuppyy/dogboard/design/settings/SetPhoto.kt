@@ -124,7 +124,7 @@ fun SetPhoto(state: SetPhotoState) {
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SetColors.row).padding(16.dp), contentAlignment = Alignment.TopCenter) {
                 val kbWidth = maxWidth.value
                 val props = KbProps(
-                    theme = "glass", bar = "bal", ret = "send", width = kbWidth, dim = st.dim.toFloat(), wash = st.wash.toFloat(), blur = st.blur, keyOpacity = st.tint.toFloat(),
+                    theme = "glass", bar = "bal", ret = "send", width = kbWidth, dim = st.dim.toFloat(), wash = st.wash.toFloat(), keyDark = st.keyDark, blur = st.blur, keyOpacity = st.tint.toFloat(),
                     glassFg = m?.fg ?: st.labels, halo = st.halo, actColor = acc?.first, actFg = acc?.second, backdrop = false,
                 )
                 val render = remember(props) { KbSpec.render(props) }
@@ -257,7 +257,12 @@ fun SetPhoto(state: SetPhotoState) {
                         st.bright.toFloat(), auto.bright.toFloat(), 0f..2f, 0.05f, ::pc) { state.onLook(st.copy(bright = it.toDouble())) }
                     SetSliderRow("photo:contrast", "Contrast", "", st.contrast.toFloat(), 1f, 0.5f..1.5f, 0.05f, ::pc) { state.onLook(st.copy(contrast = it.toDouble())) }
                     SetSliderRow("photo:sat", "Saturation", if (st.sat == 0.0) "Black and white" else "", st.sat.toFloat(), 1f, 0f..2f, 0.05f, ::pc) { state.onLook(st.copy(sat = it.toDouble())) }
-                    SetSliderRow("photo:tint", "Key background", if (st.tint == 0.0) "Clear keys with a hairline edge" else "White behind each key; more helps dark labels",
+                    // light or dark keys (a white or a black tint behind each key)
+                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        DText("Keys", style = setText(16f).copy(textAlign = START))
+                        Segmented("photo:keydark", listOf("Light", "Dark"), if (st.keyDark) 1 else 0) { state.onLook(st.copy(keyDark = it == 1, tint = if (st.tint == 0.0) 0.2 else st.tint)) }
+                    }
+                    SetSliderRow("photo:tint", "Key background", if (st.tint == 0.0) "Clear keys with a hairline edge" else (if (st.keyDark) "Black behind each key; more helps white labels" else "White behind each key; more helps dark labels"),
                         st.tint.toFloat(), auto.tint.toFloat(), 0f..0.9f, 0.05f, { if (it == 0f) "Clear" else pc(it) }) { state.onLook(st.copy(tint = it.toDouble())) }
                     SetSliderRow("photo:blur", "Blur", "Off keeps your photo sharp", st.blur, auto.blur, 0f..25f, 1f, { if (it == 0f) "Off" else it.roundToInt().toString() }) { state.onLook(st.copy(blur = it)) }
                     // :163 label shadow

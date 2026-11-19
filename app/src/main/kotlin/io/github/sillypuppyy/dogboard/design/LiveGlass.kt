@@ -39,6 +39,7 @@ data class LiveTheme(
     val wash: Float = 0f,
     /** The photo's saturation and contrast (PhotoReadability.Look). */
     val photoSat: Float = 1f,
+    val keyDark: Boolean = false,
     val photoContrast: Float = 1f,
     /** The dark version draws its own photo (glass-dark.jpg). */
     val photoDark: Boolean = false,
@@ -54,7 +55,7 @@ data class LiveTheme(
 ) {
     /** [p] with the Glass tokens when Glass is on; the photo itself is drawn by [LiveGlassBackdrop]. */
     fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed, retAlways = retAlways) else p.copy(retAlways = retAlways, 
-        theme = "glass", dim = dim, wash = wash, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
+        theme = "glass", dim = dim, wash = wash, keyDark = keyDark, blur = blur, keyOpacity = keyOpacity, photoLuminance = photoLuminance, backdrop = false,
         glassFg = glassFg, halo = halo, actColor = actColor, actFg = actFg,
     )
 }
@@ -92,7 +93,7 @@ fun liveTheme(): LiveTheme {
     val acc = PhotoReadability.accent(look, analysis?.accents)
     return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
         look.dim.toFloat(), look.blur, look.tint.toFloat(), (if (photoDark) v.darkLuminance.toFloat() else lum / 1000f),
-        wash = look.wash.toFloat(), photoSat = look.sat.toFloat(), photoContrast = look.contrast.toFloat(), photoDark = photoDark, photoStamp = stamp, glassFg = look.labels, halo = look.halo,
+        wash = look.wash.toFloat(), photoSat = look.sat.toFloat(), keyDark = look.keyDark, photoContrast = look.contrast.toFloat(), photoDark = photoDark, photoStamp = stamp, glassFg = look.labels, halo = look.halo,
         actColor = acc?.first, actFg = acc?.second, photoPos = pos,
         retAlways = ThemeChoice.retAlways(retPref, if (glass) "glass" else id))
 }

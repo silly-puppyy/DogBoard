@@ -95,7 +95,7 @@ object UserThemes {
     }
 
     /** One version of a photo theme as its tile draws it: the keyboard as the theme sets it (Glass tokens). */
-    data class PhotoLook(val dim: Float, val keyOpacity: Float, val luminance: Float, val labels: String, val halo: Boolean, val actColor: String?, val actFg: String?, val pos: String, val wash: Float = 0f, val sat: Float = 1f, val contrast: Float = 1f)
+    data class PhotoLook(val dim: Float, val keyOpacity: Float, val luminance: Float, val labels: String, val halo: Boolean, val actColor: String?, val actFg: String?, val pos: String, val wash: Float = 0f, val sat: Float = 1f, val contrast: Float = 1f, val keyDark: Boolean = false)
 
     /** A photo theme's tile: its versions in order (bright first), each with the photo it draws (dark: maybe its own). */
     data class PhotoTile(val versions: List<Pair<PhotoLook, Boolean>>)
@@ -121,7 +121,7 @@ object UserThemes {
             val l = v.look(dark)
             val a = PhotoReadability.accent(l, analysisIn(d, own)?.accents)
             val lum = if (own) v.darkLuminance.toFloat() else p.optInt("luminance", 300) / 1000f
-            list.add(PhotoLook(l.dim.toFloat(), l.tint.toFloat(), lum, l.labels, l.halo, a?.first, a?.second, p.optString("pos", "center"), l.wash.toFloat(), l.sat.toFloat(), l.contrast.toFloat()) to own)
+            list.add(PhotoLook(l.dim.toFloat(), l.tint.toFloat(), lum, l.labels, l.halo, a?.first, a?.second, p.optString("pos", "center"), l.wash.toFloat(), l.sat.toFloat(), l.contrast.toFloat(), l.keyDark) to own)
         }
         PhotoTile(list)
     }.getOrNull()

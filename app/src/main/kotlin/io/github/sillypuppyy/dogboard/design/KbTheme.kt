@@ -187,8 +187,9 @@ object KbThemes {
     fun tokens(
         themeId: String, dark: Boolean, dim: Float = 0.35f, keyOpacity: Float = 0.3f, photoLuminance: Float = 0.3f,
         glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null, wash: Float = 0f,
+        keyDark: Boolean = false,
     ): KbTokens {
-        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg, wash)
+        val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg, wash, keyDark)
         else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light") else {
             val th = T[themeId] ?: T.getValue("dogboard")
             // the default theme in the system's Material You colours, when the live keyboard set them
@@ -229,16 +230,18 @@ object KbThemes {
     private fun glass(
         dim: Float, kop: Float, photoLuminance: Float = 0.3f,
         glassFg: String = "auto", halo: Boolean = true, actColor: String? = null, actFg: String? = null, wash: Float = 0f,
+        keyDark: Boolean = false,
     ): Map<String, String> {
         // Kb:538, and the white wash of a brightened photo (sRGB-encoded level washed toward white)
         val under = (photoLuminance.toDouble().pow(1 / 2.2) * (1.0 - dim) * (1 - wash) + wash).pow(2.2)
-        val capL = kop * 1 + (1 - kop) * under
+        val capL = (if (keyDark) 0.0 else kop * 1.0) + (1 - kop) * under
         val cW = 1.05 / (capL + 0.05)
         val cB = (capL + 0.05) / (lumHex("#1b1c1e") + 0.05)
         // Kb:541 labels: white or dark as asked, else whichever reads better
         val light = when (glassFg) { "white" -> true; "dark" -> false; else -> cW >= cB }
         val fgc = if (light) "#ffffff" else "#1b1c1e"
-        fun a(x: Double) = "rgba(255,255,255,$x)"
+        // the key background: a white tint, or a black one for dark keys (dark versions, user 2026-11-19)
+        fun a(x: Double) = if (keyDark) "rgba(0,0,0,$x)" else "rgba(255,255,255,$x)"
         return mapOf(
             "bg" to "transparent", "key" to a(kop.toDouble()), "keyFg" to fgc, "fn" to a(String.format(java.util.Locale.ROOT, "%.3f", kop * 0.55).toDouble()), "fnFg" to fgc,
             "act" to (actColor ?: "#f0b46a"), "actFg" to (actFg ?: "#3a2200"), "chip" to "rgba(255,255,255,0.88)", "chipFg" to "#2b2b2b", "pop" to "#ffffff", "popFg" to "#1b1c1e",

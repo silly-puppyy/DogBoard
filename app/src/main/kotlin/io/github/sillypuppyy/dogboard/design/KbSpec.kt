@@ -67,6 +67,8 @@ data class KbProps(
     val dim: Float = 0.35f,
     /** Photo themes over 100 % brightness: the white wash over the photo (PhotoReadability.Look.wash). */
     val wash: Float = 0f,
+    /** Photo themes: the key background is a black tint (dark versions) rather than white. */
+    val keyDark: Boolean = false,
     val blur: Float = 12f,
     val keyOpacity: Float = 0.3f,
     /** Glass: the photo's measured luminance (the design models it as 0.3). */
@@ -443,7 +445,7 @@ object KbSpec {
 
     /** The keyboard without press visuals ([overlays] adds them). */
     fun layout(P: KbProps): KbRender {
-        val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance, P.glassFg, P.halo, P.actColor, P.actFg, P.wash)
+        val t = KbThemes.tokens(P.theme, P.dark, P.dim, P.keyOpacity, P.photoLuminance, P.glassFg, P.halo, P.actColor, P.actFg, P.wash, P.keyDark)
 
         // Kb:414-415
         val radius = when (P.keyShape) { "pill" -> 999f; "square" -> 4f; else -> t.radius }

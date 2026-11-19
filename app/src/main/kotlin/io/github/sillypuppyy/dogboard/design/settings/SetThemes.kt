@@ -316,8 +316,8 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
     Column(Modifier.width(w.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
             Modifier.size(w.dp, h.dp)
-                .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(14.dp)) else Modifier)
-                .clip(RoundedCornerShape(14.dp)).clickable(onClick = onPick),
+                .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(TILE_R)) else Modifier)
+                .clip(RoundedCornerShape(TILE_R)).clickable(onClick = onPick),
         ) {
             Preview(id, t.mode == "dark", seed, w, h, w / 375f, null)
             // :90-92 a pair shows its night version in the lower-right triangle
@@ -337,10 +337,13 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
     }
 }
 
+/** Theme tiles' corners (user 2026-11-19: 12 dp, Material's card shape; were the canvas's 14). */
+private val TILE_R = 12.dp
+
 /** A tile's 1 dp outline, drawn over its content. */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.TileOutline() {
-    Box(Modifier.matchParentSize().border(1.dp, SetColors.outlineVariant, RoundedCornerShape(14.dp)))
+    Box(Modifier.matchParentSize().border(1.dp, SetColors.outlineVariant, RoundedCornerShape(TILE_R)))
 }
 
 /**
@@ -366,7 +369,7 @@ private fun NewTile(icon: String, label: String, onClick: () -> Unit) {
     val w = tileW()
     Column(Modifier.width(w.dp)) {
         Column(
-            Modifier.size(w.dp, tileH(w).dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick),
+            Modifier.size(w.dp, tileH(w).dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(TILE_R)).clip(RoundedCornerShape(TILE_R)).clickable(onClick = onClick),
             verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Symbol(icon, 28.sp, SetColors.primary)
@@ -395,10 +398,10 @@ private fun SlotPreview(dark: Boolean, w: Float, h: Float, scale: Float, ring: C
             val a = io.github.sillypuppyy.dogboard.design.PhotoReadability.accent(l, io.github.sillypuppyy.dogboard.design.GlassPhoto.analysis(context, own)?.accents)
             bmp to io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook(l.dim.toFloat(), l.tint.toFloat(),
                 if (own) v.darkLuminance.toFloat() else prefs.keyboard.glassPhotoLuminance.get() / 1000f, l.labels, l.halo, a?.first, a?.second,
-                prefs.keyboard.glassPhotoPos.get(), l.wash.toFloat(), l.sat.toFloat(), l.contrast.toFloat())
+                prefs.keyboard.glassPhotoPos.get(), l.wash.toFloat(), l.sat.toFloat(), l.contrast.toFloat(), l.keyDark)
         }
     }
-    Box(Modifier.size(w.dp, h.dp).clip(RoundedCornerShape(14.dp)).then(if (ring != null) Modifier.cssShadow(listOf(ring), RoundedCornerShape(14.dp)) else Modifier)) {
+    Box(Modifier.size(w.dp, h.dp).clip(RoundedCornerShape(TILE_R)).then(if (ring != null) Modifier.cssShadow(listOf(ring), RoundedCornerShape(TILE_R)) else Modifier)) {
         data?.let { (img, l) -> PhotoPreview(img, l, "Photo", w, scale) }
     }
 }
@@ -408,11 +411,11 @@ private fun SlotPreview(dark: Boolean, w: Float, h: Float, scale: Float, ring: C
 private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?, name: String, width: Float = 173f, scale: Float = 0.4613f) {
     val l = look ?: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook(0.35f, 0.3f, 0.3f, "auto", true, null, null, "center")
     val render = remember(l) {
-        KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, wash = l.wash, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
+        KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, wash = l.wash, keyDark = l.keyDark, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
             glassFg = l.labels, halo = l.halo, actColor = l.actColor, actFg = l.actFg, backdrop = false))
     }
 
-    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) {
+    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(TILE_R))) {
         // the photo behind the keyboard's height only, as the keyboard crops it
         Box(Modifier.size(width.dp, (render.H * scale).dp)) {
             androidx.compose.foundation.Image(img, name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop, colorFilter = io.github.sillypuppyy.dogboard.design.photoFilter(l.sat, l.contrast),
@@ -432,7 +435,7 @@ private fun Preview(id: String, dark: Boolean, seed: Int, w: Float, h: Float, sc
     // the Photo theme shows the user's photo and the version it draws (it showed the design's stand-in photo)
     if (id == "glass") { SlotPreview(dark, w, h, scale, ring); return }
     val render = remember(id, dark, seed) { KbSpec.render(KbProps(theme = id, dark = dark, width = 375f, bar = "bal", ret = "send", spotSeed = seed)) }
-    Box(Modifier.size(w.dp, h.dp).clip(RoundedCornerShape(14.dp)).then(if (ring != null) Modifier.cssShadow(listOf(ring), RoundedCornerShape(14.dp)) else Modifier)) {
+    Box(Modifier.size(w.dp, h.dp).clip(RoundedCornerShape(TILE_R)).then(if (ring != null) Modifier.cssShadow(listOf(ring), RoundedCornerShape(TILE_R)) else Modifier)) {
         Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, 0f) }) {
             KbView(render)
         }
@@ -507,12 +510,12 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                     // the built-in tile's size, selection ring and corners (the saved tiles were 162 x 128 with a
                                     // thicker inner frame, out of line with the "new" tiles beside them; user 2026-11-19 borders)
                                     Modifier.size(tw.dp, tileH(tw).dp)
-                                        .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(14.dp)) else Modifier)
-                                        .clip(RoundedCornerShape(14.dp)).background(SetColors.surfaceContainerHighest),
+                                        .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(TILE_R)) else Modifier)
+                                        .clip(RoundedCornerShape(TILE_R)).background(SetColors.surfaceContainerHighest),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     // a gradient shows its keyboard, a photo its picture
-                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) { Preview(t.spec, false, 0, tw, tileH(tw), tw / 375f, null) }
+                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(TILE_R))) { Preview(t.spec, false, 0, tw, tileH(tw), tw / 375f, null) }
                                     else thumb?.let { (imgs, tile) ->
                                         val vs = tile?.versions.orEmpty()
                                         val first = vs.firstOrNull()
