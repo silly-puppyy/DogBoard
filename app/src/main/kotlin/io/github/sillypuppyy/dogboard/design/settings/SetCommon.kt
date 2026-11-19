@@ -283,10 +283,17 @@ fun SetLinkRow(id: String, onClick: (() -> Unit)? = null, content: @Composable R
  */
 @Composable
 fun Segmented(
-    id: String, options: List<String>, selected: Int, weights: List<Float> = options.map { 1f }, checkGap: Int = 6,
+    id: String, options: List<String>, selected: Int, weights: List<Float>? = null, checkGap: Int = 6,
     onSelect: ((Int) -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(20.dp)
+    // without given widths each cell is as wide as its label plus the check's room (equal cells cut "Day and night",
+    // user 2026-11-19); the room is the same for every cell, so the cells don't move when the selection does
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val cellWeights = weights ?: androidx.compose.runtime.remember(options, density) {
+        options.map { o -> with(density) { measurer.measure(o, setText(14f, 500)).size.width.toDp().value } + 18f + checkGap + 24f }
+    }
     Row(
         Modifier.fillMaxWidth().height(40.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), shape).clip(shape).lint(id),
     ) {
@@ -295,7 +302,7 @@ fun Segmented(
                 if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(SetColors.outline))
                 val on = i == selected
                 Row(
-                    Modifier.weight(weights[i]).fillMaxHeight().background(if (on) SetColors.secondaryContainer else Color.Transparent)
+                    Modifier.weight(cellWeights[i]).fillMaxHeight().background(if (on) SetColors.secondaryContainer else Color.Transparent)
                         .then(if (onSelect != null) Modifier.clickable { onSelect(i) } else Modifier).lint("$id:$o"),
                     horizontalArrangement = Arrangement.spacedBy(checkGap.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
                 ) {

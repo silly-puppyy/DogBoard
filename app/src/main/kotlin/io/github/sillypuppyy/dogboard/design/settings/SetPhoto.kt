@@ -122,7 +122,7 @@ fun SetPhoto(state: SetPhotoState) {
                 Column(Modifier.fillMaxWidth().background(SetColors.row, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         state.photo?.let { p ->
-                            Image(p, "Your photo", Modifier.size(56.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, Color.White), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
+                            Image(p, "Your photo", Modifier.size(56.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.row), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)), contentScale = ContentScale.Crop)
                         }
                         Box(
                             Modifier.size(56.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).clickable { state.onPickPhoto() },
@@ -161,7 +161,7 @@ fun SetPhoto(state: SetPhotoState) {
                                 val sel = i == st.accent
                                 Box(
                                     Modifier.size(48.dp)
-                                        .cssShadow(if (sel) listOf(CssShadow(false, 0f, 0f, 0f, 3f, Color.White), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)) else listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(0f, 0f, 0f, 0.12f))), RoundedCornerShape(24.dp))
+                                        .cssShadow(if (sel) listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.row), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)) else listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(0f, 0f, 0f, 0.12f))), RoundedCornerShape(24.dp))
                                         .clip(RoundedCornerShape(24.dp)).background(css(c.first)).clickable { state.onLook(st.copy(accent = i)) },
                                     contentAlignment = Alignment.Center,
                                 ) { Symbol(if (sel) "check" else "send", 20.sp, css(c.second)) }
