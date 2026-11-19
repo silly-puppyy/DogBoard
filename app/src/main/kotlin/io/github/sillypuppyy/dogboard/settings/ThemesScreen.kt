@@ -22,6 +22,7 @@ fun ThemesScreen() {
     val day by prefs.keyboard.themeDay.collectAsState()
     val night by prefs.keyboard.themeNight.collectAsState()
     val follow by prefs.keyboard.themeFollow.collectAsState()
+    val appFollows by prefs.other.settingsFollowKeyboard.collectAsState()
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val seed by prefs.keyboard.spotSeed.collectAsState()
     val hidden by prefs.keyboard.hiddenThemePacks.collectAsState()
@@ -42,6 +43,8 @@ fun ThemesScreen() {
         // :212 turning following off keeps the day theme for all the time
         onFollow = { on -> scope.launch { store(choice.copy(follow = on, night = choice.day)) } },
         onReroll = { mode -> scope.launch { prefs.keyboard.spotReroll.set(mode) } },
+        appFollows = appFollows,
+        onAppFollows = { on -> scope.launch { prefs.other.settingsFollowKeyboard.set(on) } },
         // :216 the canvas's next coat: (seed x 7 + 13) mod 97, never 0
         onShuffle = { scope.launch { prefs.keyboard.spotSeed.set(((seed * 7 + 13) % 97).takeIf { it != 0 } ?: 3) } },
         onHidePack = { id, hide ->

@@ -133,7 +133,19 @@ class FlorisAppActivity : ComponentActivity() {
                     resourcesContext,
                     appName = R.string.app_name,
                 ) {
-                    FlorisAppTheme(theme = appTheme) {
+                    // DogBoard: light or dark as the keyboard theme in use, unless the user keeps the system's
+                    val followKeyboard by prefs.other.settingsFollowKeyboard.collectAsState()
+                    val day by prefs.keyboard.themeDay.collectAsState()
+                    val night by prefs.keyboard.themeNight.collectAsState()
+                    val followSystem by prefs.keyboard.themeFollow.collectAsState()
+                    val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+                    val theme = if (followKeyboard && appTheme.isAuto) {
+                        val keyboardDark = io.github.sillypuppyy.dogboard.design.ThemeChoice.resolve(
+                            io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(day, night, followSystem), systemDark,
+                        ).second
+                        if (keyboardDark) AppTheme.DARK else AppTheme.LIGHT
+                    } else appTheme
+                    FlorisAppTheme(theme = theme) {
                         Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
                             AppContent()
                         }

@@ -163,7 +163,7 @@ fun SetRows(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 
 /** SetHome:36: a row's title (16) and sub (14, onSurfaceVariant). */
 @Composable
-fun TitleSub(title: String, sub: String, modifier: Modifier = Modifier, subLines: Int = 3) { // CSS: subs wrap
+fun TitleSub(title: String, sub: String, modifier: Modifier = Modifier, subLines: Int = 12) { // CSS: subs wrap (3 cut the Neural model row, user 2026-11-19)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         DText(title, style = setText(16f))
         DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = subLines)
@@ -195,7 +195,7 @@ fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onCha
         LintParent(id) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DText(title, style = setText(16f))
-                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = 3)
+                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = 12)
             }
             val track = if (checked) SetColors.primary else SetColors.surfaceContainerHighest
             Box(

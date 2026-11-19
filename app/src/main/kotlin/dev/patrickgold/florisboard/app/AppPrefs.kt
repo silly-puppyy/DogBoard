@@ -667,6 +667,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
     inner class Other {
         // DogBoard: Developer options appear in Advanced after tapping the version in About 7 times
         val devOptionsUnlocked = boolean(key = "other__dev_options_unlocked", default = false)
+        // DogBoard (user 2026-11-19): the settings take the keyboard theme's light or dark (Dalmatian in dark mode
+        // -> bright settings), else the system's; colours stay Material either way
+        val settingsFollowKeyboard = boolean(key = "other__settings_follow_keyboard", default = true)
         val settingsTheme = enum(
             key = "other__settings_theme",
             default = AppTheme.AUTO,

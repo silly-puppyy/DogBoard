@@ -59,6 +59,9 @@ class SetThemesState(
     val onHidePack: (String, Boolean) -> Unit,
     val onEditPhoto: () -> Unit,
     val onBack: () -> Unit,
+    /** The settings follow the keyboard theme's light or dark (user 2026-11-19), else the system's. */
+    val appFollows: Boolean = true,
+    val onAppFollows: (Boolean) -> Unit = {},
 )
 
 /** Settings › Look › Themes (SetThemes.dc.html, 390 wide). */
@@ -118,6 +121,17 @@ fun SetThemes(state: SetThemesState) {
                     }
                     PageSwitch(c.follow) { state.onFollow(!c.follow); msg = "" }
                 }
+                Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        DText("Settings match the keyboard", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        DText(
+                            if (state.appFollows) "These pages are light or dark like the keyboard theme" else "These pages follow the system, in the default Material colours",
+                            style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3,
+                        )
+                    }
+                    PageSwitch(state.appFollows) { state.onAppFollows(!state.appFollows) }
+                }
             }
 
             // :43-61 Dalmatian's options while it is in use
@@ -128,18 +142,11 @@ fun SetThemes(state: SetThemesState) {
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DText("New spots", style = setText(14f, color = SetColors.onSurfaceVariant))
-                        Row(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(20.dp)).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(20.dp))) {
-                            for ((i, o) in listOf("open" to "Every time it opens", "keep" to "Keep these").withIndex()) {
-                                val sel = state.reroll == o.first
-                                Row(
-                                    Modifier.weight(1f).height(40.dp).background(if (sel) SetColors.secondaryContainer else Color.Transparent).clickable { state.onReroll(o.first) },
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (i > 0) Box(Modifier.width(1.dp).height(40.dp).background(SetColors.outline))
-                                    if (sel) Symbol("check", 18.sp, SetColors.onSecondaryContainer)
-                                    DText(o.second, style = setText(14f, 500, if (sel) SetColors.onSecondaryContainer else SetColors.onSurface))
-                                }
-                            }
+                        // the shared control: its divider sat inside the second cell, beside "Keep these", leaving an
+                        // empty band after the selected fill (user 2026-11-19)
+                        val rerolls = listOf("open", "keep")
+                        Segmented("th:reroll", listOf("Every time it opens", "Keep these"), rerolls.indexOf(state.reroll).coerceAtLeast(0), listOf(1.45f, 1f)) { k ->
+                            state.onReroll(rerolls[k])
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {

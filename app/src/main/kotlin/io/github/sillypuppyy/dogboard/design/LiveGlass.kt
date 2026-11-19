@@ -18,6 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
+import androidx.compose.runtime.collectAsState
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,8 +65,10 @@ fun liveTheme(): LiveTheme {
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val keptSeed by prefs.keyboard.spotSeed.collectAsState()
     val (id, dark) = ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
-    // Dalmatian "every time it opens": a new coat per keyboard view, else the kept one
-    val openSeed = androidx.compose.runtime.remember { (1..96).random() }
+    // Dalmatian "every time it opens": a new coat each time the keyboard is shown, else the kept one (the view
+    // lives on between showings, so remembering per view gave one coat for good; user 2026-11-19)
+    val shown by io.github.sillypuppyy.dogboard.ime.LiveUi.shown.collectAsState()
+    val openSeed = androidx.compose.runtime.remember(shown) { (1..96).random() }
     // the Photo theme draws the glass photo when one is set, else the default look
     val glass = (id == "glass" || enabled) && stamp != 0L
     val labels by prefs.keyboard.glassLabels.collectAsState()

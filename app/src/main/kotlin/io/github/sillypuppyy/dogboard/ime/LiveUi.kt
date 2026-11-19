@@ -16,6 +16,9 @@ import kotlinx.coroutines.launch
 object LiveUi {
     /** Settings written from bar buttons: off the main thread, so a tap never waits on the disk. */
     private val prefsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** Counts the keyboard's showings (FlorisImeService.onWindowShown): what changes "every time it opens". */
+    val shown = MutableStateFlow(0)
+
     /** The bar shows the tool row instead of suggestions (its left button, Kb:668). */
     val toolRow = MutableStateFlow(false)
 
