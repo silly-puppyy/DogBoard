@@ -1571,6 +1571,22 @@ class ImeController(
                 return
             }
             lastRetro = null
+            // DogBoard: right after a swipe one backspace deletes the whole swiped word and its space (iOS default
+            // KeyboardContinuousPathDeleteWholeWord = YES, ios-decomp prefs_defaults.tsv; Gboard does the same)
+            swipeCommitted?.let { committed ->
+                swipeCommitted = null
+                if (currentWord.isEmpty && state.content.surroundingText.textBefore.endsWith(committed)) {
+                    repeat(committed.length) { rawBackspace() }
+                    expectedContentQueue.push(state.content)
+                    val gone = committed.trim()
+                    if (gone.isNotEmpty() && learningAllowed()) scope.launch { TypingEngine.noteDeleted(gone) }
+                    currentWord.clear()
+                    currentWord.seedFrom(state.content.surroundingText.textBefore, currentWord.keys, currentWord.params)
+                    reevaluateInputShiftState()
+                    publishSuggestions()
+                    return
+                }
+            }
             // DogBoard: remember the word being deleted into; report it once it is gone (iOS soft rejections)
             val wordBeforeDelete = trailingWord(state.content.surroundingText.textBefore)
             if (deletingWord == null && wordBeforeDelete.isNotEmpty()) deletingWord = wordBeforeDelete
