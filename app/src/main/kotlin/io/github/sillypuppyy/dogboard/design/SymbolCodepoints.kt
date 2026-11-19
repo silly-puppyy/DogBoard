@@ -124,4 +124,7 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "format_quote" to 0xE244,
     "match_case" to 0xF6F1,
     "pin" to 0xF045,
+    "visibility" to 0xE8F4,
+    "visibility_off" to 0xE8F5,
+    "format_color_fill" to 0xE23A,
 )

@@ -121,3 +121,6 @@ auto_fix_high
 format_quote
 match_case
 pin
+visibility
+visibility_off
+format_color_fill

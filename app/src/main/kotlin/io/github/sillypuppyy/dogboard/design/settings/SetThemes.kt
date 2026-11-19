@@ -87,6 +87,8 @@ class SetThemesState(
     val onNewSolidIn: (String?) -> Unit = {},
     /** The theme ids in use now (day and night), so a gradient tile knows it is chosen. */
     val inUse: Set<String> = emptySet(),
+    /** Settings › Themes › Manage packs. */
+    val onManagePacks: () -> Unit = {},
     /** Import a shared .dogtheme pack. */
     val onImportPack: () -> Unit = {},
 )
@@ -286,32 +288,18 @@ fun SetThemes(state: SetThemesState) {
                 }
             }
 
-            // :115-130 theme packs: show or hide each in the gallery, import one
+            // theme packs: one place to order, show or hide, share and import them (user 2026-11-19: the show / hide
+            // switches here "seem a bit pointless"; chose a Manage packs page)
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Theme packs", Modifier.padding(start = 4.dp, top = 8.dp), style = setText(14f, 500, primary))
-                SetRows {
-                    for ((id, icon, name, sub) in ThemeChoice.PACKS) {
-                        val shown = id !in state.hidden
-                        Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol(icon, 22.sp, SetColors.onSurfaceVariant) }
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                DText(name, style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                            }
-                            PageSwitch(shown) { state.onHidePack(id, shown) }
-                        }
+                Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.row).clickable { state.onManagePacks() }.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("palette", 22.sp, SetColors.onSurfaceVariant) }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        DText("Manage packs", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        DText("Order, show or hide, share, import", style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
                     }
-                    // :127 "Import a theme pack": a .dogtheme file someone shared (UserThemes.importPack)
-                    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).clickable { state.onImportPack() }.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("file_open", 22.sp, SetColors.onSurfaceVariant) }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            DText("Import a theme pack", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                            DText("A .dogtheme file someone shared with you", style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
-                        }
-                    }
+                    Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant)
                 }
-                DText("A hidden pack disappears from this list but stays installed, and the theme you are using keeps working.",
-                    Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp), maxLines = 8)
             }
         }
         StatusBarBand()
@@ -386,7 +374,7 @@ private fun NewThemeSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
                 for ((kind, icon, title, sub) in listOf(
                     listOf("photo", "add_photo_alternate", "Photo", "Your photo behind the keys, a bright and a dark version"),
                     listOf("gradient", "gradient", "Gradient", "Two or three colours blending across the keyboard"),
-                    listOf("solid", "palette", "Solid colour", "One colour, light and dark"),
+                    listOf("solid", "format_color_fill", "Solid colour", "One colour, light and dark"),
                 )) {
                     Row(
                         Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).clickable { onDismiss(); onPick(kind) }.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -506,19 +494,22 @@ private fun PageSwitch(on: Boolean, onClick: () -> Unit) {
 private fun UserPackSections(state: SetThemesState, primary: Color, onNew: (String) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     for ((pi, pack) in state.userPacks.withIndex()) {
+        if (pack.hidden) continue
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     DText(pack.name, style = setText(14f, 500, primary).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                    DText("Your pack, ${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    DText((if (pack.shared) "Shared with you, " else "Your pack, ") + "${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                 }
                 var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                 Box {
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { open = true }, contentAlignment = Alignment.Center) {
                         Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant)
                     }
-                    val items = listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
-                        ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "share" to "Share pack", "delete" to "Delete pack")
+                    // a shared pack is read-only: copy it to change it (user 2026-11-19)
+                    val items = if (pack.shared) listOf("copy" to "Copy to my themes", "share" to "Share pack", "hide" to "Hide", "delete" to "Remove pack")
+                    else listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
+                        ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "share" to "Share pack", "hide" to "Hide", "delete" to "Delete pack")
                     SetMenu(open, { open = false }, items.map { (a, label) -> label to { state.onPackAction(pack.id, a) } })
                 }
             }
@@ -582,9 +573,10 @@ private fun UserPackSections(state: SetThemesState, primary: Color, onNew: (Stri
                                 }
                                 DText(if (sel) "In use. Tap to edit" else if (t.spec != null) "Gradient. Hold for more" else t.credit?.let { "Photo: $it" } ?: "Photo. Hold for more", Modifier.fillMaxWidth().padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
                             }
-                            SetMenu(menu, { menu = false }, listOf<Pair<String, () -> Unit>>("Rename" to { state.onThemeAction(t.id, "rename") }) +
+                            SetMenu(menu, { menu = false }, if (pack.shared) listOf("Copy to my themes" to { state.onThemeAction(t.id, "copy") }) else listOf<Pair<String, () -> Unit>>("Rename" to { state.onThemeAction(t.id, "rename") }) +
                                 state.userPacks.filter { it.id != pack.id }.map { other -> "Move to ${other.name}" to { state.onThemeAction(t.id, "move:${other.id}") } } +
                                 listOf("Delete" to { state.onThemeAction(t.id, "delete") }))
+
                         }
                     }
                 }

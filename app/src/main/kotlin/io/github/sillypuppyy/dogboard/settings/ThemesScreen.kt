@@ -37,6 +37,7 @@ fun ThemesScreen() {
     var version by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     // the pack a new photo theme goes to (null: the default pack), and the open dialog: (kind, id, name)
     var targetPack by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var managing by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var dialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Triple<String, String, String>?>(null) }
     val userPacks by androidx.compose.runtime.produceState(emptyList<io.github.sillypuppyy.dogboard.design.UserThemes.Pack>(), stamp, userTheme, version) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -86,7 +87,7 @@ fun ThemesScreen() {
             navController.navigate(Routes.Settings.Photo)
         }
     }
-    SetThemes(SetThemesState(
+    val themesState = SetThemesState(
         choice = choice,
         reroll = reroll,
         seed = seed,
@@ -117,9 +118,17 @@ fun ThemesScreen() {
                 else if (io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id)) store(ThemeChoice.pick(choice, "glass").first)
             }
         },
-        onEditUser = { id ->
-            if (userPacks.flatMap { it.themes }.firstOrNull { it.id == id }?.spec != null) navController.navigate(Routes.Settings.Gradient(id = id))
-            else scope.launch { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) }
+        onEditUser = { tid ->
+            scope.launch {
+                // a theme from a shared pack is read-only: editing it makes your own copy (user 2026-11-19)
+                val id = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    if (io.github.sillypuppyy.dogboard.design.UserThemes.isShared(context, tid)) io.github.sillypuppyy.dogboard.design.UserThemes.copyToMine(context, tid) ?: tid else tid
+                }
+                val spec = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.theme(context, id)?.spec }
+                if (id != tid) { version++; android.widget.Toast.makeText(context, "Copied to My themes to edit", android.widget.Toast.LENGTH_SHORT).show() }
+                if (spec != null) navController.navigate(Routes.Settings.Gradient(id = id))
+                else { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) }
+            }
         },
         onNewGradientIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty())) },
         onNewSolidIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty(), solid = true)) },
@@ -143,6 +152,8 @@ fun ThemesScreen() {
                         .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     context.startActivity(android.content.Intent.createChooser(send, "Share $name"))
                 }
+                "hide", "show" -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.setPackHidden(context, id, a == "hide"); version++ }
+                "copy" -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.copyPack(context, id); version++ }
                 else -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.movePack(context, id, if (a == "up") -1 else 1); version++ }
             }
         },
@@ -151,11 +162,23 @@ fun ThemesScreen() {
             when {
                 a == "rename" -> dialog = Triple("renameTheme", id, name)
                 a == "delete" -> dialog = Triple("deleteTheme", id, name)
+                a == "copy" -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.copyToMine(context, id); version++ }
                 a.startsWith("move:") -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.moveTheme(context, id, a.removePrefix("move:")); version++ }
             }
         },
         onBack = { navController.popBackStack() },
-    ))
+        onManagePacks = { managing = true },
+    )
+    // Manage packs opens over this page: the same pack actions and dialogs; Back returns here
+    if (managing) {
+        androidx.activity.compose.BackHandler { managing = false }
+        io.github.sillypuppyy.dogboard.design.settings.SetPacks(
+            userPacks, hidden.split(',').filter { it.isNotBlank() }.toSet(),
+            onPackAction = { id, a -> themesState.onPackAction(id, a) },
+            onBuiltIn = { id, hide -> themesState.onHidePack(id, hide) },
+            onNewPack = themesState.onNewPack, onImport = themesState.onImportPack, onBack = { managing = false },
+        )
+    } else SetThemes(themesState)
     dialog?.let { (kind, id, name) ->
         val close = { dialog = null }
         if (kind == "newPack" || kind.startsWith("rename")) {

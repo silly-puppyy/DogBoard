@@ -20,13 +20,61 @@ import java.io.File
 object UserThemes {
     /** [spec]: a gradient theme's theme id (GradientSpec), null for a photo theme. */
     data class Theme(val id: String, val name: String, val kind: String, val spec: String? = null, val credit: String? = null)
-    data class Pack(val id: String, val name: String, val themes: List<Theme>)
+    /** [shared]: imported from someone else (read-only: edits go to a copy); [hidden]: left off the Themes page. */
+    data class Pack(val id: String, val name: String, val themes: List<Theme>, val shared: Boolean = false, val hidden: Boolean = false)
 
     const val DEFAULT_PACK = "My themes"
 
     private fun root(context: Context) = File(context.filesDir, "dogboard/themes").apply { mkdirs() }
     private fun dir(context: Context, id: String) = File(root(context), id)
     private fun packsFile(context: Context) = File(root(context), "packs.json")
+
+    // packs' flags beside packs.json (user 2026-11-19: shared packs read-only, packs hidden from the Themes page)
+    private fun flagsFile(context: Context) = File(root(context), "packflags.json")
+    private fun flags(context: Context): JSONObject = runCatching { JSONObject(flagsFile(context).readText()) }.getOrDefault(JSONObject())
+    private fun setFlag(context: Context, id: String, key: String, on: Boolean) {
+        val f = flags(context)
+        val o = f.optJSONObject(id) ?: JSONObject()
+        f.put(id, o.put(key, on))
+        flagsFile(context).writeText(f.toString(1))
+    }
+
+    @Synchronized
+    fun setPackHidden(context: Context, id: String, hidden: Boolean) = setFlag(context, id, "hidden", hidden)
+
+    /** A copy of [id]'s theme folder, a new theme id (its name kept). */
+    private fun copyFolder(context: Context, id: String): String? {
+        val src = dir(context, id).takeIf { it.isDirectory } ?: return null
+        val nid = id.take(1) + System.currentTimeMillis().toString(36) + (0..999).random()
+        src.copyRecursively(dir(context, nid), overwrite = true)
+        return nid
+    }
+
+    /** Theme [id] (from a shared pack) copied into the user's default pack: the copy's id, to edit. */
+    @Synchronized
+    fun copyToMine(context: Context, id: String): String? {
+        val nid = copyFolder(context, id) ?: return null
+        addToPack(context, nid, null)
+        return nid
+    }
+
+    /** Pack [id] copied as a pack of the user's own (" (copy)"), its themes copied. */
+    @Synchronized
+    fun copyPack(context: Context, id: String): String? {
+        val packs = rawPacks(context)
+        val (name, ids) = packs.firstOrNull { it.first == id }?.second ?: return null
+        val nids = ids.mapNotNull { copyFolder(context, it) }
+        val pid = "k" + System.currentTimeMillis().toString(36)
+        packs.add(packs.indexOfFirst { it.first == id } + 1, pid to ("$name (copy)" to nids))
+        writePacks(context, packs)
+        return pid
+    }
+
+    /** Whether theme [id] is in a shared (read-only) pack. */
+    fun isShared(context: Context, id: String): Boolean {
+        val f = flags(context)
+        return rawPacks(context).any { (pid, p) -> id in p.second && f.optJSONObject(pid)?.optBoolean("shared") == true }
+    }
     fun photo(context: Context, id: String) = File(dir(context, id), "photo.jpg")
 
     @Synchronized
@@ -35,10 +83,13 @@ object UserThemes {
         if (!f.isFile) return emptyList()
         return runCatching {
             val arr = JSONArray(f.readText())
+            val fl = flags(context)
             (0 until arr.length()).map { i ->
                 val p = arr.getJSONObject(i)
                 val ids = p.getJSONArray("themes")
-                Pack(p.getString("id"), p.getString("name"), (0 until ids.length()).mapNotNull { j -> theme(context, ids.getString(j)) })
+                val pf = fl.optJSONObject(p.getString("id"))
+                Pack(p.getString("id"), p.getString("name"), (0 until ids.length()).mapNotNull { j -> theme(context, ids.getString(j)) },
+                    pf?.optBoolean("shared") == true, pf?.optBoolean("hidden") == true)
             }
         }.getOrDefault(emptyList())
     }
@@ -328,7 +379,9 @@ object UserThemes {
             if (newIds.isEmpty()) return null
             val name = pj.optString("name").take(40).ifBlank { "Shared themes" }
             val packs = rawPacks(context)
-            packs.add("k" + System.currentTimeMillis().toString(36) to (name to newIds))
+            val pid = "k" + System.currentTimeMillis().toString(36)
+            packs.add(pid to (name to newIds))
+            setFlag(context, pid, "shared", true) // someone else's pack: read-only, edits make a copy
             writePacks(context, packs)
             return name
         } finally {
