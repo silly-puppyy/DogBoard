@@ -596,11 +596,12 @@ class Decoder(
             val qi = info[minOf(i, n - 1)].q
             // Keys the user did not tap (and apostrophes) consume no tap, so they extend this layer:
             // one skipped key per position, optionally after an apostrophe (iOS compares words by
-            // a sort key without apostrophes, so "dont" reaches "don't" at no cost).
+            // a sort key without apostrophes, so "dont" reaches "don't" at no cost); an ampersand
+            // likewise ("hm" reaches "H&M", "att" "AT&T": the sort key has letters only)
             fun insertAfter(sPrefix: Int, sNode: Int, sGeometry: Double, sEdits: Int, allowApostrophe: Boolean) {
                 if (lexicon.depth(sNode) >= i + MAX_EXTRA_LETTERS + 1) return
                 lexicon.forEachChild(sNode) { c, child ->
-                    if (c == '\'' || c == '’') {
+                    if (c == '\'' || c == '’' || c == '&') {
                         if (allowApostrophe) {
                             offer(layer, child, sGeometry, sEdits, sPrefix)
                             layer.indexOf(key(sPrefix, child)).takeIf { it >= 0 }?.let { j -> insertAfter(sPrefix, child, layer.geometry(j), layer.edits(j), allowApostrophe = false) }

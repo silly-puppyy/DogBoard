@@ -111,3 +111,12 @@ ic
 fk
 pj
 www
+# brands and set phrases written with an ampersand (user 2026-11-19: H&M); typing the letters reaches them (the decoder steps over '&'
+# like an apostrophe). wordfreq and our counts split at '&', so each carries its Zipf, measured: exact matches in FineWeb shard 000
+# scaled by ' the ' there (24,468,803) against our 'the' (524,807,460), Zipf = log10(count) - 1
+AT&T	4.00
+H&M	3.19
+Q&A	3.84
+A&M	3.69
+S&P	3.87
+D&G	2.22

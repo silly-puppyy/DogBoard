@@ -220,6 +220,10 @@ class DictionaryListsTest : FunSpec({
             finished("bc") shouldBe "bc"
             finished("rn") shouldBe "rn"
             finished("FBI") shouldBe "FBI"
+            // an ampersand word is reached from its letters (the decoder steps over '&'), offered, not forced
+            TypingEngine.candidates(typed("hm"), null).map { it.word }.contains("H&M") shouldBe true
+            TypingEngine.candidates(typed("att"), null).map { it.word }.contains("AT&T") shouldBe true
+            finished("hm") shouldBe "hm"
         } finally {
             TypingEngine.unloadForTest()
         }

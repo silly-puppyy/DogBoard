@@ -174,9 +174,19 @@ def has_us_spelling(word: str, us_lower: set) -> bool:
     return False
 
 
+EXTRA_ZIPF = {}  # extra words with a measured Zipf ("H&M\t3.19": web counts split at '&')
+
+
 def load_extra_words():
+    words = []
     with open(EXTRA_WORDS, encoding="utf-8") as f:
-        return [l.strip() for l in f if l.strip() and not l.startswith("#")]
+        for l in f:
+            if l.strip() and not l.startswith("#"):
+                w, _, z = l.strip().partition("\t")
+                words.append(w)
+                if z:
+                    EXTRA_ZIPF[w] = float(z)
+    return words
 
 
 def load_wordfreq(path: str):
@@ -392,7 +402,7 @@ def main():
     extra = load_extra_words()
     for w in extra:
         if w not in forms[w.lower()]:  # (forms is keyed by the lowercase word: "hm" beside "HM")
-            add(w, zipf.get(w.lower(), EXTRA_ZIPF_FLOOR), "extra")
+            add(w, EXTRA_ZIPF.get(w) or zipf.get(w.lower(), EXTRA_ZIPF_FLOOR), "extra")
 
     # casings: when SCOWL lists a word in more than one casing (google/Google, may/May), keep each
     # casing that is at least MIN_CASING_SHARE of mid-sentence use in edited text, splitting the
