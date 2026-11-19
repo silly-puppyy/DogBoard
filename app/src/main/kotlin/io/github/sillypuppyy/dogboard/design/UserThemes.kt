@@ -176,6 +176,99 @@ object UserThemes {
         writePacks(context, rawPacks(context).map { (pid, p) -> pid to (p.first to p.second.filter { it != id }) })
     }
 
+    // sharing (user 2026-11-19: packs "become easily shareable"): a pack is one .dogtheme file, a zip of pack.json
+    // (format, name, its themes in order) and each theme's folder (theme.json, photo.jpg, analysis.txt)
+    private const val FORMAT = 1
+    private val ENTRY = Regex("^[a-z0-9]{1,24}/(theme\\.json|photo\\.jpg|analysis\\.txt)$")
+    private const val MAX_FILE = 20L * 1024 * 1024
+    private const val MAX_THEMES = 100
+
+    /** Pack [id] as a .dogtheme file in the cache's shared folder (the FileProvider's "shared" path), or null. */
+    @Synchronized
+    fun exportPack(context: Context, id: String): File? {
+        val (name, ids) = rawPacks(context).firstOrNull { it.first == id }?.second ?: return null
+        val out = File(context.cacheDir, "shared").apply { mkdirs() }
+            .resolve(name.replace(Regex("[^A-Za-z0-9 _-]"), "").trim().ifEmpty { "Themes" } + ".dogtheme")
+        java.util.zip.ZipOutputStream(out.outputStream().buffered()).use { zip ->
+            val themes = JSONArray()
+            for (t in ids) {
+                val th = theme(context, t) ?: continue
+                themes.put(JSONObject().put("id", t).put("name", th.name).put("kind", th.kind))
+                for (f in listOf("theme.json", "photo.jpg", "analysis.txt")) {
+                    val src = File(dir(context, t), f)
+                    if (!src.isFile) continue
+                    zip.putNextEntry(java.util.zip.ZipEntry("$t/$f")); src.inputStream().use { it.copyTo(zip) }; zip.closeEntry()
+                }
+            }
+            zip.putNextEntry(java.util.zip.ZipEntry("pack.json"))
+            zip.write(JSONObject().put("format", FORMAT).put("name", name).put("themes", themes).toString(1).toByteArray())
+            zip.closeEntry()
+        }
+        return out
+    }
+
+    /**
+     * A shared pack read from [input] and added as a new pack (its themes get new ids); its name, or null when the
+     * file isn't a theme pack. A file from someone else: only the expected entries (pack.json, <id>/theme.json,
+     * photo.jpg, analysis.txt with plain ids) are read, each at most [MAX_FILE], at most [MAX_THEMES] themes.
+     */
+    @Synchronized
+    fun importPack(context: Context, input: java.io.InputStream): String? {
+        val tmp = File(context.cacheDir, "import-" + System.currentTimeMillis()).apply { mkdirs() }
+        try {
+            var packJson: JSONObject? = null
+            java.util.zip.ZipInputStream(input.buffered()).use { zip ->
+                while (true) {
+                    val e = zip.nextEntry ?: break
+                    if (e.isDirectory) continue
+                    val bytes = readLimited(zip) ?: return null
+                    when {
+                        e.name == "pack.json" -> packJson = runCatching { JSONObject(String(bytes)) }.getOrNull()
+                        ENTRY.matches(e.name) -> File(tmp, e.name).apply { parentFile?.mkdirs() }.writeBytes(bytes)
+                    }
+                }
+            }
+            val pj = packJson ?: return null
+            if (pj.optInt("format", 0) != FORMAT) return null
+            val themes = pj.optJSONArray("themes") ?: return null
+            val newIds = ArrayList<String>()
+            for (i in 0 until minOf(themes.length(), MAX_THEMES)) {
+                val old = themes.optJSONObject(i)?.optString("id").orEmpty()
+                if (!Regex("^[a-z0-9]{1,24}$").matches(old)) continue
+                val src = File(tmp, old)
+                val meta = runCatching { JSONObject(File(src, "theme.json").readText()) }.getOrNull() ?: continue
+                if (meta.optString("kind") != "photo" || !File(src, "photo.jpg").isFile) continue
+                // the photo must decode as an image
+                val o = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeFile(File(src, "photo.jpg").absolutePath, o)
+                if (o.outWidth <= 0) continue
+                val id = "p" + System.currentTimeMillis().toString(36) + i
+                src.copyRecursively(dir(context, id), overwrite = true)
+                newIds.add(id)
+            }
+            if (newIds.isEmpty()) return null
+            val name = pj.optString("name").take(40).ifBlank { "Shared themes" }
+            val packs = rawPacks(context)
+            packs.add("k" + System.currentTimeMillis().toString(36) to (name to newIds))
+            writePacks(context, packs)
+            return name
+        } finally {
+            tmp.deleteRecursively()
+        }
+    }
+
+    private fun readLimited(input: java.io.InputStream): ByteArray? {
+        val out = java.io.ByteArrayOutputStream()
+        val buf = ByteArray(64 * 1024)
+        var total = 0L
+        while (true) {
+            val n = input.read(buf); if (n < 0) break
+            total += n; if (total > MAX_FILE) return null
+            out.write(buf, 0, n)
+        }
+        return out.toByteArray()
+    }
+
     /** First run with saved themes: an existing photo becomes the first theme, "My photo". */
     suspend fun migrate(context: Context, prefs: FlorisPreferenceModel) {
         if (packsFile(context).isFile || !GlassPhoto.file(context).isFile || prefs.keyboard.glassPhotoStamp.get() == 0L) return

@@ -3,4 +3,8 @@
     <cache-path
         name="workspaces"
         path="workspaces/"/>
+    <!-- DogBoard: theme packs shared through the share sheet (UserThemes.exportPack) -->
+    <cache-path
+        name="shared"
+        path="shared/"/>
 </paths>

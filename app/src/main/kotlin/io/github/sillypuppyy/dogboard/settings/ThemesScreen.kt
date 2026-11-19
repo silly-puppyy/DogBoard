@@ -51,6 +51,16 @@ fun ThemesScreen() {
         // the Photo theme is the glass look (its photo and settings live on the photo page)
         prefs.keyboard.glassEnabled.set(c.day == "glass" || (c.follow && c.night == "glass"))
     }
+    // a shared .dogtheme pack: added as a new pack; a note says how it went
+    val importPack = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            val name = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(uri)?.use { io.github.sillypuppyy.dogboard.design.UserThemes.importPack(context, it) } }.getOrNull()
+            }
+            android.widget.Toast.makeText(context, if (name != null) "Added the pack “$name”" else "That file isn't a DogBoard theme pack", android.widget.Toast.LENGTH_LONG).show()
+            version++
+        }
+    }
     // "From a photo": a new saved theme from a picked photo, matched to it, then its editor
     val pickNewPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch {
@@ -105,11 +115,20 @@ fun ThemesScreen() {
             pickNewPhoto.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
         },
         onNewPack = { dialog = Triple("newPack", "", "") },
+        onImportPack = { importPack.launch(arrayOf("*/*")) },
         onPackAction = { id, a ->
             val name = userPacks.firstOrNull { it.id == id }?.name.orEmpty()
             when (a) {
                 "rename" -> dialog = Triple("renamePack", id, name)
                 "delete" -> dialog = Triple("deletePack", id, name)
+                "share" -> scope.launch {
+                    val f = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.exportPack(context, id) } ?: return@launch
+                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".provider.file", f)
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("application/zip")
+                        .putExtra(android.content.Intent.EXTRA_STREAM, uri).putExtra(android.content.Intent.EXTRA_SUBJECT, "$name (DogBoard themes)")
+                        .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    context.startActivity(android.content.Intent.createChooser(send, "Share $name"))
+                }
                 else -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.movePack(context, id, if (a == "up") -1 else 1); version++ }
             }
         },

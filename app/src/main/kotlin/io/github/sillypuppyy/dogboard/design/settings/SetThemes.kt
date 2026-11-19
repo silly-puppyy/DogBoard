@@ -79,6 +79,8 @@ class SetThemesState(
     /** A new photo theme in pack id; a new empty pack. */
     val onNewPhotoIn: (String) -> Unit = {},
     val onNewPack: () -> Unit = {},
+    /** Import a shared .dogtheme pack. */
+    val onImportPack: () -> Unit = {},
 )
 
 /** Settings › Look › Themes (SetThemes.dc.html, 390 wide). */
@@ -273,7 +275,14 @@ fun SetThemes(state: SetThemesState) {
                             PageSwitch(shown) { state.onHidePack(id, shown) }
                         }
                     }
-                    // "Import a theme pack" (canvas) waits for pack import to exist: a row that did nothing
+                    // :127 "Import a theme pack": a .dogtheme file someone shared (UserThemes.importPack)
+                    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).clickable { state.onImportPack() }.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("file_open", 22.sp, SetColors.onSurfaceVariant) }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            DText("Import a theme pack", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                            DText("A .dogtheme file someone shared with you", style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
+                        }
+                    }
                 }
                 DText("A hidden pack disappears from this list but stays installed, and the theme you are using keeps working.",
                     Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp), maxLines = 8)
@@ -372,7 +381,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                     }
                     androidx.compose.material3.DropdownMenu(open, { open = false }) {
                         val items = listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
-                            ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "delete" to "Delete pack")
+                            ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "share" to "Share pack", "delete" to "Delete pack")
                         for ((a, label) in items) androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text(label) }, { open = false; state.onPackAction(pack.id, a) })
                     }
                 }
