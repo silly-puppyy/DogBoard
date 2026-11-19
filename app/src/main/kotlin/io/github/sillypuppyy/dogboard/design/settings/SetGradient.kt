@@ -56,15 +56,25 @@ class SetGradientState(
     /** "auto", "white" or "dark". */
     val labels: String,
     val editing: Boolean,
+    /** "bright", "dark" or "both" (a day-and-night pair), and which version is being edited. */
+    val versions: String,
+    val tabDark: Boolean,
     val onName: (String) -> Unit,
     val onColors: (List<String>) -> Unit,
     val onSlot: (Int) -> Unit,
     val onAngle: (Int) -> Unit,
     val onLabels: (String) -> Unit,
+    val onVersions: (String) -> Unit,
+    val onTab: (Boolean) -> Unit,
     val onSave: () -> Unit,
     val onBack: () -> Unit,
 ) {
-    val white: Boolean get() = when (labels) { "white" -> true; "dark" -> false; else -> GradientSpec.autoWhite(colors) }
+    /** Auto: the dark version prefers white labels, the bright one dark labels, when they read (4.5:1); else the better. */
+    val white: Boolean get() = when (labels) { "white" -> true; "dark" -> false; else -> autoWhite }
+    val autoWhite: Boolean get() {
+        val pref = if (versions == "both") tabDark else versions == "dark"
+        return if (GradientSpec.weakest(colors, pref) >= 4.5) pref else GradientSpec.autoWhite(colors)
+    }
     val spec: GradientSpec get() = GradientSpec(colors, angle, white)
 }
 
@@ -91,6 +101,25 @@ fun SetGradient(state: SetGradientState) {
                 DText(if (state.editing) "Gradient theme" else "New gradient", Modifier.weight(1f), style = setText(22f).copy(textAlign = START))
                 Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.primary).clickable { state.onSave() }.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
                     DText("Save", style = setText(14f, 500, Color.White))
+                }
+            }
+
+            // versions as on the Photo page: bright, dark or both; with both, which one is being edited
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val vOpts = listOf("bright" to "Bright", "dark" to "Dark", "both" to "Bright and dark")
+                Segmented("gradient:versions", vOpts.map { it.second }, vOpts.indexOfFirst { it.first == state.versions }.coerceAtLeast(0)) { state.onVersions(vOpts[it].first) }
+                if (state.versions == "both") Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    DText("Editing", Modifier.padding(start = 4.dp, end = 4.dp), style = setText(14f, 500, SetColors.onSurfaceVariant))
+                    for ((dark, label, icon) in listOf(Triple(false, "Bright", "light_mode"), Triple(true, "Dark", "dark_mode"))) {
+                        val on = state.tabDark == dark
+                        Row(
+                            Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(if (on) SetColors.primary else SetColors.row).clickable { state.onTab(dark) }.padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Symbol(icon, 18.sp, if (on) Color.White else SetColors.onSurfaceVariant)
+                            DText(label, style = setText(14f, 500, if (on) Color.White else SetColors.onSurface))
+                        }
+                    }
                 }
             }
 
@@ -159,7 +188,7 @@ fun SetGradient(state: SetGradientState) {
                     }
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         DText("Labels", style = setText(16f).copy(textAlign = START))
-                        val autoFg = if (GradientSpec.autoWhite(state.colors)) "white" else "dark"
+                        val autoFg = if (state.autoWhite) "white" else "dark"
                         val opts = listOf("auto" to "Auto ($autoFg)", "white" to "White", "dark" to "Dark")
                         Segmented("gradient:labels", opts.map { it.second }, opts.indexOfFirst { it.first == state.labels }.coerceAtLeast(0)) { state.onLabels(opts[it].first) }
                     }

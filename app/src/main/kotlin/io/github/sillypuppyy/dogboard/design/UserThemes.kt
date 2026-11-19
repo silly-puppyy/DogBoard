@@ -45,7 +45,7 @@ object UserThemes {
 
     fun theme(context: Context, id: String): Theme? = runCatching {
         val j = JSONObject(File(dir(context, id), "theme.json").readText())
-        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.parse(it) != null },
+        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.valid(it) },
             j.optString("credit").takeIf { it.isNotEmpty() })
     }.getOrNull()
 
@@ -311,7 +311,7 @@ object UserThemes {
                 val meta = runCatching { JSONObject(File(src, "theme.json").readText()) }.getOrNull() ?: continue
                 val gradient = meta.optString("kind") == "gradient"
                 if (gradient) {
-                    if (GradientSpec.parse(meta.optJSONObject("params")?.optString("spec").orEmpty()) == null) continue
+                    if (!GradientSpec.valid(meta.optJSONObject("params")?.optString("spec").orEmpty())) continue
                 } else if (meta.optString("kind") != "photo" || !File(src, "photo.jpg").isFile) continue
                 if (!gradient) {
                     // the photo must decode as an image

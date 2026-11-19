@@ -190,7 +190,9 @@ object KbThemes {
         keyDark: Boolean = false,
     ): KbTokens {
         val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg, wash, keyDark)
-        else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light") else {
+        else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light")
+        // a gradient with a bright and a dark version: the one for now (user 2026-11-19)
+        else if (GradientSpec.isPair(themeId)) GradientSpec.parsePair(themeId)?.let { gradient(if (dark) it.second else it.first) } ?: T.getValue("dogboard").getValue("light") else {
             val th = T[themeId] ?: T.getValue("dogboard")
             // the default theme in the system's Material You colours, when the live keyboard set them
             MaterialYouTheme.override?.takeIf { themeId == "dogboard" || T[themeId] == null }?.let { (l, d) -> if (dark) d else l }
@@ -437,6 +439,21 @@ data class GradientSpec(val colors: List<String>, val angle: Int, val white: Boo
     companion object {
         private val RE = Regex("^grad_((?:[0-9a-f]{6}_){2,3})(\\d{1,3})_([wd])$")
         fun isSpec(id: String) = id.startsWith("grad_")
+        /** A gradient theme with a bright and a dark version: `gpair_<bright spec>__<dark spec>`. */
+        fun isPair(id: String) = id.startsWith("gpair_")
+        fun pairId(bright: GradientSpec, dark: GradientSpec) = "gpair_" + bright.id + "__" + dark.id
+        fun parsePair(id: String): Pair<GradientSpec, GradientSpec>? {
+            if (!isPair(id)) return null
+            val parts = id.removePrefix("gpair_").split("__")
+            if (parts.size != 2) return null
+            return (parse(parts[0]) ?: return null) to (parse(parts[1]) ?: return null)
+        }
+        /** Any gradient theme id, one version or a pair. */
+        fun valid(id: String) = parse(id) != null || parsePair(id) != null
+
+        /** A version's colours from the other's: brighter (toward white) or deeper (toward black). */
+        fun derive(colors: List<String>, toDark: Boolean): List<String> =
+            colors.map { c -> if (toDark) KbThemes.mix(c, "#000000", if (KbThemes.lumHex(c) > 0.3) 0.6 else 0.35) else KbThemes.mix(c, "#ffffff", if (KbThemes.lumHex(c) < 0.1) 0.7 else 0.45) }
         fun parse(id: String): GradientSpec? {
             val m = RE.matchEntire(id) ?: return null
             return GradientSpec(m.groupValues[1].trimEnd('_').split('_').map { "#$it" }, m.groupValues[2].toInt() % 360, m.groupValues[3] == "w")

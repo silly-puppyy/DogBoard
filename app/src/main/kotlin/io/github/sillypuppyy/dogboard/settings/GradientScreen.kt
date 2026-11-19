@@ -31,26 +31,52 @@ fun GradientScreen(id: String, pack: String) {
     val context = LocalContext.current
     io.github.sillypuppyy.dogboard.design.MaterialYouTheme.Remember()
     var name by remember { mutableStateOf("") }
-    var colors by remember { mutableStateOf(listOf("#2b2350", "#9e3b56")) }
+    // a bright and a dark version (user 2026-11-19), each its own colours and labels; the direction is shared
+    var versions by remember { mutableStateOf("both") }
+    var tabDark by remember { mutableStateOf(false) }
+    var darkColors by remember { mutableStateOf(listOf("#2b2350", "#9e3b56")) }
+    var brightColors by remember { mutableStateOf(GradientSpec.derive(listOf("#2b2350", "#9e3b56"), toDark = false)) }
+    var brightLabels by remember { mutableStateOf("auto") }
+    var darkLabels by remember { mutableStateOf("auto") }
     var slot by remember { mutableStateOf(0) }
     var angle by remember { mutableStateOf(180) }
-    var labels by remember { mutableStateOf("auto") }
     var oldSpec by remember { mutableStateOf<String?>(null) }
+    fun labelsOf(g: GradientSpec, dark: Boolean) = if (g.white == (if (GradientSpec.weakest(g.colors, dark) >= 4.5) dark else GradientSpec.autoWhite(g.colors))) "auto" else if (g.white) "white" else "dark"
     LaunchedEffect(id) {
         withContext(Dispatchers.IO) {
             val t = id.takeIf { it.isNotEmpty() }?.let { UserThemes.theme(context, it) }
+            val pair = t?.spec?.let { GradientSpec.parsePair(it) }
             val g = t?.spec?.let { GradientSpec.parse(it) }
-            if (t != null && g != null) {
-                name = t.name; colors = g.colors; angle = g.angle; oldSpec = t.spec
-                labels = if (g.white == GradientSpec.autoWhite(g.colors)) "auto" else if (g.white) "white" else "dark"
+            if (t != null && pair != null) {
+                name = t.name; versions = "both"; oldSpec = t.spec; angle = pair.first.angle
+                brightColors = pair.first.colors; darkColors = pair.second.colors
+                brightLabels = labelsOf(pair.first, false); darkLabels = labelsOf(pair.second, true)
+            } else if (t != null && g != null) {
+                // a gradient from before versions: white labels make it the dark version
+                name = t.name; oldSpec = t.spec; angle = g.angle
+                if (g.white) { versions = "dark"; darkColors = g.colors; darkLabels = labelsOf(g, true); brightColors = GradientSpec.derive(g.colors, false) }
+                else { versions = "bright"; brightColors = g.colors; brightLabels = labelsOf(g, false); darkColors = GradientSpec.derive(g.colors, true) }
+                tabDark = versions == "dark"
             } else name = "Gradient ${UserThemes.gradientCount(context) + 1}"
         }
     }
+    val editingDark = if (versions == "both") tabDark else versions == "dark"
+    val colors = if (editingDark) darkColors else brightColors
+    val labels = if (editingDark) darkLabels else brightLabels
+    fun specOf(dark: Boolean) = SetGradientState(name, if (dark) darkColors else brightColors, 0, angle, if (dark) darkLabels else brightLabels, false,
+        "both", dark, {}, {}, {}, {}, {}, {}, {}, {}, {}).spec
     val state = SetGradientState(
-        name, colors, slot.coerceAtMost(colors.size - 1), angle, labels, id.isNotEmpty(),
-        onName = { name = it }, onColors = { colors = it }, onSlot = { slot = it }, onAngle = { angle = it }, onLabels = { labels = it },
+        name, colors, slot.coerceAtMost(colors.size - 1), angle, labels, id.isNotEmpty(), versions, tabDark,
+        onName = { name = it }, onColors = { if (editingDark) darkColors = it else brightColors = it }, onSlot = { slot = it }, onAngle = { angle = it },
+        onLabels = { if (editingDark) darkLabels = it else brightLabels = it },
+        onVersions = { v -> versions = v; tabDark = v == "dark"; slot = 0 },
+        onTab = { tabDark = it; slot = 0 },
         onSave = {
-            val spec = SetGradientState(name, colors, 0, angle, labels, false, {}, {}, {}, {}, {}, {}, {}).spec.id
+            val spec = when (versions) {
+                "bright" -> specOf(false).id
+                "dark" -> specOf(true).id
+                else -> GradientSpec.pairId(specOf(false), specOf(true))
+            }
             val title = name.trim().ifEmpty { "Gradient" }
             scope.launch {
                 val tid = withContext(Dispatchers.IO) {

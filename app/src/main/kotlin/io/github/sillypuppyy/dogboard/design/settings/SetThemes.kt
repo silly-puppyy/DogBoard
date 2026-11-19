@@ -515,7 +515,13 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     // a gradient shows its keyboard, a photo its picture
-                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(TILE_R))) { Preview(t.spec, false, 0, tw, tileH(tw), tw / 375f, null) }
+                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(TILE_R))) {
+                                        Preview(t.spec, io.github.sillypuppyy.dogboard.design.GradientSpec.parse(t.spec)?.white == true, 0, tw, tileH(tw), tw / 375f, null)
+                                        // a bright-and-dark gradient: its dark version in the lower-right triangle
+                                        if (io.github.sillypuppyy.dogboard.design.GradientSpec.isPair(t.spec)) Box(Modifier.fillMaxSize().clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
+                                            Preview(t.spec, true, 0, tw, tileH(tw), tw / 375f, null)
+                                        }
+                                    }
                                     else thumb?.let { (imgs, tile) ->
                                         val vs = tile?.versions.orEmpty()
                                         val first = vs.firstOrNull()
