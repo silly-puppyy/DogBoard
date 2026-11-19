@@ -1,7 +1,7 @@
 DogBoard's built-in photos. Each is used under its licence; cropped and resized for the keyboard.
 
 red.jpg  "Red leaves"  by Jeremy Thomas, Unsplash, Unsplash License  https://unsplash.com/photos/closeup-photography-of-red-leaf-plant-Qw2CUd_9OWo
-tan.jpg  "Desert"  by Hassan OUAJBIR, Unsplash, Unsplash License  https://unsplash.com/photos/person-on-desert-during-daytime-N4-gF71z2-4
+tan.jpg  "Desert"  by Jakob Owens, Unsplash, Unsplash License  https://unsplash.com/photos/person-walking-on-snow-covered-field-during-daytime-l2K7561Pj80
 orange.jpg  "Lily"  by Manisamg, Wikimedia Commons, CC BY-SA 3.0  https://commons.wikimedia.org/wiki/File:Macro_Flower_manish.JPG
 green.jpg  "Aurora"  by v2osk, Unsplash, Unsplash License  https://unsplash.com/photos/aurora-borealis-Ovn1hyBge38
 blue.jpg  "Snow peaks"  by T. Selin Erkan, Unsplash, Unsplash License  https://unsplash.com/photos/snow-covered-mountain-under-blue-sky-during-daytime--iyHBfL4LIc

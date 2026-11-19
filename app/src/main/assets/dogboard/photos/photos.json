@@ -4,41 +4,173 @@
   "name": "Red leaves",
   "by": "Jeremy Thomas",
   "source": "Unsplash",
-  "license": "Unsplash License"
+  "license": "Unsplash License",
+  "looks": {
+   "versions": "both",
+   "darkPhoto": false,
+   "darkLum": 300,
+   "bright": {
+    "b": 100,
+    "k": 45,
+    "blur": 0,
+    "labels": "dark",
+    "halo": true,
+    "accent": 1
+   },
+   "dark": {
+    "b": 55,
+    "k": 0,
+    "blur": 0,
+    "labels": "white",
+    "halo": true,
+    "accent": 1
+   }
+  },
+  "pos": "center"
  },
  {
   "slug": "tan",
   "name": "Desert",
-  "by": "Hassan OUAJBIR",
+  "by": "Jakob Owens",
   "source": "Unsplash",
-  "license": "Unsplash License"
+  "license": "Unsplash License",
+  "looks": {
+   "versions": "both",
+   "darkPhoto": false,
+   "darkLum": 300,
+   "bright": {
+    "b": 135,
+    "k": 0,
+    "blur": 0,
+    "labels": "dark",
+    "halo": true,
+    "accent": 0
+   },
+   "dark": {
+    "b": 50,
+    "k": 0,
+    "blur": 0,
+    "labels": "white",
+    "halo": true,
+    "accent": 0
+   }
+  },
+  "pos": "center"
  },
  {
   "slug": "orange",
   "name": "Lily",
   "by": "Manisamg",
   "source": "Wikimedia Commons",
-  "license": "CC BY-SA 3.0"
+  "license": "CC BY-SA 3.0",
+  "looks": {
+   "versions": "both",
+   "darkPhoto": false,
+   "darkLum": 300,
+   "bright": {
+    "b": 112,
+    "k": 40,
+    "blur": 0,
+    "labels": "dark",
+    "halo": true,
+    "accent": 0
+   },
+   "dark": {
+    "b": 95,
+    "k": 0,
+    "blur": 0,
+    "labels": "white",
+    "halo": true,
+    "accent": 0
+   }
+  },
+  "pos": "center"
  },
  {
   "slug": "green",
   "name": "Aurora",
   "by": "v2osk",
   "source": "Unsplash",
-  "license": "Unsplash License"
+  "license": "Unsplash License",
+  "looks": {
+   "versions": "dark",
+   "darkPhoto": false,
+   "darkLum": 300,
+   "bright": {
+    "b": 150,
+    "k": 30,
+    "blur": 0,
+    "labels": "dark",
+    "halo": true,
+    "accent": 2
+   },
+   "dark": {
+    "b": 60,
+    "k": 0,
+    "blur": 0,
+    "labels": "white",
+    "halo": true,
+    "accent": 0
+   }
+  },
+  "pos": "center"
  },
  {
   "slug": "blue",
   "name": "Snow peaks",
   "by": "T. Selin Erkan",
   "source": "Unsplash",
-  "license": "Unsplash License"
+  "license": "Unsplash License",
+  "looks": {
+   "versions": "both",
+   "darkPhoto": false,
+   "darkLum": 300,
+   "bright": {
+    "b": 100,
+    "k": 0,
+    "blur": 0,
+    "labels": "dark",
+    "halo": true,
+    "accent": 0
+   },
+   "dark": {
+    "b": 45,
+    "k": 0,
+    "blur": 0,
+    "labels": "white",
+    "halo": true,
+    "accent": 0
+   }
+  },
+  "pos": "center"
  },
  {
   "slug": "purple",
   "name": "Night sky",
   "by": "Tyler Clemmensen",
   "source": "Unsplash",
-  "license": "Unsplash License"
+  "license": "Unsplash License",
+  "looks": {
+   "versions": "dark",
+   "darkPhoto": false,
+   "darkLum": 300,
+   "bright": {
+    "b": 150,
+    "k": 30,
+    "blur": 0,
+    "labels": "dark",
+    "halo": true,
+    "accent": 0
+   },
+   "dark": {
+    "b": 100,
+    "k": 0,
+    "blur": 0,
+    "labels": "white",
+    "halo": true,
+    "accent": 0
+   }
+  },
+  "pos": "center"
  }
 ]
