@@ -730,7 +730,8 @@ object TypingEngine {
                     offer(low.removeRange(i, i + 1), 1)
                     if (i + 1 < low.length) offer(low.substring(0, i) + low[i + 1] + low[i] + low.substring(i + 2), 1)
                 }
-                for (i in 0..low.length) for (c in 'a'..'z') offer(low.substring(0, i) + c + low.substring(i), 1)
+                // a missed letter: any of the language's letters (its letter_rows; a-z for English)
+                for (i in 0..low.length) for (c in rules.letterRows.centres.keys) offer(low.substring(0, i) + c + low.substring(i), 1)
             }
             // only the most plausible few reach the model (measured: the top 4 decide exactly as all of them,
             // at a fraction of the model time)
