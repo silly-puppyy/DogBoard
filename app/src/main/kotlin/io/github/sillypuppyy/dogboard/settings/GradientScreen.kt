@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
  * theme into [pack] (empty: the default pack) and puts it to use.
  */
 @Composable
-fun GradientScreen(id: String, pack: String) {
+fun GradientScreen(id: String, pack: String, solid: Boolean = false) {
     val prefs by FlorisPreferenceStore
     val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
@@ -57,6 +57,10 @@ fun GradientScreen(id: String, pack: String) {
                 if (g.white) { versions = "dark"; darkColors = g.colors; darkLabels = labelsOf(g, true); brightColors = GradientSpec.derive(g.colors, false) }
                 else { versions = "bright"; brightColors = g.colors; brightLabels = labelsOf(g, false); darkColors = GradientSpec.derive(g.colors, true) }
                 tabDark = versions == "dark"
+            } else if (solid) {
+                // a solid colour theme (user 2026-11-19): one colour, its bright and dark versions
+                darkColors = listOf("#2b2350"); brightColors = GradientSpec.derive(darkColors, toDark = false)
+                name = "Colour ${UserThemes.gradientCount(context) + 1}"
             } else name = "Gradient ${UserThemes.gradientCount(context) + 1}"
         }
     }

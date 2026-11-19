@@ -126,7 +126,7 @@ object Routes {
         // DogBoard: Settings › Themes › New gradient / a saved gradient (the gradient creator)
         @Serializable
         @Deeplink("settings/gradient")
-        data class Gradient(val id: String = "", val pack: String = "")
+        data class Gradient(val id: String = "", val pack: String = "", val solid: Boolean = false)
 
         @Serializable
         @Deeplink("settings/localization")
@@ -398,7 +398,7 @@ object Routes {
             composableWithDeepLink(Settings.Photo::class) { io.github.sillypuppyy.dogboard.settings.PhotoScreen() }
             composableWithDeepLink(Settings.Gradient::class) { navBackStack ->
                 val payload = navBackStack.toRoute<Settings.Gradient>()
-                io.github.sillypuppyy.dogboard.settings.GradientScreen(payload.id, payload.pack)
+                io.github.sillypuppyy.dogboard.settings.GradientScreen(payload.id, payload.pack, payload.solid)
             }
 
             composableWithDeepLink(Settings.Dictionary::class) {

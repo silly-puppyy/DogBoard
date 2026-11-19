@@ -83,6 +83,8 @@ class SetThemesState(
     val onNewPack: () -> Unit = {},
     /** The gradient creator, for a new gradient in pack [String] (null: the default pack). */
     val onNewGradientIn: (String?) -> Unit = {},
+    /** A solid colour theme (a one-colour gradient) in pack [String] (null: the default pack). */
+    val onNewSolidIn: (String?) -> Unit = {},
     /** The theme ids in use now (day and night), so a gradient tile knows it is chosen. */
     val inUse: Set<String> = emptySet(),
     /** Import a shared .dogtheme pack. */
@@ -96,6 +98,16 @@ fun SetThemes(state: SetThemesState) {
     var filter by remember { mutableStateOf("all") } // :136 the page's filter, not stored
     var msg by remember { mutableStateOf("") } // :36 the status line
     val primary = SetColors.primary
+    // New theme (user 2026-11-19: one button for photo, gradient and solid colour): the pack it goes in, "" the default
+    var newIn by remember { mutableStateOf<String?>(null) }
+    newIn?.let { pack -> NewThemeSheet({ newIn = null }) { kind ->
+        val p = pack.ifEmpty { null }
+        when (kind) {
+            "photo" -> if (p == null) state.onEditPhoto() else state.onNewPhotoIn(p)
+            "gradient" -> state.onNewGradientIn(p)
+            else -> state.onNewSolidIn(p)
+        }
+    } }
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         Column(
             // below the real status bar (the canvas's fixed 40 dp let the content run under it)
@@ -251,7 +263,7 @@ fun SetThemes(state: SetThemesState) {
 
             // :77-113 the sections of theme tiles
             for (sec in ThemeChoice.SECTIONS) {
-                if (sec.id == "everyday" && filter == "all") UserPackSections(state, primary)
+                if (sec.id == "everyday" && filter == "all") UserPackSections(state, primary) { newIn = it }
                 if (sec.id in state.hidden) continue
                 // with saved photo themes, the built-in Photo tile (the same photo slot) would show "In use" twice
                 val ids = sec.ids.filter { ThemeChoice.keep(filter, ThemeChoice.theme(it).mode) && (it != "glass" || state.userPacks.isEmpty()) }
@@ -266,7 +278,7 @@ fun SetThemes(state: SetThemesState) {
                     for (row in cells.chunked(2)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             for (id in row) {
-                                if (id == null) NewTile(add!!.first, add.second) { if (sec.id == "yours") state.onEditPhoto() else if (sec.id == "gradients") state.onNewGradientIn(null) }
+                                if (id == null) NewTile("add", "New theme") { newIn = "" }
                                 else ThemeTile(id, c, state.seed, primary) { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m }
                             }
                         }
@@ -360,6 +372,37 @@ private fun tileH(w: Float) = w * 137f / 173f
 private fun InUseBadge(primary: Color, modifier: Modifier = Modifier) {
     Box(modifier.size(24.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 2f, Color.White)), RoundedCornerShape(12.dp)).background(primary, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
         Symbol("check", 18.sp, Color.White)
+    }
+}
+
+/** New theme: a photo, a gradient or a solid colour (user 2026-11-19), as a bottom sheet in the page's colours. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun NewThemeSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SetColors.screen) {
+        Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            DText("New theme", Modifier.padding(start = 8.dp, bottom = 8.dp), style = setText(22f))
+            SetRows {
+                for ((kind, icon, title, sub) in listOf(
+                    listOf("photo", "add_photo_alternate", "Photo", "Your photo behind the keys, a bright and a dark version"),
+                    listOf("gradient", "gradient", "Gradient", "Two or three colours blending across the keyboard"),
+                    listOf("solid", "palette", "Solid colour", "One colour, light and dark"),
+                )) {
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).clickable { onDismiss(); onPick(kind) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.secondaryContainer), contentAlignment = Alignment.Center) {
+                            Symbol(icon, 22.sp, SetColors.onSecondaryContainer)
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            DText(title, style = setText(16f))
+                            DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = 3)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -460,7 +503,7 @@ private fun PageSwitch(on: Boolean, onClick: () -> Unit) {
  *  edit it; hold: rename, move to another pack, delete. Each pack: a "+" tile and a menu (rename, move, delete). */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun UserPackSections(state: SetThemesState, primary: Color) {
+private fun UserPackSections(state: SetThemesState, primary: Color, onNew: (String) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     for ((pi, pack) in state.userPacks.withIndex()) {
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -480,12 +523,11 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                 }
             }
             // the pack's themes, then its two "new" tiles
-            val cells: List<Any> = pack.themes + listOf("photo", "gradient")
+            val cells: List<Any> = pack.themes + listOf("new")
             for (row in cells.chunked(2)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     for (cell in row) {
-                        if (cell == "photo") { NewTile("add_photo_alternate", "From a photo") { state.onNewPhotoIn(pack.id) }; continue }
-                        if (cell == "gradient") { NewTile("gradient", "New gradient") { state.onNewGradientIn(pack.id) }; continue }
+                        if (cell == "new") { NewTile("add", "New theme") { onNew(pack.id) }; continue }
                         val t = cell as io.github.sillypuppyy.dogboard.design.UserThemes.Theme
                         val sel = if (t.spec != null) t.spec in state.inUse else state.userTheme == t.id
                         // a photo tile: the photo and its look (as saved; the version counter reloads it after an edit)

@@ -122,6 +122,7 @@ fun ThemesScreen() {
             else scope.launch { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) }
         },
         onNewGradientIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty())) },
+        onNewSolidIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty(), solid = true)) },
         inUse = if (follow) setOf(day, night) else setOf(day),
         onNewPhotoIn = { packId ->
             targetPack = packId

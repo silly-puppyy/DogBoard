@@ -98,7 +98,7 @@ fun SetGradient(state: SetGradientState) {
             // header as the Photo page: back, title, Save
             Row(Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable { state.onBack() }, contentAlignment = Alignment.Center) { Symbol("arrow_back", 24.sp, SetColors.onSurface) }
-                DText(if (state.editing) "Gradient theme" else "New gradient", Modifier.weight(1f), style = setText(22f).copy(textAlign = START))
+                DText(if (state.editing) (if (state.colors.size == 1) "Colour theme" else "Gradient theme") else if (state.colors.size == 1) "New colour" else "New gradient", Modifier.weight(1f), style = setText(22f).copy(textAlign = START))
                 Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.primary).clickable { state.onSave() }.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
                     DText("Save", style = setText(14f, 500, Color.White))
                 }
@@ -149,7 +149,7 @@ fun SetGradient(state: SetGradientState) {
 
             // colours: 2 or 3 swatches, the chosen one edited by the palette and sliders
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DText("Colours", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
+                DText(if (state.colors.size == 1) "Colour" else "Colours", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
                 SetRows {
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -159,7 +159,8 @@ fun SetGradient(state: SetGradientState) {
                                     .clickable { state.onColors(state.colors + KbThemes.mix(state.colors.last(), "#ffffff", 0.35)); state.onSlot(state.colors.size) },
                                 contentAlignment = Alignment.Center,
                             ) { Symbol("add", 24.sp, SetColors.primary) }
-                            else Box(
+                            // one colour is a solid colour theme; Remove while there's more than one
+                            if (state.colors.size > 1) Box(
                                 Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).clickable { state.onColors(state.colors.filterIndexed { i, _ -> i != state.slot }); state.onSlot(0) }.padding(horizontal = 12.dp),
                                 contentAlignment = Alignment.Center,
                             ) { DText("Remove", style = setText(14f, 500, SetColors.primary)) }
@@ -182,7 +183,7 @@ fun SetGradient(state: SetGradientState) {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Look", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
                 SetRows {
-                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (state.colors.size > 1) Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         DText("Direction", style = setText(16f).copy(textAlign = START))
                         Segmented("gradient:angle", DIRECTIONS.map { it.second }, DIRECTIONS.indexOfFirst { it.first == state.angle }.coerceAtLeast(0)) { state.onAngle(DIRECTIONS[it].first) }
                     }

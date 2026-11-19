@@ -267,7 +267,7 @@ object KbThemes {
      */
     private fun gradient(g: GradientSpec): Map<String, String> {
         val cols = g.colors
-        val bg = "linear-gradient(${g.angle}deg, ${cols.joinToString(", ")})"
+        val bg = if (cols.size == 1) cols[0] else "linear-gradient(${g.angle}deg, ${cols.joinToString(", ")})"
         val lightest = cols.maxBy { lumHex(it) }
         val darkest = cols.minBy { lumHex(it) }
         fun a(x: Double) = "rgba(255,255,255,$x)"
@@ -437,7 +437,8 @@ data class GradientSpec(val colors: List<String>, val angle: Int, val white: Boo
     val id: String get() = "grad_" + colors.joinToString("_") { it.removePrefix("#").lowercase() } + "_${angle}_" + if (white) "w" else "d"
 
     companion object {
-        private val RE = Regex("^grad_((?:[0-9a-f]{6}_){2,3})(\\d{1,3})_([wd])$")
+        // one colour (a solid colour theme, user 2026-11-19) to three
+        private val RE = Regex("^grad_((?:[0-9a-f]{6}_){1,3})(\\d{1,3})_([wd])$")
         fun isSpec(id: String) = id.startsWith("grad_")
         /** A gradient theme with a bright and a dark version: `gpair_<bright spec>__<dark spec>`. */
         fun isPair(id: String) = id.startsWith("gpair_")
