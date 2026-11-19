@@ -775,6 +775,12 @@ class ImeController(
                 // the typed word when none is ready ("avoided autocorrect deadlock"); no decode here
                 val ready = latestDecode?.takeIf { it.first == key }?.second
                 if (ready == null && logsText) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept")
+                // perf (phone logs 2026-11-20: 'neural late' counts mid-word keys too): what the word end decided with
+                android.util.Log.i("DogBoardPerf", "word end: " + when {
+                    ready == null -> "no decode yet"
+                    ready === latestStage1?.second -> "decoder only (neural not ready or not run)"
+                    else -> "neural ready"
+                })
                 val candidates = ready ?: emptyList()
                 val previousChoice = previousKeystrokeCorrection?.takeIf { it.first == typed.dropLast(1) }?.second
                 TypingEngine.adaptiveStrength = prefs.correction.adaptiveStrength.get()
