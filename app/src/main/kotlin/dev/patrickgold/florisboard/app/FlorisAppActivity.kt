@@ -134,7 +134,8 @@ class FlorisAppActivity : ComponentActivity() {
                     appName = R.string.app_name,
                 ) {
                     // DogBoard: light or dark as the keyboard theme in use, unless the user keeps the system's
-                    val followKeyboard by prefs.other.settingsFollowKeyboard.collectAsState()
+                    val colours by prefs.other.settingsColours.collectAsState()
+                    val followKeyboard = colours == "keyboard"
                     val day by prefs.keyboard.themeDay.collectAsState()
                     val night by prefs.keyboard.themeNight.collectAsState()
                     val followSystem by prefs.keyboard.themeFollow.collectAsState()

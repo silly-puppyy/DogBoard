@@ -17,9 +17,20 @@ object PhotoReadability {
     data class Look(
         val bright: Double = 1.0, val tint: Double = 0.0, val blur: Float = 0f,
         val labels: String = "auto", val halo: Boolean = true, val accent: Int = 0,
+        /** Saturation (0 grey, 1 as shot, 2 vivid) and contrast (0.5..1.5, 1 as shot) of the photo (user 2026-11-19). */
+        val sat: Double = 1.0, val contrast: Double = 1.0,
+        /** A return-key colour the user picked (#rrggbb), in place of the photo's colour [accent]. */
+        val actColor: String? = null,
     ) {
         val dim: Double get() = (1 - bright).coerceIn(0.0, 1.0)
         val wash: Double get() = ((bright - 1) * WASH).coerceIn(0.0, WASH)
+    }
+
+    /** The return key's colour and its label colour: the user's pick, else the photo's colour [Look.accent]. */
+    fun accent(l: Look, accents: List<Triple<String, String, String>>?): Pair<String, String>? {
+        l.actColor?.let { c -> return c to (if (KbThemes.contrast("#ffffff", c) >= KbThemes.contrast("#1b1c1e", c)) "#ffffff" else "#1b1c1e") }
+        val a = accents?.getOrNull(l.accent) ?: accents?.firstOrNull() ?: return null
+        return a.first to a.second
     }
 
     /** The white wash at 200 % brightness. */
@@ -40,8 +51,9 @@ object PhotoReadability {
     fun measure(a: GlassPhoto.Analysis, s: Look): Result {
         val (v5, v95) = a.at(s.blur)
         val k = s.tint
-        val hi = toLin(k + (1 - k) * lit(v95, s.bright))
-        val lo = toLin(k + (1 - k) * lit(v5, s.bright))
+        fun con(v: Double) = ((v - 0.5) * s.contrast + 0.5).coerceIn(0.0, 1.0)
+        val hi = toLin(k + (1 - k) * lit(con(v95), s.bright))
+        val lo = toLin(k + (1 - k) * lit(con(v5), s.bright))
         val white = 1.05 / (hi + 0.05)
         val dark = (lo + 0.05) / (0.0118 + 0.05)
         val fg = if (s.labels == "auto") (if (white >= dark) "white" else "dark") else s.labels
@@ -117,8 +129,10 @@ data class PhotoVersions(
     companion object {
         private fun enc(l: PhotoReadability.Look) = org.json.JSONObject().put("b", (l.bright * 100).toInt()).put("k", (l.tint * 100).toInt())
             .put("blur", l.blur.toInt()).put("labels", l.labels).put("halo", l.halo).put("accent", l.accent)
+            .put("s", (l.sat * 100).toInt()).put("c", (l.contrast * 100).toInt()).apply { l.actColor?.let { put("ac", it) } }
         private fun dec(j: org.json.JSONObject?) = if (j == null) null else PhotoReadability.Look(j.optInt("b", 100) / 100.0, j.optInt("k", 0) / 100.0,
-            j.optInt("blur", 0).toFloat(), j.optString("labels", "auto"), j.optBoolean("halo", true), j.optInt("accent", 0))
+            j.optInt("blur", 0).toFloat(), j.optString("labels", "auto"), j.optBoolean("halo", true), j.optInt("accent", 0),
+            j.optInt("s", 100) / 100.0, j.optInt("c", 100) / 100.0, j.optString("ac").takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) })
 
         /**
          * From [json]; a theme saved before versions ([old] its one look, [a] its photo's analysis) keeps that look

@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -82,16 +84,17 @@ fun SetPhoto(state: SetPhotoState) {
     val auto = remember(a, state.editingDark) { a?.let { PhotoReadability.auto(it, state.editingDark) } ?: PhotoReadability.Look() }
     val m = a?.let { PhotoReadability.measure(it, st) }
     val accents = a?.accents ?: emptyList()
-    val acc = accents.getOrNull(st.accent) ?: accents.firstOrNull()
+    // the return-key colour picker, open while choosing your own colour
+    var picking by remember { androidx.compose.runtime.mutableStateOf(false) }
+    val accPair = PhotoReadability.accent(st, accents)
+    val acc = accPair?.let { Triple(it.first, it.second, it.first) }
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 40.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            // :18-22 header: back, title, Save (changes are kept as they are made; Save returns)
+            // :18-22 header: back and title (no Save: changes are kept as they are made)
             Row(Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable { state.onBack() }, contentAlignment = Alignment.Center) { Symbol("arrow_back", 24.sp, SetColors.onSurface) }
-                DText("Photo theme", Modifier.weight(1f), style = setText(22f).copy(textAlign = START))
-                Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.primary).clickable { state.onBack() }.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-                    DText("Save", style = setText(14f, 500, Color.White))
-                }
+                DText("Photo theme", Modifier.weight(1f), style = setText(22f).copy(textAlign = START), maxLines = 2)
+                // no Save button: every change is kept as it is made (user 2026-11-19: autosave)
             }
 
             // versions: bright, dark or both (a day-and-night pair); with both, which one is being edited
@@ -128,6 +131,7 @@ fun SetPhoto(state: SetPhotoState) {
                 Box(Modifier.width(kbWidth.dp).height(render.H.dp).clip(RoundedCornerShape(8.dp))) {
                     state.shownPhoto?.let { p ->
                         Image(p, null, Modifier.fillMaxSize().then(if (st.blur > 0) Modifier.blur(st.blur.dp, androidx.compose.ui.draw.BlurredEdgeTreatment.Rectangle) else Modifier), contentScale = ContentScale.Crop,
+                            colorFilter = io.github.sillypuppyy.dogboard.design.photoFilter(st.sat.toFloat(), st.contrast.toFloat()),
                             alignment = when (state.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
                     }
                     Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, st.dim.toFloat())))
@@ -202,20 +206,42 @@ fun SetPhoto(state: SetPhotoState) {
                 SetRows {
                     // :155-157 return key colour from the photo
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TitleSub("Return key colour", "Picked from the photo")
+                        TitleSub("Return key colour", if (st.actColor != null) "Your colour" else "Picked from the photo")
+                        // a colour of your own (user 2026-11-19): the gradient creator's palette and sliders
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             accents.forEachIndexed { i, c ->
-                                val sel = i == st.accent
+                                val sel = i == st.accent && st.actColor == null
                                 Box(
                                     Modifier.size(48.dp)
                                         .cssShadow(if (sel) listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.row), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)) else listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(0f, 0f, 0f, 0.12f))), RoundedCornerShape(24.dp))
-                                        .clip(RoundedCornerShape(24.dp)).background(css(c.first)).clickable { state.onLook(st.copy(accent = i)) },
+                                        .clip(RoundedCornerShape(24.dp)).background(css(c.first)).clickable { picking = false; state.onLook(st.copy(accent = i, actColor = null)) },
                                     contentAlignment = Alignment.Center,
                                 ) { Symbol(if (sel) "check" else "send", 20.sp, css(c.second)) }
                             }
-                            DText(if (st.accent == 0) "The photo’s strongest colour, made bright enough for the key." else "Another colour from the photo.",
+                            // your own colour: shows it once picked, else a palette icon
+                            val own = st.actColor
+                            Box(
+                                Modifier.size(48.dp)
+                                    .cssShadow(if (own != null) listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.row), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)) else listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(24.dp))
+                                    .clip(RoundedCornerShape(24.dp)).background(if (own != null) css(own) else Color.Transparent)
+                                    .clickable { picking = !picking; if (own == null) state.onLook(st.copy(actColor = accPair?.first ?: "#f0b46a")) },
+                                contentAlignment = Alignment.Center,
+                            ) { Symbol(if (own != null) "check" else "palette", 20.sp, if (own != null) css(accPair?.second ?: "#ffffff") else SetColors.primary) }
+                            DText(if (st.actColor != null) "Your colour. Tap it to change it." else if (st.accent == 0) "The photo’s strongest colour, made bright enough for the key." else "Another colour from the photo.",
                                 Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START, lineHeight = (13 * 1.4f).sp), maxLines = 8)
                         }
+                    }
+                    if (picking && st.actColor != null) Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            for (c in GRADIENT_PALETTE) Swatch(c, 36, c == st.actColor) { state.onLook(st.copy(actColor = c)) }
+                        }
+                    }
+                    if (picking && st.actColor != null) {
+                        val hsl = remember(st.actColor) { toHsl(st.actColor) }
+                        fun set(h: Float = hsl[0], sa: Float = hsl[1], l: Float = hsl[2]) = state.onLook(st.copy(actColor = fromHsl(h, sa, l)))
+                        SetSliderRow("photo:acthue", "Hue", "", hsl[0], hsl[0], 0f..359f, 1f, { "${it.roundToInt()}°" }) { set(h = it) }
+                        SetSliderRow("photo:actsat", "Saturation", "", hsl[1], hsl[1], 0f..1f, 0.01f, { "${(it * 100).roundToInt()}%" }) { set(sa = it) }
+                        SetSliderRow("photo:actlight", "Lightness", "", hsl[2], hsl[2], 0f..1f, 0.01f, { "${(it * 100).roundToInt()}%" }) { set(l = it) }
                     }
                     // :158 labels
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -229,6 +255,8 @@ fun SetPhoto(state: SetPhotoState) {
                     // brightness, 0-200 % (user 2026-11-19): below 100 % darker, above it a soft white wash
                     SetSliderRow("photo:bright", "Brightness", if (st.bright > 1.0) "Brightened with a soft white wash" else if (st.bright < 1.0) "Darkened" else "As shot",
                         st.bright.toFloat(), auto.bright.toFloat(), 0f..2f, 0.05f, ::pc) { state.onLook(st.copy(bright = it.toDouble())) }
+                    SetSliderRow("photo:contrast", "Contrast", "", st.contrast.toFloat(), 1f, 0.5f..1.5f, 0.05f, ::pc) { state.onLook(st.copy(contrast = it.toDouble())) }
+                    SetSliderRow("photo:sat", "Saturation", if (st.sat == 0.0) "Black and white" else "", st.sat.toFloat(), 1f, 0f..2f, 0.05f, ::pc) { state.onLook(st.copy(sat = it.toDouble())) }
                     SetSliderRow("photo:tint", "Key background", if (st.tint == 0.0) "Clear keys with a hairline edge" else "White behind each key; more helps dark labels",
                         st.tint.toFloat(), auto.tint.toFloat(), 0f..0.9f, 0.05f, { if (it == 0f) "Clear" else pc(it) }) { state.onLook(st.copy(tint = it.toDouble())) }
                     SetSliderRow("photo:blur", "Blur", "Off keeps your photo sharp", st.blur, auto.blur, 0f..25f, 1f, { if (it == 0f) "Off" else it.roundToInt().toString() }) { state.onLook(st.copy(blur = it)) }

@@ -394,3 +394,19 @@ private const val PAW_PATH = "M34.7 97.0 C35.7 96.9 38.6 96.4 41.2 96.0 C49.8 94
 
 /** SetHome:21: the app name, 30 / 400, letter-spacing -0.01em. */
 fun appNameStyle() = setText(30f).copy(letterSpacing = (-0.01).em)
+
+/**
+ * A pop-up menu in the settings' colours (Material's default menu ignored the page's Material You colours; user
+ * 2026-11-19): the container a step above the page, items in the settings text style.
+ */
+@Composable
+fun SetMenu(expanded: Boolean, onDismiss: () -> Unit, items: List<Pair<String, () -> Unit>>) {
+    androidx.compose.material3.DropdownMenu(
+        expanded, onDismiss, containerColor = SetColors.surfaceContainerHighest, shape = RoundedCornerShape(16.dp),
+    ) {
+        for ((label, action) in items) androidx.compose.material3.DropdownMenuItem(
+            { DText(label, style = setText(15f, color = SetColors.onSurface).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start)) },
+            { onDismiss(); action() },
+        )
+    }
+}

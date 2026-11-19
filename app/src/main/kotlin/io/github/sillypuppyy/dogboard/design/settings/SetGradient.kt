@@ -180,7 +180,7 @@ fun SetGradient(state: SetGradientState) {
 
 /** A round colour swatch, ringed when chosen (the ring grows with the circle; KbView.ring). */
 @Composable
-private fun Swatch(c: String, size: Int, sel: Boolean, onClick: () -> Unit) {
+internal fun Swatch(c: String, size: Int, sel: Boolean, onClick: () -> Unit) {
     Box(
         Modifier.size(size.dp)
             .cssShadow(if (sel) listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.row), CssShadow(false, 0f, 0f, 0f, 5f, SetColors.primary)) else listOf(CssShadow(true, 0f, 0f, 0f, 1f, Color(0f, 0f, 0f, 0.12f))), RoundedCornerShape((size / 2).dp))
@@ -190,7 +190,7 @@ private fun Swatch(c: String, size: Int, sel: Boolean, onClick: () -> Unit) {
 }
 
 /** #rrggbb as hue (degrees), saturation and lightness (0..1). */
-private fun toHsl(hex: String): FloatArray {
+internal fun toHsl(hex: String): FloatArray {
     val n = hex.substring(1).toInt(16)
     val r = ((n shr 16) and 255) / 255f; val gg = ((n shr 8) and 255) / 255f; val b = (n and 255) / 255f
     val mx = maxOf(r, gg, b); val mn = minOf(r, gg, b); val l = (mx + mn) / 2; val d = mx - mn
@@ -200,7 +200,7 @@ private fun toHsl(hex: String): FloatArray {
     return floatArrayOf((h + 360) % 360, s.coerceIn(0f, 1f), l)
 }
 
-private fun fromHsl(h: Float, s: Float, l: Float): String {
+internal fun fromHsl(h: Float, s: Float, l: Float): String {
     val c = (1 - abs(2 * l - 1)) * s; val x = c * (1 - abs((h / 60) % 2 - 1)); val m = l - c / 2
     val (r, g, b) = when ((h / 60).toInt()) { 0 -> Triple(c, x, 0f); 1 -> Triple(x, c, 0f); 2 -> Triple(0f, c, x); 3 -> Triple(0f, x, c); 4 -> Triple(x, 0f, c); else -> Triple(c, 0f, x) }
     fun ch(v: Float) = ((v + m) * 255).roundToInt().coerceIn(0, 255)

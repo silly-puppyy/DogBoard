@@ -751,7 +751,7 @@ object KbSpec {
                 // Gboard's candidates are 18 dp (traced), ours 16 in the canvas
                 wt = if (isChip) 600 else 400, fs = if (kind == "emo") 22f else if (t.gboardRow) 18f else 16f,
                 ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else emptyList(),
-                showDiv = i > 0 && !isChip && !prevChip, divBg = t.div,
+                showDiv = i > 0 && !isChip && !prevChip, divBg = t.div, ts = if (isChip) emptyList() else t.keyTs,
             )
         }
         val toolsOpen = special && P.bar == "tools"
@@ -773,7 +773,9 @@ object KbSpec {
             leftAria = if (incognito) "Incognito is on" else if (toolsOpen) "Close tools" else "Tools",
             leftBg = if (toolsOpen && !t.seg) t.fn else Color.Transparent, leftFg = if (toolsOpen && !t.seg) t.fnFg else t.barMuted,
             // Kb:966-967
-            bv = if (!t.seg) KbBarView() else KbBarView(
+            // the bar's icons and words take the keys' label shadow (photo themes: the halo, so they read on a busy
+            // photo; user 2026-11-19 "a bit of background shadow on the ... icons in the top bar"); none elsewhere
+            bv = if (!t.seg) KbBarView(ts = t.keyTs) else KbBarView(
                 bg = CLASSIC_BAR_BG,
                 shadow = CssShadow.parse("inset 0 1px 0 #ffffff, inset 0 -1px 0 #737985, 0 1px 2px rgba(0,0,0,0.35)"),
                 leftCell = if (toolsOpen) CLASSIC_TOOLS_CELL else null,

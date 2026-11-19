@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import dev.patrickgold.jetpref.datastore.model.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,8 +64,9 @@ class SetThemesState(
     val onEditPhoto: () -> Unit,
     val onBack: () -> Unit,
     /** The settings follow the keyboard theme's light or dark (user 2026-11-19), else the system's. */
-    val appFollows: Boolean = true,
-    val onAppFollows: (Boolean) -> Unit = {},
+    /** The settings app's colours: "keyboard", "wallpaper" or "none". */
+    val appColours: String = "keyboard",
+    val onAppColours: (String) -> Unit = {},
     /** Return key per theme ("id=always;id=actions", ThemeChoice.retAlways) and its setter. */
     val retPref: String = "",
     val onRet: (String, Boolean) -> Unit = { _, _ -> },
@@ -121,7 +123,11 @@ fun SetThemes(state: SetThemesState) {
                         val dark = if (label == "Night") t.mode != "light" else t.mode == "dark"
                         val name = if (label == "Night" && t.mode == "pair") t.nightName ?: (t.name + " dark") else t.name
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Preview(id, dark, state.seed, 162f, 128f, 0.432f, CssShadow(true, 0f, 0f, 0f, 1f, SetColors.surfaceContainerHighest))
+                            // the slot's half of the card, edge to edge (a fixed 162 dp left a gap; user 2026-11-19)
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                val w = maxWidth.value
+                                Preview(id, dark, state.seed, w, w * 128f / 162f, w / 375f, CssShadow(true, 0f, 0f, 0f, 1f, SetColors.surfaceContainerHighest))
+                            }
                             Row(Modifier.padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Symbol(icon, 18.sp, SetColors.onSurfaceVariant); DText(label, style = setText(13f, color = SetColors.onSurfaceVariant))
                             }
@@ -145,15 +151,19 @@ fun SetThemes(state: SetThemesState) {
                     PageSwitch(c.follow) { state.onFollow(!c.follow); msg = "" }
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
-                Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DText("Settings match the keyboard", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        DText(
-                            if (state.appFollows) "These pages are light or dark like the keyboard theme" else "These pages follow the system, in the default Material colours",
-                            style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8,
-                        )
-                    }
-                    PageSwitch(state.appFollows) { state.onAppFollows(!state.appFollows) }
+                // App colours (user 2026-11-19: "match keyboard | match wallpaper | none", keyboard by default)
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DText("App colours", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    DText(
+                        when (state.appColours) {
+                            "wallpaper" -> "Your wallpaper's colours; light or dark as the system"
+                            "none" -> "DogBoard's own colours; light or dark as the system"
+                            else -> "Light or dark and colours from the keyboard theme"
+                        },
+                        style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8,
+                    )
+                    val opts = listOf("keyboard" to "Keyboard", "wallpaper" to "Wallpaper", "none" to "None")
+                    Segmented("themes:appcolours", opts.map { it.second }, opts.indexOfFirst { it.first == state.appColours }.coerceAtLeast(0)) { state.onAppColours(opts[it].first) }
                 }
             }
 
@@ -348,19 +358,47 @@ private fun NewTile(icon: String, label: String, onClick: () -> Unit) {
     }
 }
 
+/** The keyboard's photo slot as a preview: its photo and the bright or dark version's look. */
+@Composable
+private fun SlotPreview(dark: Boolean, w: Float, h: Float, scale: Float, ring: CssShadow?) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+    val stamp by prefs.keyboard.glassPhotoStamp.collectAsState()
+    val looks by prefs.keyboard.glassLooks.collectAsState()
+    val data by androidx.compose.runtime.produceState<Pair<androidx.compose.ui.graphics.ImageBitmap, io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook>?>(null, stamp, looks, dark) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val v = io.github.sillypuppyy.dogboard.design.PhotoSlot.versions(context, prefs)
+            val useDark = if (v.hasBright && v.hasDark) dark else v.hasDark
+            val own = useDark && v.darkPhoto
+            val l = v.look(useDark)
+            val bmp = runCatching {
+                android.graphics.BitmapFactory.decodeFile(io.github.sillypuppyy.dogboard.design.GlassPhoto.file(context, own).absolutePath,
+                    android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 })?.asImageBitmap()
+            }.getOrNull() ?: return@withContext null
+            val a = io.github.sillypuppyy.dogboard.design.PhotoReadability.accent(l, io.github.sillypuppyy.dogboard.design.GlassPhoto.analysis(context, own)?.accents)
+            bmp to io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook(l.dim.toFloat(), l.tint.toFloat(),
+                if (own) v.darkLuminance.toFloat() else prefs.keyboard.glassPhotoLuminance.get() / 1000f, l.labels, l.halo, a?.first, a?.second,
+                prefs.keyboard.glassPhotoPos.get(), l.wash.toFloat(), l.sat.toFloat(), l.contrast.toFloat())
+        }
+    }
+    Box(Modifier.size(w.dp, h.dp).clip(RoundedCornerShape(14.dp)).then(if (ring != null) Modifier.cssShadow(listOf(ring), RoundedCornerShape(14.dp)) else Modifier)) {
+        data?.let { (img, l) -> PhotoPreview(img, l, "Photo", w, scale) }
+    }
+}
+
 /** A saved photo theme's tile: its photo, dimmed, and the keyboard over it as the theme sets it (162 x 128). */
 @Composable
-private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?, name: String) {
+private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?, name: String, width: Float = 173f, scale: Float = 0.4613f) {
     val l = look ?: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook(0.35f, 0.3f, 0.3f, "auto", true, null, null, "center")
     val render = remember(l) {
         KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, wash = l.wash, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
             glassFg = l.labels, halo = l.halo, actColor = l.actColor, actFg = l.actFg, backdrop = false))
     }
-    val scale = 0.4613f
+
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) {
         // the photo behind the keyboard's height only, as the keyboard crops it
-        Box(Modifier.size(173.dp, (render.H * scale).dp)) {
-            androidx.compose.foundation.Image(img, name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+        Box(Modifier.size(width.dp, (render.H * scale).dp)) {
+            androidx.compose.foundation.Image(img, name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop, colorFilter = io.github.sillypuppyy.dogboard.design.photoFilter(l.sat, l.contrast),
                 alignment = when (l.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
             Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, l.dim)))
             if (l.wash > 0f) Box(Modifier.fillMaxSize().background(Color(1f, 1f, 1f, l.wash)))
@@ -374,6 +412,8 @@ private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io
 /** A keyboard preview: the theme drawn at 375 wide, scaled into a [w] x [h] box. */
 @Composable
 private fun Preview(id: String, dark: Boolean, seed: Int, w: Float, h: Float, scale: Float, ring: CssShadow?) {
+    // the Photo theme shows the user's photo and the version it draws (it showed the design's stand-in photo)
+    if (id == "glass") { SlotPreview(dark, w, h, scale, ring); return }
     val render = remember(id, dark, seed) { KbSpec.render(KbProps(theme = id, dark = dark, width = 375f, bar = "bal", ret = "send", spotSeed = seed)) }
     Box(Modifier.size(w.dp, h.dp).clip(RoundedCornerShape(14.dp)).then(if (ring != null) Modifier.cssShadow(listOf(ring), RoundedCornerShape(14.dp)) else Modifier)) {
         Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, 0f) }) {
@@ -414,11 +454,9 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { open = true }, contentAlignment = Alignment.Center) {
                         Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant)
                     }
-                    androidx.compose.material3.DropdownMenu(open, { open = false }) {
-                        val items = listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
-                            ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "share" to "Share pack", "delete" to "Delete pack")
-                        for ((a, label) in items) androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text(label) }, { open = false; state.onPackAction(pack.id, a) })
-                    }
+                    val items = listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
+                        ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "share" to "Share pack", "delete" to "Delete pack")
+                    SetMenu(open, { open = false }, items.map { (a, label) -> label to { state.onPackAction(pack.id, a) } })
                 }
             }
             // the pack's themes, then its two "new" tiles
@@ -475,13 +513,9 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                 }
                                 DText(if (sel) "In use. Tap to edit" else if (t.spec != null) "Gradient. Hold for more" else t.credit?.let { "Photo: $it" } ?: "Photo. Hold for more", Modifier.fillMaxWidth().padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
                             }
-                            androidx.compose.material3.DropdownMenu(menu, { menu = false }) {
-                                androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Rename") }, { menu = false; state.onThemeAction(t.id, "rename") })
-                                for (other in state.userPacks) if (other.id != pack.id) {
-                                    androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Move to ${other.name}") }, { menu = false; state.onThemeAction(t.id, "move:${other.id}") })
-                                }
-                                androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Delete") }, { menu = false; state.onThemeAction(t.id, "delete") })
-                            }
+                            SetMenu(menu, { menu = false }, listOf<Pair<String, () -> Unit>>("Rename" to { state.onThemeAction(t.id, "rename") }) +
+                                state.userPacks.filter { it.id != pack.id }.map { other -> "Move to ${other.name}" to { state.onThemeAction(t.id, "move:${other.id}") } } +
+                                listOf("Delete" to { state.onThemeAction(t.id, "delete") }))
                         }
                     }
                 }

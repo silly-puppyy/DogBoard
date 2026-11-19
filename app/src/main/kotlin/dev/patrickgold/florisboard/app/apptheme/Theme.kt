@@ -49,8 +49,27 @@ fun getColorScheme(
     val (kbTheme, kbDark) = io.github.sillypuppyy.dogboard.design.ThemeChoice.resolve(
         io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(themeDay, themeNight, themeFollow), isDark,
     )
-    val themeSeed = if (kbTheme == "dogboard" || kbTheme == "glass") null
-        else io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark).act.takeIf { it.alpha > 0.5f }
+    // Themes › App colours (user 2026-11-19): from the keyboard theme (a photo theme's return-key colour), the
+    // wallpaper, or none (DogBoard's own colours)
+    val colours by prefs.other.settingsColours.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val stamp by prefs.keyboard.glassPhotoStamp.collectAsState()
+    val looks by prefs.keyboard.glassLooks.collectAsState()
+    val photoSeed by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.Color?>(null, colours, kbTheme, kbDark, stamp, looks) {
+        value = if (colours != "keyboard" || kbTheme != "glass" || stamp == 0L) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val v = io.github.sillypuppyy.dogboard.design.PhotoSlot.versions(context, prefs)
+            val useDark = if (v.hasBright && v.hasDark) kbDark else v.hasDark
+            val own = useDark && v.darkPhoto
+            io.github.sillypuppyy.dogboard.design.PhotoReadability.accent(v.look(useDark), io.github.sillypuppyy.dogboard.design.GlassPhoto.analysis(context, own)?.accents)
+                ?.first?.let { io.github.sillypuppyy.dogboard.design.css(it) }
+        }
+    }
+    val themeSeed = when (colours) {
+        "none" -> io.github.sillypuppyy.dogboard.design.css("#435e91") // the design canvas's seed
+        "wallpaper" -> null
+        else -> if (kbTheme == "dogboard") null else if (kbTheme == "glass") photoSeed
+            else io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark).act.takeIf { it.alpha > 0.5f }
+    }
     val seedColor = themeSeed ?: systemAccentOrDefault(accentColor)
     val isAmoled = theme.isAmoled && isDark
 

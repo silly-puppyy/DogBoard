@@ -37,6 +37,9 @@ data class LiveTheme(
     val photoLuminance: Float = 0.3f,
     /** The white wash of a photo brightened past 100 %. */
     val wash: Float = 0f,
+    /** The photo's saturation and contrast (PhotoReadability.Look). */
+    val photoSat: Float = 1f,
+    val photoContrast: Float = 1f,
     /** The dark version draws its own photo (glass-dark.jpg). */
     val photoDark: Boolean = false,
     val photoStamp: Long = 0L,
@@ -86,10 +89,10 @@ fun liveTheme(): LiveTheme {
     val look = v.look(useDark)
     val photoDark = useDark && v.darkPhoto
     val analysis by produceState<GlassPhoto.Analysis?>(null, stamp, photoDark) { value = withContext(Dispatchers.IO) { GlassPhoto.analysis(context, photoDark) } }
-    val acc = analysis?.accents?.let { it.getOrNull(look.accent) ?: it.firstOrNull() }
+    val acc = PhotoReadability.accent(look, analysis?.accents)
     return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
         look.dim.toFloat(), look.blur, look.tint.toFloat(), (if (photoDark) v.darkLuminance.toFloat() else lum / 1000f),
-        wash = look.wash.toFloat(), photoDark = photoDark, photoStamp = stamp, glassFg = look.labels, halo = look.halo,
+        wash = look.wash.toFloat(), photoSat = look.sat.toFloat(), photoContrast = look.contrast.toFloat(), photoDark = photoDark, photoStamp = stamp, glassFg = look.labels, halo = look.halo,
         actColor = acc?.first, actFg = acc?.second, photoPos = pos,
         retAlways = ThemeChoice.retAlways(retPref, if (glass) "glass" else id))
 }
@@ -111,9 +114,20 @@ fun LiveGlassBackdrop(theme: LiveTheme, modifier: Modifier = Modifier) {
                 b.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop,
                 alignment = when (theme.photoPos) { "center top" -> androidx.compose.ui.Alignment.TopCenter; "center bottom" -> androidx.compose.ui.Alignment.BottomCenter; else -> androidx.compose.ui.Alignment.Center },
                 modifier = Modifier.fillMaxSize().blur(theme.blur.dp, BlurredEdgeTreatment.Rectangle),
+                colorFilter = photoFilter(theme.photoSat, theme.photoContrast),
             )
         }
         Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, theme.dim)))
         if (theme.wash > 0f) Box(Modifier.fillMaxSize().background(Color(1f, 1f, 1f, theme.wash)))
     }
+}
+
+/** The photo's saturation and contrast as a colour filter (null when both are as shot). */
+fun photoFilter(sat: Float, contrast: Float): androidx.compose.ui.graphics.ColorFilter? {
+    if (sat == 1f && contrast == 1f) return null
+    val m = androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(sat) }
+    val t = 0.5f * 255 * (1 - contrast)
+    val c = androidx.compose.ui.graphics.ColorMatrix(floatArrayOf(contrast, 0f, 0f, 0f, t, 0f, contrast, 0f, 0f, t, 0f, 0f, contrast, 0f, t, 0f, 0f, 0f, 1f, 0f))
+    m.timesAssign(c)
+    return androidx.compose.ui.graphics.ColorFilter.colorMatrix(m)
 }
