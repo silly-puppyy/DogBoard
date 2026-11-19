@@ -1,5 +1,7 @@
 package io.github.sillypuppyy.dogboard.design
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -116,7 +118,9 @@ fun Symbol(
     }
     BasicText(
         text = text,
-        modifier = modifier,
+        // TalkBack reads the icon's name, not the font's private-use character (2026-11-19: the bar's mic and
+        // tools buttons were read as unknown characters)
+        modifier = modifier.clearAndSetSemantics { contentDescription = symbolSpokenName(name) },
         overflow = TextOverflow.Visible,
         style = TextStyle(
             fontFamily = DesignFonts.symbols(fill, weight, size.value),
@@ -130,3 +134,17 @@ fun Symbol(
         ),
     )
 }
+
+/** What TalkBack says for a Material Symbols icon: a plain word for the keyboard's common ones, else its name. */
+internal fun symbolSpokenName(name: String): String = SYMBOL_SPOKEN[name]
+    ?: name.replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+private val SYMBOL_SPOKEN = mapOf(
+    "mic" to "Voice input", "mic_none" to "Voice input", "backspace" to "Delete", "keyboard_backspace" to "Delete",
+    "content_paste" to "Clipboard", "widgets" to "Tools", "apps" to "Tools", "grid_view" to "Tools",
+    "sentiment_satisfied" to "Emoji", "mood" to "Emoji", "emoji_emotions" to "Emoji", "settings" to "Settings",
+    "keyboard_arrow_down" to "Hide keyboard", "keyboard_hide" to "Hide keyboard", "expand_more" to "More",
+    "keyboard_return" to "Return", "arrow_upward" to "Shift", "language" to "Next language", "public" to "Next language",
+    "search" to "Search", "send" to "Send", "undo" to "Undo", "redo" to "Redo", "close" to "Close",
+)
+
