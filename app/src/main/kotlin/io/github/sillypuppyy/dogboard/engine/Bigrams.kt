@@ -41,18 +41,25 @@ class Bigrams private constructor(
     /** The [n] most frequent words after [previous], as (word id, count), most frequent first. */
     fun followers(previous: Int, n: Int): List<Pair<Int, Int>> {
         if (previous < 0) return emptyList()
+        if (n <= 0) return emptyList()
         var i = keys.binarySearch(key(previous, 0)).let { if (it < 0) -it - 1 else it }
-        val best = ArrayList<Pair<Int, Int>>(n + 1)
+        // the best n in primitive arrays, kept in order (a common word has thousands of followers: a Pair and
+        // a full sort per follower was this call's garbage); same order as before: an entry goes after every
+        // kept one with an equal or higher count
+        val words = IntArray(n); val best = IntArray(n); var size = 0
         while (i < keys.size && (keys[i] ushr 32).toInt() == previous) {
-            val entry = (keys[i] and 0xffffffffL).toInt() to counts[i]
-            if (best.size < n || entry.second > best.last().second) {
-                best.add(entry)
-                best.sortByDescending { it.second }
-                if (best.size > n) best.removeAt(best.size - 1)
+            val c = counts[i]
+            if (size < n || c > best[size - 1]) {
+                var at = size
+                while (at > 0 && best[at - 1] < c) at--
+                val end = minOf(size, n - 1)
+                for (k in end downTo at + 1) { words[k] = words[k - 1]; best[k] = best[k - 1] }
+                words[at] = (keys[i] and 0xffffffffL).toInt(); best[at] = c
+                if (size < n) size++
             }
             i++
         }
-        return best
+        return List(size) { words[it] to best[it] }
     }
 
     /**
