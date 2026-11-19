@@ -85,36 +85,70 @@ def phys_keys(table, sy):
     return table * torch.tensor([10.0, sy, 10.0, sy])
 
 
+class Packed:
+    """Swipes packed in one float16 block (offsets, lengths, words, layouts, scales): a tensor per swipe cost ~4.8 KB
+    (1.14M swipes = 5.5 GB; 1.6M stalled at a 6 GB cap), packed ~0.6 KB, so all of FUTO's real data fits."""
+
+    def __init__(self):
+        self.chunks, self.lens, self.words, self.layouts, self.sy = [], [], [], [], []
+
+    def add(self, feats, word, layout, sy):
+        self.chunks.append(feats.half()); self.lens.append(feats.shape[0])
+        self.words.append(word); self.layouts.append(layout); self.sy.append(sy)
+
+    def pack(self):
+        """Concatenates what was added so far (called per shard, so the separate tensors are freed as it goes)."""
+        if self.chunks:
+            done = [self.data] if hasattr(self, "data") else []
+            self.data = torch.cat(done + self.chunks); self.chunks = []
+        self.offsets = np.concatenate([[0], np.cumsum(self.lens)[:-1]]).astype(np.int64)
+
+    def __len__(self):
+        return len(self.words)
+
+    def __getitem__(self, i):
+        o, n = self.offsets[i], self.lens[i]
+        return self.data[o:o + n].float(), self.words[i], self.layouts[i], self.sy[i]
+
+
 def load_training(per_layout, futo_shards, random_share=0.0):
-    items = []  # (features [T, 4] phys, word, layout, sy)
+    items = Packed()
     sy_futo = 10 * FUTO_ASPECT
     for f in sorted(glob.glob(f"{D}/swipe/prepared/train-*.pt"))[:futo_shards]:
         for x, w in torch.load(f):
             x = x.clone(); x[:, 1] *= sy_futo / 3.0; x[:, 3] *= sy_futo / 3.0
-            items.append((x, w, "qwerty", sy_futo))
+            items.add(x, w, "qwerty", sy_futo)
+        items.pack()
     print(f"FUTO real QWERTY {len(items)}", flush=True)
     for lay, (lang, asp) in TRAIN_LAYOUTS.items():
         syn = [it for f in sorted(glob.glob(f"{D}/swipe/synth-cvae2-{lay}/train-*.pt")) for it in torch.load(f)]
         random.Random(1).shuffle(syn)
         n_rand = int(per_layout * random_share)
-        items += [(x, w, lay, 10 * asp) for x, w in syn[:per_layout - n_rand]]
+        for x, w in syn[:per_layout - n_rand]:
+            items.add(x, w, lay, 10 * asp)
+        del syn
         if n_rand:
             # random letter strings (user 2026-11-19: so the network reads the path, not English spelling habits)
             rnd = [it for f in sorted(glob.glob(f"{D}/swipe/synth-random-{lay}/train-*.pt")) for it in torch.load(f)]
-            items += [(x, w, lay, 10 * asp) for x, w in rnd[:n_rand]]
+            for x, w in rnd[:n_rand]:
+                items.add(x, w, lay, 10 * asp)
+            del rnd
         real = []
         if lay != "qwerty":
-            real = [(x, w, lay, sy) for x, w, sy in torch.load(f"{D}/swipe/split-{lay}-{lang}/train-0.pt")]
-            items += real * 5
-        print(f"{lay}: synthetic {min(per_layout - n_rand, len(syn))} + random strings {n_rand}, real half {len(real)} x5", flush=True)
+            real = torch.load(f"{D}/swipe/split-{lay}-{lang}/train-0.pt")
+            for _ in range(5):
+                for x, w, sy in real:
+                    items.add(x, w, lay, sy)
+        items.pack()
+        print(f"{lay}: synthetic {per_layout - n_rand} + random strings {n_rand}, real half {len(real)} x5", flush=True)
     return items
 
 
-def batches(items, size, shuffle, tables):
-    idx = list(range(len(items)))
+def batches(items, idx, size, shuffle, tables):
+    idx = list(idx)
     if shuffle:
         random.shuffle(idx)
-    idx = sorted(idx, key=lambda i: items[i][0].shape[0] // 8 + (random.random() if shuffle else 0))
+    idx = sorted(idx, key=lambda i: items.lens[i] // 8 + (random.random() if shuffle else 0))
     chunks = [idx[i:i + size] for i in range(0, len(idx), size)]
     if shuffle:
         random.shuffle(chunks)
@@ -138,23 +172,24 @@ def train(a):
     torch.set_num_threads(2)
     random.seed(0)
     tables = {lay: layout_keys(lay) for lay in TRAIN_LAYOUTS}
-    items = [it for it in load_training(a.synth_per_layout, a.futo_shards, a.random_share) if all(ch in tables[it[2]][0] for ch in it[1])]
-    random.shuffle(items)
-    dev, items = items[:5000], items[5000:]
-    print(f"train {len(items)}, dev {len(dev)}", flush=True)
+    items = load_training(a.synth_per_layout, a.futo_shards, a.random_share)
+    idx = [i for i in range(len(items)) if all(ch in tables[items.layouts[i]][0] for ch in items.words[i])]
+    random.shuffle(idx)
+    dev, train_idx = idx[:5000], idx[5000:]
+    print(f"train {len(train_idx)}, dev {len(dev)}", flush=True)
     os.makedirs(a.out, exist_ok=True)
     model = UniNet().cuda()
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
-    steps = a.epochs * ((len(items) + a.batch - 1) // a.batch)
+    steps = a.epochs * ((len(train_idx) + a.batch - 1) // a.batch)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.1)
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
     run = track.start("swipe", "multi", os.path.basename(a.out.rstrip("/")), layout="universal",
                       data="futo-real+swipe5-halves+cvae2x7", config=dict(epochs=a.epochs, batch=a.batch, lr=a.lr,
-                      train_swipes=len(items), params=sum(p.numel() for p in model.parameters()), held_out_layout="kasroz"))
+                      train_swipes=len(train_idx), params=sum(p.numel() for p in model.parameters()), held_out_layout="kasroz"))
     best = 1e9
     for epoch in range(a.epochs):
         t0, total, n = time.time(), 0.0, 0
-        for x, lens, k, km, targets, tlens in batches(items, a.batch, True, tables):
+        for x, lens, k, km, targets, tlens in batches(items, train_idx, a.batch, True, tables):
             x = augment(x.cuda(), lens)
             logp = model(x, k.cuda(), km.cuda())
             loss = ctc(logp.transpose(0, 1), targets, lens, tlens)
@@ -164,17 +199,19 @@ def train(a):
             total += loss.item(); n += 1
             if n % 500 == 0:
                 print(f"epoch {epoch} step {n} loss {total / n:.3f}", flush=True)
-                run.log({"train/loss": total / n, "lr": sched.get_last_lr()[0], "epoch": epoch + n * a.batch / len(items)})
+                run.log({"train/loss": total / n, "lr": sched.get_last_lr()[0], "epoch": epoch + n * a.batch / len(train_idx)})
         model.eval(); dl = dn = 0.0
         with torch.no_grad():
-            for x, lens, k, km, targets, tlens in batches(dev, 512, False, tables):
+            for x, lens, k, km, targets, tlens in batches(items, dev, 512, False, tables):
                 logp = model(x.cuda(), k.cuda(), km.cuda())
                 dl += ctc(logp.transpose(0, 1), targets, lens, tlens).item() * len(lens); dn += len(lens)
         model.train()
         torch.save(model.state_dict(), f"{a.out}/ckpt-{epoch}.pt")
         if dl / dn < best:
             best = dl / dn; torch.save(model.state_dict(), f"{a.out}/best.pt")
-        print(f"epoch {epoch}: loss {total / n:.3f}, dev loss {dl / dn:.3f}, {time.time() - t0:.0f} s", flush=True)
+        import resource
+        rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024 ** 2
+        print(f"epoch {epoch}: loss {total / n:.3f}, dev loss {dl / dn:.3f}, {time.time() - t0:.0f} s, peak memory {rss:.1f} GB", flush=True)
         run.log({"dev/ctc_loss": dl / dn, "epoch": epoch + 1, "epoch_seconds": time.time() - t0})
     run.finish()
 
