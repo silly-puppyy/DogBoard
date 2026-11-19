@@ -96,6 +96,7 @@ fun SetLayout(state: SetLayoutState) {
     // :105-106 the preset is whichever one every element matches, else Custom
     val preset = when (st) { LayoutElements.SIMPLE -> "simple"; LayoutElements.CLASSIC -> "classic"; else -> "custom" }
     var field by remember { mutableStateOf("text") } // :98 the preview's field, not stored
+    var plane by remember { mutableStateOf("base") } // the preview's page: letters or a symbols page, not stored
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         // user 2026-11-18: the header sits below the real status bar (the canvas's fixed 40 dp let the
         // status band cover it), and the preview stays in view, at the keyboard's real size, while the
@@ -130,6 +131,18 @@ fun SetLayout(state: SetLayoutState) {
                         ) { DText(label, style = setText(13f, 500, if (on) SetColors.onSecondaryContainer else SetColors.onSurfaceVariant)) }
                     }
                 }
+                // user 2026-11-19: "The symbols page isn't previewed in the settings": which page the preview shows
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for ((id, label) in listOf("base" to "Letters", "symbol-1" to "Symbols", "symbol-2" to "More symbols")) {
+                        val on = plane == id
+                        Box(
+                            Modifier.height(32.dp).clip(RoundedCornerShape(8.dp)).background(if (on) SetColors.secondaryContainer else Color.Transparent)
+                                .then(if (on) Modifier else Modifier.cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(8.dp)))
+                                .clickable { plane = id }.padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) { DText(label, style = setText(13f, 500, if (on) SetColors.onSecondaryContainer else SetColors.onSurfaceVariant)) }
+                    }
+                }
                 val dark = liveDark()
                 androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
                     // the keyboard's rows at their real pitch (57.9 dp at 100 %, measured on the
@@ -138,7 +151,7 @@ fun SetLayout(state: SetLayoutState) {
                     val keyH = ROW_PITCH_DP * rows * (state.heightPercent ?: 100) / 100f
                     val props = liveTheme().apply(
                         KbProps(
-                            dark = dark, width = maxWidth.value, keyH = keyH, field = field, bar = "bal",
+                            dark = dark, width = maxWidth.value, keyH = keyH, field = field, bar = "bal", plane = plane,
                             ret = when (field) { "url" -> "go"; "email" -> "next"; else -> "send" },
                             kstyle = if (st.bottom == "classic") "android" else "ios",
                             numberRow = st.numRow == "on", numRow = st.numRow, hintKind = st.hints, spaceLabel = st.space,
