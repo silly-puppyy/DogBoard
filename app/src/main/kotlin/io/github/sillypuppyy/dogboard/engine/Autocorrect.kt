@@ -249,8 +249,18 @@ internal fun withNeural(candidates: List<Candidate>, neural: (String) -> Double?
         } ?: c
     }.sortedByDescending { it.score }
 
-internal fun typedStringVeto(candidates: List<Candidate>): Boolean {
-    val typed = candidates.firstOrNull { it.isTypedString } ?: return false
+/**
+ * iOS exact-typed-string LM veto (spec 2.6; on for English, ios-decomp notes VERIFIED): when the literal typed
+ * string is at least as likely in context (LM term only) as the top candidate, nothing is corrected. [typedText]
+ * also finds a valid typed word among the decoder's readings (audit 2026-11-20: ours vetoed for non-words
+ * only), as typed: a lowercase "i" is not the lexicon's "I", a sentence-start "The" is "the".
+ */
+internal fun typedStringVeto(candidates: List<Candidate>, typedText: String? = null): Boolean {
+    val typed = candidates.firstOrNull { it.isTypedString } ?: typedText?.let { t ->
+        candidates.firstOrNull { c ->
+            !c.isCompletion && c.words == 1 && c.word.equals(t, ignoreCase = true) && !(t == t.lowercase() && c.word != c.word.lowercase())
+        }
+    } ?: return false
     val top = candidates.maxByOrNull { it.score } ?: return false
     return top !== typed && typed.languageModel >= top.languageModel
 }

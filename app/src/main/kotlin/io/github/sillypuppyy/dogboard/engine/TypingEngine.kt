@@ -927,10 +927,10 @@ object TypingEngine {
                     keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
                     !isCommonLearnedTypo(word.text, it.word, rules.learnedTypoOverrides) && !isInvalidUserEntry(word.text, it.word)
             }
-        // iOS exact-typed-string veto: a typed word the lexicon
-        // lacks that is at least as likely as the best candidate is left alone ("Kaito", not "Jaito")
+        // iOS exact-typed-string veto: a typed word at least as likely as the best candidate is left alone
+        // ("Kaito", not "Jaito"; a valid word too)
         val adjusted = if (adaptiveStrength) strength.adjust(level.level) else level.level
-        if (vetoesCorrection(ranked(kept, adjusted))) return null
+        if (vetoesCorrection(ranked(kept, adjusted), word.text)) return null
         val result = engine.autocorrect.correction(word.text, kept, previousCorrection, caseFor(word, curly), adjusted)
             ?: return null
         return if (rejections.isBlocked(word.text, result, consume = commit)) null else result
@@ -1253,10 +1253,8 @@ object TypingEngine {
      * model, [CharModel]) against the top candidate's. Only with that model loaded: iOS's own
      * fallback score for an unknown string (1e-4 per letter) would never pass.
      */
-    private fun vetoesCorrection(candidates: List<Candidate>): Boolean {
-        if (charModel == null) return false
-        return typedStringVeto(candidates)
-    }
+    /** Without the letter model a typed non-word has no reading to compare, a valid typed word still does. */
+    private fun vetoesCorrection(candidates: List<Candidate>, typed: String): Boolean = typedStringVeto(candidates, typed)
 
     /**
      * iOS FilterMissingOneLetterWordFromInput (#17): a valid one-letter word typed ("a", "I") is not
