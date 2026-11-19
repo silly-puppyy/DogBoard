@@ -755,6 +755,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
 
     val suggestion = Suggestion()
     inner class Suggestion {
+        // DogBoard (user 2026-11-19): what the bar shows in an empty field: "suggestions" (iOS: predicted first
+        // words) or "tools" (Gboard: the tool row until you type)
+        val beforeTyping = string(key = "suggestion__before_typing", default = "suggestions")
         val api30InlineSuggestionsEnabled = boolean(
             key = "suggestion__api30_inline_suggestions_enabled",
             default = true,

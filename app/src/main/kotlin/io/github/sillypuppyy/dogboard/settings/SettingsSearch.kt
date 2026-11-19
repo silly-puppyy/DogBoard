@@ -42,6 +42,7 @@ object SettingsSearch {
         Entry("Sound", "Sound and vibration", "feedback", "click audio noise volume"),
         Entry("Move the cursor", "Gestures", "gestures", "swipe trackpad cursor space bar hold slide"),
         Entry("Swipe to type", "Gestures", "gestures", "swipe glide gesture typing slide letters"),
+        Entry("Before you type", "Autocorrect and typing › Suggestions", "suggestions", "empty tools toolbar first words predictions gboard"),
         Entry("Show the trail", "Gestures", "gestures", "swipe glide trail line"),
         Entry("Slide to delete words", "Gestures", "gestures", "delete backspace slide swipe left words"),
         Entry("Swipe to move the cursor", "Gestures", "gestures", "space bar swipe slide cursor quick"),

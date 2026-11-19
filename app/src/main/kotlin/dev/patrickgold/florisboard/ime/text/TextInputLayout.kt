@@ -74,7 +74,15 @@ fun TextInputLayout(
         if (dogboardDesign) {
             val strip by io.github.sillypuppyy.dogboard.ime.LiveStrip.strip.collectAsState()
             val ui = io.github.sillypuppyy.dogboard.ime.LiveUi
-            val toolRow by ui.toolRow.collectAsState()
+            val toolRowOpen by ui.toolRow.collectAsState()
+            // Settings › Suggestions › Before you type: the tool row in an empty field (Gboard), until the left
+            // button asks for words or something is typed
+            val beforeTyping by prefs.suggestion.beforeTyping.collectAsState()
+            val fieldEmpty = imeState.content.surroundingText.let { it.textBefore.isEmpty() && it.textAfter.isEmpty() && it.textSelected.isEmpty() }
+            var wordsAsked by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(fieldEmpty) { if (!fieldEmpty) wordsAsked = false }
+            val autoTools = beforeTyping == "tools" && fieldEmpty && !wordsAsked
+            val toolRow = toolRowOpen || autoTools
             val panel by ui.panel.collectAsState()
             val removed by io.github.sillypuppyy.dogboard.ime.LiveStrip.removed.collectAsState()
             val refresh = { imeController.updateStateBlocking { refreshSuggestions() } }
@@ -185,7 +193,7 @@ fun TextInputLayout(
                     imeController.updateStateBlocking { emitCandidate(io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(s)) }
                 },
                 // the left button swaps the suggestions for the tool row (Kb:668)
-                onLeft = { ui.toolRow.value = !ui.toolRow.value },
+                onLeft = { if (autoTools && !toolRowOpen) wordsAsked = true else ui.toolRow.value = !ui.toolRow.value },
                 toolRow = toolRow,
                 panel = panel,
                 onTool = { icon -> ui.run(icon, imeController) },

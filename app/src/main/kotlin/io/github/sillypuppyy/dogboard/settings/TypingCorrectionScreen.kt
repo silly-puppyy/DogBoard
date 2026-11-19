@@ -151,6 +151,7 @@ fun SuggestionsScreen() {
     val suggestions by prefs.suggestion.enabled.collectAsState()
     val emojiMode by prefs.suggestion.emojiMode.collectAsState()
     val offensive by prefs.suggestion.blockPossiblyOffensive.collectAsState()
+    val beforeTyping by prefs.suggestion.beforeTyping.collectAsState()
     SetPage("Suggestions") {
         SetGroup("Suggestion bar") {
             SetSwitchRow("sg:on", "Suggestions", "Three words above the keys as you type.", suggestions) { v ->
@@ -161,6 +162,14 @@ fun SuggestionsScreen() {
                 val modes = listOf(EmojiSuggestionMode.OFF, EmojiSuggestionMode.AFTER_USE, EmojiSuggestionMode.ALWAYS)
                 Segmented("sg:emoji", listOf("Off", "After you use them", "Always"), modes.indexOf(emojiMode), listOf(0.7f, 1.6f, 0.9f)) { i ->
                     scope.launch { prefs.suggestion.emojiMode.set(modes[i]) }
+                }
+            }
+            // user 2026-11-19: "an option to show the tools vs first word suggestions by default"
+            Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                TitleSub("Before you type", "In an empty text box, show likely first words, or your tools (undo, clipboard, selection and more), as Gboard does.")
+                val choices = listOf("suggestions", "tools")
+                Segmented("sg:before", listOf("Words", "Tools"), choices.indexOf(beforeTyping).coerceAtLeast(0), listOf(1f, 1f)) { i ->
+                    scope.launch { prefs.suggestion.beforeTyping.set(choices[i]) }
                 }
             }
         }
