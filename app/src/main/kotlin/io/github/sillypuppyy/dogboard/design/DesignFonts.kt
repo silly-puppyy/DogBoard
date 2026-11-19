@@ -146,5 +146,10 @@ private val SYMBOL_SPOKEN = mapOf(
     "keyboard_arrow_down" to "Hide keyboard", "keyboard_hide" to "Hide keyboard", "expand_more" to "More",
     "keyboard_return" to "Return", "arrow_upward" to "Shift", "language" to "Next language", "public" to "Next language",
     "search" to "Search", "send" to "Send", "undo" to "Undo", "redo" to "Redo", "close" to "Close",
+    // the tool row and panels: the design's own tool labels (KbPanels KbTool)
+    "text_select_start" to "Text editing", "front_hand" to "One-handed", "more_horiz" to "All tools",
+    "content_copy" to "Copy", "content_cut" to "Cut", "select_all" to "Select all", "domino_mask" to "Incognito",
+    "first_page" to "Home", "last_page" to "End", "keyboard_command_key" to "Dev keys", "open_with" to "Resize",
+    "palette" to "Theme", "picture_in_picture" to "Floating", "delete_sweep" to "Clear clipboard",
 )
 
