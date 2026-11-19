@@ -16,6 +16,7 @@ ignored. The field is cleared every 15 words (Ctrl+A, Delete), so each word foll
 context, the same for every keyboard.
 """
 import argparse
+import os
 import io
 import json
 import random
@@ -143,7 +144,7 @@ def norm(w):
     return w.lower().strip(".,!?").replace("'", "").replace("’", "")
 
 
-def run_keyboard(name, swipes, unit, sent_of=None):
+def run_keyboard(name, swipes, unit, sent_of=None, kernel=False):
     ime, xs, ys = KEYBOARDS[name]
     adb("shell", "ime", "set", ime)
     adb("shell", "input", "keyevent", "KEYCODE_HOME")
@@ -159,8 +160,51 @@ def run_keyboard(name, swipes, unit, sent_of=None):
     adb("push", "/tmp/claude-1000/replay-strokes.txt", "/data/local/tmp/strokes.txt")
     clear_field()
     adb("logcat", "-c")
-    p = subprocess.Popen(ADB + ["shell", "CLASSPATH=/data/local/tmp/replay.dex app_process / Replay /data/local/tmp/strokes.txt"],
-                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+    if kernel:
+        # straight into the emulator's touch device (tools/test/taptype stroke lines): a real finger to every keyboard
+        w, h = map(int, adb("shell", "wm", "size").split(":")[-1].strip().split("x"))
+        def trimmed(pts):
+            """Without the rest on the first key (TRIM_REST=1: Gboard may need the finger to move soon after the press)."""
+            if os.environ.get("TRIM_REST") != "1":
+                return pts
+            x0, y0 = m(pts[0][0], pts[0][1])
+            k = next((i for i, (x, y, _) in enumerate(pts) if abs(m(x, y)[0] - x0) + abs(m(x, y)[1] - y0) > 12), 0)
+            k = max(0, k - 1)
+            return [(x, y, t - pts[k][2]) for x, y, t in pts[k:]]
+        lines = ["S 0 " + " ".join(f"{int(m(x, y)[0] * 32767 / w)} {int(m(x, y)[1] * 32767 / h)} {t:.0f}" for x, y, t in trimmed(pts))
+                 for _, pts in swipes]
+
+        class Kernel:  # Replay.java's handshake, one taptype call per stroke
+            def __init__(self):
+                self.i = 0
+                self.stdin = self
+                self.stdout = self
+                self.send()
+
+            def send(self):
+                if self.i < len(lines):
+                    subprocess.run(ADB + ["shell", "/data/local/tmp/taptype /dev/input/event2"], input=lines[self.i] + "\n",
+                                   text=True, timeout=60)
+                self.i += 1
+
+            def readline(self):
+                return "done"
+
+            def write(self, _):
+                self.send()
+
+            def flush(self):
+                pass
+
+            def close(self):
+                pass
+
+            def wait(self, timeout=None):
+                pass
+        p = Kernel()
+    else:
+        p = subprocess.Popen(ADB + ["shell", "CLASSPATH=/data/local/tmp/replay.dex app_process / Replay /data/local/tmp/strokes.txt"],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
     right, rows, lost = 0, [], 0
     before = ""
     for i, (word, _) in enumerate(swipes):
@@ -197,12 +241,13 @@ def main():
     ap.add_argument("--kb", default="dogboard,futo,gboard")
     ap.add_argument("--out", default=f"{D}/swipe/replay-hws.json")
     ap.add_argument("--sentences", action="store_true", help="whole sentences in order (context as in real typing)")
+    ap.add_argument("--kernel", action="store_true", help="inject through the touch device (tools/test/taptype), not app_process")
     a = ap.parse_args()
     swipes, unit, sent_of = hws(a.n, a.sentences)
     print(f"{len(swipes)} How We Swipe swipes", flush=True)
     res = {}
     for name in a.kb.split(","):
-        right, rows = run_keyboard(name, swipes, unit, sent_of if a.sentences else None)
+        right, rows = run_keyboard(name, swipes, unit, sent_of if a.sentences else None, kernel=a.kernel)
         counted = sum(g is not None for _, g in rows)
         res[name] = {"top1": 100 * right / max(counted, 1), "counted": counted, "rows": rows}
         print(f"{name}: {100 * right / max(counted, 1):.1f} % ({right} of {counted} counted)", flush=True)
