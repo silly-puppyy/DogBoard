@@ -364,12 +364,13 @@ object UserThemes {
             val p = list.getJSONObject(i)
             val bmp = context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { android.graphics.BitmapFactory.decodeStream(it) } ?: continue
             val a = GlassPhoto.analyse(bmp)
-            val v = PhotoVersions.auto(a)
+            // the look tuned by hand (photos.json "looks", pulled from the user's phone), else matched to the photo
+            val v = p.optJSONObject("looks")?.let { PhotoVersions.decode(it.toString()) } ?: PhotoVersions.auto(a)
             val id = "p" + System.currentTimeMillis().toString(36) + i
             val d = dir(context, id).apply { mkdirs() }
             context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { inp -> File(d, "photo.jpg").outputStream().use { inp.copyTo(it) } }
             File(d, "analysis.txt").writeText(a.encode())
-            val params = JSONObject().put("looks", JSONObject(v.encode())).put("luminance", (GlassPhoto.luminance(bmp) * 1000).roundToInt()).put("pos", "center")
+            val params = JSONObject().put("looks", JSONObject(v.encode())).put("luminance", (GlassPhoto.luminance(bmp) * 1000).roundToInt()).put("pos", p.optString("pos", "center"))
             val credit = p.getString("by") + ", " + if (p.getString("source") == "Unsplash") "Unsplash" else p.getString("license")
             File(d, "theme.json").writeText(JSONObject().put("name", p.getString("name")).put("kind", "photo").put("created", System.currentTimeMillis())
                 .put("credit", credit).put("params", params).toString(1))
