@@ -600,7 +600,9 @@ class Decoder(
             // "T-shirt", as iOS's hyphenated words are reached; user report 'nonbnglish' 2026-11-19); an ampersand
             // likewise ("hm" reaches "H&M", "att" "AT&T": the sort key has letters only)
             fun insertAfter(sPrefix: Int, sNode: Int, sGeometry: Double, sEdits: Int, allowApostrophe: Boolean) {
-                if (lexicon.depth(sNode) >= i + MAX_EXTRA_LETTERS + 1) return
+                // an insertion makes the node one deeper: at most MAX_EXTRA_LETTERS beyond the i taps (iOS 2;
+                // the cap allowed 3 until 2026-11-20, audit; the trie root has depth 0)
+                if (lexicon.depth(sNode) >= i + MAX_EXTRA_LETTERS) return
                 lexicon.forEachChild(sNode) { c, child ->
                     if (c == '\'' || c == '’' || c == '&' || c == '-') {
                         if (allowApostrophe) {
