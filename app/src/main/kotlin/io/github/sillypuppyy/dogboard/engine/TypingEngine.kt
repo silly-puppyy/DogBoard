@@ -1308,6 +1308,10 @@ object TypingEngine {
     fun isKnownWord(word: String): Boolean = lock.read { loaded?.lexicon?.contains(word) == true }
 
     /** Forgets everything loaded (tests only). */
+    /** The loaded engine's lexicon and decision rules (evals that decide through [correction]). */
+    internal fun lexiconForTest(): Lexicon? = loaded?.lexicon
+    internal fun autocorrectForTest(): Autocorrect? = loaded?.autocorrect
+
     internal fun unloadForTest() {
         loaded = null
         charModel = null

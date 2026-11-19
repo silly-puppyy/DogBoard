@@ -19,7 +19,22 @@ class RealTypoEvalTest : FunSpec({
     val ngramFile = System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }
 
     test("real phone typos: fixed, left, broken").config(enabled = pairs != null && ngramFile != null, timeout = kotlin.time.Duration.parse("2h")) {
-        val lexicon = File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
+        // DOGBOARD_APP_PATH=1: decide as the keyboard does, through TypingEngine.correction (its filters: the
+        // typed-string veto, no-suggest words, learned typos, ...) with the engine loaded from the app's assets
+        // (abbreviations, no-suggest list, misspellings, letter model); the decoders use that engine's lexicon
+        val appPath = System.getenv("DOGBOARD_APP_PATH") == "1"
+        if (appPath) {
+            TypingEngine.unloadForTest()
+            val a = "src/main/assets/dogboard/"
+            TypingEngine.load(
+                openLexicon = { File(a + "en.lexicon.tsv").bufferedReader() },
+                openAbbreviations = { File(a + "en.abbreviations.txt").bufferedReader() },
+                openNoSuggest = { File(a + "en.nosuggest.txt").bufferedReader() },
+                openMisspellings = { File(a + "en.misspellings.txt").bufferedReader() },
+            )
+            TypingEngine.attachCharModel(File(a + "en.charlm.bin").inputStream().use { CharModel.read(it) })
+        }
+        val lexicon = if (appPath) TypingEngine.lexiconForTest()!! else File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val ngrams = ngramFile!!.inputStream().use { NgramModel.readBinary(it) }!!
         // DOGBOARD_SPACE_KEY=1: the space bar among the keys a tap may have meant (word breaks at a tap)
@@ -28,7 +43,7 @@ class RealTypoEvalTest : FunSpec({
         // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
         // DOGBOARD_LEVEL=GENTLE|STANDARD|STRONG (default STANDARD), DOGBOARD_LANGUAGE_POWER overrides its power
         val base = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD").level
-        val autocorrect = Autocorrect(lexicon, base.copy(languagePower = System.getenv("DOGBOARD_LANGUAGE_POWER")?.toDoubleOrNull() ?: base.languagePower,minStemEndOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)))
+        val autocorrect = if (appPath) TypingEngine.autocorrectForTest()!! else Autocorrect(lexicon, base.copy(languagePower = System.getenv("DOGBOARD_LANGUAGE_POWER")?.toDoubleOrNull() ?: base.languagePower,minStemEndOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)))
         // DOGBOARD_NAME_RANK=n: Autocorrect.nameAsTypedRank (a lowercase-typed rare name protects itself only within rank n)
         System.getenv("DOGBOARD_NAME_RANK")?.toIntOrNull()?.let { autocorrect.nameAsTypedRank = it }
         // DOGBOARD_CONTEXT_END_OMISSION=0: Autocorrect.contextEndOmission off (2026-11-19 on: fixed 49.5 -> 49.6 %, broken 0.4 % both)
@@ -126,7 +141,10 @@ class RealTypoEvalTest : FunSpec({
                 val candidates = neuralScores?.let { m ->
                     withNeural(decoded, { w -> m["${row[2]}\t$typed\t${w.replace(",", "")}"] }, neuralWeight, Decoder.LANGUAGE_POWER_CONTEXT)
                 } ?: decoded
-                var got = autocorrect.correction(typed, candidates) ?: typed
+                var got = if (appPath) {
+                    val word = CurrentWord().apply { typed.forEachIndexed { i, c -> addLetter(c, taps[i], keys, params) } }
+                    TypingEngine.correction(word, candidates, level = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD")) ?: typed
+                } else autocorrect.correction(typed, candidates) ?: typed
                 val next = if (retro) nextTyped["${row[0]}\t${row[1].toInt() + 1}"] else null
                 if (next != null) {
                     // as TypingEngine.retrocorrection: the previous word's top single words (decoder scores), each
