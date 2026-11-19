@@ -651,6 +651,7 @@ def main():
         out.write("#dogboard-lexicon 1\n#lang en_US\n")
         out.write(f"#source SCOWL 2020.12.07 (level <= {args.max_level}), wordfreq 3.1.1 (CC BY-SA 4.0), "
                   f"Wikidata (CC0), US Census names (public domain), GeoNames (CC BY 4.0), "
+                  + ("FineWeb counts (ODC-By 1.0) for names, " if args.web_names else "") +
                   f"Wikipedia common misspellings (excluded); tools/data/build_lexicon.py\n")
         for w, z in ranked:
             out.write(f"{w}\t{round(10 ** (z + 1))}\n")

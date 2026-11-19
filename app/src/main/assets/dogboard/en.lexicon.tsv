@@ -1,6 +1,6 @@
 #dogboard-lexicon 1
 #lang en_US
-#source SCOWL 2020.12.07 (level <= 80), wordfreq 3.1.1 (CC BY-SA 4.0), Wikidata (CC0), US Census names (public domain), GeoNames (CC BY 4.0), Wikipedia common misspellings (excluded); tools/data/build_lexicon.py
+#source SCOWL 2020.12.07 (level <= 80), wordfreq 3.1.1 (CC BY-SA 4.0), Wikidata (CC0), US Census names (public domain), GeoNames (CC BY 4.0), FineWeb counts (ODC-By 1.0) for names, Wikipedia common misspellings (excluded); tools/data/build_lexicon.py
 the	524807460
 to	263026799
 and	251188643
