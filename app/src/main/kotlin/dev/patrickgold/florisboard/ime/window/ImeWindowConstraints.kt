@@ -189,7 +189,8 @@ sealed class ImeWindowConstraints(rootInsets: ImeInsets.Root) {
                     keyboardHeight = defKeyboardHeight,
                     paddingLeft = 0.dp,
                     paddingRight = 0.dp,
-                    paddingBottom = 0.dp,
+                    // DogBoard: Gboard's 6 dp under the bottom row in portrait (measured on the emulator, 2026-11-19)
+                    paddingBottom = if (formFactor.typeGuess == ImeFormFactor.Type.PHONE_PORTRAIT) 6.dp else 0.dp,
                 )
             }
         }

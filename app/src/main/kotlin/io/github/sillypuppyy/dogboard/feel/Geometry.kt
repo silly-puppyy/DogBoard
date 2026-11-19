@@ -30,7 +30,14 @@ object Geometry {
         screenWidth >= 400.dp -> 59.0.dp
         screenWidth >= 350.dp -> 50.3.dp
         else -> 48.0.dp
-    }
+    } * GBOARD_18
+
+    /**
+     * Gboard 18 draws its rows taller than the Gboard 17.2 the steps above were measured on (the emulator's
+     * preloaded one): 6 % on the user's Pixel 10 (Gboard 18.6, 1080 x 2424 at 420 dpi like the emulator; user
+     * 2026-11-19, again: "why is my keyboard still short?"). Measured at 411 dp; other widths take the same ratio.
+     */
+    private const val GBOARD_18 = 1.06f
 
     /**
      * Row heights with the number row on, as Gboard draws them (measured 2026-11-15 at 411 dp: number
