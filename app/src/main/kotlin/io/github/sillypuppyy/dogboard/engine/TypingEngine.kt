@@ -206,8 +206,11 @@ object TypingEngine {
         for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
-                if (!lexicon.contains(line.trim())) learnedWords.add(line.trim().lowercase())
-                lexicon.addWord(line.trim(), engine.userWordLogProb)
+                val w = line.trim()
+                if (!lexicon.contains(w)) {
+                    learnedWords.add(w.lowercase())
+                    lexicon.addWord(w, engine.userWordLogProb)
+                } else if (!keptCasing(lexicon, w)) lexicon.addWord(w, engine.userWordLogProb)
             }
         }
         userWordsFile = userWords
@@ -550,8 +553,9 @@ object TypingEngine {
         val isNew = lock.write {
             val wasKnown = engine.lexicon.contains(word)
             if (!wasKnown) learnedWords.add(word.lowercase())
+            val newCasing = wasKnown && keptCasing(engine.lexicon, word)
             engine.lexicon.addWord(word, engine.userWordLogProb)
-            !wasKnown
+            !wasKnown || newCasing
         }
         if (isNew) {
             userWordsFile?.let { file ->
@@ -1150,10 +1154,18 @@ object TypingEngine {
                 learnedWords.add(word.lowercase())
                 engine.lexicon.addWord(word, engine.acceptedWordLogProb)
             }
-            !known
+            !known || keptCasing(engine.lexicon, word)
         }
         if (isNew) userWordsFile?.let { f -> runCatching { f.parentFile?.mkdirs(); f.appendText(word + "\n") } }
     }
+
+    /**
+     * A lowercase [word] the user kept that the lexicon has only in other casings ("hom" beside the name "Hom"):
+     * added as a casing, so keeping it no longer lifts the capitalised form over what was typed (emulator
+     * 2026-11-19: "hom" kept twice was then corrected to "Hom"). True when it was added.
+     */
+    private fun keptCasing(lexicon: Lexicon, word: String): Boolean =
+        word == word.lowercase() && lexicon.addCasing(word)
 
     /** Words that keep their period ("e.g.", "U.S."), by lowercase form without the final period. */
     @Volatile

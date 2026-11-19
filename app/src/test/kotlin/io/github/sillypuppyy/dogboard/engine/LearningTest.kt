@@ -211,6 +211,32 @@ class DictionaryListsTest : FunSpec({
         }
     }
 
+    test("a lowercase word kept beside a capitalised-only one is learned in its casing") {
+        // emulator 2026-11-19: "hom" (the lexicon has only the name "Hom") kept twice was then corrected to "Hom"
+        val dir = Files.createTempDirectory("dogboard-casing").toFile()
+        val userWords = File(dir, "user_words.txt")
+        fun load() = TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() }, userWords = userWords)
+        try {
+            TypingEngine.unloadForTest()
+            load()
+            TypingEngine.accepted("going", "hom")
+            TypingEngine.accepted("going", "hom")
+            TypingEngine.candidates(typed("hom"), "going").map { it.word }.contains("hom") shouldBe true
+            TypingEngine.candidates(typed("hom"), "going").first().word shouldBe "hom"
+            typed("hom").let { TypingEngine.correction(it, TypingEngine.candidates(it, "going")) } shouldBe null
+            userWords.readLines() shouldBe listOf("hom")
+            TypingEngine.unloadForTest()
+            load()
+            TypingEngine.candidates(typed("hom"), "going").any { it.word == "hom" } shouldBe true
+            // a capitalised word kept (a sentence start) adds nothing
+            TypingEngine.accepted(null, "Going")
+            userWords.readLines() shouldBe listOf("hom")
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
+
     test("iOS #24: an added word isn't offered for typing whose non-letter core differs") {
         val dir = Files.createTempDirectory("dogboard-added").toFile()
         try {

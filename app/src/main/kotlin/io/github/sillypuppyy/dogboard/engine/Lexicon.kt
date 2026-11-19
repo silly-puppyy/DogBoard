@@ -114,6 +114,21 @@ class Lexicon private constructor(capacity: Int) {
         return listOf(word(node)!! to logProb[node].toDouble())
     }
 
+    /**
+     * Adds [form] as a casing of a word the lexicon already has in other casings, with the share of the most likely
+     * one and listed first, the others halved (the user's casing ranks first: "hom" kept beside the name "Hom", the
+     * typed casing stands). False when the word is unknown or [form] is already one of its casings.
+     */
+    fun addCasing(form: String): Boolean {
+        val node = find(form).takeIf { it != NONE && isWord(it) } ?: return false
+        val current = forms(node)
+        if (current.any { it.first == form }) return false
+        version++
+        casings[node] = listOf(form to current.maxOf { it.second }.toFloat()) + current.map { (w, l) -> w to (l - ln(2.0)).toFloat() }
+        hasCasings.set(node)
+        return true
+    }
+
     /** The most likely casing of the word at [node] (forms(node).first() without the list), or null. */
     fun firstForm(node: Int): String? = when {
         wordId[node] == NONE -> null
