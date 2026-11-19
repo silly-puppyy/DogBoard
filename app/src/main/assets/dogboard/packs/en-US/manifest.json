@@ -7,8 +7,8 @@
   "files": {
     "lexicon": {
       "path": "dogboard/en.lexicon.tsv",
-      "size": 4255767,
-      "sha256": "a12d2cc3f7f132750235b61d56f302752b332a9a86dfce0e81982e454348b143"
+      "size": 4255841,
+      "sha256": "b486f22efc5419bc1f0eb015735f57b7bce7550cd1ee3665bab8a56cb65d50ec"
     },
     "bigrams": {
       "path": "dogboard/en.bigrams.tsv",
@@ -67,13 +67,13 @@
       "path": "dogboard/swipe/en-qwerty.tflite",
       "optional": true,
       "size": 4390020,
-      "sha256": "4966c07d348ffa371ff13beb2c41e2d9828896af983d229adfb38e6a53d4ed46"
+      "sha256": "ea3f873de013272e1f97729fee2786e0b414a28190065c2300d98efc99d4a26f"
     },
     "rules": {
       "path": "dogboard/packs/en-US/rules.json",
       "curated": true,
-      "size": 300,
-      "sha256": "3b60c6380153242597ed12f7a568dceaeeb2835405f8270cee7a583be55de6a4"
+      "size": 613,
+      "sha256": "cac023d4a24766778a06b9dc9c4b5a9db9769f99c6a9b556caa051bece8bb681"
     }
   },
   "sources": [
