@@ -592,7 +592,7 @@ object TypingEngine {
                 previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
             )
                 .let { withTypedApostrophes(word, it) }
-                .filter { !isBlocked(it.word) && (it.isTypedString || it.word.equals(word.text, ignoreCase = true) || !isNotSuggestible(it.word)) }
+                .filter { !isBlocked(it.word) && (it.isTypedString || it.word.equals(word.text, ignoreCase = true) || !isNotSuggestible(it.word) && !isUnderLearned(it.word)) }
                 .let { onlyTypedUnderVulgarTop(word.text, it) }
                 .take(maxResults)
         }
@@ -1291,6 +1291,17 @@ object TypingEngine {
     }
 
     /** True if any word of [candidate] (one word, or several when words were split) is never offered. */
+    /**
+     * iOS filter 21 (is_suggestible_for_input, spec 3.4): a user-acquired word is "sufficiently learned" at
+     * usage 2 (word_from_dynamic_entry sets 0x2000 at usage >= 2, notes VERIFIED); before that it is kept when
+     * typed but never offered for other input. Words added on the dictionary page are a user list, not
+     * acquired, so they are exempt (audit 2026-11-20).
+     */
+    private fun isUnderLearned(candidate: String): Boolean = candidate.split(' ').any { w ->
+        val k = w.lowercase()
+        k in learnedWords && k !in addedWords && personal.uses(k) < 2
+    }
+
     private fun isNotSuggestible(candidate: String): Boolean =
         blockNotSuggestible && noSuggest.isNotEmpty() && candidate.split(' ').any { it.lowercase() in noSuggest }
 

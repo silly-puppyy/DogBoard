@@ -626,7 +626,7 @@ class ImeController(
                     currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params, shiftFlag, caseContext)
                     lastCorrection = null
                 }
-                text in WORD_SEPARATORS -> finishWord(text)
+                isTerminator(text) -> finishWord(text)
                 else -> {
                     currentWord.clear()
                     lastCorrection = null
@@ -695,10 +695,10 @@ class ImeController(
          * service has answered) and trackers removed ("Strip trackers from links"); two separate opt-ins
          * (user, 2026-11-17). Unchanged when both are off.
          */
-        fun cleanedPaste(text: String): String {
-            val expanded = if (prefs.clipboard.expandShortLinks.get()) io.github.sillypuppyy.dogboard.ime.ShortLinks.withExpanded(text) else text
-            return if (prefs.clipboard.stripTrackers.get()) io.github.sillypuppyy.dogboard.ime.LinkCleaner.clean(expanded) else expanded
-        }
+        fun cleanedPaste(text: String, keepShortLink: Boolean = false, keepTrackers: Boolean = false): String =
+            io.github.sillypuppyy.dogboard.ime.ClipLinkSteps.of(
+                text, prefs.clipboard.expandShortLinks.get() && !keepShortLink, prefs.clipboard.stripTrackers.get() && !keepTrackers,
+            ).pasted
 
         /** DogBoard: the "Original link" chip after a cleaned paste: the text as it was copied, trackers and all. */
         fun restoreOriginalPaste() {
@@ -1733,7 +1733,7 @@ class ImeController(
             return item != null && when (item.type) {
                 ItemType.TEXT -> {
                     // DogBoard: Settings › Clipboard › Strip trackers from links, Expand short links (opt-in)
-                    val pasted = item.text?.let { cleanedPaste(it) }
+                    val pasted = item.text?.let { cleanedPaste(it, item.keepShortLink, item.keepTrackers) }
                     val text = pasted?.asK3String()
                     if (text != null) {
                         val selected = state.content.surroundingText.textSelected.takeIf { state.content.selection.isNotCollapsed() }.orEmpty()
@@ -1925,7 +1925,16 @@ enum class OperationScope {
 }
 
 private val SPACE = " ".asK3String()
-private val WORD_SEPARATORS = setOf(" ", ".", ",", "!", "?", ";", ":")
+/**
+ * iOS applies the correction on every character that ends a word except `@ # $ % ^ * _ ( [ ] \ |`
+ * (terminatorsPreventingAutocorrection, spec 1; audit 2026-11-20: we had only space and . , ! ? ; :).
+ * Digits and the hyphen don't end a word here (whether iOS's hyphen does is not decoded).
+ */
+private fun isTerminator(text: String): Boolean {
+    val c = text.singleOrNull() ?: return false
+    return c == ' ' || !(c.isLetterOrDigit() || c.isWhitespace() || c == '-' || c in NO_AUTOCORRECT_TERMINATORS || io.github.sillypuppyy.dogboard.engine.isWordChar(c))
+}
+private const val NO_AUTOCORRECT_TERMINATORS = "@#$%^*_([]\\|"
 private val SYMBOL_LAYERS = setOf(K3LayerId("symbol-1"), K3LayerId("symbol-2"))
 private val PERIOD_SPACE = ". ".asK3String()
 private val FORM_VARIATIONS = setOf(

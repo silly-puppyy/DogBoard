@@ -38,6 +38,9 @@ class LearningTest : FunSpec({
             TypingEngine.reject("thibk", "think")
             TypingEngine.learn("thibk")
             finished("thibk") shouldBe "thibk"
+            // iOS filter 21: not offered for other input until it has been used twice
+            TypingEngine.candidates(typed("thib"), null).any { it.word == "thibk" } shouldBe false
+            TypingEngine.accepted(null, "thibk"); TypingEngine.accepted(null, "thibk")
             TypingEngine.candidates(typed("thib"), null).any { it.word == "thibk" } shouldBe true
             userWords.readLines() shouldBe listOf("thibk")
 

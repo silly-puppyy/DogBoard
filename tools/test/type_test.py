@@ -33,6 +33,7 @@ DIGITS = "1234567890"
 DP_PER_MM = 6.3
 
 WIDE_PUNCT = ".,?!'"
+SYM_ROW2 = '-/:;()$&@"'
 
 CASES = [
     ("hello world", "Hello world"),
@@ -60,6 +61,11 @@ CASES = [
     ("abc", "ABC", "caps"),  # all-caps field
     ("tehx{L}h ", "Tehh x"),
     ("hello{S-28}x", "Hexllo"),  # {S-28}: hold space, slide 28 dp left = 3 cursor steps (8 dp each), no space typed
+    # iOS applies the correction on every word-ending character but @ # $ % ^ * _ ( [ ] \ | (audit 2026-11-20)
+    ("teh{123})", "The)"),
+    ("teh{123}/", "The/"),
+    ("teh{123}\"", "The\""),
+    ("teh{123}@", "Teh@"),
     ("hey {123}12 x", "Hey 12 x"),  # {123} = mode key; space on the 123 plane returns to letters  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
 ]
 
@@ -128,6 +134,8 @@ def key_center_units(ch):
         return DIGITS.index(ch) + 0.5, 0
     if ch == "<":
         return BACKSPACE_CENTER_X, 2
+    if ch in SYM_ROW2:  # second row of the 123 plane, iOS order (gen_layouts.py)
+        return SYM_ROW2.index(ch) + 0.5, 1
     if ch in WIDE_PUNCT:  # third row of the 123 plane, after the #+= key and a gap (gen_qwerty_en.py)
         return 1.28 + 0.2133 + WIDE_PUNCT.index(ch) * 1.4 + 0.7, 2
     for row, letters in enumerate(ROWS):
