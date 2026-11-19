@@ -368,7 +368,8 @@ object Routes {
 
             composableWithDeepLink(Settings.Home::class) { HomeScreen() }
 
-            composableWithDeepLink(Settings.Localization::class) { LocalizationScreen() }
+            // DogBoard: its own Languages page in place of FlorisBoard's subtypes page (user 2026-11-19)
+            composableWithDeepLink(Settings.Localization::class) { io.github.sillypuppyy.dogboard.settings.LanguagesScreen() }
             composableWithDeepLink(Settings.SelectLocale::class) { SelectLocaleScreen() }
             composableWithDeepLink(Settings.LanguagePackManager::class) { navBackStack ->
                 val payload = navBackStack.toRoute<Settings.LanguagePackManager>()
