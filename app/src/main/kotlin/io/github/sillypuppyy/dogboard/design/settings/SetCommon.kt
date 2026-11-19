@@ -165,7 +165,7 @@ fun SetRows(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 @Composable
 fun TitleSub(title: String, sub: String, modifier: Modifier = Modifier, subLines: Int = 12) { // CSS: subs wrap (3 cut the Neural model row, user 2026-11-19)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        DText(title, style = setText(16f))
+        DText(title, style = setText(16f), maxLines = 3)
         DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = subLines)
     }
 }
@@ -194,7 +194,7 @@ fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onCha
     ) {
         LintParent(id) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                DText(title, style = setText(16f))
+                DText(title, style = setText(16f), maxLines = 3)
                 DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = 12)
             }
             val track = if (checked) SetColors.primary else SetColors.surfaceContainerHighest
@@ -238,7 +238,7 @@ fun SetSliderRow(
     ) {
         LintParent(id) {
             Row(Modifier.heightIn(min = 44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                DText(title, Modifier.weight(1f), style = setText(16f))
+                DText(title, Modifier.weight(1f), style = setText(16f), maxLines = 3) // wraps: one line ran into the value at large font sizes
                 DText(format(value), style = setText(16f, 600, if (changed) SetColors.primary else SetColors.onSurfaceVariant))
                 if (changed) {
                     Box(
@@ -247,7 +247,7 @@ fun SetSliderRow(
                     ) { Symbol("restart_alt", 20.sp, SetColors.primary) }
                 } else Box(Modifier.size(44.dp))
             }
-            DText(explain, Modifier.padding(end = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = (14 * 1.4).sp), maxLines = 4)
+            DText(explain, Modifier.padding(end = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = (14 * 1.4).sp), maxLines = 8)
             val steps = ((range.endInclusive - range.start) / step).toInt() - 1
             androidx.compose.material3.Slider(
                 enabled = enabled,
@@ -322,7 +322,7 @@ fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color
         LintParent("section:$title") {
             Box(Modifier.size(40.dp).background(bg, RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) { Symbol(icon, 22.sp, fg) }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                DText(title, style = setText(16f))
+                DText(title, style = setText(16f), maxLines = 3)
                 // white-space: nowrap; text-overflow: ellipsis (the lint reports a cut)
                 DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), overflow = TextOverflow.Ellipsis)
             }

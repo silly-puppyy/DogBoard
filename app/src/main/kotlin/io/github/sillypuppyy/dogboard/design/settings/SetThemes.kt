@@ -111,7 +111,7 @@ fun SetThemes(state: SetThemesState) {
                     msg.ifEmpty { if (c.follow) "Pick any theme: a light one sets Day, a dark one sets Night, a pair sets both." else "One theme all the time." },
                     Modifier.fillMaxWidth().heightIn(min = 20.dp).padding(horizontal = 2.dp),
                     style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp),
-                    maxLines = 4,
+                    maxLines = 8,
                 )
                 Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
                 Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -127,7 +127,7 @@ fun SetThemes(state: SetThemesState) {
                         DText("Settings match the keyboard", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                         DText(
                             if (state.appFollows) "These pages are light or dark like the keyboard theme" else "These pages follow the system, in the default Material colours",
-                            style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3,
+                            style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8,
                         )
                     }
                     PageSwitch(state.appFollows) { state.onAppFollows(!state.appFollows) }
@@ -151,7 +151,7 @@ fun SetThemes(state: SetThemesState) {
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                         DText(if (state.reroll == "open") "A new pattern each time the keyboard comes up." else "The same pattern until you shuffle.",
-                            Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
+                            Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8)
                         Row(
                             Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(20.dp))
                                 .clickable { state.onShuffle(); msg = if (state.reroll == "open") "Opened again: new spots." else "New spots. They stay until you shuffle again." }
@@ -174,7 +174,7 @@ fun SetThemes(state: SetThemesState) {
                     Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("photo", 24.sp, SetColors.onSurfaceVariant) }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DText("Edit photo theme", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        DText("Labels, dimming and the return key are matched to your photo. Change anything.", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
+                        DText("Labels, dimming and the return key are matched to your photo. Change anything.", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8)
                     }
                     Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
                 }
@@ -237,7 +237,7 @@ fun SetThemes(state: SetThemesState) {
                     // "Import a theme pack" (canvas) waits for pack import to exist: a row that did nothing
                 }
                 DText("A hidden pack disappears from this list but stays installed, and the theme you are using keeps working.",
-                    Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp), maxLines = 4)
+                    Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp), maxLines = 8)
             }
         }
         StatusBarBand()

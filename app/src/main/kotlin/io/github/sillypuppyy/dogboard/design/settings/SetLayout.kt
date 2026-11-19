@@ -179,7 +179,7 @@ fun SetLayout(state: SetLayoutState) {
                             }
                         }
                         LETTER_LAYOUTS.firstOrNull { it.id == id }?.note?.let { note ->
-                            DText(note, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4)
+                            DText(note, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8)
                         }
                     }
                 }
@@ -190,7 +190,7 @@ fun SetLayout(state: SetLayoutState) {
                     Segmented(
                         "layout:preset", listOf("iPhone-style", "Android-style", "Custom"), listOf("simple", "classic", "custom").indexOf(preset),
                     ) { i -> if (i == 0) state.onChange(LayoutElements.SIMPLE) else if (i == 1) state.onChange(LayoutElements.CLASSIC) }
-                    DText(PRESET_NOTES.getValue(preset), style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 3)
+                    DText(PRESET_NOTES.getValue(preset), style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8)
                 }
             }
             // :43-78 Mix and match
@@ -235,7 +235,7 @@ fun SetLayout(state: SetLayoutState) {
                 Symbol("translate", 18.sp, SetColors.primary)
                 DText(
                     "These choices apply to every language. Languages that need their own (a script without capitals, other digits) will show only what fits them.",
-                    style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4,
+                    style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8,
                 )
             }
             }
@@ -256,7 +256,7 @@ private fun ElementRow(title: String, sub: String, changed: Boolean, onReset: ()
         Row(Modifier.heightIn(min = 44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DText(title, style = setText(16f))
-                DText(sub, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 3)
+                DText(sub, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8)
             }
             if (changed) {
                 Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).background(SetColors.secondaryContainer).clickable(onClick = onReset), contentAlignment = Alignment.Center) {

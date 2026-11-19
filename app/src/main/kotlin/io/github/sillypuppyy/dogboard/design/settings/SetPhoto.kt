@@ -108,7 +108,7 @@ fun SetPhoto(state: SetPhotoState) {
                     DText(
                         (if (m.fg == "white") "White" else "Dark") + " labels, " + "%.1f".format(m.ratio) + ":1 on the brightest spots. " +
                             if (pass) "Easy to read." else "Letters there may be hard to read.",
-                        Modifier.weight(1f), style = setText(14f, color = fg).copy(textAlign = START, lineHeight = (14 * 1.4f).sp), maxLines = 3,
+                        Modifier.weight(1f), style = setText(14f, color = fg).copy(textAlign = START, lineHeight = (14 * 1.4f).sp), maxLines = 8,
                     )
                     if (!pass) Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).clickable { state.onLook(PhotoReadability.fix(a, st)) }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                         DText("Fix it", style = setText(14f, 600, fg))
@@ -145,7 +145,7 @@ fun SetPhoto(state: SetPhotoState) {
                         DText("Readability", style = setText(14f, 500, SetColors.primary).copy(textAlign = START))
                         val desc = PhotoReadability.describe(a, auto)
                         DText(if (anyChanged) "Changed by you. Auto would use $desc." else "Matched to this photo: $desc.",
-                            style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 4)
+                            style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 8)
                     }
                     if (anyChanged) Row(
                         Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).clickable { state.onLook(auto) }.padding(horizontal = 14.dp),
@@ -167,7 +167,7 @@ fun SetPhoto(state: SetPhotoState) {
                                 ) { Symbol(if (sel) "check" else "send", 20.sp, css(c.second)) }
                             }
                             DText(if (st.accent == 0) "The photo’s strongest colour, made bright enough for the key." else "Another colour from the photo.",
-                                Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START, lineHeight = (13 * 1.4f).sp), maxLines = 3)
+                                Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START, lineHeight = (13 * 1.4f).sp), maxLines = 8)
                         }
                     }
                     // :158 labels

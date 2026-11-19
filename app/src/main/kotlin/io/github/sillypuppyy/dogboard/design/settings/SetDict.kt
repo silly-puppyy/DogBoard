@@ -118,7 +118,7 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
             }
         }
         // SetDict:38 blurb: margin 0 32, 14 / 1.5
-        DText(cur.blurb, Modifier.padding(horizontal = 32.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = 21.sp), maxLines = 4)
+        DText(cur.blurb, Modifier.padding(horizontal = 32.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = 21.sp), maxLines = 8)
         // SetDict:40-48 the list: margin 0 16, radius 20, rows 2 apart
         SetRows(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
             for (w in rows) {
@@ -159,7 +159,7 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
                     Modifier.fillMaxWidth().heightIn(min = 56.dp).background(SetColors.row).clickable(onClick = state.onManageReplacements).padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    DText("Shortcuts beat autocorrect and show in the bar.", Modifier.weight(1f), style = setText(15f, color = SetColors.onSurfaceVariant), maxLines = 2)
+                    DText("Shortcuts beat autocorrect and show in the bar.", Modifier.weight(1f), style = setText(15f, color = SetColors.onSurfaceVariant), maxLines = 8)
                     DText("Manage", style = setText(14f, 500, SetColors.primary))
                 }
             }
