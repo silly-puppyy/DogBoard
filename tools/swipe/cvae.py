@@ -85,12 +85,43 @@ class CVAE(nn.Module):
         return self.out(o)
 
 
+def swipe5_qwerty(futo, exclude_layouts, holdout):
+    """swipe-5's real QWERTY English swipes, minus sessions that also swiped [exclude_layouts] (those stay unseen test
+    people) and a held-out share of sessions ([holdout], for checks on tall keyboards). 2026-11-19: FUTO's main
+    collection is all short keyboards (rows 1.4 key widths apart); these are tall (2.25), where people cut corners."""
+    rows, sessions_by_layout = [], {}
+    for line in open(f"{futo}/swipe-5/swipe5.jsonl"):
+        d = json.loads(line)
+        if not isinstance(d.get("data"), list):
+            continue
+        sessions_by_layout.setdefault(d.get("layout"), set()).add(d["session"])
+        if d.get("layout") == "qwerty" and (d.get("lang") or d.get("language")) == "en":
+            rows.append(d)
+    excluded = set().union(*(sessions_by_layout.get(l, set()) for l in exclude_layouts))
+    sessions = sorted({d["session"] for d in rows} - excluded)
+    random.Random(11).shuffle(sessions)
+    held = set(sessions[: int(len(sessions) * holdout)])
+    keep = [d for d in rows if d["session"] not in excluded and d["session"] not in held]
+    return keep, held
+
+
 def cmd_prep(a):
     layout = json.load(open(f"{a.futo}/swipe-5/layouts/qwerty.json"))
     out = []
-    with open(f"{a.futo}/train.jsonl") as f:
-        for line in f:
-            d = json.loads(line)
+    lines = open(f"{a.futo}/train.jsonl")
+    extra = []
+    if a.swipe5_repeat > 0:
+        keep, held = swipe5_qwerty(a.futo, a.exclude_layouts.split(","), 0.2)
+        json.dump(sorted(held), open(a.out + ".heldout_sessions.json", "w"))
+        print(f"swipe-5 QWERTY: {len(keep)} swipes kept (x{a.swipe5_repeat}), {len(held)} sessions held out", flush=True)
+        extra = keep
+    def records():
+        for line in lines:
+            yield json.loads(line)
+    import itertools
+    with lines:
+        # the first n FUTO lines (some are rejected below), then the swipe-5 swipes, repeated
+        for d in itertools.chain(itertools.islice(records(), a.n), *([extra] * a.swipe5_repeat)):
             w = d["word"].lower().strip(".,;:!?\"()[]{}")
             sx, sy = units.scale("phys", layout, d.get("canvas_width"), d.get("canvas_height"))
             keys = units.keys(layout, sx, sy)
@@ -108,8 +139,6 @@ def cmd_prep(a):
             if np.abs(y).max() > 6:  # not this word, or a broken trace
                 continue
             out.append((torch.from_numpy(feats).half(), torch.from_numpy(y).half()))
-            if len(out) >= a.n:
-                break
             if len(out) % 50000 == 0:
                 print(f"{len(out)} swipes", flush=True)
     torch.save(out, a.out)
@@ -292,6 +321,8 @@ def main():
     ap.add_argument("--beta", type=float, default=1.0)
     ap.add_argument("--free-bits", type=float, default=0.05)
     ap.add_argument("--name", default="cvae-v1")
+    ap.add_argument("--swipe5-repeat", type=int, default=0, help="prep: add swipe-5's tall-keyboard QWERTY swipes, this many times")
+    ap.add_argument("--exclude-layouts", default="clearflow,dvorak,german", help="prep: sessions that swiped these stay out")
     a = ap.parse_args()
     {"prep": cmd_prep, "train": cmd_train, "show": cmd_show}[a.cmd](a)
 
