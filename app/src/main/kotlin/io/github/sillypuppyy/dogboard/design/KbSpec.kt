@@ -700,8 +700,8 @@ object KbSpec {
                 }
                 // the bottom row: only function keys take the accent; comma and period keep the letters' colours (user 2026-11-17)
                 val bottomRow = ri == spec.size - 1 && plane != "numeric" && plane != "numpad" && plane != "telpad" && plane != "telpad2"
-                // and the emoji / globe key in the letter tone
-                if (t.gboardRow && bottomRow && k.kind == "fn" && k.id != pressed) { bg = t.key; fg = t.keyFg }
+                // the emoji / globe key stays a function key (user 2026-11-19; was in the letter tone after Gboard 17.2,
+                // iOS draws it as a function key)
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + rowTops[ri] + mv
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
                 if (isFnTone && icon.isEmpty() && k.kind != "mode" && k.kind != "fnchar") fs = 15f
