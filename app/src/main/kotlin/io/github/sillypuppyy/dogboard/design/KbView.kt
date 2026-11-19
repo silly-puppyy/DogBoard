@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
@@ -328,7 +329,11 @@ fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
         m = m.dropShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
     }
     for (l in layers.filter { it.inset }) {
-        m = m.innerShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
+        // a hard ring (`inset 0 0 0 1px`, the design's outline) is a border: Compose's inner shadow keeps the full
+        // corner radius on its inner edge where CSS shrinks it by the spread, so the ring grew thick at rounded
+        // corners (user 2026-11-19: "the border seems thicker at the rounded portion")
+        m = if (l.blur == 0f && l.x == 0f && l.y == 0f && l.spread > 0f) m.border(l.spread.dp, l.color, shape)
+            else m.innerShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
     }
     return m
 }
