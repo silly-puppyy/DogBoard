@@ -28,7 +28,7 @@ class MissingLastLetterProbeTest : FunSpec({
             listOf("i'm", "going", "hom", "home"), listOf("on", "my", "wa", "way"), listOf("see", "you", "tomorro", "tomorrow"),
             listOf("thank", "you", "s", "so"), listOf("let", "me", "kno", "know"), listOf("what", "a", "grea", "great"),
             listOf("i", "need", "hel", "help"), listOf("in", "the", "mornin", "morning"), listOf("it", "was", "fu", "fun"),
-            listOf("i", "love", "yo", "you"), listOf("going", "to", "th", "the"), listOf("have", "a", "nic", "nice"),
+            listOf("i", "love", "yo", "you"), listOf("going", "to", "th", "the"), listOf("have", "a", "nic", "nice"), listOf("so", "i", "thibk", "think"), listOf("i", "want", "teh", "the"),
         )
         try {
             for ((p2, p1, typed, wanted) in cases) {
@@ -37,6 +37,14 @@ class MissingLastLetterProbeTest : FunSpec({
                 val out = TypingEngine.correction(word, candidates, commit = false) ?: typed
                 val top = candidates.take(5).joinToString { it.word }
                 println("MISSING ${if (out == wanted) "ok  " else "MISS"} $p2 $p1 [$typed] -> $out (wanted $wanted; candidates: $top)")
+            }
+            // a missed space read as the letter under it (user 2026-11-19: "later andnwaited" kept, the bar offered "and waited")
+            for ((p1, typed) in listOf("later" to "andnwaited", "the" to "nonbnglish", "i" to "wentnhome", "to" to "thebstore")) {
+                val word = CurrentWord().apply { for (c in typed) addLetter(c, keys[c]?.let { Tap(it.centerX, it.centerY) }, keys, params) }
+                val candidates = TypingEngine.candidates(word, p1)
+                val out = TypingEngine.correction(word, candidates, commit = false) ?: typed
+                val atSpace = TypingEngine.correction(word, candidates, commit = true) ?: typed
+                println("SPLIT $p1 [$typed] -> $out (word end: $atSpace); " + candidates.take(4).joinToString { "%s %.2f w%d sup %.2f".format(it.word, it.score, it.words, it.contextSupport) })
             }
         } finally {
             TypingEngine.unloadForTest()

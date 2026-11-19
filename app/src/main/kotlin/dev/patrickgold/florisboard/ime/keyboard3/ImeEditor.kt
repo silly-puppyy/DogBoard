@@ -84,8 +84,16 @@ open class ImeEditor(
         // erased the typed word letter by letter before the new one appeared, user 2026-11-18)
         if (!plainMode && replaced > 0 && checksLeft > 0 && batchDepth == 0) {
             val before = ic.getTextBeforeCursor(replaced + CHECK_CONTEXT, 0)?.toString()
-            if (before == null || before.length < replaced) {
+            if (before.isNullOrEmpty()) {
                 switchToPlain("keeps no text")
+            } else if (before.length < replaced) {
+                // the field holds less than we meant to replace, but not nothing: the app changed it behind
+                // us (a chat empties its field after send; a test clears it with key events), so our copy of
+                // the previous word is stale. Only this replacement is skipped: switching the whole field to
+                // plain typing turned autocorrect off for the rest of the conversation (emulator 2026-11-19:
+                // "the field keeps no text" in an ordinary text field, after which nothing was corrected)
+                android.util.Log.i("DogBoardEditor", "${info.packageName}: stale replacement skipped ($replaced chars, the field has ${before.length})")
+                return
             } else {
                 checksLeft--
                 writeRegion(ic, range, text, newSelection, newComposition)
