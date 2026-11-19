@@ -133,6 +133,7 @@ fun HomeScreen() {
                             "Autocorrect and typing" -> Routes.Settings.TypingCorrection
                             "Sound and vibration" -> Routes.Settings.SoundVibration
                             "Gestures" -> Routes.Settings.DogGestures
+                            "Timing and feel" -> Routes.Settings.FineTuning
                             "Emoji and GIFs" -> Routes.Settings.DogEmoji
                             "Clipboard" -> Routes.Settings.DogClipboard
                             "Privacy" -> Routes.Settings.Privacy

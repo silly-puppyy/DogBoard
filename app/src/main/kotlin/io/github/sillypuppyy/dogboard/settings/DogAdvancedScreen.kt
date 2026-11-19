@@ -41,7 +41,6 @@ fun DogAdvancedScreen() {
     val dev by prefs.other.devOptionsUnlocked.collectAsState()
     SetPage("Advanced") {
         SetGroup("Typing") {
-            SetPageLink("adv:timings", "Timings", "Hold delay, caps lock, double space, the delete key, the space-bar cursor") { nav.navigate(Routes.Settings.FineTuning) }
             SetSliderRow(
                 "adv:bartap", "Taps on the suggestion bar", "A tap on the bar this soon after a key is read as the top-row key under it, as typing fast often lands there. 0 turns it off.",
                 barTap.toFloat(), prefs.typing.barTapWindowMs.default.toFloat(), 0f..800f, 50f, { v -> "${v.toInt()} ms" },

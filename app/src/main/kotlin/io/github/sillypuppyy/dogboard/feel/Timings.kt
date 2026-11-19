@@ -42,6 +42,10 @@ object FeelSettings {
     @Volatile var deleteWordMs: Long = Timings.DeleteWordInterval.inWholeMilliseconds
     /** Settings › Gestures: holding space turns it into a trackpad. */
     @Volatile var trackpadEnabled: Boolean = true
+    /** Settings › Gestures: a slide left from delete selects whole words to delete (Gboard). */
+    @Volatile var deleteSlide: Boolean = true
+    /** Settings › Gestures: a quick sideways swipe on space moves the cursor without the hold (Gboard). */
+    @Volatile var spaceQuickDrag: Boolean = true
 
     /** Swipe typing (Gestures page; on by default, as iOS and Gboard). */
     @Volatile var swipeEnabled: Boolean = true

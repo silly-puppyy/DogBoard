@@ -569,6 +569,7 @@ class PointerTracker(
      */
     /** DogBoard: Delete's slide left (see DELETE_DRAG_START_DP); true while it is selecting words. */
     private suspend fun dragDeleteWords(trackedPointer: TrackedPointer.Output, move: PointerInputChange): Boolean {
+        if (!io.github.sillypuppyy.dogboard.feel.FeelSettings.deleteSlide) return false
         val dx = (move.position.x - trackedPointer.down.position.x) / density
         val dy = (move.position.y - trackedPointer.down.position.y) / density
         var d = deleteDrag?.takeIf { it.id == move.id }
@@ -601,7 +602,7 @@ class PointerTracker(
                 if (movedDp > Trackpad.ALLOWABLE_MOVEMENT_DP) {
                     // DogBoard: a quick sideways drag moves the cursor too (Gboard; user 2026-11-19: yes), without
                     // iOS's hold first; anything else (a drag up into the letters may become a swipe) ends it
-                    if (abs(delta.x) < 2 * abs(delta.y)) {
+                    if (abs(delta.x) < 2 * abs(delta.y) || !io.github.sillypuppyy.dogboard.feel.FeelSettings.spaceQuickDrag) {
                         trackedOutputPointer.value = trackedPointer.copy(trackpadCancelled = true)
                         return
                     }

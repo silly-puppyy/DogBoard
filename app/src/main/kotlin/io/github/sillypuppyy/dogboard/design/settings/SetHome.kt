@@ -54,12 +54,14 @@ object SetHomeSpec {
         s("palette", "Theme", "Day and night themes, photo background", T),
         s("spellcheck", "Autocorrect and typing", "Autocorrect, suggestions, your words", P),
         s("vibration", "Sound and vibration", "Vibration style, volume, when they play", S),
-        s("swipe", "Gestures", "Swipe typing, space-bar cursor", T),
-        s("mood", "Emoji and GIFs", "Skin tone, recent emoji", P),
-        s("content_paste", "Clipboard", "History, how long clips are kept", S),
-        s("shield_person", "Privacy", "Incognito, contact names, your data", T),
-        s("tune", "Advanced", "Timings, neural model, backup", S),
-        s("info", "About", "Version, licenses, credits", P),
+        s("swipe", "Gestures", "Swipe typing, delete and space-bar slides", T),
+        // user 2026-11-19: "a timing and feel section in the settings? Something like delete speed"
+        s("schedule", "Timing and feel", "Delete speed, hold times, double taps", P),
+        s("mood", "Emoji and GIFs", "Skin tone, recent emoji", S),
+        s("content_paste", "Clipboard", "History, how long clips are kept", T),
+        s("shield_person", "Privacy", "Incognito, contact names, your data", P),
+        s("tune", "Advanced", "Neural model, suggestion-bar taps, backup", S),
+        s("info", "About", "Version, licenses, credits", T),
     )
 }
 

@@ -120,3 +120,5 @@ Q&A	3.84
 A&M	3.69
 S&P	3.87
 D&G	2.22
+# this app's name (Gboard is already in the lexicon from wordfreq, 372 occurrences)
+DogBoard

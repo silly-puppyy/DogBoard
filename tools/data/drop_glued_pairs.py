@@ -36,7 +36,7 @@ def scowl_words(final_dir):
 
 # hand-reviewed words that build_lexicon.py always adds (hotspot, dropdown): never dropped
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "en.extra_words.txt"), encoding="utf-8") as _f:
-    EXTRA = {l.strip() for l in _f if l.strip() and not l.startswith("#")}
+    EXTRA = {l.split("\t")[0].strip().lower() for l in _f if l.strip() and not l.startswith("#")}  # (word, then an optional Zipf; compared lowercase)
 
 
 def main():

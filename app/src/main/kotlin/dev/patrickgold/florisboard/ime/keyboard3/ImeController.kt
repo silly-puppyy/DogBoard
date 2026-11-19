@@ -323,6 +323,8 @@ class ImeController(
         prefs.typing.deleteWordMs.asFlow().collectIn(scope) { feel.deleteWordMs = it.toLong() }
         prefs.typing.trackpadHoldMs.asFlow().collectIn(scope) { feel.trackpadHoldMs = it.toLong() }
         prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { feel.trackpadEnabled = it }
+        prefs.typing.deleteSlide.asFlow().collectIn(scope) { feel.deleteSlide = it }
+        prefs.typing.spaceQuickDrag.asFlow().collectIn(scope) { feel.spaceQuickDrag = it }
         prefs.typing.swipeEnabled.asFlow().collectIn(scope) { feel.swipeEnabled = it }
         prefs.typing.swipeTrail.asFlow().collectIn(scope) { feel.swipeTrail = it }
         prefs.typing.barTapWindowMs.asFlow().collectIn(scope) { io.github.sillypuppyy.dogboard.ime.BarTapGuard.windowMs = it.toLong() }
