@@ -888,11 +888,14 @@ object TypingEngine {
             val after = bigrams.contextId(previousCommitted.lowercase())
             val second = currentCandidates.filter { !it.isCompletion && it.words == 1 }.maxOfOrNull { engine.joinDecoder.rescored(it, after).score }
                 ?: return@read null
-            val join = SpaceJoin.best(
+            val readings = SpaceJoin.readings(
                 engine.joinDecoder, prevTaps, spaceTap, curTaps, personalOffsets.apply(previous.keys), previous.params!!,
                 engine.contextId(beforeContext),
-            ) ?: return@read null
-            lastJoinDebug = "%s %.2f vs %s %.2f + %.2f".format(join.word, join.score, committed.word, committed.score, second)
+            )
+            val join = readings.firstOrNull() ?: return@read null
+            lastJoinDebug = "%s %.2f vs %s %.2f + %.2f; readings %s".format(
+                join.word, join.score, committed.word, committed.score, second, readings.joinToString { "%s %.2f".format(it.word, it.score) },
+            )
             if (!SpaceJoin.wins(join, committed.score + second)) return@read null
             if (isBlocked(join.word) || isNotSuggestible(join.word) || rejections.isBlocked(previous.text + " " + current.text, join.word)) return@read null
             caseFor(previous, curly)(join.word)

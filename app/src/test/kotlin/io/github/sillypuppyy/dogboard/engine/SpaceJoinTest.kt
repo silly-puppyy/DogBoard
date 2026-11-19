@@ -18,7 +18,7 @@ class SpaceJoinTest : FunSpec({
         val ta = taps(a, 0); val tb = taps(b, 250L * (a.length + 1))
         val first = decoder().decode(ta, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(before), typed = a).first()
         val second = decoder().decode(tb, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(first.word), typed = b).first()
-        val j = SpaceJoin.best(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(before)) ?: return null
+        val j = SpaceJoin.readings(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(before)).firstOrNull() ?: return null
         return j.word.takeIf { SpaceJoin.wins(j, first.score + second.score) }
     }
     val rowH = 216f / 4
@@ -26,6 +26,20 @@ class SpaceJoinTest : FunSpec({
     test("a letter tap that landed on the space bar, under the letter, is rejoined") {
         // "meeti g": the n was tapped at the top of the space bar, below the n key
         join("meeti", Tap(keys.getValue('n').centerX, 3 * rowH + 0.2f * rowH, 5 * 250L), "g") shouldBe "meeting"
+    }
+
+    test("probe: an extra space tap inside a word, by typing speed").config(enabled = System.getenv("DOGBOARD_PROBE") != null) {
+        // user 2026-11-19 (emulator, adb taps ~0.5 s apart): "going hom e" joined to "bombe"
+        for (gap in listOf(120L, 250L, 450L)) for ((a, b, before) in listOf(Triple("hom", "e", "going"), Triple("goin", "g", "i'm"), Triple("th", "e", "of"))) {
+            fun t(w: String, t0: Long) = w.mapIndexed { i, c -> keys.getValue(c).let { Tap(it.centerX, it.centerY, t0 + gap * i) } }
+            val ta = t(a, 0); val tb = t(b, gap * (a.length + 1))
+            val first = decoder().decode(ta, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(before), typed = a).first()
+            val second = decoder().decode(tb, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(first.word), typed = b).first()
+            val space = Tap(keys.getValue(' ').centerX, keys.getValue(' ').centerY, gap * a.length)
+            val r = SpaceJoin.readings(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(before))
+            println("JOINPROBE gap ${gap}ms $before [$a $b]: two words %s %.2f + %s %.2f = %.2f; readings %s".format(
+                first.word, first.score, second.word, second.score, first.score + second.score, r.joinToString { "%s %.2f".format(it.word, it.score) }))
+        }
     }
 
     test("two real words with a normal space stay apart") {

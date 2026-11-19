@@ -15,13 +15,13 @@ import kotlin.math.ln
 object SpaceJoin {
     val RATIO = ln(1.65)
 
-    /** The best one-word reading of [prevTaps] + [spaceTap] + [curTaps], or null. */
-    fun best(
+    /** The one-word readings of [prevTaps] + [spaceTap] + [curTaps], best first (the first is the join tried). */
+    fun readings(
         decoder: Decoder, prevTaps: List<Tap>, spaceTap: Tap, curTaps: List<Tap>,
         keys: Map<Char, KeyTarget>, params: GaussianTouch.Params, previous: Int, previous2: Int = -1,
-    ): Candidate? = decoder.decode(
+    ): List<Candidate> = decoder.decode(
         prevTaps + spaceTap + curTaps, keys, params, 4, includeCompletions = false, previous = previous, previous2 = previous2,
-    ).firstOrNull { it.words == 1 && !it.isTypedString }
+    ).filter { it.words == 1 && !it.isTypedString }
 
     /** [join] replaces the two words, whose readings scored [twoWords] together. */
     fun wins(join: Candidate, twoWords: Double): Boolean = join.score - twoWords >= RATIO

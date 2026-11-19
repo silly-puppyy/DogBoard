@@ -52,7 +52,7 @@ class SpaceJoinEvalTest : FunSpec({
             val first = ca.firstOrNull() ?: return null
             val cb = decoder().decode(tb, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(first.word.lowercase()), previous2 = bigrams.contextId(prev), typed = b.lowercase())
             val second = cb.firstOrNull() ?: return null
-            val join = SpaceJoin.best(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(prev), prev2?.let { bigrams.contextId(it) } ?: -1) ?: return null
+            val join = SpaceJoin.readings(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(prev), prev2?.let { bigrams.contextId(it) } ?: -1).firstOrNull() ?: return null
             return join.word.takeIf { join.score - (first.score + second.score) >= ratio }
         }
         val rng = Random(11)
