@@ -121,6 +121,61 @@ object UserThemes {
         }
     }
 
+    // managing packs and themes (the Themes page's pack and theme menus)
+    @Synchronized
+    fun newPack(context: Context, name: String): String {
+        val packs = rawPacks(context)
+        val id = "k" + System.currentTimeMillis().toString(36)
+        packs.add(id to (name to emptyList()))
+        writePacks(context, packs)
+        return id
+    }
+
+    @Synchronized
+    fun renamePack(context: Context, id: String, name: String) =
+        writePacks(context, rawPacks(context).map { if (it.first == id) id to (name to it.second.second) else it })
+
+    /** Moves pack [id] [delta] places (-1 up, +1 down). */
+    @Synchronized
+    fun movePack(context: Context, id: String, delta: Int) {
+        val packs = rawPacks(context)
+        val i = packs.indexOfFirst { it.first == id }
+        val j = i + delta
+        if (i < 0 || j !in packs.indices) return
+        packs.add(j, packs.removeAt(i))
+        writePacks(context, packs)
+    }
+
+    /** Deletes pack [id] and its themes; returns the theme ids deleted. */
+    @Synchronized
+    fun deletePack(context: Context, id: String): List<String> {
+        val packs = rawPacks(context)
+        val gone = packs.firstOrNull { it.first == id }?.second?.second.orEmpty()
+        gone.forEach { dir(context, it).deleteRecursively() }
+        writePacks(context, packs.filter { it.first != id })
+        return gone
+    }
+
+    @Synchronized
+    fun renameTheme(context: Context, id: String, name: String) {
+        val f = File(dir(context, id), "theme.json")
+        runCatching { f.writeText(JSONObject(f.readText()).put("name", name).toString(1)) }
+    }
+
+    /** Moves theme [id] to the end of pack [to]. */
+    @Synchronized
+    fun moveTheme(context: Context, id: String, to: String) =
+        writePacks(context, rawPacks(context).map { (pid, p) ->
+            val without = p.second.filter { it != id }
+            pid to (p.first to (if (pid == to) without + id else without))
+        })
+
+    @Synchronized
+    fun deleteTheme(context: Context, id: String) {
+        dir(context, id).deleteRecursively()
+        writePacks(context, rawPacks(context).map { (pid, p) -> pid to (p.first to p.second.filter { it != id }) })
+    }
+
     /** First run with saved themes: an existing photo becomes the first theme, "My photo". */
     suspend fun migrate(context: Context, prefs: FlorisPreferenceModel) {
         if (packsFile(context).isFile || !GlassPhoto.file(context).isFile || prefs.keyboard.glassPhotoStamp.get() == 0L) return

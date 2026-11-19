@@ -2,6 +2,7 @@ package io.github.sillypuppyy.dogboard.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
@@ -32,7 +33,12 @@ fun ThemesScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val userTheme by prefs.keyboard.userTheme.collectAsState()
     val stamp by prefs.keyboard.glassPhotoStamp.collectAsState()
-    val userPacks by androidx.compose.runtime.produceState(emptyList<io.github.sillypuppyy.dogboard.design.UserThemes.Pack>(), stamp, userTheme) {
+    // bumped after a pack or theme changes, so the page reads the packs again
+    var version by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // the pack a new photo theme goes to (null: the default pack), and the open dialog: (kind, id, name)
+    var targetPack by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var dialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Triple<String, String, String>?>(null) }
+    val userPacks by androidx.compose.runtime.produceState(emptyList<io.github.sillypuppyy.dogboard.design.UserThemes.Pack>(), stamp, userTheme, version) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.design.UserThemes.migrate(context, prefs)
             io.github.sillypuppyy.dogboard.design.UserThemes.packs(context)
@@ -58,7 +64,7 @@ fun ThemesScreen() {
                     prefs.keyboard.glassHalo.set(l.halo); prefs.keyboard.glassAccent.set(l.accent)
                 }
                 val n = io.github.sillypuppyy.dogboard.design.UserThemes.packs(context).sumOf { it.themes.size } + 1
-                io.github.sillypuppyy.dogboard.design.UserThemes.createPhoto(context, prefs, "Photo $n")
+                io.github.sillypuppyy.dogboard.design.UserThemes.createPhoto(context, prefs, "Photo $n", targetPack)
             } ?: return@launch
             io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, made)
             store(ThemeChoice.pick(choice, "glass").first)
@@ -94,6 +100,76 @@ fun ThemesScreen() {
             }
         },
         onEditUser = { id -> scope.launch { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) } },
+        onNewPhotoIn = { packId ->
+            targetPack = packId
+            pickNewPhoto.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
+        onNewPack = { dialog = Triple("newPack", "", "") },
+        onPackAction = { id, a ->
+            val name = userPacks.firstOrNull { it.id == id }?.name.orEmpty()
+            when (a) {
+                "rename" -> dialog = Triple("renamePack", id, name)
+                "delete" -> dialog = Triple("deletePack", id, name)
+                else -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.movePack(context, id, if (a == "up") -1 else 1); version++ }
+            }
+        },
+        onThemeAction = { id, a ->
+            val name = userPacks.flatMap { it.themes }.firstOrNull { it.id == id }?.name.orEmpty()
+            when {
+                a == "rename" -> dialog = Triple("renameTheme", id, name)
+                a == "delete" -> dialog = Triple("deleteTheme", id, name)
+                a.startsWith("move:") -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.moveTheme(context, id, a.removePrefix("move:")); version++ }
+            }
+        },
         onBack = { navController.popBackStack() },
     ))
+    dialog?.let { (kind, id, name) ->
+        val close = { dialog = null }
+        if (kind == "newPack" || kind.startsWith("rename")) {
+            var text by androidx.compose.runtime.remember(kind, id) { androidx.compose.runtime.mutableStateOf(name) }
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = close,
+                title = { androidx.compose.material3.Text(when (kind) { "newPack" -> "New pack"; "renamePack" -> "Rename pack"; else -> "Rename theme" }) },
+                text = { androidx.compose.material3.OutlinedTextField(text, { text = it }, singleLine = true, label = { androidx.compose.material3.Text("Name") }) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton({
+                        val n = text.trim()
+                        close()
+                        if (n.isNotEmpty()) scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            when (kind) {
+                                "newPack" -> io.github.sillypuppyy.dogboard.design.UserThemes.newPack(context, n)
+                                "renamePack" -> io.github.sillypuppyy.dogboard.design.UserThemes.renamePack(context, id, n)
+                                else -> io.github.sillypuppyy.dogboard.design.UserThemes.renameTheme(context, id, n)
+                            }
+                            version++
+                        }
+                    }) { androidx.compose.material3.Text(if (kind == "newPack") "Create" else "Rename") }
+                },
+                dismissButton = { androidx.compose.material3.TextButton(close) { androidx.compose.material3.Text("Cancel") } },
+            )
+        } else {
+            val pack = kind == "deletePack"
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = close,
+                title = { androidx.compose.material3.Text(if (pack) "Delete the pack “$name”?" else "Delete “$name”?") },
+                text = { androidx.compose.material3.Text(if (pack) "Its themes are deleted with it." else "The theme and its photo are deleted.") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton({
+                        close()
+                        scope.launch {
+                            val gone = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                if (pack) io.github.sillypuppyy.dogboard.design.UserThemes.deletePack(context, id)
+                                else listOf(id).also { io.github.sillypuppyy.dogboard.design.UserThemes.deleteTheme(context, id) }
+                            }
+                            // a deleted theme in use: the photo slot keeps drawing it, but no theme is linked to it any more
+                            if (userTheme in gone) prefs.keyboard.userTheme.set("")
+                            version++
+                        }
+                    }) { androidx.compose.material3.Text("Delete") }
+                },
+                dismissButton = { androidx.compose.material3.TextButton(close) { androidx.compose.material3.Text("Cancel") } },
+            )
+        }
+    }
+
 }

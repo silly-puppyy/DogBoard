@@ -2,6 +2,7 @@ package io.github.sillypuppyy.dogboard.design.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,6 +73,12 @@ class SetThemesState(
     val userTheme: String? = null,
     val onPickUser: (String) -> Unit = {},
     val onEditUser: (String) -> Unit = {},
+    /** A pack's menu: "rename", "up", "down", "delete"; a theme's: "rename", "delete", "move:<pack id>". */
+    val onPackAction: (String, String) -> Unit = { _, _ -> },
+    val onThemeAction: (String, String) -> Unit = { _, _ -> },
+    /** A new photo theme in pack id; a new empty pack. */
+    val onNewPhotoIn: (String) -> Unit = {},
+    val onNewPack: () -> Unit = {},
 )
 
 /** Settings › Look › Themes (SetThemes.dc.html, 390 wide). */
@@ -345,19 +352,36 @@ private fun PageSwitch(on: Boolean, onClick: () -> Unit) {
 }
 
 
-/** The user's packs (UserThemes): a section each, its saved themes as photo tiles. Tap: use it; tap the one in use: edit it. */
+/** The user's packs (UserThemes): a section each, its saved themes as photo tiles. Tap: use it; tap the one in use:
+ *  edit it; hold: rename, move to another pack, delete. Each pack: a "+" tile and a menu (rename, move, delete). */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun UserPackSections(state: SetThemesState, primary: Color) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    for (pack in state.userPacks) {
+    for ((pi, pack) in state.userPacks.withIndex()) {
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                DText(pack.name, style = setText(14f, 500, primary))
-                DText("Your pack, ${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant))
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    DText(pack.name, style = setText(14f, 500, primary).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    DText("Your pack, ${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                }
+                var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                Box {
+                    Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { open = true }, contentAlignment = Alignment.Center) {
+                        Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant)
+                    }
+                    androidx.compose.material3.DropdownMenu(open, { open = false }) {
+                        val items = listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
+                            ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "delete" to "Delete pack")
+                        for ((a, label) in items) androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text(label) }, { open = false; state.onPackAction(pack.id, a) })
+                    }
+                }
             }
-            for (row in pack.themes.chunked(2)) {
+            val cells: List<io.github.sillypuppyy.dogboard.design.UserThemes.Theme?> = pack.themes + listOf(null)
+            for (row in cells.chunked(2)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     for (t in row) {
+                        if (t == null) { NewTile("add_photo_alternate", "From a photo") { state.onNewPhotoIn(pack.id) }; continue }
                         val sel = state.userTheme == t.id
                         val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, t.id) {
                             value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -368,25 +392,46 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                 }.getOrNull()
                             }
                         }
-                        Column(Modifier.width(162.dp).clickable { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Box(
-                                Modifier.size(162.dp, 128.dp).clip(RoundedCornerShape(16.dp)).background(SetColors.surfaceContainerHighest)
-                                    .border(if (sel) 3.dp else 1.dp, if (sel) primary else SetColors.outlineVariant, RoundedCornerShape(16.dp)),
-                                contentAlignment = Alignment.Center,
+                        var menu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                        Box {
+                            Column(
+                                Modifier.width(162.dp).combinedClickable(onLongClick = { menu = true }) { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                                thumb?.let { androidx.compose.foundation.Image(it, t.name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
-                                if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
+                                Box(
+                                    Modifier.size(162.dp, 128.dp).clip(RoundedCornerShape(16.dp)).background(SetColors.surfaceContainerHighest)
+                                        .border(if (sel) 3.dp else 1.dp, if (sel) primary else SetColors.outlineVariant, RoundedCornerShape(16.dp)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    thumb?.let { androidx.compose.foundation.Image(it, t.name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+                                    if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
+                                }
+                                Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                                    if (sel) Symbol("edit", 18.sp, SetColors.onSurfaceVariant)
+                                }
+                                DText(if (sel) "In use. Tap to edit" else "Photo. Hold for more", Modifier.padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                             }
-                            Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                                if (sel) Symbol("edit", 18.sp, SetColors.onSurfaceVariant)
+                            androidx.compose.material3.DropdownMenu(menu, { menu = false }) {
+                                androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Rename") }, { menu = false; state.onThemeAction(t.id, "rename") })
+                                for (other in state.userPacks) if (other.id != pack.id) {
+                                    androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Move to ${other.name}") }, { menu = false; state.onThemeAction(t.id, "move:${other.id}") })
+                                }
+                                androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Delete") }, { menu = false; state.onThemeAction(t.id, "delete") })
                             }
-                            DText(if (sel) "In use. Tap to edit" else "Photo", Modifier.padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                         }
                     }
                 }
             }
         }
     }
+    // a new pack (the first theme from a photo makes "My themes" when there is none)
+    Row(Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).border(1.dp, SetColors.outline, RoundedCornerShape(20.dp)).clickable { state.onNewPack() }.padding(start = 12.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Symbol("add", 18.sp, primary); DText("New pack", style = setText(14f, 500, primary))
+        }
+    }
 }
-
