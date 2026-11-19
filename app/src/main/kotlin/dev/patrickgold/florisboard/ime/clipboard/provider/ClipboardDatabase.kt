@@ -97,6 +97,14 @@ data class ClipboardItem(
     @EncodeDefault
     @ColumnInfo(name= "is_remote_device", defaultValue = "0")
     val isRemoteDevice: Boolean = false,
+    /** DogBoard clipboard rows: the user undid the short-link expansion for this clip (which keeps its trackers too). */
+    @EncodeDefault
+    @ColumnInfo(name = "keep_short_link", defaultValue = "0")
+    val keepShortLink: Boolean = false,
+    /** DogBoard clipboard rows: the user undid the tracker removal for this clip. */
+    @EncodeDefault
+    @ColumnInfo(name = "keep_trackers", defaultValue = "0")
+    val keepTrackers: Boolean = false,
 ) {
     companion object {
         /**
@@ -322,10 +330,11 @@ interface ClipboardHistoryDao {
 
 @Database(
     entities = [ClipboardItem::class],
-    version = 4,
+    version = 5,
     autoMigrations = [
         AutoMigration(from = 2, to = 4),
         AutoMigration(from = 3, to = 4, spec = ClipboardHistoryDatabase.MIGRATE_3_TO_4::class),
+        AutoMigration(from = 4, to = 5),
     ],
 )
 @TypeConverters(Converters::class)

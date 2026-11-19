@@ -364,6 +364,8 @@ fun ImeKeyboardBox(
                 val historyEnabled by prefs.clipboard.historyEnabled.collectAsState()
                 // the panel's filter (Kb:41-43): All, Links, Media
                 val clipFilter by io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.collectAsState()
+                val expandLinks by prefs.clipboard.expandShortLinks.collectAsState()
+                val stripLinks by prefs.clipboard.stripTrackers.collectAsState()
                 val clipItems = remember(history, clipFilter) {
                     when (clipFilter) {
                         1 -> history.all.filter { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive && io.github.sillypuppyy.dogboard.design.isLinkClip(it.text.orEmpty()) }
@@ -421,8 +423,36 @@ fun ImeKeyboardBox(
                             },
                         )
                     },
+                    clipActions = remember(imeController, clipItems) {
+                        fun paste(i: Int) = clipItems.getOrNull(i)?.let { item ->
+                            ui.closePanel()
+                            imeController.updateStateBlocking { emitClipboardItem(item) }
+                        }
+                        io.github.sillypuppyy.dogboard.design.KbClipActions(
+                            onPaste = { i -> paste(i) },
+                            onPin = { i -> clipItems.getOrNull(i)?.let { if (it.isPinned) clipboardManager.unpinClip(it) else clipboardManager.pinClip(it) } },
+                            // a mark undoes its step for this clip, an undone mark redoes it
+                            onMark = { i, which -> clipItems.getOrNull(i)?.let { item ->
+                                clipboardManager.updateClip(if (which == "expanded") item.copy(keepShortLink = !item.keepShortLink) else item.copy(keepTrackers = !item.keepTrackers))
+                            } },
+                            // a colour pasted in the format picked
+                            onFormat = { i, k -> clipItems.getOrNull(i)?.text?.let { io.github.sillypuppyy.dogboard.ime.ClipKinds.color(it.trim()) }?.let { c ->
+                                ui.closePanel()
+                                imeController.updateStateBlocking { emitText(listOf(c.hex, c.rgb, c.hsl)[k].asK3String()) }
+                            } },
+                            onMenu = { i, what -> clipItems.getOrNull(i)?.let { item ->
+                                when (what) {
+                                    "paste" -> paste(i)
+                                    "delete" -> clipboardManager.deleteClip(item, onlyIfUnpinned = false)
+                                    "share" -> io.github.sillypuppyy.dogboard.ime.ClipIntents.share(context, item)
+                                    "action" -> io.github.sillypuppyy.dogboard.ime.ClipIntents.open(context, item.text.orEmpty())
+                                }
+                            } },
+                            canEdit = false,
+                        )
+                    },
                     clipFilter = clipFilter,
-                    clips = remember(clipItems) { clipItems.map { item ->
+                    clips = remember(clipItems, expandLinks, stripLinks) { clipItems.map { item ->
                         val media = item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT
                         val video = item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO
                         io.github.sillypuppyy.dogboard.design.KbClipData(
@@ -435,7 +465,16 @@ fun ImeKeyboardBox(
                             sensitive = item.isSensitive,
                             clearsInSec = if (item.isSensitive && clearSensitive) ((item.creationTimestampMs + clearAfterSec * 1000L - nowMs) / 1000).toInt().coerceAtLeast(0) else null,
                             thumbnail = if (media) { px -> io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, px) } else null,
-                        )
+                        ).let { d ->
+                            // the link marks: each step that changes this clip, filled while applied
+                            if (media || item.isSensitive) d else {
+                                val steps = io.github.sillypuppyy.dogboard.ime.ClipLinkSteps.of(item.text.orEmpty(), expandLinks && !item.keepShortLink, stripLinks && !item.keepTrackers)
+                                d.copy(
+                                    expanded = if (expandLinks && steps.expands) !item.keepShortLink else null,
+                                    cleaned = if (stripLinks && steps.strips) !item.keepTrackers else null,
+                                )
+                            }
+                        }
                     } },
                     // the design's messages: "locked" = phone locked (clips hidden), "empty" = history off
                     panelVariant = when {

@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -99,6 +101,8 @@ class KbClipActions(
     val onReveal: (Int) -> Unit = {},
     /** H:31-36: "paste", "action", "edit", "share", "delete". */
     val onMenu: (Int, String) -> Unit = { _, _ -> },
+    /** The hold menu's Edit (an editor above the keyboard); hidden while there is none. */
+    val canEdit: Boolean = true,
 )
 
 val LocalKbClipActions = androidx.compose.runtime.staticCompositionLocalOf<KbClipActions?> { null }
@@ -118,16 +122,29 @@ private fun text(size: Int, weight: Int, color: Color) = designTextStyle(size.sp
 @Composable
 fun KbClipList(t: KbTokens, rows: List<KbClipRow>, modifier: Modifier = Modifier, state: LazyListState = rememberLazyListState(), initialHeld: Int = -1) {
     var held by remember(initialHeld) { mutableStateOf(initialHeld) }
-    LazyColumn(
-        modifier.fillMaxSize(), state = state,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        itemsIndexed(rows) { i, r ->
-            Column {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.fillMaxSize(), state = state,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            itemsIndexed(rows) { i, r ->
                 ClipRow(t, r, i, rows.size, state, held == i) { held = if (held == i) -1 else i }
-                if (held == i) HoldMenu(t, r, i) { held = -1 }
             }
+        }
+        // H:30: the menu under the held row, over the list (it is taller than the list's rows); moved up as
+        // Material menus are when it would leave the panel. A tap outside it closes it.
+        rows.getOrNull(held)?.let { r ->
+            var menuH by remember { mutableStateOf(0) }
+            val item = state.layoutInfo.visibleItemsInfo.firstOrNull { it.index == held }
+            val maxH = constraints.maxHeight
+            val y = ((item?.let { it.offset + it.size } ?: 0)).coerceAtMost(maxH - menuH).coerceAtLeast(0)
+            Box(Modifier.matchParentSize().tap({ held = -1 }))
+            Box(
+                Modifier.fillMaxWidth().offset { androidx.compose.ui.unit.IntOffset(0, y) }
+                    .onSizeChanged { menuH = it.height }.padding(end = 8.dp),
+                contentAlignment = Alignment.TopEnd,
+            ) { HoldMenu(t, r, held) { held = -1 } }
         }
     }
 }
@@ -301,9 +318,9 @@ private fun Mark(bg: Color?, t: KbTokens, icon: String, slash: Boolean, ring: Bo
 private fun HoldMenu(t: KbTokens, r: KbClipRow, i: Int, close: () -> Unit) {
     val actions = LocalKbClipActions.current
     val shape = RoundedCornerShape(16.dp)
-    Box(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp), contentAlignment = Alignment.TopEnd) {
+    Box(Modifier.padding(top = 4.dp, bottom = 4.dp)) {
         Column(
-            Modifier.padding(end = 8.dp).width(232.dp)
+            Modifier.width(232.dp)
                 .cssShadow(CssShadow.parse("0 2px 6px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,0,0.12)"), shape)
                 .background(t.pop, shape).padding(vertical = 8.dp),
         ) {
@@ -318,7 +335,7 @@ private fun HoldMenu(t: KbTokens, r: KbClipRow, i: Int, close: () -> Unit) {
             }
             item("content_paste", "Paste", "paste")
             if (r.action.isNotEmpty()) item(r.actionIcon, r.action, "action")
-            item("edit", "Edit", "edit")
+            if (actions?.canEdit != false) item("edit", "Edit", "edit")
             item("share", "Share", "share")
             Box(Modifier.padding(vertical = 4.dp).fillMaxWidth().height(1.dp).background(t.div))
             item("delete", "Delete", "delete", if (t.pop.luminance() > 0.5f) Color(0xFF93000A) else Color(0xFFFFB4AB))

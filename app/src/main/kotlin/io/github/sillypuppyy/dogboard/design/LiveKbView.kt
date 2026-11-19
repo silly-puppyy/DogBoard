@@ -53,6 +53,8 @@ fun LiveKbView(
     panel: String = "",
     actions: KbActions? = null,
     clips: List<KbClipData>? = null,
+    /** Taps on the clipboard rows' parts (pin, marks, formats, the hold menu). */
+    clipActions: KbClipActions? = null,
     clipFilter: Int = 0,
     panelVariant: String = "default",
     /** "emoji" or "globe": what the fn key does (FlorisBoard's fn key setting). */
@@ -140,7 +142,7 @@ fun LiveKbView(
             io.github.sillypuppyy.dogboard.perf.GcStats.track("layout") { KbSpec.layout(layoutProps) }
         }
         val render = KbSpec.overlays(layout, themed)
-        androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions, LocalKbClipActions provides clipActions) {
             val a0 = io.github.sillypuppyy.dogboard.perf.GcStats.begin()
             KbView(render)
             io.github.sillypuppyy.dogboard.perf.GcStats.end("KbView (inline part)", a0)

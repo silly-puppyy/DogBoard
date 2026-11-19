@@ -382,6 +382,13 @@ class ClipboardManager(
         }
     }
 
+    /** DogBoard clipboard rows: store a clip's changed flags (keep the short link, keep the trackers). */
+    fun updateClip(item: ClipboardItem) {
+        ioScope.launch {
+            clipHistoryDao?.update(item)
+        }
+    }
+
     fun unpinClip(item: ClipboardItem) {
         ioScope.launch {
             clipHistoryDao?.update(item.copy(isPinned = false))
