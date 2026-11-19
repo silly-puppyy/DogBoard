@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """One swipe recogniser for every layout, FUTO-style (tools/swipe/uni.py).
 
-    uni.py train --out DIR [--epochs 8] [--synth-per-layout 200000] [--futo-shards 5]
+    uni.py train --out DIR [--epochs 8] [--synth-per-layout 200000] [--futo-shards 5] [--random-share 0.3]
     uni.py eval --model DIR/best.pt [-n 3000]
 
 User 2026-11-19: "I assume we can make our own FUTO-style model". FUTO's encoder (compare_futo.py) never names
@@ -85,7 +85,7 @@ def phys_keys(table, sy):
     return table * torch.tensor([10.0, sy, 10.0, sy])
 
 
-def load_training(per_layout, futo_shards):
+def load_training(per_layout, futo_shards, random_share=0.0):
     items = []  # (features [T, 4] phys, word, layout, sy)
     sy_futo = 10 * FUTO_ASPECT
     for f in sorted(glob.glob(f"{D}/swipe/prepared/train-*.pt"))[:futo_shards]:
@@ -96,12 +96,17 @@ def load_training(per_layout, futo_shards):
     for lay, (lang, asp) in TRAIN_LAYOUTS.items():
         syn = [it for f in sorted(glob.glob(f"{D}/swipe/synth-cvae2-{lay}/train-*.pt")) for it in torch.load(f)]
         random.Random(1).shuffle(syn)
-        items += [(x, w, lay, 10 * asp) for x, w in syn[:per_layout]]
+        n_rand = int(per_layout * random_share)
+        items += [(x, w, lay, 10 * asp) for x, w in syn[:per_layout - n_rand]]
+        if n_rand:
+            # random letter strings (user 2026-11-19: so the network reads the path, not English spelling habits)
+            rnd = [it for f in sorted(glob.glob(f"{D}/swipe/synth-random-{lay}/train-*.pt")) for it in torch.load(f)]
+            items += [(x, w, lay, 10 * asp) for x, w in rnd[:n_rand]]
         real = []
         if lay != "qwerty":
             real = [(x, w, lay, sy) for x, w, sy in torch.load(f"{D}/swipe/split-{lay}-{lang}/train-0.pt")]
             items += real * 5
-        print(f"{lay}: synthetic {min(per_layout, len(syn))}, real half {len(real)} x5", flush=True)
+        print(f"{lay}: synthetic {min(per_layout - n_rand, len(syn))} + random strings {n_rand}, real half {len(real)} x5", flush=True)
     return items
 
 
@@ -133,7 +138,7 @@ def train(a):
     torch.set_num_threads(2)
     random.seed(0)
     tables = {lay: layout_keys(lay) for lay in TRAIN_LAYOUTS}
-    items = [it for it in load_training(a.synth_per_layout, a.futo_shards) if all(ch in tables[it[2]][0] for ch in it[1])]
+    items = [it for it in load_training(a.synth_per_layout, a.futo_shards, a.random_share) if all(ch in tables[it[2]][0] for ch in it[1])]
     random.shuffle(items)
     dev, items = items[:5000], items[5000:]
     print(f"train {len(items)}, dev {len(dev)}", flush=True)
@@ -194,10 +199,12 @@ def evaluate(a):
         items = hws_items(a.n) if mode == "hws" else futo_test_items(a.n)
         letters, f = logp_fn("qwerty", lambda r: 10 * FUTO_ASPECT)
         print(f"{mode}:"); score("UniNet", items, f, root_en, letters)
-    for lay, lang in [(l, v[0]) for l, v in TRAIN_LAYOUTS.items() if l != "qwerty"] + [("kasroz", "en")]:
-        items, root, _ = swipe5_items(lay, lang, all_people=lay == "kasroz")
+    # QWERTY in other languages (every person; Polish is a language no training set has)
+    unseen = [("kasroz", "en"), ("qwerty", "pl"), ("qwerty", "de"), ("qwerty", "fr")]
+    for lay, lang in [(l, v[0]) for l, v in TRAIN_LAYOUTS.items() if l != "qwerty"] + unseen:
+        items, root, _ = swipe5_items(lay, lang, all_people=(lay, lang) in unseen)
         letters, f = logp_fn(lay, lambda r: 10.0 * r["canvas_height"] / r["canvas_width"])
-        print(f"{lay}-{lang}{' (never trained on)' if lay == 'kasroz' else ', held-out half'}:")
+        print(f"{lay}-{lang}{', all people (not in training)' if (lay, lang) in unseen else ', held-out half'}:")
         score("UniNet", items, f, root, letters)
 
 
@@ -218,6 +225,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--synth-per-layout", type=int, default=200000)
     ap.add_argument("--futo-shards", type=int, default=5, help="FUTO real QWERTY shards (200k swipes each)")
+    ap.add_argument("--random-share", type=float, default=0.0, help="share of each layout's synthetic swipes drawn as random letter strings (synth-random-LAYOUT)")
     ap.add_argument("--model", default="")
     ap.add_argument("-n", type=int, default=3000)
     a = ap.parse_args()
