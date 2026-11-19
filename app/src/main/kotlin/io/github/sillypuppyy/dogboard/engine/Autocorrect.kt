@@ -96,7 +96,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          * Characters that make a completion a "special edit" (spec 4.1 P: word-medial punctuation ' & ’ and
          * the Hebrew geresh and gershayim; diacritics are tested in [isSpecialEdit]).
          */
-        private val SPECIAL_EDIT_CHARS = setOf('\'', '’', '&')
+        private val SPECIAL_EDIT_CHARS = setOf('\'', '’', '&', '\u05F3', '\u05F4')
 
         /** Spec 4.1 P: a precomposed (é) or separated (e + U+0301) diacritic, or a [SPECIAL_EDIT_CHARS] (audit 2026-11-20). */
         internal fun isSpecialEdit(c: Char): Boolean = c in SPECIAL_EDIT_CHARS ||
@@ -155,7 +155,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         // Rule 5: a completion needs a long enough stem (or a contraction-like ending, or the same
         // choice as one keystroke earlier) and must clearly beat the runner-up.
         val gain = t.length - typed.length
-        val specialEdit = t.substring(typed.length).any { it in SPECIAL_EDIT_CHARS }
+        val specialEdit = t.substring(typed.length).any(::isSpecialEdit)
         val minStem = when {
             gain <= 1 -> level.minStemOneLetter
             gain == 2 -> level.minStemTwoLetters
