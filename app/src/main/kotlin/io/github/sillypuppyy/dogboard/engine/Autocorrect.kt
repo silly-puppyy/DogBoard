@@ -103,6 +103,8 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             Character.getType(c) == Character.NON_SPACING_MARK.toInt() ||
             java.text.Normalizer.normalize(c.toString(), java.text.Normalizer.Form.NFD).length > 1
 
+        private fun oneLetterWords(s: String) = s.split(' ').count { it.length == 1 }
+
         /** The casing rules when nothing more is known: capitals in [typed] count as shifted by the user. */
         fun inferredCase(typed: String): (String) -> String? {
             val flags = typed.map { if (it.isUpperCase()) CaseAdapt.SHIFTED else 0 }
@@ -138,8 +140,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         if (top.words > 1 && top.contextSupport < MIN_CONTEXT_SUPPORT) return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
-        // Rule 2: never complete a one-letter word into a longer word ("a" -> "and").
-        if (typed.length == 1 && t.length > 1 && t.startsWith(typed, ignoreCase = true)) return null
+        // Rule 2 (spec 4.1): a correction longer than the input that has fewer one-letter words than it is
+        // rejected ("a" -> "and", and as well "o" -> "in"; audit 2026-11-20: ours needed T to start with I)
+        if (t.length > typed.length && oneLetterWords(t) < oneLetterWords(typed)) return null
         // iOS filter 20 (keep more typed words when nearly as likely), and Gentle's larger margin;
         // a correction with the typed letters ("dont" -> "don't") keeps the typed word already
         if (sortKey(t) != sortKey(typed)) {
