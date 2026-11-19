@@ -41,6 +41,7 @@ fun ThemesScreen() {
     val userPacks by androidx.compose.runtime.produceState(emptyList<io.github.sillypuppyy.dogboard.design.UserThemes.Pack>(), stamp, userTheme, version) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.design.UserThemes.migrate(context, prefs)
+            io.github.sillypuppyy.dogboard.design.UserThemes.installPhotos(context)
             io.github.sillypuppyy.dogboard.design.UserThemes.packs(context)
         }
         // the Themes page's messages name a gradient by its saved name

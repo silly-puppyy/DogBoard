@@ -4,6 +4,7 @@ import android.content.Context
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.math.roundToInt
 import java.io.File
 
 /**
@@ -18,7 +19,7 @@ import java.io.File
  */
 object UserThemes {
     /** [spec]: a gradient theme's theme id (GradientSpec), null for a photo theme. */
-    data class Theme(val id: String, val name: String, val kind: String, val spec: String? = null)
+    data class Theme(val id: String, val name: String, val kind: String, val spec: String? = null, val credit: String? = null)
     data class Pack(val id: String, val name: String, val themes: List<Theme>)
 
     const val DEFAULT_PACK = "My themes"
@@ -44,7 +45,8 @@ object UserThemes {
 
     fun theme(context: Context, id: String): Theme? = runCatching {
         val j = JSONObject(File(dir(context, id), "theme.json").readText())
-        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.parse(it) != null })
+        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.parse(it) != null },
+            j.optString("credit").takeIf { it.isNotEmpty() })
     }.getOrNull()
 
     @Synchronized
@@ -311,6 +313,42 @@ object UserThemes {
             out.write(buf, 0, n)
         }
         return out.toByteArray()
+    }
+
+    /**
+     * The built-in photos (assets dogboard/photos, chosen with the user 2026-11-19) as a pack "Photos", once: each
+     * analysed and matched for readability as a picked photo is, so they edit, move and share like the user's
+     * own. A marker keeps a deleted pack deleted.
+     */
+    @Synchronized
+    fun installPhotos(context: Context) {
+        val marker = File(root(context), ".photos-1")
+        if (marker.isFile) return
+        val list = runCatching { org.json.JSONArray(context.assets.open("dogboard/photos/photos.json").bufferedReader().readText()) }.getOrNull() ?: return
+        val ids = ArrayList<String>()
+        for (i in 0 until list.length()) {
+            val p = list.getJSONObject(i)
+            val bmp = context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { android.graphics.BitmapFactory.decodeStream(it) } ?: continue
+            val a = GlassPhoto.analyse(bmp)
+            val look = PhotoReadability.auto(a)
+            val id = "p" + System.currentTimeMillis().toString(36) + i
+            val d = dir(context, id).apply { mkdirs() }
+            context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { inp -> File(d, "photo.jpg").outputStream().use { inp.copyTo(it) } }
+            File(d, "analysis.txt").writeText(a.encode())
+            val params = JSONObject().put("dim", (look.dim * 100).roundToInt()).put("blur", look.blur.roundToInt())
+                .put("keyOpacity", (look.tint * 100).roundToInt()).put("luminance", (GlassPhoto.luminance(bmp) * 1000).roundToInt())
+                .put("labels", look.labels).put("halo", look.halo).put("accent", look.accent).put("pos", "center")
+            val credit = p.getString("by") + ", " + if (p.getString("source") == "Unsplash") "Unsplash" else p.getString("license")
+            File(d, "theme.json").writeText(JSONObject().put("name", p.getString("name")).put("kind", "photo").put("created", System.currentTimeMillis())
+                .put("credit", credit).put("params", params).toString(1))
+            ids.add(id)
+        }
+        if (ids.isNotEmpty()) {
+            val packs = rawPacks(context)
+            packs.add("k" + System.currentTimeMillis().toString(36) + "ph" to ("Photos" to ids))
+            writePacks(context, packs)
+        }
+        marker.writeText("1")
     }
 
     /** First run with saved themes: an existing photo becomes the first theme, "My photo". */

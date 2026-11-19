@@ -129,7 +129,7 @@ object GlassPhoto {
     fun load(context: Context): Bitmap? = file(context).takeIf { it.isFile }?.let { BitmapFactory.decodeFile(it.absolutePath) }
 
     /** Mean WCAG relative luminance over a coarse grid of pixels. */
-    private fun luminance(b: Bitmap): Double {
+    fun luminance(b: Bitmap): Double {
         fun lin(c: Int): Double { val x = c / 255.0; return if (x <= 0.03928) x / 12.92 else ((x + 0.055) / 1.055).pow(2.4) }
         var sum = 0.0
         var n = 0

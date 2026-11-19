@@ -451,7 +451,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                     DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                                     if (sel) Symbol("edit", 18.sp, SetColors.onSurfaceVariant)
                                 }
-                                DText(if (sel) "In use. Tap to edit" else if (t.spec != null) "Gradient. Hold for more" else "Photo. Hold for more", Modifier.padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                                DText(if (sel) "In use. Tap to edit" else if (t.spec != null) "Gradient. Hold for more" else t.credit?.let { "Photo: $it" } ?: "Photo. Hold for more", Modifier.fillMaxWidth().padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
                             }
                             androidx.compose.material3.DropdownMenu(menu, { menu = false }) {
                                 androidx.compose.material3.DropdownMenuItem({ androidx.compose.material3.Text("Rename") }, { menu = false; state.onThemeAction(t.id, "rename") })

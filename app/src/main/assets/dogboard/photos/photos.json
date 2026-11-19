@@ -1,0 +1,44 @@
+[
+ {
+  "slug": "red",
+  "name": "Red leaves",
+  "by": "Jeremy Thomas",
+  "source": "Unsplash",
+  "license": "Unsplash License"
+ },
+ {
+  "slug": "tan",
+  "name": "Desert",
+  "by": "Hassan OUAJBIR",
+  "source": "Unsplash",
+  "license": "Unsplash License"
+ },
+ {
+  "slug": "orange",
+  "name": "Lily",
+  "by": "Manisamg",
+  "source": "Wikimedia Commons",
+  "license": "CC BY-SA 3.0"
+ },
+ {
+  "slug": "green",
+  "name": "Aurora",
+  "by": "v2osk",
+  "source": "Unsplash",
+  "license": "Unsplash License"
+ },
+ {
+  "slug": "blue",
+  "name": "Snow peaks",
+  "by": "T. Selin Erkan",
+  "source": "Unsplash",
+  "license": "Unsplash License"
+ },
+ {
+  "slug": "purple",
+  "name": "Night sky",
+  "by": "Tyler Clemmensen",
+  "source": "Unsplash",
+  "license": "Unsplash License"
+ }
+]
