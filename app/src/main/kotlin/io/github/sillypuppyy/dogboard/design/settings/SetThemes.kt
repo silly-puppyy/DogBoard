@@ -312,22 +312,21 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
     val t = ThemeChoice.theme(id)
     val where = ThemeChoice.where(c, id)
     val sel = where.isNotEmpty()
-    Column(Modifier.width(173.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    val w = tileW(); val h = tileH(w)
+    Column(Modifier.width(w.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
-            Modifier.size(173.dp, 137.dp)
+            Modifier.size(w.dp, h.dp)
                 .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(14.dp)) else Modifier)
                 .clip(RoundedCornerShape(14.dp)).clickable(onClick = onPick),
         ) {
-            Preview(id, t.mode == "dark", seed, 173f, 137f, 0.4613f, null)
+            Preview(id, t.mode == "dark", seed, w, h, w / 375f, null)
             // :90-92 a pair shows its night version in the lower-right triangle
-            if (t.mode == "pair") Box(Modifier.size(173.dp, 137.dp).clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
-                Preview(id, true, seed, 173f, 137f, 0.4613f, null)
+            if (t.mode == "pair") Box(Modifier.size(w.dp, h.dp).clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
+                Preview(id, true, seed, w, h, w / 375f, null)
             }
             // the outline over the keyboard (drawn under it, a pair's dark half hid it on two edges)
             if (!sel) TileOutline()
-            if (sel) Box(Modifier.offset(x = 143.dp, y = 6.dp).size(24.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 2f, Color.White)), RoundedCornerShape(12.dp)).background(primary, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                Symbol("check", 18.sp, Color.White)
-            }
+            if (sel) InUseBadge(primary, Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp))
         }
         Row(Modifier.padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             DText(t.name, Modifier.weight(1f), style = setText(15f, if (sel) 600 else 400).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 1)
@@ -344,12 +343,30 @@ private fun androidx.compose.foundation.layout.BoxScope.TileOutline() {
     Box(Modifier.matchParentSize().border(1.dp, SetColors.outlineVariant, RoundedCornerShape(14.dp)))
 }
 
+/**
+ * A tile's width: two to a row across the screen, 16 dp margins, 12 dp apart (user 2026-11-19: previews to the
+ * screen's width, "even just a little bit bigger provides a better view"; were a fixed 173 dp). Height keeps the
+ * canvas's 173 x 137 shape; the keyboard (drawn 375 wide) scales to the width.
+ */
+@Composable
+private fun tileW(): Float = ((androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp - 32 - 12) / 2f).coerceAtLeast(150f)
+private fun tileH(w: Float) = w * 137f / 173f
+
+/** The "in use" badge: a white check on the accent colour, ringed in white so it reads on any theme (was grey). */
+@Composable
+private fun InUseBadge(primary: Color, modifier: Modifier = Modifier) {
+    Box(modifier.size(24.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 2f, Color.White)), RoundedCornerShape(12.dp)).background(primary, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+        Symbol("check", 18.sp, Color.White)
+    }
+}
+
 /** :93-95 the "add" tile at the end of a section (From a photo, New gradient). */
 @Composable
 private fun NewTile(icon: String, label: String, onClick: () -> Unit) {
-    Column(Modifier.width(173.dp)) {
+    val w = tileW()
+    Column(Modifier.width(w.dp)) {
         Column(
-            Modifier.size(173.dp, 137.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick),
+            Modifier.size(w.dp, tileH(w).dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, SetColors.outline)), RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick),
             verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Symbol(icon, 28.sp, SetColors.primary)
@@ -480,32 +497,33 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                             }
                         }
                         var menu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                        val tw = tileW()
                         Box {
                             Column(
-                                Modifier.width(173.dp).combinedClickable(onLongClick = { menu = true }) { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
+                                Modifier.width(tw.dp).combinedClickable(onLongClick = { menu = true }) { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Box(
                                     // the built-in tile's size, selection ring and corners (the saved tiles were 162 x 128 with a
                                     // thicker inner frame, out of line with the "new" tiles beside them; user 2026-11-19 borders)
-                                    Modifier.size(173.dp, 137.dp)
+                                    Modifier.size(tw.dp, tileH(tw).dp)
                                         .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(14.dp)) else Modifier)
                                         .clip(RoundedCornerShape(14.dp)).background(SetColors.surfaceContainerHighest),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     // a gradient shows its keyboard, a photo its picture
-                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) { Preview(t.spec, false, 0, 173f, 137f, 0.4613f, null) }
+                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) { Preview(t.spec, false, 0, tw, tileH(tw), tw / 375f, null) }
                                     else thumb?.let { (imgs, tile) ->
                                         val vs = tile?.versions.orEmpty()
                                         val first = vs.firstOrNull()
-                                        imgs[0]?.let { PhotoPreview(if (first?.second == true) imgs[1] ?: it else it, first?.first, t.name) }
+                                        imgs[0]?.let { PhotoPreview(if (first?.second == true) imgs[1] ?: it else it, first?.first, t.name, tw, tw / 375f) }
                                         // bright and dark: the dark version in the lower-right triangle, as the built-in pairs
                                         if (vs.size == 2) Box(Modifier.fillMaxSize().clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
-                                            (if (vs[1].second) imgs[1] else imgs[0])?.let { PhotoPreview(it, vs[1].first, t.name) }
+                                            (if (vs[1].second) imgs[1] else imgs[0])?.let { PhotoPreview(it, vs[1].first, t.name, tw, tw / 375f) }
                                         }
                                     }
                                     if (!sel) TileOutline()
-                                    if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
+                                    if (sel) InUseBadge(primary, Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp))
                                 }
                                 Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                     DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))

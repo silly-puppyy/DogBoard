@@ -122,12 +122,12 @@
   "source": "Unsplash",
   "license": "Unsplash License",
   "looks": {
-   "versions": "both",
+   "versions": "bright",
    "darkPhoto": false,
    "darkLum": 300,
    "bright": {
     "b": 100,
-    "k": 0,
+    "k": 30,
     "blur": 0,
     "labels": "dark",
     "halo": true,
