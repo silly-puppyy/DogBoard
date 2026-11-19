@@ -28,7 +28,7 @@ class MissingLastLetterProbeTest : FunSpec({
             listOf("i'm", "going", "hom", "home"), listOf("on", "my", "wa", "way"), listOf("see", "you", "tomorro", "tomorrow"),
             listOf("thank", "you", "s", "so"), listOf("let", "me", "kno", "know"), listOf("what", "a", "grea", "great"),
             listOf("i", "need", "hel", "help"), listOf("in", "the", "mornin", "morning"), listOf("it", "was", "fu", "fun"),
-            listOf("i", "love", "yo", "you"), listOf("going", "to", "th", "the"), listOf("have", "a", "nic", "nice"), listOf("so", "i", "thibk", "think"), listOf("i", "want", "teh", "the"),
+            listOf("i", "love", "yo", "you"), listOf("going", "to", "th", "the"), listOf("have", "a", "nic", "nice"), listOf("so", "i", "thibk", "think"), listOf("i", "want", "teh", "the"), listOf("i", "use", "gboard", "Gboard"), listOf("open", "the", "gboard", "Gboard"), listOf("in", "the", "excel", "Excel"), listOf("open", "an", "excel", "Excel"),
         )
         try {
             for ((p2, p1, typed, wanted) in cases) {
@@ -45,6 +45,13 @@ class MissingLastLetterProbeTest : FunSpec({
                 val out = TypingEngine.correction(word, candidates, commit = false) ?: typed
                 val atSpace = TypingEngine.correction(word, candidates, commit = true) ?: typed
                 println("SPLIT $p1 [$typed] -> $out (word end: $atSpace); " + candidates.take(4).joinToString { "%s %.2f w%d sup %.2f".format(it.word, it.score, it.words, it.contextSupport) })
+            }
+            // the look back (user 2026-11-19: "word later andnwaited": "later" was retro-corrected to "layer")
+            fun typedWord(t: String) = CurrentWord().apply { for (c in t) addLetter(c, keys[c]?.let { Tap(it.centerX, it.centerY) }, keys, params) }
+            for ((before, prev, next) in listOf(Triple("word", "later", "andnwaited"), Triple("word", "later", "and"), Triple("word", "later", "an"),
+                Triple("see", "later", "andnwaited"), Triple("the", "later", "andnwaited"))) {
+                val out = TypingEngine.retrocorrection(typedWord(prev), prev, before, typedWord(next)) ?: prev
+                println("RETRO $before [$prev] $next -> $out")
             }
         } finally {
             TypingEngine.unloadForTest()
