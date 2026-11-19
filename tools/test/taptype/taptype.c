@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 static int fd;
+#define TOUCH_SIZE 20
 
 static void emit(int type, int code, int value) {
     struct input_event ev;
@@ -34,7 +35,8 @@ int main(int argc, char **argv) {
         perror("open");
         return 1;
     }
-    int id = (int)(time(NULL) & 0xffff) * 16, x, y, press, gap;
+    // tracking ids stay inside the device's range (virtio multi-touch: 0..65535)
+    int id = (int)(time(NULL) & 0x3fff) * 2, x, y, press, gap;
     static char line[1 << 16];
     while (fgets(line, sizeof line, stdin)) {
         if (line[0] == 'S') {
@@ -51,6 +53,8 @@ int main(int argc, char **argv) {
                     emit(EV_ABS, ABS_MT_SLOT, 0);
                     emit(EV_ABS, ABS_MT_TRACKING_ID, ++id);
                     emit(EV_ABS, ABS_MT_PRESSURE, 50);
+                    emit(EV_ABS, ABS_MT_TOUCH_MAJOR, TOUCH_SIZE);  // a finger-sized contact, not 0
+                    emit(EV_ABS, ABS_MT_TOUCH_MINOR, TOUCH_SIZE);
                     emit(EV_KEY, BTN_TOUCH, 1);
                 } else if (pt - t0 > last) {
                     sleep_ms((int)(pt - t0) - last);
