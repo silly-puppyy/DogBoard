@@ -79,6 +79,17 @@ object UserThemes {
         return id
     }
 
+    /** What a photo theme's tile draws over its photo: the keyboard as the theme sets it (Glass tokens). */
+    data class PhotoLook(val dim: Float, val keyOpacity: Float, val luminance: Float, val labels: String, val halo: Boolean, val actColor: String?, val actFg: String?, val pos: String)
+
+    fun photoLook(context: Context, id: String): PhotoLook? = runCatching {
+        val p = JSONObject(File(dir(context, id), "theme.json").readText()).getJSONObject("params")
+        val acc = File(dir(context, id), "analysis.txt").takeIf { it.isFile }?.let { GlassPhoto.Analysis.decode(it.readText()) }?.accents
+        val a = acc?.getOrNull(p.optInt("accent", 0)) ?: acc?.firstOrNull()
+        PhotoLook(p.optInt("dim", 35) / 100f, p.optInt("keyOpacity", 30) / 100f, p.optInt("luminance", 300) / 1000f,
+            p.optString("labels", "auto"), p.optBoolean("halo", true), a?.first, a?.second, p.optString("pos", "center"))
+    }.getOrNull()
+
     /** A new gradient theme ([spec]: its GradientSpec id) in [pack] (the default pack when null). */
     @Synchronized
     fun createGradient(context: Context, name: String, spec: String, pack: String? = null): String {

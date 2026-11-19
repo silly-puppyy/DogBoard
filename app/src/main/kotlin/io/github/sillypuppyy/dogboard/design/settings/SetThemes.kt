@@ -340,6 +340,28 @@ private fun NewTile(icon: String, label: String, onClick: () -> Unit) {
     }
 }
 
+/** A saved photo theme's tile: its photo, dimmed, and the keyboard over it as the theme sets it (162 x 128). */
+@Composable
+private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?, name: String) {
+    val l = look ?: io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook(0.35f, 0.3f, 0.3f, "auto", true, null, null, "center")
+    val render = remember(l) {
+        KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
+            glassFg = l.labels, halo = l.halo, actColor = l.actColor, actFg = l.actFg, backdrop = false))
+    }
+    val scale = 162f / 375f
+    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) {
+        // the photo behind the keyboard's height only, as the keyboard crops it
+        Box(Modifier.size(162.dp, (render.H * scale).dp)) {
+            androidx.compose.foundation.Image(img, name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                alignment = when (l.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
+            Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, l.dim)))
+            Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, 0f) }) {
+                KbView(render)
+            }
+        }
+    }
+}
+
 /** A keyboard preview: the theme drawn at 375 wide, scaled into a [w] x [h] box. */
 @Composable
 private fun Preview(id: String, dark: Boolean, seed: Int, w: Float, h: Float, scale: Float, ring: CssShadow?) {
@@ -399,13 +421,14 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                         if (cell == "gradient") { NewTile("gradient", "New gradient") { state.onNewGradientIn(pack.id) }; continue }
                         val t = cell as io.github.sillypuppyy.dogboard.design.UserThemes.Theme
                         val sel = if (t.spec != null) t.spec in state.inUse else state.userTheme == t.id
-                        val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, t.id) {
+                        // a photo tile: the photo and its look (as saved; the version counter reloads it after an edit)
+                        val thumb by androidx.compose.runtime.produceState<Pair<androidx.compose.ui.graphics.ImageBitmap, io.github.sillypuppyy.dogboard.design.UserThemes.PhotoLook?>?>(null, t.id, state.userPacks) {
                             if (t.spec == null) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                 val f = io.github.sillypuppyy.dogboard.design.UserThemes.photo(context, t.id)
                                 runCatching {
                                     val o = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }
                                     android.graphics.BitmapFactory.decodeFile(f.absolutePath, o)?.asImageBitmap()
-                                }.getOrNull()
+                                }.getOrNull()?.let { it to io.github.sillypuppyy.dogboard.design.UserThemes.photoLook(context, t.id) }
                             }
                         }
                         var menu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
@@ -421,7 +444,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                 ) {
                                     // a gradient shows its keyboard, a photo its picture
                                     if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) { Preview(t.spec, false, 0, 162f, 128f, 162f / 375f, null) }
-                                    else thumb?.let { androidx.compose.foundation.Image(it, t.name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+                                    else thumb?.let { (img, look) -> PhotoPreview(img, look, t.name) }
                                     if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
                                 }
                                 Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
