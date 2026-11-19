@@ -594,6 +594,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val spotReroll = string(key = "keyboard__spot_reroll", default = "open")
         // DogBoard: Themes › Return key per theme (user 2026-11-19), "id=always;id=actions" (ThemeChoice.retAlways)
         val retColour = string(key = "keyboard__ret_colour", default = "")
+        // DogBoard: the saved photo theme the photo slot holds (UserThemes; "" = none)
+        val userTheme = string(key = "keyboard__user_theme", default = "")
         val spotSeed = int(key = "keyboard__spot_seed", default = 3)
         // theme packs hidden from the Themes page (section ids, comma separated)
         val hiddenThemePacks = string(key = "keyboard__hidden_theme_packs", default = "")

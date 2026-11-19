@@ -45,6 +45,8 @@ fun PhotoScreen() {
         prefs.keyboard.glassLabels.set(l.labels)
         prefs.keyboard.glassHalo.set(l.halo)
         prefs.keyboard.glassAccent.set(l.accent)
+        // the saved theme being edited keeps the change (UserThemes)
+        withContext(Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.saveBack(context, prefs) }
     }
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch(Dispatchers.IO) {
@@ -54,6 +56,10 @@ fun PhotoScreen() {
             GlassPhoto.analysis(context)?.let { store(PhotoReadability.auto(it)) }
             prefs.keyboard.glassPhotoStamp.set(System.currentTimeMillis())
             prefs.keyboard.glassEnabled.set(true)
+            // a new photo for the theme being edited, or a first saved theme
+            if (prefs.keyboard.userTheme.get().isEmpty()) {
+                io.github.sillypuppyy.dogboard.design.UserThemes.createPhoto(context, prefs, "Photo")?.let { prefs.keyboard.userTheme.set(it) }
+            } else io.github.sillypuppyy.dogboard.design.UserThemes.saveBack(context, prefs, photoToo = true)
         }
     }
     SetPhoto(SetPhotoState(
@@ -63,7 +69,7 @@ fun PhotoScreen() {
         pos = pos,
         use = when { day == "glass" && night == "glass" -> "both"; night == "glass" -> "night"; day == "glass" -> "day"; else -> "both" },
         onLook = { l -> scope.launch { store(l) } },
-        onPos = { p -> scope.launch { prefs.keyboard.glassPhotoPos.set(p) } },
+        onPos = { p -> scope.launch { prefs.keyboard.glassPhotoPos.set(p); withContext(Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.saveBack(context, prefs) } } },
         onUse = { u ->
             scope.launch {
                 if (u != "night") prefs.keyboard.themeDay.set("glass") else if (day == "glass") prefs.keyboard.themeDay.set("dogboard")

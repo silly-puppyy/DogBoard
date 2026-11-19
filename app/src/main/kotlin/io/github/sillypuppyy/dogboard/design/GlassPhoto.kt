@@ -64,7 +64,7 @@ object GlassPhoto {
 
     val BLURS = listOf(0f, 4f, 8f, 12f, 16f, 20f, 25f)
 
-    private fun analysisFile(context: Context) = File(context.filesDir, "dogboard/glass.txt")
+    fun analysisFile(context: Context) = File(context.filesDir, "dogboard/glass.txt")
 
     /** The stored analysis of the current photo (made when it was picked; older photos get one now). */
     fun analysis(context: Context): Analysis? =

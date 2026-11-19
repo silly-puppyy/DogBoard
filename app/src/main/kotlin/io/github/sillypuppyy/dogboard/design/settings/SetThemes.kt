@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -65,6 +67,11 @@ class SetThemesState(
     /** Return key per theme ("id=always;id=actions", ThemeChoice.retAlways) and its setter. */
     val retPref: String = "",
     val onRet: (String, Boolean) -> Unit = { _, _ -> },
+    /** The user's packs of saved themes (UserThemes), the one in use, picking one, and editing one. */
+    val userPacks: List<io.github.sillypuppyy.dogboard.design.UserThemes.Pack> = emptyList(),
+    val userTheme: String? = null,
+    val onPickUser: (String) -> Unit = {},
+    val onEditUser: (String) -> Unit = {},
 )
 
 /** Settings › Look › Themes (SetThemes.dc.html, 390 wide). */
@@ -221,8 +228,10 @@ fun SetThemes(state: SetThemesState) {
 
             // :77-113 the sections of theme tiles
             for (sec in ThemeChoice.SECTIONS) {
+                if (sec.id == "everyday" && filter == "all") UserPackSections(state, primary)
                 if (sec.id in state.hidden) continue
-                val ids = sec.ids.filter { ThemeChoice.keep(filter, ThemeChoice.theme(it).mode) }
+                // with saved photo themes, the built-in Photo tile (the same photo slot) would show "In use" twice
+                val ids = sec.ids.filter { ThemeChoice.keep(filter, ThemeChoice.theme(it).mode) && (it != "glass" || state.userPacks.isEmpty()) }
                 val add = sec.add?.takeIf { filter == "all" }
                 if (ids.isEmpty() && add == null) continue
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -334,3 +343,50 @@ private fun PageSwitch(on: Boolean, onClick: () -> Unit) {
         Box(Modifier.offset(x = (if (on) 24 else 8).dp, y = (if (on) 4 else 8).dp).size(size.dp).clip(RoundedCornerShape(50)).background(if (on) Color.White else SetColors.outline))
     }
 }
+
+
+/** The user's packs (UserThemes): a section each, its saved themes as photo tiles. Tap: use it; tap the one in use: edit it. */
+@Composable
+private fun UserPackSections(state: SetThemesState, primary: Color) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    for (pack in state.userPacks) {
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                DText(pack.name, style = setText(14f, 500, primary))
+                DText("Your pack, ${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant))
+            }
+            for (row in pack.themes.chunked(2)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for (t in row) {
+                        val sel = state.userTheme == t.id
+                        val thumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, t.id) {
+                            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val f = io.github.sillypuppyy.dogboard.design.UserThemes.photo(context, t.id)
+                                runCatching {
+                                    val o = android.graphics.BitmapFactory.Options().apply { inSampleSize = 4 }
+                                    android.graphics.BitmapFactory.decodeFile(f.absolutePath, o)?.asImageBitmap()
+                                }.getOrNull()
+                            }
+                        }
+                        Column(Modifier.width(162.dp).clickable { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Box(
+                                Modifier.size(162.dp, 128.dp).clip(RoundedCornerShape(16.dp)).background(SetColors.surfaceContainerHighest)
+                                    .border(if (sel) 3.dp else 1.dp, if (sel) primary else SetColors.outlineVariant, RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                thumb?.let { androidx.compose.foundation.Image(it, t.name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+                                if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
+                            }
+                            Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                                if (sel) Symbol("edit", 18.sp, SetColors.onSurfaceVariant)
+                            }
+                            DText(if (sel) "In use. Tap to edit" else "Photo", Modifier.padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
