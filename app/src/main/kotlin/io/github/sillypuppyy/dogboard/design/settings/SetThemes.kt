@@ -217,7 +217,7 @@ fun SetThemes(state: SetThemesState) {
                     Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("photo", 24.sp, SetColors.onSurfaceVariant) }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DText("Edit photo theme", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        DText("Labels, dimming and the return key are matched to your photo. Change anything.", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8)
+                        DText("A bright and a dark version, each matched to your photo. Change anything.", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8)
                     }
                     Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
                 }
@@ -305,7 +305,7 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
     Column(Modifier.width(173.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
             Modifier.size(173.dp, 137.dp)
-                .cssShadow(if (sel) listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)) else listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outlineVariant)), RoundedCornerShape(14.dp))
+                .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(14.dp)) else Modifier)
                 .clip(RoundedCornerShape(14.dp)).clickable(onClick = onPick),
         ) {
             Preview(id, t.mode == "dark", seed, 173f, 137f, 0.4613f, null)
@@ -313,6 +313,8 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
             if (t.mode == "pair") Box(Modifier.size(173.dp, 137.dp).clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
                 Preview(id, true, seed, 173f, 137f, 0.4613f, null)
             }
+            // the outline over the keyboard (drawn under it, a pair's dark half hid it on two edges)
+            if (!sel) TileOutline()
             if (sel) Box(Modifier.offset(x = 143.dp, y = 6.dp).size(24.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 2f, Color.White)), RoundedCornerShape(12.dp)).background(primary, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                 Symbol("check", 18.sp, Color.White)
             }
@@ -324,6 +326,12 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
         DText(if (sel) where else t.sub, Modifier.padding(horizontal = 2.dp).heightIn(min = 18.dp),
             style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
     }
+}
+
+/** A tile's 1 dp outline, drawn over its content. */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.TileOutline() {
+    Box(Modifier.matchParentSize().border(1.dp, SetColors.outlineVariant, RoundedCornerShape(14.dp)))
 }
 
 /** :93-95 the "add" tile at the end of a section (From a photo, New gradient). */
@@ -348,10 +356,10 @@ private fun PhotoPreview(img: androidx.compose.ui.graphics.ImageBitmap, look: io
         KbSpec.render(KbProps(theme = "glass", width = 375f, bar = "bal", ret = "send", dim = l.dim, wash = l.wash, keyOpacity = l.keyOpacity, photoLuminance = l.luminance,
             glassFg = l.labels, halo = l.halo, actColor = l.actColor, actFg = l.actFg, backdrop = false))
     }
-    val scale = 162f / 375f
-    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) {
+    val scale = 0.4613f
+    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) {
         // the photo behind the keyboard's height only, as the keyboard crops it
-        Box(Modifier.size(162.dp, (render.H * scale).dp)) {
+        Box(Modifier.size(173.dp, (render.H * scale).dp)) {
             androidx.compose.foundation.Image(img, name, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 alignment = when (l.pos) { "center top" -> Alignment.TopCenter; "center bottom" -> Alignment.BottomCenter; else -> Alignment.Center })
             Box(Modifier.fillMaxSize().background(Color(0f, 0f, 0f, l.dim)))
@@ -436,16 +444,19 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                         var menu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                         Box {
                             Column(
-                                Modifier.width(162.dp).combinedClickable(onLongClick = { menu = true }) { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
+                                Modifier.width(173.dp).combinedClickable(onLongClick = { menu = true }) { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
                                 verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Box(
-                                    Modifier.size(162.dp, 128.dp).clip(RoundedCornerShape(16.dp)).background(SetColors.surfaceContainerHighest)
-                                        .border(if (sel) 3.dp else 1.dp, if (sel) primary else SetColors.outlineVariant, RoundedCornerShape(16.dp)),
+                                    // the built-in tile's size, selection ring and corners (the saved tiles were 162 x 128 with a
+                                    // thicker inner frame, out of line with the "new" tiles beside them; user 2026-11-19 borders)
+                                    Modifier.size(173.dp, 137.dp)
+                                        .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(14.dp)) else Modifier)
+                                        .clip(RoundedCornerShape(14.dp)).background(SetColors.surfaceContainerHighest),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     // a gradient shows its keyboard, a photo its picture
-                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))) { Preview(t.spec, false, 0, 162f, 128f, 162f / 375f, null) }
+                                    if (t.spec != null) Box(Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp))) { Preview(t.spec, false, 0, 173f, 137f, 0.4613f, null) }
                                     else thumb?.let { (imgs, tile) ->
                                         val vs = tile?.versions.orEmpty()
                                         val first = vs.firstOrNull()
@@ -455,6 +466,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color) {
                                             (if (vs[1].second) imgs[1] else imgs[0])?.let { PhotoPreview(it, vs[1].first, t.name) }
                                         }
                                     }
+                                    if (!sel) TileOutline()
                                     if (sel) Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { Symbol("check_circle", 24.sp, primary, fill = 1) }
                                 }
                                 Row(Modifier.padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
