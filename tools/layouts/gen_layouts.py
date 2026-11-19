@@ -125,8 +125,15 @@ def floris_layout(id: str, locale: str, name: str, layout: str, indicator: str, 
     return Layout(id, locale, name, layout, indicator, rows, uppers=uppers)
 
 
+# English variants Gboard offers (user 2026-11-19: "a good interface for picking a keyboard layout"). Dvorak as
+# Gboard draws it on phones (FlorisBoard's dvorak.json lacks q and z); Colemak from FlorisBoard's data
+DVORAK = Layout("dvorak-en", "en", "English (Dvorak)", "Dvorak", "EN",
+                [list("',.pyfgcrl"), list("aoeuidhtns"), list("qjkxbmwvz")])
+
 LAYOUTS = [
     ENGLISH,
+    DVORAK,
+    floris_layout("colemak-en", "en", "English (Colemak)", "Colemak", "EN", "colemak"),
     floris_layout("qwertz-de", "de", "Deutsch (QWERTZ)", "QWERTZ", "DE", "german"),
     floris_layout("azerty-fr", "fr", "Français (AZERTY)", "AZERTY", "FR", "azerty"),
 ]
@@ -188,7 +195,10 @@ def letter_keys(lay: Layout) -> list[str]:
             if key_id(case_c) in seen:
                 continue
             seen.add(key_id(case_c))
-            lines += key_with_alts(key_id(case_c), case_c, lay.accents.get(case_c, ""), letter_width(lay))
+            w3 = row3_letter_width(lay)
+            only_row3 = w3 is not None and c in lay.rows[2] and c not in lay.rows[0] and c not in lay.rows[1]
+            width = (f"{w3:.4f}".rstrip("0").rstrip(".") if only_row3 else letter_width(lay))
+            lines += key_with_alts(key_id(case_c), case_c, lay.accents.get(case_c, ""), width)
     return lines
 
 
@@ -197,6 +207,18 @@ def letter_width(lay: Layout) -> str | None:
     n = max(len(lay.rows[0]), len(lay.rows[1]))
     # rounded down: a row a hair over 10 units loses its last key in the touch layout (ü ö ä did)
     return None if n <= 10 else f"{int(10 / n * 10000) / 10000:.4f}".rstrip("0").rstrip(".")
+
+
+MIN_SHIFT = 1.0  # the narrowest shift / delete beside a long third row (0.5 cut their icons, Dvorak's 9 letters)
+
+
+def row3_letter_width(lay: Layout) -> float | None:
+    """Third-row letters narrower than the others when shift and delete would get under [MIN_SHIFT], else None."""
+    w = float(letter_width(lay) or 1)
+    n = len(lay.rows[2])
+    if (10 - n * w) / 2 >= MIN_SHIFT - 0.01:
+        return None
+    return int((10 - 2 * MIN_SHIFT) / n * 10000) / 10000
 
 
 def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
@@ -238,7 +260,7 @@ def layout_gaps(lay: Layout) -> list[str]:
     elif rest > -0.01:
         pass
     else:
-        side = fmt((10 - len(lay.rows[2]) * w) / 2)
+        side = fmt((10 - len(lay.rows[2]) * (row3_letter_width(lay) or w)) / 2)
         out += [f'<key id="base-to-shift-narrow-{lay.id}" layerId="shift" width="{side}" />',
                 f'<key id="shift-to-base-narrow-{lay.id}" layerId="base" width="{side}" />',
                 f'<key id="bksp-narrow-{lay.id}" output="@k3:action/backspace" width="{side}" />']

@@ -49,6 +49,8 @@ object FeelSettings {
 
     /** Swipe typing (Gestures page; on by default, as iOS and Gboard). */
     @Volatile var swipeEnabled: Boolean = true
+    /** The chosen layout has a swipe recogniser (only English QWERTY so far: Dvorak, Colemak and the others type by taps). */
+    @Volatile var swipeLayout: Boolean = true
 
     /** Draw the swipe's trail (Gboard does, iOS doesn't; user 2026-11-17: draw it). */
     @Volatile var swipeTrail: Boolean = true

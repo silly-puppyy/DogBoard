@@ -263,11 +263,13 @@ class PointerTracker(
         glide = null
         glideTrail.value = null
         if (io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeEnabled &&
+            io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeLayout &&
             io.github.sillypuppyy.dogboard.engine.TypingEngine.hasSwipe &&
             (downKey.attrs.output as? org.k3lp.lib.text.K3String)?.toText()?.let { it.length == 1 && it[0].isLetter() } == true
         ) {
             glide = Glide(down.id, downLayerId, down.position.x / density, down.position.y / density, down.uptimeMillis)
         } else if (io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeEnabled &&
+            io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeLayout &&
             io.github.sillypuppyy.dogboard.engine.TypingEngine.hasSwipe &&
             (downKey.isShiftKey || downKey.attrs.output == ImeActions.Backspace || downKey.attrs.output == SPACE)
         ) {

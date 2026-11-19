@@ -347,6 +347,8 @@ class ImeController(
         // DogBoard: the chosen layout, compiled again when the setting changes
         scope.launch {
             prefs.keyboard.layoutId.asFlow().collectLatest { id ->
+                // the swipe recogniser reads English QWERTY paths only (the universal model comes later)
+                io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeLayout = id == "qwerty-en"
                 loadFoundationKeyboard(this@ImeController, storageController.activeStorage.value, id)
             }
         }

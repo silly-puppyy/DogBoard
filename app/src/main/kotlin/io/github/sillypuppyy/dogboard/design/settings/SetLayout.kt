@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -153,14 +154,20 @@ fun SetLayout(state: SetLayoutState) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
             // DogBoard: the letter layout (moved here from the old Typing screen, 2026-11-17)
+            // user 2026-11-19: "a good interface for picking a keyboard layout": Gboard's variant thumbnails, as
+            // cards with each layout's letter rows drawn small
             state.layoutId?.let { id ->
                 SetGroup("Letters") {
-                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ElementSeg("letters", listOf("qwerty-en" to "QWERTY", "qwertz-de" to "QWERTZ", "azerty-fr" to "AZERTY"), id, state.onLayoutId)
-                        DText(
-                            "QWERTZ and AZERTY type German and French letters; suggestions and autocorrect stay English-only for now, so they’re off with these.",
-                            style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4,
-                        )
+                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        LETTER_LAYOUTS.chunked(2).forEach { pair ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                pair.forEach { l -> LayoutCard(l, l.id == id, Modifier.weight(1f)) { state.onLayoutId(l.id) } }
+                                if (pair.size == 1) Box(Modifier.weight(1f))
+                            }
+                        }
+                        LETTER_LAYOUTS.firstOrNull { it.id == id }?.note?.let { note ->
+                            DText(note, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 4)
+                        }
                     }
                 }
             }
@@ -285,6 +292,58 @@ private fun BottomRowCard(selected: Boolean, label: String, keys: List<Mk>, onPi
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             Symbol(if (selected) "radio_button_checked" else "radio_button_unchecked", 18.sp, SetColors.primary, fill = if (selected) 1 else 0)
             DText(label, style = setText(13f, 500))
+        }
+    }
+}
+
+
+/** A letter layout the Layout page offers: its rows as drawn on the keys (tools/layouts/gen_layouts.py). */
+private class LetterLayout(val id: String, val name: String, val language: String, val rows: List<String>, val note: String? = null)
+
+private const val TAPS_ONLY = "Swipe typing reads QWERTY only for now, so this layout types by taps; autocorrect and suggestions work as usual."
+private const val ENGLISH_ONLY = "Suggestions and autocorrect are English-only for now, so they’re off with this layout; swipe typing too."
+
+private val LETTER_LAYOUTS = listOf(
+    LetterLayout("qwerty-en", "QWERTY", "English", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")),
+    LetterLayout("dvorak-en", "Dvorak", "English", listOf("',.pyfgcrl", "aoeuidhtns", "qjkxbmwvz"), TAPS_ONLY),
+    LetterLayout("colemak-en", "Colemak", "English", listOf("qwfpgjluy;", "arstdhneio", "zxcvbkm"), TAPS_ONLY),
+    LetterLayout("qwertz-de", "QWERTZ", "German", listOf("qwertzuiopü", "asdfghjklöä", "yxcvbnmß"), ENGLISH_ONLY),
+    LetterLayout("azerty-fr", "AZERTY", "French", listOf("azertyuiop", "qsdfghjklm", "wxcvbn'"), ENGLISH_ONLY),
+)
+
+/** A layout's card: its letter rows as a small keyboard, its name and language; the chosen one outlined and ticked. */
+@Composable
+private fun LayoutCard(l: LetterLayout, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier.clip(shape).background(if (selected) SetColors.secondaryContainer else SetColors.screen)
+            .border(if (selected) 2.dp else 1.dp, if (selected) SetColors.primary else SetColors.outlineVariant, shape)
+            .clickable(onClick = onClick).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // every key as wide as one in the widest row; shorter rows centred, as on the keyboard
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val gap = 2.dp
+            val widest = l.rows.maxOf { it.length }
+            val keyW = (maxWidth - gap * (widest - 1)) / widest
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                l.rows.forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
+                        row.forEach { c ->
+                            Box(Modifier.width(keyW).height(18.dp).clip(RoundedCornerShape(3.dp)).background(SetColors.row), contentAlignment = Alignment.Center) {
+                                DText(c.toString(), style = setText(9.5f, 500, SetColors.onSurface))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                DText(l.name, style = setText(15f, 500, SetColors.onSurface))
+                DText(l.language, style = setText(12f, 400, SetColors.onSurfaceVariant))
+            }
+            if (selected) Symbol("check_circle", 20.sp, SetColors.primary, fill = 1)
         }
     }
 }
