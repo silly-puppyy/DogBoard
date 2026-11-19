@@ -283,8 +283,14 @@ class Generator:
             elif len(r) > 1:
                 items.append((i, *features(r)))
         items.sort(key=lambda it: len(it[1]))  # similar lengths per batch: less padding
-        for s in range(0, len(items), self.batch):
-            part = items[s:s + self.batch]
+        s = 0
+        while s < len(items):
+            # fewer swipes per batch as routes get longer (2026-11-19: German compounds, ~500 points padded x 4,096
+            # swipes, asked the GPU for 8.45 GB at once): about 4,096 x 64 points a batch
+            longest = len(items[min(s + self.batch, len(items)) - 1][1])
+            n = max(64, min(self.batch, self.batch * 64 // max(longest, 1)))
+            part = items[s:s + n]
+            s += n
             P = max(len(f) for _, f, _ in part)
             F = torch.zeros(len(part), P, NF)
             for j, (_, f, _) in enumerate(part):
