@@ -88,6 +88,12 @@ private const val GLIDE_MIN_PATH_KEYS = 0.8f
 // widths) from where it went down and outside the popup, the popup closes and the whole path is a swipe
 private const val GLIDE_AFTER_POPUP_KEYS = 1.5f
 
+// DogBoard: a swipe may also start on Shift, Delete or the space bar (user 2026-11-19: yes; real swipes that start
+// just off the letters were lost, Gboard has gesture_start_non_char_key_allowance_zone_size_mm). It becomes one
+// once it reaches a letter this far (key widths) away: from Shift any letter, from Delete or the space bar only a
+// letter in a row above, so Delete's sideways drag and the space bar's cursor drag stay what they are.
+private const val GLIDE_FROM_OTHER_KEY_KEYS = 1.0f
+
 /** DogBoard: how long a point of the swipe trail stays visible (ms), shrinking from the tail (Gboard-like). */
 const val TRAIL_MS = 700L
 
@@ -180,7 +186,11 @@ class PointerTracker(
     private var lastUpKeyState: LastUpKey? = null
 
     /** DogBoard: swipe typing: the finger's path (dp) from a letter key's press; active once it moved far enough. */
-    private class Glide(val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float, val startT: Long) {
+    private class Glide(
+        val id: PointerId, val layerId: K3LayerId, val startX: Float, val startY: Float, val startT: Long,
+        /** Started on Shift, Delete or the space bar (null: on a letter), and that key's bounds (normalised). */
+        val fromKey: TouchKey? = null,
+    ) {
         /** The press as a tap (key, touch, targets), typed if the slide turns out too short or quick to be a swipe. */
         var tapKey: TouchKey? = null
         var tap: Tap? = null
@@ -238,6 +248,11 @@ class PointerTracker(
             (downKey.attrs.output as? org.k3lp.lib.text.K3String)?.toText()?.let { it.length == 1 && it[0].isLetter() } == true
         ) {
             glide = Glide(down.id, downLayerId, down.position.x / density, down.position.y / density, down.uptimeMillis)
+        } else if (io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeEnabled &&
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.hasSwipe &&
+            (downKey.isShiftKey || downKey.attrs.output == ImeActions.Backspace || downKey.attrs.output == SPACE)
+        ) {
+            glide = Glide(down.id, downLayerId, down.position.x / density, down.position.y / density, down.uptimeMillis, fromKey = downKey)
         }
         // DogBoard: remember where letter keys were tapped, for the word decoder
         if (downKey.isTextKey()) {
@@ -464,7 +479,15 @@ class PointerTracker(
                 val out = trackedOutputPointer.value?.takeIf { it.id == move.id }
                 val moved = kotlin.math.hypot(xDp - g.startX, yDp - g.startY)
                 val popupOpen = out?.longPress?.shouldShowExtendedPopup() == true
-                if (popupOpen && (moved <= GLIDE_AFTER_POPUP_KEYS * keyWidthDp || out!!.isOverPopup(move.position.normalized(size)))) {
+                val from = g.fromKey
+                val fromOtherKeyReady = from != null && moved > GLIDE_FROM_OTHER_KEY_KEYS * keyWidthDp &&
+                    touchKeyboard.findKey(g.layerId, move.position.normalized(size))?.let { key ->
+                        (key.attrs.output as? org.k3lp.lib.text.K3String)?.toText()?.let { it.length == 1 && it[0].isLetter() } == true &&
+                            (from.isShiftKey || key.bounds.bottom <= from.bounds.top + 0.001f)
+                    } == true
+                if (from != null && !fromOtherKeyReady) {
+                    // still Shift, Delete or the space bar (their own drags), unless it reaches the letters
+                } else if (popupOpen && (moved <= GLIDE_AFTER_POPUP_KEYS * keyWidthDp || out!!.isOverPopup(move.position.normalized(size)))) {
                     // choosing in the accent popup (the path keeps recording, in case the finger sets off)
                 } else if (popupOpen || moved > GLIDE_START_KEYS * keyWidthDp) {
                     g.active = true
