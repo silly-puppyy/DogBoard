@@ -27,7 +27,7 @@ class PersonalModelTest : FunSpec({
         m.probability(null, "dogpark") shouldBe 0.0
         m.probability("the", "dogpark") shouldBe 0.0
         m.accept("the", "dogpark")
-        m.probability("the", "dogpark") shouldBeGreaterThan 0.5
+        m.probability("the", "dogpark") shouldBeGreaterThan 0.19 // the pair (1.0) at 1/5 (iOS: every order 1/5) + the word
         m.probability(null, "dogpark") shouldBeGreaterThan 0.0
     }
     test("words count only once the model holds 50 uses") {
@@ -35,7 +35,7 @@ class PersonalModelTest : FunSpec({
         repeat(10) { m.accept(null, "woof") }
         m.probability(null, "woof") shouldBe 0.0
         repeat(41) { m.accept(null, "bark") }
-        m.probability(null, "woof") shouldBe (10.0 / 51 plusOrMinus 1e-9)
+        m.probability(null, "woof") shouldBe (10.0 / 51 / 5 plusOrMinus 1e-9)
     }
     test("words the user uses get probability; pairs follow context") {
         val m = fresh()
@@ -57,7 +57,7 @@ class PersonalModelTest : FunSpec({
         val m = fresh()
         m.mix(0.01, "the", "dogpark") shouldBe 0.01
         repeat(1000) { m.accept("the", "dogpark") }
-        m.mix(0.0, "the", "dogpark") shouldBeGreaterThan 0.6
+        m.mix(0.0, "the", "dogpark") shouldBe (0.65 * (1.0 + 1.0) / 5 plusOrMinus 1e-9) // word + pair, each 1/5 of the personal share
     }
     test("forgetting: rare words go, often-used words are only lowered") {
         val m = fresh()
@@ -76,7 +76,7 @@ class PersonalModelTest : FunSpec({
         fresh(f).apply { repeat(25) { accept("hi", "there") }; save() }
         val loaded = fresh(f)
         loaded.wordsTyped shouldBe 25L
-        loaded.probability("hi", "there") shouldBe (0.5 plusOrMinus 1e-9) // the pair (1.0) of two orders; too few uses for words
+        loaded.probability("hi", "there") shouldBe (0.2 plusOrMinus 1e-9) // the pair (1.0) at 1/5; too few uses for words
     }
 
     test("two words of context: triples tell apart what one word can't") {
@@ -88,8 +88,8 @@ class PersonalModelTest : FunSpec({
         m.probability("to", "go", "have") shouldBeGreaterThan m.probability("to", "see", "have")
         // one word of context alone: the two are even
         m.probability("to", "see") shouldBe (m.probability("to", "go") plusOrMinus 1e-12)
-        // an unseen two-word context still counts as an order (iOS normalises over every order asked)
-        m.probability("to", "see", "need") shouldBe (m.probability("to", "see") * 2 / 3 plusOrMinus 1e-12)
+        // an unseen two-word context adds nothing; the normaliser is fixed (iOS: every order's 1/5, asked or not)
+        m.probability("to", "see", "need") shouldBe (m.probability("to", "see") plusOrMinus 1e-12)
     }
     test("triples are saved, loaded and forgotten with their words") {
         val f = File.createTempFile("personal", ".tsv").apply { deleteOnExit() }

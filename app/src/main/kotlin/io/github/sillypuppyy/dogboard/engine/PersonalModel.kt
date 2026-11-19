@@ -153,11 +153,13 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
             if (context > 0 && count >= threshold) min(1.0, count / context) else 0.0
         val total = totalCache
         var sum = if (total > UNIGRAM_TOTAL_MIN) order(words[w]?.decayed(day) ?: 0.0, total, UNIGRAM_MIN) else 0.0
-        val p = previous?.lowercase() ?: return sum
+        // iOS (VERIFIED): orders 1..5 at 1/5 each, and every order's weight is in the normaliser whether it
+        // contributed or not (no context, or orders 4-5, which we don't keep): each order adds at most 1/5
+        val p = previous?.lowercase() ?: return sum / IOS_ORDER
         sum += order(pairs[p to w]?.decayed(day) ?: 0.0, afterCache[p] ?: 0.0, NGRAM_MIN)
-        val p2 = previous2?.lowercase() ?: return sum / 2
+        val p2 = previous2?.lowercase() ?: return sum / IOS_ORDER
         sum += order(triples[Triple(p2, p, w)]?.decayed(day) ?: 0.0, after2Cache[p2 to p] ?: 0.0, NGRAM_MIN)
-        return sum / 3
+        return sum / IOS_ORDER
     }
 
     /** Mixes a static probability with the personal model ([PersonalModel] doc). */
@@ -261,6 +263,8 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
         const val NGRAM_MIN = 1.01
         const val UNIGRAM_MIN = 2.0
         const val UNIGRAM_TOTAL_MIN = 50.0
+        /** iOS's dynamic model order: the normaliser of [probability] (orders 1..5 at 1/5 each). */
+        const val IOS_ORDER = 5.0
         const val FORGET_BELOW = 7
         private const val SAVE_EVERY = 20
         private const val MS_PER_DAY = 86_400_000L
