@@ -76,6 +76,10 @@ import org.florisboard.lib.compose.toMm
 import org.florisboard.lib.snygg.SnyggQueryAttributes
 import org.florisboard.lib.snygg.SnyggSelector
 import org.florisboard.lib.snygg.ui.SnyggBox
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import org.k3lp.lib.text.K3String
 import org.k3lp.lib.text.K3StringOrDescriptor
 import org.k3lp.lib.text.asK3String
@@ -87,6 +91,7 @@ fun ImeKeyboardBox(
     val prefs by FlorisPreferenceStore
     val density = LocalDensity.current
     val imeController = LocalImeController.current
+    val a11yScope = androidx.compose.runtime.rememberCoroutineScope() // DogBoard: TalkBack key clicks
     val windowController = LocalWindowController.current
 
     val imeState by imeController.activeState.collectAsState()
@@ -439,6 +444,16 @@ fun ImeKeyboardBox(
                         else -> "default"
                     },
                 )
+                // the design draws the caps; TalkBack gets one node per touch key on top (no pointer handling, so
+                // touches still go to the pointer tracker), named and typing as that key does
+                if (livePanel.isEmpty()) { // "" = no panel (clipboard, emoji) over the keys
+                    for (touchKey in activeTouchLayer.keys) {
+                        if (touchKey.attrs.gap) continue
+                        KeyAccessibilityNode(touchKey, Modifier.layoutNormalized(touchKey.bounds)) {
+                            a11yScope.launch { imeController.updateState { touchKey.attrs.output?.let { emit(it) } } }
+                        }
+                    }
+                }
                 return@Box
             }
             for (touchKey in activeTouchLayer.keys) {
@@ -489,6 +504,8 @@ fun ImeKeyboardBox(
                         },
                     inputShiftState = inputShiftState,
                     enterAction = if (touchKey.attrs.output == ImeActions.Enter) enterAction else null,
+                    // DogBoard: TalkBack's "lift to type" clicks the key's node: type it as a tap would
+                    onAccessibilityClick = { a11yScope.launch { imeController.updateState { touchKey.attrs.output?.let { emit(it) } } } },
                 )
                 if (devtoolsEnabled && debugShowTouchBoundaries) {
                     Box(
@@ -517,9 +534,19 @@ private fun ImeKeyboardKeyBox(
     multiTapIndex: Int,
     inputShiftState: InputShiftState,
     enterAction: String? = null,
+    onAccessibilityClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val display = displayOverride ?: touchKey.display
+    // DogBoard: each key is an accessibility node with a spoken name, the Button role and a click that types it
+    // (2026-11-14: TalkBack users couldn't explore or type by touch; Gboard exposes its keys with labels)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val spokenName = remember(display, touchKey) { keySpokenName(context, touchKey, display) }
+    val a11yModifier = modifier.semantics {
+        contentDescription = spokenName
+        role = androidx.compose.ui.semantics.Role.Button
+        onClick(label = spokenName) { onAccessibilityClick(); true }
+    }
     val output = touchKey.attrs.output
     val layerId = touchKey.attrs.layerId
     val attributes: SnyggQueryAttributes = remember(output, layerId, inputShiftState, enterAction) {
@@ -544,7 +571,7 @@ private fun ImeKeyboardKeyBox(
         FlorisImeUi.Key.elementName,
         attributes = attributes,
         selector = selector,
-        modifier = modifier,
+        modifier = a11yModifier,
     ) {
         Row(
             modifier = Modifier
@@ -581,6 +608,34 @@ private fun ImeKeyboardKeyBox(
         longPressSimpleDisplayOverride = multiTapKeys.getOrNull(multiTapIndex)?.display,
         attributes = attributes,
     )
+}
+
+/** DogBoard: an invisible accessibility node over [touchKey]: its spoken name, the Button role, a click that types it. */
+@Composable
+private fun KeyAccessibilityNode(touchKey: TouchKey, modifier: Modifier, onClick: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val spokenName = remember(touchKey) { keySpokenName(context, touchKey, touchKey.display) }
+    Box(modifier.semantics {
+        contentDescription = spokenName
+        role = androidx.compose.ui.semantics.Role.Button
+        onClick(label = spokenName) { onClick(); true }
+    })
+}
+
+/** DogBoard: what TalkBack says for a key: its text, or a name for the action keys and icons. */
+private fun keySpokenName(context: android.content.Context, touchKey: TouchKey, display: K3StringOrDescriptor): String {
+    val output = touchKey.attrs.output
+    return when {
+        touchKey.isSuitableForSpaceBarDisplayOverride || (output as? K3String)?.toText() == " " ->
+            context.getString(dev.patrickgold.florisboard.R.string.a11y_key__space)
+        touchKey.isShiftKey -> context.getString(dev.patrickgold.florisboard.R.string.a11y_key__shift)
+        output == ImeActions.Backspace -> context.getString(dev.patrickgold.florisboard.R.string.a11y_key__delete)
+        output == ImeActions.Enter -> context.getString(dev.patrickgold.florisboard.R.string.a11y_key__return)
+        output == ImeActions.ShowMediaPanel || display == ImeIcons.MediaPanel -> context.getString(dev.patrickgold.florisboard.R.string.a11y_key__emoji)
+        display is K3String -> display.toText().ifBlank { context.getString(dev.patrickgold.florisboard.R.string.a11y_key__space) }
+        // other icons: the icon's own name ("fl:icon:arrow_left" -> "Arrow left")
+        else -> display.toString().substringAfterLast(':').substringAfterLast('/').replace('_', ' ').replaceFirstChar { it.uppercase() }
+    }
 }
 
 // DogBoard: last key-area bounds written to the debug log
