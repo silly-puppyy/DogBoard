@@ -94,6 +94,21 @@ private const val GLIDE_AFTER_POPUP_KEYS = 1.5f
 // letter in a row above, so Delete's sideways drag and the space bar's cursor drag stay what they are.
 private const val GLIDE_FROM_OTHER_KEY_KEYS = 1.0f
 
+// DogBoard: sliding left from Delete selects whole words back from the cursor, one more per this many dp after
+// the first; letting go deletes them (Gboard's delete swipe; user 2026-11-19: yes). Sliding back selects fewer.
+private const val DELETE_DRAG_START_DP = 16f
+private const val DELETE_DRAG_WORD_DP = 28f
+
+/** DogBoard: where [text] would start after taking [n] words (and the spaces after them) off its end. */
+internal fun startOfLastWords(text: CharSequence, n: Int): Int {
+    var i = text.length
+    repeat(n) {
+        while (i > 0 && text[i - 1].isWhitespace()) i--
+        while (i > 0 && !text[i - 1].isWhitespace()) i--
+    }
+    return i
+}
+
 /** DogBoard: how long a point of the swipe trail stays visible (ms), shrinking from the tail (Gboard-like). */
 const val TRAIL_MS = 700L
 
@@ -202,6 +217,10 @@ class PointerTracker(
         var active = false
     }
     private var glide: Glide? = null
+
+    /** DogBoard: a slide left from Delete selecting words (see DELETE_DRAG_START_DP). */
+    private class DeleteDrag(val id: PointerId, val cursor: Int, val textBefore: String, var words: Int = 0)
+    private var deleteDrag: DeleteDrag? = null
 
     /** DogBoard: the trail of the swipe in progress (pixels), drawn over the keys; null when none. */
     val glideTrail: StateFlow<List<TrailPoint>?>
@@ -522,6 +541,7 @@ class PointerTracker(
                 moveCursorWithSpaceBar(trackedPointer, move)
                 return
             }
+            if (trackedPointer.downKey.attrs.output == ImeActions.Backspace && dragDeleteWords(trackedPointer, move)) return
             val longPress = trackedPointer.longPress
             if (longPress.shouldShowExtendedPopup()) {
                 val position = move.position.normalized(size).let { position ->
@@ -547,17 +567,45 @@ class PointerTracker(
      * [Trackpad.ALLOWABLE_MOVEMENT_DP] before that cancels it); sliding then moves the cursor one
      * character per [Trackpad.STEP_DP].
      */
+    /** DogBoard: Delete's slide left (see DELETE_DRAG_START_DP); true while it is selecting words. */
+    private suspend fun dragDeleteWords(trackedPointer: TrackedPointer.Output, move: PointerInputChange): Boolean {
+        val dx = (move.position.x - trackedPointer.down.position.x) / density
+        val dy = (move.position.y - trackedPointer.down.position.y) / density
+        var d = deleteDrag?.takeIf { it.id == move.id }
+        if (d == null) {
+            if (-dx <= DELETE_DRAG_START_DP || abs(dx) < 2 * abs(dy)) return false
+            val content = imeController.snapshotState().content
+            if (content.selection.isNotCollapsed()) return false
+            trackedPointer.repeatJob?.cancel()
+            trackedPointer.longPress.extendedJob?.cancel()
+            d = DeleteDrag(move.id, content.selection.start, content.surroundingText.textBefore.toString())
+            deleteDrag = d
+        }
+        val words = if (-dx <= DELETE_DRAG_START_DP) 0 else 1 + ((-dx - DELETE_DRAG_START_DP) / DELETE_DRAG_WORD_DP).toInt()
+        if (words != d.words) {
+            d.words = words
+            val start = d.cursor - (d.textBefore.length - startOfLastWords(d.textBefore, words))
+            imeController.updateState { state.editor.setSelection(start, d.cursor) }
+        }
+        return true
+    }
+
     private suspend fun moveCursorWithSpaceBar(trackedPointer: TrackedPointer.Output, move: PointerInputChange) {
         val xDp = move.position.x / density
         var anchor = trackedPointer.cursorAnchorDp
         if (anchor == null) {
             if (trackedPointer.trackpadCancelled || !io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadEnabled) return
             if (move.uptimeMillis - trackedPointer.down.uptimeMillis < io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs) {
-                val movedDp = (move.position - trackedPointer.down.position).getDistance() / density
+                val delta = move.position - trackedPointer.down.position
+                val movedDp = delta.getDistance() / density
                 if (movedDp > Trackpad.ALLOWABLE_MOVEMENT_DP) {
-                    trackedOutputPointer.value = trackedPointer.copy(trackpadCancelled = true)
-                }
-                return
+                    // DogBoard: a quick sideways drag moves the cursor too (Gboard; user 2026-11-19: yes), without
+                    // iOS's hold first; anything else (a drag up into the letters may become a swipe) ends it
+                    if (abs(delta.x) < 2 * abs(delta.y)) {
+                        trackedOutputPointer.value = trackedPointer.copy(trackpadCancelled = true)
+                        return
+                    }
+                } else return
             }
             trackedPointer.repeatJob?.cancel()
             trackedPointer.longPress.extendedJob?.cancel()
@@ -642,7 +690,10 @@ class PointerTracker(
                 interactionController.performFeedback(InteractionKind.KeyPress, ImeActions.Backspace)
             }
             imeController.updateState {
+                val drag = deleteDrag?.takeIf { it.id == up.id }
                 val output = when {
+                    // Delete's slide left: the selected words go, or nothing if it slid back
+                    drag != null -> if (drag.words > 0) ImeActions.Backspace else null
                     trackedPointer.isTrackpad(up.uptimeMillis) -> null // the space bar was used as a trackpad
                     trackedPointer.downKey == trackedMultiTapSeq.value?.touchKey -> null
                     trackedPointer.longPress.shouldShowExtendedPopup() -> {
@@ -656,6 +707,7 @@ class PointerTracker(
                 heldDeleteStart?.takeIf { output == ImeActions.Backspace }?.let { recordHeldDelete(it) }
             }
             heldDeleteStart = null
+            deleteDrag = null
             trackedPeekPointer.update { it?.copy(peekMustSwitchBack = true) }
             trackedOutputPointer.value = null
             lastUpKeyState = LastUpKey(trackedPointer.downKey, up.uptimeMillis)

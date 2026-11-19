@@ -56,12 +56,17 @@ def make(job):
     rng = random.Random(seed)
     gen = PARAMS[0]
     if hasattr(gen, "paths"):  # cvae.Generator: a batch of words at once
+        to_grid = 1.0
         if SHAPE:
-            sx, sy = units.scale("phys", SHAPE["layout"], 1.0, rng.uniform(*SHAPE["range"]))
+            aspect = rng.uniform(*SHAPE["range"])
+            sx, sy = units.scale("phys", SHAPE["layout"], 1.0, aspect)
             c = units.keys(SHAPE["layout"], sx, sy)
+            if SHAPE.get("to_grid"):  # drawn on this keyboard's shape, given to a grid-unit recogniser as the app does
+                to_grid = 3.0 / sy
         else:
             c = CENTRES
-        out = [(feats(p), w) for p, w in zip(gen.paths(words, c, rng), words) if p is not None]
+        out = [(feats(p if to_grid == 1.0 else [(x, y * to_grid) for x, y in p]), w)
+               for p, w in zip(gen.paths(words, c, rng), words) if p is not None]
         return [(f, w) for f, w in out if f is not None]
     if SHAPE:
         out = []
@@ -118,6 +123,8 @@ def main():
     ap.add_argument("--units", default="grid", choices=("grid", "phys"))
     ap.add_argument("--aspect", type=float, default=0.42, help="phys: the keyboard's letter area height / width")
     ap.add_argument("--aspect-max", type=float, default=0.0, help="phys: each swipe its own aspect, between --aspect and this")
+    ap.add_argument("--to-grid", action="store_true", help="with --aspect-max and a cvae generator: draw in physical units, then rescale "
+                    "to grid units (rows 1 apart), for grid-unit recognisers like v4")
     ap.add_argument("--human", default="h2", help=f"{sorted(PRESETS)}, lib:PATH (stitch.py library), finger:PARAMS.json (physics.py), cvae:MODEL.pt (cvae.py) or each:EACH.jsonl[,PARAMS.json] (fit_each.py)")
     a = ap.parse_args()
     torch.set_num_threads(1)
@@ -137,7 +144,7 @@ def main():
         return rng.choices(words, weights=weights, k=n - even) + rng.choices(words, k=even)
 
     gen = gen_of(a.human)
-    shape = {"layout": lay, "range": (a.aspect, a.aspect_max)} if a.aspect_max > a.aspect else None
+    shape = {"layout": lay, "range": (a.aspect, a.aspect_max), "to_grid": a.to_grid} if a.aspect_max > a.aspect else None
     if hasattr(gen, "to_gpu"):  # the learned model draws on the GPU in this process (no forked workers)
         gen.to_gpu()
         init(centres, gen, shape)
