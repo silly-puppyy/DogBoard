@@ -83,6 +83,10 @@ MIN_ZIPF_CAPS_NAME = 2.8
 # corpus-only names: plain letters (no mojibake like "Iím") and at most one lower-to-upper step (SwiftKey,
 # iFixit; not glued page text like "ArticlePubMedGoogle")
 WEB_NAME_RE = re.compile(r"^[A-Za-z]+$")
+# hyphenated words (--hyphenated, count_hyphenated.py): from this Zipf in the counted text, in their usual casing
+# (iOS's en_US lexicon has ~1000: brother-in-law, check-in, T-shirt; SCOWL's lists have none)
+MIN_ZIPF_HYPHENATED = 3.0
+HYPHENATED_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ]+(-[A-Za-zÀ-ÖØ-öø-ÿ]+){1,3}$")
 
 
 def edits1(w: str):
@@ -326,6 +330,9 @@ def main():
     ap.add_argument("--web-names", action="store_true",
                     help="add names written capitalised in --seen-counts (cased counts): Wikidata's (--wikidata-wide) and the corpus's own")
     ap.add_argument("--web-names-report", default="", help="write the names --web-names added here (name, Zipf, source)")
+    ap.add_argument("--hyphenated", default="", help="count_hyphenated.py output: hyphenated words with their counts")
+    ap.add_argument("--min-zipf-hyphenated", type=float, default=MIN_ZIPF_HYPHENATED)
+    ap.add_argument("--hyphenated-words", type=float, default=0, help="how many words the --hyphenated text had (its Zipf scale)")
     ap.add_argument("--wikidata-wide", default="", help="one-word Wikidata names, label<TAB>sitelinks (tools/data/fetch_wikidata_wide.py)")
     ap.add_argument("--seen-counts", default="", help="count_unigrams.py output (FineWeb): plain lowercase SCOWL words it never saw are dropped")
     args = ap.parse_args()
@@ -480,6 +487,30 @@ def main():
             if report: report.write(f"{r[0]}\t{r[1]:.2f}\tweb-name\n")
         print(f"web names: {added}")
         if report: report.close()
+    # hyphenated words, in the casing the text uses most (well-known, T-shirt, Coca-Cola)
+    if args.hyphenated and args.hyphenated_words:
+        by_key = defaultdict(dict)
+        with open(args.hyphenated, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                w, n = line.rstrip("\n").split("\t")
+                if HYPHENATED_RE.match(w):
+                    by_key[w.lower()][w] = int(n)
+        n_hyph = 0
+        for key, fs in by_key.items():
+            if key in forms or key in misspelled or key.replace("-", "") in misspelled:
+                continue
+            tot = sum(fs.values())
+            z = math.log10(tot / args.hyphenated_words * 1e9)
+            if z < args.min_zipf_hyphenated:
+                continue
+            best = max(fs, key=fs.get)
+            # all capitals is a heading's casing, not the word's (WELL-KNOWN): take the next form
+            if best.isupper() and len(fs) > 1:
+                best = max((f for f in fs if not f.isupper()), key=fs.get)
+            add(best, min(z, NAME_ZIPF_CAP), "hyphenated"); n_hyph += 1
+        print(f"hyphenated: {n_hyph}")
     # American variant spellings fill gaps only: a name with the same letters wins (Bonnie, not bonnie)
     if seen is not None:
         print(f"dropped {unseen_dropped} SCOWL words never seen in --seen-counts")
