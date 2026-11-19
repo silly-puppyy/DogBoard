@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.materialkolor.PaletteStyle
@@ -67,8 +68,18 @@ fun getColorScheme(
     val themeSeed = when (colours) {
         "none" -> io.github.sillypuppyy.dogboard.design.css("#435e91") // the design canvas's seed
         "wallpaper" -> null
-        else -> if (kbTheme == "dogboard") null else if (kbTheme == "glass") photoSeed
-            else io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark).act.takeIf { it.alpha > 0.5f }
+        // the theme's main colour, its background (a gradient's middle colour), not its return key: Greyhound's
+        // fawn key made the app fawn on a slate keyboard (user 2026-11-19); photo themes: their return-key colour
+        else -> if (kbTheme == "dogboard") null else if (kbTheme == "glass") photoSeed else {
+            val t = io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark)
+            (t.bgGradient?.stops?.let { it[it.size / 2].first } ?: t.bg).takeIf { it.alpha > 0.5f } ?: t.act.takeIf { it.alpha > 0.5f }
+        }
+    }
+    // a nearly grey theme (Dalmatian, Paper, Ink) takes Material's neutral palette, not a tint of its grey
+    val neutral = themeSeed != null && colours == "keyboard" && run {
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV(themeSeed.toArgb(), hsv)
+        hsv[1] < 0.12f
     }
     val seedColor = themeSeed ?: systemAccentOrDefault(accentColor)
     val isAmoled = theme.isAmoled && isDark
@@ -80,7 +91,7 @@ fun getColorScheme(
         primary = if (themeSeed == null) seedColor else null,
         isDark = isDark,
         isAmoled = theme.isAmoled,
-        style = PaletteStyle.TonalSpot,
+        style = if (neutral) PaletteStyle.Neutral else PaletteStyle.TonalSpot,
         // DogBoard: the design canvas uses the 2021 tonal palettes (errorContainer #ffdad6, primaryContainer #d8e2ff)
         specVersion = ColorSpec.SpecVersion.SPEC_2021,
         modifyColorScheme = { scheme ->
