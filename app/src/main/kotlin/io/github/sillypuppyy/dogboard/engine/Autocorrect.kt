@@ -92,8 +92,16 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         /** iOS BoostMinimumVariation: a plainer spelling this close to the top goes first. */
         private val MIN_VARIATION_RATIO = ln(1.1)
 
-        /** Characters that make a completion a "special edit" (contractions and the like). */
+        /**
+         * Characters that make a completion a "special edit" (spec 4.1 P: word-medial punctuation ' & ’ and
+         * the Hebrew geresh and gershayim; diacritics are tested in [isSpecialEdit]).
+         */
         private val SPECIAL_EDIT_CHARS = setOf('\'', '’', '&')
+
+        /** Spec 4.1 P: a precomposed (é) or separated (e + U+0301) diacritic, or a [SPECIAL_EDIT_CHARS] (audit 2026-11-20). */
+        internal fun isSpecialEdit(c: Char): Boolean = c in SPECIAL_EDIT_CHARS ||
+            Character.getType(c) == Character.NON_SPACING_MARK.toInt() ||
+            java.text.Normalizer.normalize(c.toString(), java.text.Normalizer.Form.NFD).length > 1
 
         /** The casing rules when nothing more is known: capitals in [typed] count as shifted by the user. */
         fun inferredCase(typed: String): (String) -> String? {
@@ -122,10 +130,12 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         // don't accept for this input are filtered out
         val ranked = ranked(candidates, level)
         val cased = ranked
-            .filter { it.words == 1 || it.contextSupport >= MIN_CONTEXT_SUPPORT } // Rule 3
             .mapNotNull { c -> case(c.word)?.let { c to it } }
             .let(::boostPlainer)
         val (top, t) = cased.firstOrNull() ?: return null
+        // Rule 3 (spec 4.1): a multi-word top without linguistic support rejects the correction; iOS judges
+        // only the top, so the next candidate down doesn't take its place (audit 2026-11-20)
+        if (top.words > 1 && top.contextSupport < MIN_CONTEXT_SUPPORT) return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
         // Rule 2: never complete a one-letter word into a longer word ("a" -> "and").
