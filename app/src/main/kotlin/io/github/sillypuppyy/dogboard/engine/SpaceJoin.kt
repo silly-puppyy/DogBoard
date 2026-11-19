@@ -23,6 +23,20 @@ object SpaceJoin {
         prevTaps + spaceTap + curTaps, keys, params, 4, includeCompletions = false, previous = previous, previous2 = previous2,
     ).filter { it.words == 1 && !it.isTypedString }
 
+    /**
+     * A join's word must be among the [minRank] most frequent words: a stray space is rejoined into a word people
+     * use, not a rare one the web counts hold (user 2026-11-19: "going hom e" joined to "bombe", 832 uses, and
+     * "Gombe"). Int.MAX_VALUE: no floor.
+     */
+    @Volatile
+    var minRank: Int = Int.MAX_VALUE
+
+    fun commonEnough(lexicon: Lexicon, word: String): Boolean {
+        if (minRank >= lexicon.size) return true
+        val node = lexicon.find(word)
+        return node != Lexicon.NONE && lexicon.isWord(node) && lexicon.logProb(node) >= lexicon.logProb(lexicon.nodeOfWord(minRank))
+    }
+
     /** [join] replaces the two words, whose readings scored [twoWords] together. */
     fun wins(join: Candidate, twoWords: Double): Boolean = join.score - twoWords >= RATIO
 }

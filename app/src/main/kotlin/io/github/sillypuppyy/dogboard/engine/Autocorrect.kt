@@ -12,6 +12,30 @@ import kotlin.math.ln
  */
 class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level = Level.STANDARD) {
     /**
+     * A word typed in lowercase that the lexicon has only capitalised (a name: "hom" for "Hom") counts as the
+     * typed word, kept and not read as a skipped last letter, only when that name is among the [nameAsTypedRank]
+     * most frequent words ("john", "mr" are; user 2026-11-19: "going hom" was kept, rare web-text names block
+     * corrections). Int.MAX_VALUE: every name counts.
+     */
+    var nameAsTypedRank: Int = Int.MAX_VALUE
+
+    /**
+     * A word one letter short of the correction may be read as a skipped last key even when the typed letters are
+     * themselves a word, if the context already ruled that word out (it lost to the correction by the keep-the-typed
+     * -word margin, filter 20 above) rather than only when the lexicon lacks it (user 2026-11-19: "it's the LLM's job
+     * to give context-aware probabilities"; "going hom" kept because the lexicon has the name "Hom").
+     */
+    var contextEndOmission: Boolean = true
+
+    /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
+    private fun isWordAsTyped(typed: String): Boolean {
+        val node = lexicon.find(typed)
+        if (node == Lexicon.NONE || !lexicon.isWord(node)) return false
+        if (typed != typed.lowercase() || lexicon.forms(node).any { it.first == typed }) return true
+        return nameAsTypedRank >= lexicon.size || lexicon.logProb(node) >= lexicon.logProb(lexicon.nodeOfWord(nameAsTypedRank))
+    }
+
+    /**
      * How readily words are changed (design: Gentle / Standard / Strong; Off is not calling this).
      * Standard is iOS; the others were measured on the eval words (settings-model.md §4).
      */
@@ -109,7 +133,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         // iOS filter 20 (keep more typed words when nearly as likely), and Gentle's larger margin;
         // a correction with the typed letters ("dont" -> "don't") keeps the typed word already
         if (sortKey(t) != sortKey(typed)) {
-            val asTyped = ranked.firstOrNull { it.isTypedString || it.word.equals(typed, ignoreCase = true) }
+            val asTyped = ranked.firstOrNull { it.isTypedString || (it.word.equals(typed, ignoreCase = true) && isWordAsTyped(typed)) }
             // the typed word stays, as the dictionary spells it ("mr" -> "Mr", as when it is the top)
             if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)
         }
@@ -126,7 +150,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         }
         // a typed non-word one letter short of a word the decoder read as a skipped last key
         val endOmission = gain == 1 && !top.isCompletion && !top.isTypedString && level.minStemEndOmission != null &&
-            typed.length >= level.minStemEndOmission && !lexicon.contains(typed)
+            typed.length >= level.minStemEndOmission && (!isWordAsTyped(typed) || contextEndOmission)
         val stemOk = specialEdit || endOmission || (previousCorrection != null && t.equals(previousCorrection, ignoreCase = true)) ||
             typed.length >= minStem
         if (!stemOk) return null

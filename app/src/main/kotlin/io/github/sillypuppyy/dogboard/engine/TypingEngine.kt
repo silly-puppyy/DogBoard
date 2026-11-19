@@ -896,7 +896,7 @@ object TypingEngine {
                 engine.joinDecoder, prevTaps, spaceTap, curTaps, personalOffsets.apply(previous.keys), previous.params!!,
                 engine.contextId(beforeContext),
             )
-            val join = readings.firstOrNull() ?: return@read null
+            val join = readings.firstOrNull { SpaceJoin.commonEnough(engine.lexicon, it.word) } ?: return@read null
             lastJoinDebug = "%s %.2f vs %s %.2f + %.2f; readings %s".format(
                 join.word, join.score, committed.word, committed.score, second, readings.joinToString { "%s %.2f".format(it.word, it.score) },
             )

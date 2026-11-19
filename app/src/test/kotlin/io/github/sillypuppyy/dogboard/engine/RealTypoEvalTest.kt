@@ -29,6 +29,10 @@ class RealTypoEvalTest : FunSpec({
         // DOGBOARD_LEVEL=GENTLE|STANDARD|STRONG (default STANDARD), DOGBOARD_LANGUAGE_POWER overrides its power
         val base = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD").level
         val autocorrect = Autocorrect(lexicon, base.copy(languagePower = System.getenv("DOGBOARD_LANGUAGE_POWER")?.toDoubleOrNull() ?: base.languagePower,minStemEndOmission = (System.getenv("DOGBOARD_END_OMISSION_STEM")?.toIntOrNull() ?: Autocorrect.Level.STANDARD.minStemEndOmission)))
+        // DOGBOARD_NAME_RANK=n: Autocorrect.nameAsTypedRank (a lowercase-typed rare name protects itself only within rank n)
+        System.getenv("DOGBOARD_NAME_RANK")?.toIntOrNull()?.let { autocorrect.nameAsTypedRank = it }
+        // DOGBOARD_CONTEXT_END_OMISSION=0: Autocorrect.contextEndOmission off (2026-11-19 on: fixed 49.5 -> 49.6 %, broken 0.4 % both)
+        autocorrect.contextEndOmission = System.getenv("DOGBOARD_CONTEXT_END_OMISSION") != "0"
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)

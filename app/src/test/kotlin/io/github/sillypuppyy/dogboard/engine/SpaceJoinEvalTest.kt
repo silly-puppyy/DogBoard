@@ -30,6 +30,8 @@ class SpaceJoinEvalTest : FunSpec({
         val misspellings = File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
         fun decoder(split: Boolean = true) = Decoder(lexicon, Decoder.Config(splitWords = split), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
             .also { it.unknownWords = charModel; it.knownMisspellings = misspellings }
+        // DOGBOARD_JOIN_RANK=n: SpaceJoin.minRank (a join's word must be within rank n)
+        SpaceJoin.minRank = System.getenv("DOGBOARD_JOIN_RANK")?.toIntOrNull() ?: Int.MAX_VALUE
         val ratio = System.getenv("DOGBOARD_JOIN_RATIO")?.toDouble()?.let { kotlin.math.ln(it) } ?: SpaceJoin.RATIO
         fun ctxIds(ctx: String): Pair<String, String?> {
             val raw = ctx.split(' ').filter { it.isNotEmpty() }
@@ -52,7 +54,8 @@ class SpaceJoinEvalTest : FunSpec({
             val first = ca.firstOrNull() ?: return null
             val cb = decoder().decode(tb, keys, params, 4, includeCompletions = false, previous = bigrams.contextId(first.word.lowercase()), previous2 = bigrams.contextId(prev), typed = b.lowercase())
             val second = cb.firstOrNull() ?: return null
-            val join = SpaceJoin.readings(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(prev), prev2?.let { bigrams.contextId(it) } ?: -1).firstOrNull() ?: return null
+            val join = SpaceJoin.readings(decoder(split = false), ta, space, tb, keys, params, bigrams.contextId(prev), prev2?.let { bigrams.contextId(it) } ?: -1)
+                .firstOrNull { SpaceJoin.commonEnough(lexicon, it.word) } ?: return null
             return join.word.takeIf { join.score - (first.score + second.score) >= ratio }
         }
         val rng = Random(11)
