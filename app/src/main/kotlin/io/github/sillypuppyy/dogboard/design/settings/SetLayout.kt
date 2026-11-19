@@ -194,7 +194,8 @@ fun SetLayout(state: SetLayoutState) {
                 }
             }
             // :43-78 Mix and match
-            SetGroup("Mix and match") {
+            // 16 dp side margins as every other settings page (it ran edge to edge; user 2026-11-19 borders audit)
+            SetGroup("Mix and match", Modifier.padding(horizontal = 16.dp)) {
                 ElementRow("Number row", "A row of digits above the letters, or each digit when you hold its top-row letter.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
                     ElementSeg("numrow", listOf("off" to "Off", "on" to "Always", "hints" to "On hold"), st.numRow) { state.onChange(st.copy(numRow = it)) }
                 }

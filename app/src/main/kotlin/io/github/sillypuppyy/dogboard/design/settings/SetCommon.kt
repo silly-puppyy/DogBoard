@@ -131,8 +131,8 @@ fun StatusBarBand() {
 
 /** SetHome:31-33: a labelled group of rows, 20 dp corners, 2 dp between rows. */
 @Composable
-fun SetGroup(label: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+fun SetGroup(label: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DText(label, Modifier.padding(start = 16.dp, end = 16.dp, bottom = 4.dp), style = setText(14f, 500, SetColors.primary))
         SetRows(Modifier.fillMaxWidth(), content)
     }
