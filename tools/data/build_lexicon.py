@@ -29,6 +29,7 @@ Output: DogBoard lexicon format v1 (see lexicon_from_florisboard.py), sorted by 
 """
 import argparse
 import gzip
+import bisect
 import math
 import os
 import re
@@ -70,6 +71,18 @@ WORD_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*$")
 FOREIGN_REGIONS = ("british", "british_z", "canadian", "australian")
 # American variant spellings (theatre, cancelled, judgement) need at least this Zipf
 MIN_ZIPF_US_VARIANT = 2.0
+# names from the web corpus (--web-names): brands, apps and sites newer than wordfreq's text (Canva, Unsplash).
+# A Wikidata item's one-word name (--wikidata-wide) needs this Zipf in the corpus, a name the corpus alone
+# shows needs more; either must be written capitalised this share of the time (a name, not a word)
+MIN_ZIPF_WIKIDATA_NAME = 1.8
+MIN_ZIPF_WEB_NAME = 2.5
+MIN_NAME_CAPITAL_SHARE = 0.8
+# all-capital names (call signs, codes) only when common: rare ones took typos' corrections ("kyou" -> KHOU,
+# "N xt" -> NZXT; 2026-11-19 benchmark)
+MIN_ZIPF_CAPS_NAME = 2.8
+# corpus-only names: plain letters (no mojibake like "Iím") and at most one lower-to-upper step (SwiftKey,
+# iFixit; not glued page text like "ArticlePubMedGoogle")
+WEB_NAME_RE = re.compile(r"^[A-Za-z]+$")
 
 
 def edits1(w: str):
@@ -310,6 +323,10 @@ def main():
     ap.add_argument("--min-zipf-possessive", type=float, default=MIN_ZIPF_POSSESSIVE, help="possessives ('s, s') kept from this Zipf up")
     ap.add_argument("--short-word-filter", action="store_true", help="drop short fragments and abbreviations (see main)")
     ap.add_argument("--short-word-report", default="", help="write the short words the filter dropped here")
+    ap.add_argument("--web-names", action="store_true",
+                    help="add names written capitalised in --seen-counts (cased counts): Wikidata's (--wikidata-wide) and the corpus's own")
+    ap.add_argument("--web-names-report", default="", help="write the names --web-names added here (name, Zipf, source)")
+    ap.add_argument("--wikidata-wide", default="", help="one-word Wikidata names, label<TAB>sitelinks (tools/data/fetch_wikidata_wide.py)")
     ap.add_argument("--seen-counts", default="", help="count_unigrams.py output (FineWeb): plain lowercase SCOWL words it never saw are dropped")
     args = ap.parse_args()
 
@@ -344,15 +361,31 @@ def main():
     # ("abamperes", "abnub"); only plain lowercase words: names and forms our tokenizer splits stay
     seen = None
     case_counts = {}  # case-sensitive counts of the British-style spellings and their capitals
+    web_forms = {}  # --web-names: lowercase -> {cased form: count} of words written capitalised
+    web_total = 0
     if args.seen_counts:
         seen = set()
         with open(args.seen_counts, encoding="utf-8") as f:
             for line in f:
                 if not line.startswith("#"):
                     w, n = line.rstrip("\n").split("\t", 1)
-                    seen.add(w.lower())
-                    if w.lower() in commonwealth:
+                    low = w.lower()
+                    seen.add(low)
+                    if low in commonwealth:
                         case_counts[w] = int(n)
+                    if args.web_names:
+                        web_total += int(n)
+                        if w != low and int(n) >= 20:
+                            web_forms[low] = {}
+        # a second pass counts every form of the words seen capitalised (17M lines: one pass for all would not fit)
+        if args.web_names:
+            with open(args.seen_counts, encoding="utf-8") as f:
+                for line in f:
+                    if not line.startswith("#"):
+                        w, n = line.rstrip("\n").split("\t", 1)
+                        d = web_forms.get(w.lower())
+                        if d is not None:
+                            d[w] = int(n)
 
     # a name spelt like a British-style word ("Centre": a French region, and SCOWL's proper names)
     # takes its own floor when text has the lowercase word at least as often: the web count is then
@@ -392,6 +425,61 @@ def main():
         if z < 3.0 and looks_like_typo(w, z, zipf):
             continue
         add(w, z, "wordfreq")
+    # names the web corpus writes capitalised (brands, apps, sites): the corpus gives frequency and casing
+    if args.web_names and web_total:
+        def web_name(key):
+            """(usual cased form, Zipf) of a word the corpus mostly writes capitalised, else None."""
+            f = web_forms.get(key)
+            if not f:
+                return None
+            tot = sum(f.values())
+            best = max(f, key=f.get)
+            if best == key or 1 - f.get(key, 0) / tot < MIN_NAME_CAPITAL_SHARE:
+                return None
+            # short names would take short typos' corrections ("Gea", "Nou", "GV"): 4 letters, or 3 in capitals
+            if len(best) < (3 if best.isupper() else 4):
+                return None
+            z = math.log10(tot / web_total * 1e9)
+            if best.isupper() and z < MIN_ZIPF_CAPS_NAME:
+                return None
+            return best, math.log10(tot / web_total * 1e9)
+        added = {"wikidata-wide": 0, "web-name": 0}
+        report = open(args.web_names_report, "w", encoding="utf-8") if args.web_names_report else None
+        if args.wikidata_wide:
+            with open(args.wikidata_wide, encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("#"):
+                        continue
+                    key = line.split("\t", 1)[0].lower()
+                    if key in forms or key in misspelled or key in other_regions:
+                        continue
+                    r = web_name(key)
+                    if r and r[1] >= MIN_ZIPF_WIKIDATA_NAME and WORD_RE.match(r[0]):
+                        add(r[0], min(r[1], NAME_ZIPF_CAP), "wikidata-wide"); added["wikidata-wide"] += 1
+                        if report: report.write(f"{r[0]}\t{r[1]:.2f}\twikidata-wide\n")
+        sorted_keys = sorted(forms)
+        for key in web_forms:
+            if key in forms or key in misspelled or key in other_regions:
+                continue
+            r = web_name(key)
+            if not r or r[1] < MIN_ZIPF_WEB_NAME or not WEB_NAME_RE.match(r[0]):
+                continue
+            # capitals inside a word only after a lowercase start (iHerb): camel-case brands need Wikidata, as page
+            # text glues words the same way ("ArticleGoogle", "ReplyDelete")
+            if any(c.isupper() for c in r[0][1:]) and not r[0].isupper() and not r[0][0].islower():
+                continue
+            # the start of a more common word is an abbreviation or a broken token ("Microbiol", "Hawai", "Pract")
+            i = bisect.bisect_right(sorted_keys, key)
+            if i < len(sorted_keys) and sorted_keys[i].startswith(key) and any(
+                    max(forms[k].values()) >= r[1] - 0.5 for k in sorted_keys[i:i + 50] if k.startswith(key)):
+                continue
+            # a slip of a more common word ("Ghandi", "Pharoah", "Regsitration") is not a name to learn
+            if any(e != key and zipf.get(e, 0) >= r[1] + 1.0 for e in edits1(key)):
+                continue
+            add(r[0], min(r[1], NAME_ZIPF_CAP), "web-name"); added["web-name"] += 1
+            if report: report.write(f"{r[0]}\t{r[1]:.2f}\tweb-name\n")
+        print(f"web names: {added}")
+        if report: report.close()
     # American variant spellings fill gaps only: a name with the same letters wins (Bonnie, not bonnie)
     if seen is not None:
         print(f"dropped {unseen_dropped} SCOWL words never seen in --seen-counts")
