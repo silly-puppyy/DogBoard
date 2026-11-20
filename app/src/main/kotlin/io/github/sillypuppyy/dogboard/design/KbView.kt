@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.node.invalidateMeasurement
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -362,13 +363,31 @@ private fun Modifier.ring(shape: androidx.compose.foundation.shape.CornerBasedSh
     }
 
 /** Lays this element out at [rect] (dp, parent-relative), each edge rounded to a whole pixel. */
-fun Modifier.placeAt(rect: Rect): Modifier = layout { measurable, _ ->
-    val l = (rect.left * density).roundToInt()
-    val t = (rect.top * density).roundToInt()
-    val w = ((rect.right * density).roundToInt() - l).coerceAtLeast(0) // a size too small for the margins draws nothing
-    val h = ((rect.bottom * density).roundToInt() - t).coerceAtLeast(0)
-    val p = measurable.measure(Constraints.fixed(w, h))
-    layout(w, h) { p.place(l, t) }
+fun Modifier.placeAt(rect: Rect): Modifier = this then PlaceAt(rect)
+
+/**
+ * [placeAt] as a node element compared by its rectangle: a `layout {}` lambda is a new modifier on every
+ * render, so every key was measured again on each keystroke (2026-11-20 JankWatch samples: a quarter of
+ * the slow typing frames); an unchanged rectangle now keeps the node and its measurement.
+ */
+private data class PlaceAt(val rect: Rect) : androidx.compose.ui.node.ModifierNodeElement<PlaceAtNode>() {
+    override fun create() = PlaceAtNode(rect)
+    override fun update(node: PlaceAtNode) {
+        if (node.rect != rect) { node.rect = rect; node.invalidateMeasurement() }
+    }
+}
+
+private class PlaceAtNode(var rect: Rect) : Modifier.Node(), androidx.compose.ui.node.LayoutModifierNode {
+    override fun androidx.compose.ui.layout.MeasureScope.measure(
+        measurable: androidx.compose.ui.layout.Measurable, constraints: Constraints,
+    ): androidx.compose.ui.layout.MeasureResult {
+        val l = (rect.left * density).roundToInt()
+        val t = (rect.top * density).roundToInt()
+        val w = ((rect.right * density).roundToInt() - l).coerceAtLeast(0) // a size too small for the margins draws nothing
+        val h = ((rect.bottom * density).roundToInt() - t).coerceAtLeast(0)
+        val p = measurable.measure(Constraints.fixed(w, h))
+        return layout(w, h) { p.place(l, t) }
+    }
 }
 
 /**

@@ -488,7 +488,10 @@ fun ImeKeyboardBox(
                 if (livePanel.isEmpty()) { // "" = no panel (clipboard, emoji) over the keys
                     for (touchKey in activeTouchLayer.keys) {
                         if (touchKey.attrs.gap) continue
-                        KeyAccessibilityNode(touchKey, Modifier.layoutNormalized(touchKey.bounds)) {
+                        // the same modifier instance per key, so an unchanged key's node is skipped on a keystroke
+                        // (2026-11-20 JankWatch: these ~30 nodes were recomposed on every key)
+                        val place = remember(touchKey) { Modifier.layoutNormalized(touchKey.bounds) }
+                        KeyAccessibilityNode(touchKey, place) {
                             a11yScope.launch { imeController.updateState { touchKey.attrs.output?.let { emit(it) } } }
                         }
                     }

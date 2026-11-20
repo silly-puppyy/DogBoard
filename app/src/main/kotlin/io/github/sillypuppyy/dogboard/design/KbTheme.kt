@@ -368,7 +368,16 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
         /** Key sizes per gradient kept (a keyboard has a handful; a resize starts over). */
         private const val MAX_SHADERS = 32
 
+        /** Parsed once per string: theme tokens are built in frames (2026-11-20 JankWatch samples: the regex compiles). */
+        private val parsed = java.util.concurrent.ConcurrentHashMap<String, Any>()
+        private val NOT_A_GRADIENT = Any()
+
         fun parse(value: String): CssGradient? {
+            if (parsed.size > 256) parsed.clear()
+            return parsed.getOrPut(value) { parseNow(value) ?: NOT_A_GRADIENT } as? CssGradient
+        }
+
+        private fun parseNow(value: String): CssGradient? {
             val v = value.trim()
             if (!v.startsWith("linear-gradient(")) return null
             val parts = splitTopLevel(v.removePrefix("linear-gradient(").removeSuffix(")")).map { it.trim() }
@@ -399,7 +408,15 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
 @androidx.compose.runtime.Immutable
 data class CssShadow(val inset: Boolean, val x: Float, val y: Float, val blur: Float, val spread: Float, val color: Color) {
     companion object {
+        private val parsed = java.util.concurrent.ConcurrentHashMap<String, List<CssShadow>>()
+
+        /** Parsed once per string, as [CssGradient.parse]. */
         fun parse(value: String): List<CssShadow> {
+            if (parsed.size > 256) parsed.clear()
+            return parsed.getOrPut(value) { parseNow(value) }
+        }
+
+        private fun parseNow(value: String): List<CssShadow> {
             if (value.trim() == "none") return emptyList()
             return splitTopLevel(value).map { layer ->
                 val tokens = Regex("""rgba\([^)]*\)|\S+""").findAll(layer.trim()).map { it.value }.toMutableList()
