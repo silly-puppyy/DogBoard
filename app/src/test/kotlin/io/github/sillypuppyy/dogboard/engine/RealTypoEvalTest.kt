@@ -53,6 +53,8 @@ class RealTypoEvalTest : FunSpec({
         // the app loads the word-pair model into the engine; the app path here loads it apart (above)
         if (appPath) autocorrect.pairSupport = Autocorrect.pairSupport(lexicon, bigrams)
         autocorrect.nonWordMargin = System.getenv("DOGBOARD_NONWORD_MARGIN") == "1"
+        // DOGBOARD_SPLIT_SUPPORT=x: Autocorrect.minPairSupport as a ratio (ln taken; default 2)
+        System.getenv("DOGBOARD_SPLIT_SUPPORT")?.toDoubleOrNull()?.let { autocorrect.minPairSupport = kotlin.math.ln(it) }
         // DOGBOARD_EXACT_SPLITS=0: Autocorrect.exactSplitsEnabled off (a typed non-word stays ahead of its exact split)
         autocorrect.exactSplitsEnabled = System.getenv("DOGBOARD_EXACT_SPLITS") != "0"
         // DOGBOARD_RULE3=x: Rule 3's bar as a probability ratio (iOS 0.1), "off" = no bar

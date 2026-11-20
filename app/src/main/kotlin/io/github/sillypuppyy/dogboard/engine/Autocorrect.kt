@@ -40,6 +40,15 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     /** The typed-word margin also for a typed non-word (the old way; benchmarks: DOGBOARD_NONWORD_MARGIN=1). */
     var nonWordMargin: Boolean = false
 
+    /**
+     * The pair support an exact split's words need: the second at least 2x likelier after the first than anywhere.
+     * At 1x (any pair that goes together) unknown names split ('Renderscript' -> 'render script', 'LiteStep' ->
+     * 'lite step'): leave-alone sets 2026-11-20, unknown brands changed 13.2 % (no splits) -> 24.2 %, inner-capital
+     * names 10.0 -> 19.4 %; at 2x 13.8 / 10.4 % and missed-space typos 91.5 -> 93.9 % fixed (3x: the same for names,
+     * 93.7 %, and "of the" at 2.8x no longer split; unseen pairs sit at 0.4x).
+     */
+    var minPairSupport: Double = ln(2.0)
+
     /** [exactSplitFirst] on (benchmarks: DOGBOARD_EXACT_SPLITS=0 turns it off). */
     var exactSplitsEnabled: Boolean = true
 
@@ -219,14 +228,14 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     /**
      * [c] is [typed]'s letters with spaces put in, nothing else changed ("thankyou" -> "thank you"), into words that
-     * go together: each next word at least as likely after the one before as anywhere (pair support >= 0). That keeps
+     * go together: each next word at least [minPairSupport] likelier after the one before than anywhere. That keeps
      * a brand or unknown word made of unrelated words ("Gumroad" not "Gum road", "befour" not "be four", "Nowember"
      * not "now ember": held-out bench 2026-11-20) and splits run-together phrases (thank you, of the, what I, will it).
      */
     private fun isExactSplit(typed: String, c: Candidate): Boolean {
         val support = pairSupport ?: return false
         if (!exactSplitsEnabled || c.words < 2 || c.isCompletion || !c.word.replace(" ", "").equals(typed, ignoreCase = true)) return false
-        return c.word.split(' ').zipWithNext().all { (a, b) -> (support(a, b) ?: return false) >= 0.0 }
+        return c.word.split(' ').zipWithNext().all { (a, b) -> (support(a, b) ?: return false) >= minPairSupport }
     }
 
     /**
