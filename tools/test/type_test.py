@@ -66,6 +66,7 @@ CASES = [
     ("teh{123}/", "The/"),
     ("teh{123}\"", "The\""),
     ("teh{123}@", "Teh@"),
+    ("teh{123}-", "The-"),  # the hyphen ends a word, as on the iPhone (user 2026-11-20)
     ("hey {123}12 x", "Hey 12 x"),  # {123} = mode key; space on the 123 plane returns to letters  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
 ]
 

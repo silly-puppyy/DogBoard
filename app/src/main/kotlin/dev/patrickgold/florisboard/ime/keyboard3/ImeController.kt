@@ -1938,11 +1938,11 @@ private val SPACE = " ".asK3String()
 /**
  * iOS applies the correction on every character that ends a word except `@ # $ % ^ * _ ( [ ] \ |`
  * (terminatorsPreventingAutocorrection, spec 1; audit 2026-11-20: we had only space and . , ! ? ; :).
- * Digits and the hyphen don't end a word here (whether iOS's hyphen does is not decoded).
+ * Digits don't end a word here; the hyphen does, as on the iPhone ('teh-' -> 'the-', user 2026-11-20).
  */
 private fun isTerminator(text: String): Boolean {
     val c = text.singleOrNull() ?: return false
-    return c == ' ' || !(c.isLetterOrDigit() || c.isWhitespace() || c == '-' || c in NO_AUTOCORRECT_TERMINATORS || io.github.sillypuppyy.dogboard.engine.isWordChar(c))
+    return c == ' ' || !(c.isLetterOrDigit() || c.isWhitespace() || c in NO_AUTOCORRECT_TERMINATORS || io.github.sillypuppyy.dogboard.engine.isWordChar(c))
 }
 private const val NO_AUTOCORRECT_TERMINATORS = "@#$%^*_([]\\|"
 private val SYMBOL_LAYERS = setOf(K3LayerId("symbol-1"), K3LayerId("symbol-2"))
