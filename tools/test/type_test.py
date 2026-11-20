@@ -156,6 +156,9 @@ def main():
     ap.add_argument("--repeat", type=int, default=1, help="run each case this many times")
     ap.add_argument("--history", action="store_true", help="print every text change on failure")
     args = ap.parse_args()
+    # a log buffer large enough that the engine's one-time 'lexicon load took' line survives the touch logs
+    # (with the default buffer the load check failed mid-run: 'keyboard never finished loading', 2026-11-20)
+    adb(args.serial, "logcat", "-G", "16M")
     ime = args.ime
     ime_package = ime.split("/")[0]
     rng = random.Random(args.seed)
