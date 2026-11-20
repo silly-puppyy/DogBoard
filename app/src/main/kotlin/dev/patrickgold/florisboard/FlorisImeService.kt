@@ -410,11 +410,22 @@ class FlorisImeService : LifecycleInputMethodService() {
             io.github.sillypuppyy.dogboard.engine.TypingEngine.releaseNeuralLm()
             android.util.Log.i("DogBoardPerf", "memory pressure (level $level): neural model released")
         }
+        // the swipe recogniser (~12 MB native) only when it is critical or the process is about to go: swiping
+        // without it falls back to nothing until the next show (the neural model goes first, at lower levels)
+        if (level == android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL ||
+            level >= android.content.ComponentCallbacks2.TRIM_MEMORY_MODERATE
+        ) {
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.releaseSwipeNet()
+            android.util.Log.i("DogBoardPerf", "memory pressure (level $level): swipe recogniser released")
+        }
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onStartInputView") // DogBoard: startup timing
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureNeural(this@FlorisImeService) }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureNeural(this@FlorisImeService)
+            io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureSwipe(this@FlorisImeService)
+        }
         flogInfo { "info=${info?.debugSummarize()} restarting=$restarting" }
         super.onStartInputView(info, restarting)
         if (info == null) return

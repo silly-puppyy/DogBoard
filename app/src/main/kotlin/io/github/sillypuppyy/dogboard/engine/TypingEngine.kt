@@ -292,6 +292,15 @@ object TypingEngine {
 
     val hasSwipe: Boolean get() = swipeNet != null && loaded != null
 
+    /** The swipe recogniser's interpreter released under critical memory pressure (~12 MB native); loaded again on the next show. */
+    fun releaseSwipeNet() {
+        val net = swipeNet ?: return
+        swipeNet = null
+        net.close()
+    }
+
+    val hasSwipeNet: Boolean get() = swipeNet != null
+
     /** Trigram weight in swipe decoding (SwipeContextEvalTest: 0.7 chosen on held-out FUTO swipes, 88.3 -> 89.9 % top-1). */
     const val SWIPE_CONTEXT_WEIGHT = 0.7
 

@@ -92,6 +92,23 @@ object EngineLoader {
         TypingEngine.attachNeuralLm(loadNeuralLm(context.applicationContext))
     }
 
+    private fun loadSwipeNet(app: Context): io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet? = runCatching {
+        app.assets.openFd(pack(app).path("swipe_qwerty") ?: error("no swipe model")).use { fd ->
+            java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
+                io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet(
+                    ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), threads = 1,
+                )
+            }
+        }
+    }.onFailure { android.util.Log.i("DogBoardPerf", "swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+
+    /** The swipe recogniser again after a memory-pressure release (call off the main thread). */
+    fun ensureSwipe(context: Context) {
+        if (!TypingEngine.isReady || TypingEngine.hasSwipeNet) return
+        TypingEngine.attachSwipeNet(loadSwipeNet(context.applicationContext))
+        android.util.Log.i("DogBoardPerf", "swipe recogniser loaded again")
+    }
+
     private fun nativeMark(what: String) =
         android.util.Log.i("DogBoardPerf", "memory after $what: native ${android.os.Debug.getNativeHeapAllocatedSize() / 1048576} MB, " +
             "java ${(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576} MB")
@@ -145,15 +162,7 @@ object EngineLoader {
         nativeMark("neural")
         // the swipe recogniser (4.4 MB, memory-mapped like the trigram; every phone: ~2 ms of work per
         // swipe on a desktop core, run only when a swipe ends)
-        TypingEngine.attachSwipeNet(runCatching {
-            app.assets.openFd(p.path("swipe_qwerty") ?: error("no swipe model")).use { fd ->
-                java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
-                    io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet(
-                        ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), threads = 1,
-                    )
-                }
-            }
-        }.onFailure { android.util.Log.i("DogBoardPerf", "swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull())
+        TypingEngine.attachSwipeNet(loadSwipeNet(app))
         nativeMark("swipe")
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()

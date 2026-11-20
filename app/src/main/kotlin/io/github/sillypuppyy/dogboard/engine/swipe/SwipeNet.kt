@@ -32,9 +32,20 @@ class SwipeNet(model: ByteBuffer, threads: Int = 2) {
         out = ByteBuffer.allocateDirect(steps * 27 * 4).order(ByteOrder.nativeOrder())
     }
 
-    /** [features]: n x 4 flat (SwipePath.features). Log-probs [n x 27] flat. */
+    private var closed = false
+
+    /** Frees the interpreter's native memory (memory pressure); a later [run] returns nothing. */
+    @Synchronized
+    fun close() {
+        if (closed) return
+        closed = true
+        interpreter.close()
+    }
+
+    /** [features]: n x 4 flat (SwipePath.features). Log-probs [n x 27] flat; empty once [close]d. */
     @Synchronized
     fun run(features: FloatArray): FloatArray {
+        if (closed) return FloatArray(0)
         val n = minOf(features.size / 4, steps)
         x.clear()
         for (i in 0 until steps * 4) x.putFloat(if (i < n * 4) features[i] else 0f)
