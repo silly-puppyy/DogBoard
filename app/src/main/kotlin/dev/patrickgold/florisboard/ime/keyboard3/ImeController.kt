@@ -1265,9 +1265,13 @@ class ImeController(
         private var languageTag = ""
 
         /** The layout language's rules (its pack's rules.json): France and Belgium French keep a space before ? ! : ;. */
-        private fun languageRules() = io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry.rulesFor(
-            dev.patrickgold.florisboard.FlorisApplication.getHack().assets, languageTag,
-        )
+        // the layout's language; the active subtype's when no composition has set it yet (2026-11-20: the tag
+        // stayed empty in fields without composing, so the rules were empty and '1sr' was no longer '1st')
+        private fun languageRules() = dev.patrickgold.florisboard.FlorisApplication.getHack().let { app ->
+            io.github.sillypuppyy.dogboard.ime.LanguageRulesRegistry.rulesFor(
+                app.assets, languageTag.ifEmpty { app.subtypeManager.value.activeSubtype.primaryLocale.languageTag() },
+            )
+        }
 
         private fun wordEngineAllowed(): Boolean {
             val attrs = state.editor.info.inputAttributes
