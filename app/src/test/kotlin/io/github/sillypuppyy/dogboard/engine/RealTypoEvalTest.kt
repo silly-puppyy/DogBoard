@@ -48,6 +48,8 @@ class RealTypoEvalTest : FunSpec({
         System.getenv("DOGBOARD_NAME_RANK")?.toIntOrNull()?.let { autocorrect.nameAsTypedRank = it }
         // DOGBOARD_CONTEXT_END_OMISSION=0: Autocorrect.contextEndOmission off (2026-11-19 on: fixed 49.5 -> 49.6 %, broken 0.4 % both)
         autocorrect.contextEndOmission = System.getenv("DOGBOARD_CONTEXT_END_OMISSION") != "0"
+        // DOGBOARD_RULE3=x: Rule 3's bar as a probability ratio (iOS 0.1), "off" = no bar
+        System.getenv("DOGBOARD_RULE3")?.let { autocorrect.minContextSupport = if (it == "off") Double.NEGATIVE_INFINITY else kotlin.math.ln(it.toDouble()) }
         val handMm = System.getenv("DOGBOARD_REAL_TYPOS_HAND")?.toDoubleOrNull()
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)

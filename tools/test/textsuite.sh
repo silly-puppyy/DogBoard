@@ -16,7 +16,7 @@ cd "$(dirname "$0")/../.."
 N=${1:-6000}
 D=/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data
 PRED=/home/syn/.claude/jobs/eb2fb8fd/tmp/predbench
-OUT=build/textsuite; mkdir -p "$OUT"
+OUT=$PWD/build/textsuite; mkdir -p "$OUT" # absolute: the tests run from app/
 SUM=$OUT/$(date +%Y-%m-%d-%H%M).txt
 echo "# textsuite $(git rev-parse --short HEAD) N=$N $(date -Iseconds)" > "$SUM"
 

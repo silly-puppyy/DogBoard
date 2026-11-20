@@ -27,6 +27,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var contextEndOmission: Boolean = true
 
+    /** Rule 3's bar (ln of iOS's 0.1); -infinity turns the rule off (benchmarks). */
+    var minContextSupport: Double = MIN_CONTEXT_SUPPORT
+
     /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
     private fun isWordAsTyped(typed: String): Boolean {
         val node = lexicon.find(typed)
@@ -80,7 +83,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          * Rule 3: words run together are only split when the words are at least this likely in
          * context compared with on their own (iOS "insufficient linguistic support").
          */
-        private val MIN_CONTEXT_SUPPORT = ln(0.1)
+        val MIN_CONTEXT_SUPPORT = ln(0.1)
 
         /**
          * iOS FilterNondominantCorrectionOfMoreWords (SortKeyMatchBoostRatio 1.39): a candidate
@@ -137,7 +140,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         val (top, t) = cased.firstOrNull() ?: return null
         // Rule 3 (spec 4.1): a multi-word top without linguistic support rejects the correction; iOS judges
         // only the top, so the next candidate down doesn't take its place (audit 2026-11-20)
-        if (top.words > 1 && top.contextSupport < MIN_CONTEXT_SUPPORT) return null
+        if (top.words > 1 && top.contextSupport < minContextSupport) return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
         // Rule 2 (spec 4.1): a correction longer than the input that has fewer one-letter words than it is
