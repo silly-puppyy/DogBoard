@@ -79,6 +79,8 @@ object RecentClip {
         item.isSensitive -> "Paste password"
         item.type == ItemType.IMAGE -> "Paste copied image"
         item.type == ItemType.VIDEO -> "Paste copied video"
-        else -> item.text.orEmpty().replace(Regex("\\s+"), " ").trim().let { if (it.length > 28) it.take(27) + "…" else it }
+        // a copied link reads as its page's title once Link previews has read it (user 2026-11-21: the chip showed the raw link)
+        else -> item.text.orEmpty().replace(Regex("\\s+"), " ").trim().let { t -> LinkInfo.linkIn(t)?.takeIf { it == t }?.let { LinkInfo.get(it)?.title } ?: t }
+            .let { if (it.length > 28) it.take(27) + "…" else it }
     }
 }

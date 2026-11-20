@@ -31,7 +31,12 @@ object LinkInfo {
         val image: String? = null,
         val icon: String? = null,
         val previews: Boolean = false,
+        /** [VERSION] of the code that read the preview: older ones are read again. */
+        val version: Int = 0,
     )
+
+    /** 2: short links followed first, platform oEmbed endpoints, PNG icons (2026-11-21: TikTok showed its generic page title). */
+    private const val VERSION = 2
 
     private val json = Json { ignoreUnknownKeys = true }
     private val infos = ConcurrentHashMap<String, Info>()
@@ -68,7 +73,7 @@ object LinkInfo {
         for (m in URL_RE.findAll(text)) {
             val url = m.value
             val known = infos[url]
-            if (known != null && (known.previews || !previews)) continue
+            if (known != null && ((known.previews && known.version >= VERSION) || !previews)) continue
             val target = if (expand) resolve(url) else null
             val page = target ?: url
             var info = Info(url, target = target?.takeIf { it != url })
@@ -104,29 +109,30 @@ object LinkInfo {
         setRequestProperty("Accept-Language", "en")
     }
 
-    private fun withPreview(info: Info, page: String): Info {
-        val host = runCatching { URL(page).host.removePrefix("www.").lowercase() }.getOrNull() ?: return info.copy(previews = true)
-        // videos: the platforms' own oEmbed answers (title, channel, frame); the page for the length
-        val oembed = when {
-            host == "youtube.com" || host == "m.youtube.com" || host == "youtu.be" ->
-                "https://www.youtube.com/oembed?format=json&url=" + java.net.URLEncoder.encode(page, "UTF-8")
-            host.endsWith("tiktok.com") -> "https://www.tiktok.com/oembed?url=" + java.net.URLEncoder.encode(page, "UTF-8")
-            host == "vimeo.com" -> "https://vimeo.com/api/oembed.json?url=" + java.net.URLEncoder.encode(page, "UTF-8")
-            else -> null
-        }
+    private fun withPreview(info: Info, link: String): Info {
+        // a short link first leads to the real page: the platforms' oEmbed endpoints refuse short links
+        // ("vm.tiktok.com/..." gave TikTok's generic "Make Your Day" page) and the icon lives on the real host
+        val page = info.target ?: resolve(link) ?: link
+        val host = runCatching { URL(page).host.removePrefix("www.").lowercase() }.getOrNull() ?: return info.copy(previews = true, version = VERSION)
         var title: String? = null; var site: String? = null; var image: String? = null; var duration: Int? = null
-        oembed?.let { o ->
-            runCatching {
-                val obj = json.parseToJsonElement(read(o, 64 * 1024) ?: return@runCatching).let { it as kotlinx.serialization.json.JsonObject }
-                fun s(k: String) = (obj[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
-                title = s("title"); site = s("provider_name"); image = s("thumbnail_url")
-                duration = (obj["duration"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toDoubleOrNull()?.toInt()
-            }
+        fun fromOembed(o: String) = runCatching {
+            val obj = json.parseToJsonElement(read(o, 64 * 1024) ?: return@runCatching).let { it as kotlinx.serialization.json.JsonObject }
+            fun s(k: String) = (obj[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content?.trim()?.takeIf { it.isNotEmpty() }
+            // a post (X, Bluesky) has no title: its text, from the embed's first paragraph, and its author
+            val text = s("html")?.let(::postText)
+            title = s("title") ?: text
+            site = if (s("title") == null && text != null) s("author_name") ?: s("provider_name") else s("provider_name")
+            image = s("thumbnail_url")
+            duration = (obj["duration"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toDoubleOrNull()?.toInt()
         }
+        // the platforms' own oEmbed answers (title or post text, author, frame); the page for the rest
+        oembedFor(page)?.let(::fromOembed)
         // 1 MB: video pages put the length late (YouTube's at ~650 KB, 2026-11-20)
         val html = read(page, 1024 * 1024)
         if (html != null) {
             val head = html.substringBefore("</head>")
+            // any other site that offers oEmbed says so in its head
+            if (title == null) oembedLink(head)?.let { runCatching { URL(URL(page), it).toString() }.getOrNull() }?.let(::fromOembed)
             title = title ?: meta(head, "og:title") ?: meta(head, "twitter:title") ?: Regex("(?is)<title[^>]*>(.*?)</title>").find(head)?.groupValues?.get(1)?.let(::unescape)?.trim()
             site = site ?: meta(head, "og:site_name")
             image = image ?: meta(head, "og:image") ?: meta(head, "twitter:image")
@@ -136,10 +142,11 @@ object LinkInfo {
         }
         val key = Integer.toHexString(info.url.hashCode())
         val banner = image?.let { runCatching { URL(URL(page), it).toString() }.getOrNull() }?.let { saveImage(it, "$key.jpg", 480) }
-        val iconUrl = html?.let { iconHref(it.substringBefore("</head>")) }?.let { runCatching { URL(URL(page), it).toString() }.getOrNull() }
-            ?: "https://$host/favicon.ico"
-        val icon = saveImage(iconUrl, "$key-icon.png", 64)
-        return info.copy(title = title?.take(200), site = site?.take(80), duration = duration, image = banner, icon = icon, previews = true)
+        // the page's icons, PNG ones first (a .ico doesn't decode everywhere), then the real host's favicon.ico
+        val icons = (html?.let { iconHrefs(it.substringBefore("</head>")) }.orEmpty().mapNotNull { runCatching { URL(URL(page), it).toString() }.getOrNull() } +
+            "https://${URL(page).host}/favicon.ico").distinct()
+        val icon = icons.asSequence().take(4).mapNotNull { saveImage(it, "$key-icon.png", 64) }.firstOrNull()
+        return info.copy(title = title?.take(200), site = site?.take(80), duration = duration, image = banner, icon = icon, previews = true, version = VERSION)
     }
 
     private fun read(u: String, max: Int): String? = runCatching {
@@ -217,9 +224,43 @@ object LinkInfo {
             ?.groupValues?.get(1)?.let(::unescape)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
-    internal fun iconHref(head: String): String? =
-        Regex("""(?is)<link[^>]+rel=["'](?:shortcut icon|icon|apple-touch-icon)["'][^>]*href=["']([^"']+)""").find(head)?.groupValues?.get(1)
-            ?: Regex("""(?is)<link[^>]+href=["']([^"']+)["'][^>]*rel=["'](?:shortcut icon|icon|apple-touch-icon)["']""").find(head)?.groupValues?.get(1)
+    /** The page's icon links, apple-touch-icon (PNG) and .png icons first. */
+    internal fun iconHrefs(head: String): List<String> =
+        Regex("""(?is)<link\b[^>]*>""").findAll(head).map { it.value }
+            .filter { Regex("""(?i)rel=["'](?:shortcut icon|icon|apple-touch-icon(?:-precomposed)?)["']""").containsMatchIn(it) }
+            .mapNotNull { Regex("""(?i)href=["']([^"']+)""").find(it)?.groupValues?.get(1)?.let(::unescape) }
+            .sortedBy { if ("apple-touch" in it || it.substringBefore('?').endsWith(".png", ignoreCase = true)) 0 else 1 }
+            .toList()
+
+    /** The platform's public oEmbed endpoint for [page] (no key needed), or null. */
+    internal fun oembedFor(page: String): String? {
+        val host = runCatching { URL(page).host.lowercase().removePrefix("www.").removePrefix("m.").removePrefix("mobile.") }.getOrNull() ?: return null
+        val u = java.net.URLEncoder.encode(page, "UTF-8")
+        return when {
+            host == "youtube.com" || host == "youtu.be" || host == "music.youtube.com" -> "https://www.youtube.com/oembed?format=json&url=$u"
+            host == "tiktok.com" -> "https://www.tiktok.com/oembed?url=$u"
+            host == "vimeo.com" -> "https://vimeo.com/api/oembed.json?url=$u"
+            host == "x.com" || host == "twitter.com" -> "https://publish.twitter.com/oembed?omit_script=1&dnt=true&url=$u"
+            host == "reddit.com" || host == "old.reddit.com" || host == "new.reddit.com" -> "https://www.reddit.com/oembed?url=$u"
+            host == "open.spotify.com" -> "https://open.spotify.com/oembed?url=$u"
+            host == "soundcloud.com" -> "https://soundcloud.com/oembed?format=json&url=$u"
+            host == "pinterest.com" || host.startsWith("pinterest.") -> "https://www.pinterest.com/oembed.json?url=$u"
+            host == "bsky.app" -> "https://embed.bsky.app/oembed?url=$u"
+            else -> null
+        }
+    }
+
+    /** A JSON oEmbed endpoint the page advertises in its head. */
+    internal fun oembedLink(head: String): String? =
+        Regex("""(?is)<link\b[^>]*>""").findAll(head).map { it.value }
+            .firstOrNull { Regex("""(?i)type=["']application/json\+oembed["']""").containsMatchIn(it) }
+            ?.let { Regex("""(?i)href=["']([^"']+)""").find(it)?.groupValues?.get(1) }?.let(::unescape)
+
+    /** The text of a post's embed (its first paragraph), tags removed. */
+    internal fun postText(html: String): String? =
+        Regex("""(?is)<p\b[^>]*>(.*?)</p>""").find(html)?.groupValues?.get(1)
+            ?.replace(Regex("""(?i)<br\s*/?>"""), " ")?.replace(Regex("<[^>]+>"), "")?.let(::unescape)
+            ?.replace(Regex("\\s+"), " ")?.trim()?.takeIf { it.isNotEmpty() }
 
     /** "PT4M13S" -> 253. */
     internal fun isoSeconds(s: String): Int? {

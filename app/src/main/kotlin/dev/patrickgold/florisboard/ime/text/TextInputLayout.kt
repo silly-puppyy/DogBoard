@@ -113,7 +113,9 @@ fun TextInputLayout(
             // a copied code in a field that asks for a number (ClipKinds.code)
             val numberField = imeState.editor.info.inputAttributes.type == dev.patrickgold.florisboard.ime.editor.InputAttributes.Type.NUMBER
             var clipCode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
-            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips, numberField) {
+            // a link's preview arriving redraws the chip with its title
+            val linkChanges by io.github.sillypuppyy.dogboard.ime.LinkInfo.changes.collectAsState()
+            androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips, numberField, linkChanges) {
                 val offer = if (!clipSuggestion) null else io.github.sillypuppyy.dogboard.ime.RecentClip.offer(primaryClip, System.currentTimeMillis(), isIncognitoMode)
                 clipShown = offer
                 val clipText = offer?.takeIf { !it.isSensitive && it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT }?.text.orEmpty()
@@ -181,7 +183,7 @@ fun TextInputLayout(
                         }
                     } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.insert, space = c.insert == c.label) } }
                 },
-                clipLabel = if (clipChipsShown || undoChip) null else clipShown?.let { io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) },
+                clipLabel = if (clipChipsShown || undoChip) null else clipShown?.let { linkChanges.let { _ -> io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) } },
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
                 onClip = {
                     clipShown?.let { item ->

@@ -2,6 +2,7 @@ package io.github.sillypuppyy.dogboard.ime
 
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldStartWith
 
 class LinkInfoTest : FunSpec({
     val head = """
@@ -18,9 +19,32 @@ class LinkInfoTest : FunSpec({
         LinkInfo.meta(head, "twitter:image") shouldBe "/img/banner.jpg"
         LinkInfo.meta(head, "og:image") shouldBe null
     }
-    test("the site's icon link") {
-        LinkInfo.iconHref(head) shouldBe "/favicon-32.png"
-        LinkInfo.iconHref("""<link href="/a.ico" rel="shortcut icon">""") shouldBe "/a.ico"
+    test("the site's icon links, PNG ones first") {
+        LinkInfo.iconHrefs(head) shouldBe listOf("/favicon-32.png")
+        LinkInfo.iconHrefs("""<link href="/a.ico" rel="shortcut icon">""") shouldBe listOf("/a.ico")
+        LinkInfo.iconHrefs("""<link rel="icon" href="https://www.tiktok.com/favicon.ico"><link rel="apple-touch-icon" href="/touch.png">""") shouldBe
+            listOf("/touch.png", "https://www.tiktok.com/favicon.ico")
+    }
+    test("each platform's public oEmbed endpoint, from the full page address") {
+        LinkInfo.oembedFor("https://www.tiktok.com/@someone/video/123")!! shouldStartWith "https://www.tiktok.com/oembed?url="
+        LinkInfo.oembedFor("https://x.com/someone/status/1")!! shouldStartWith "https://publish.twitter.com/oembed?"
+        LinkInfo.oembedFor("https://mobile.twitter.com/someone/status/1")!! shouldStartWith "https://publish.twitter.com/oembed?"
+        LinkInfo.oembedFor("https://m.youtube.com/watch?v=abc")!! shouldStartWith "https://www.youtube.com/oembed?"
+        LinkInfo.oembedFor("https://old.reddit.com/r/x/comments/1/")!! shouldStartWith "https://www.reddit.com/oembed?"
+        LinkInfo.oembedFor("https://open.spotify.com/track/1")!! shouldStartWith "https://open.spotify.com/oembed?"
+        LinkInfo.oembedFor("https://bsky.app/profile/a/post/1")!! shouldStartWith "https://embed.bsky.app/oembed?"
+        LinkInfo.oembedFor("https://www.pinterest.co.uk/pin/1/")!! shouldStartWith "https://www.pinterest.com/oembed.json?"
+        LinkInfo.oembedFor("https://example.com/") shouldBe null
+    }
+    test("an oEmbed endpoint the page advertises") {
+        LinkInfo.oembedLink("""<link rel="alternate" type="application/json+oembed" href="https://site.example/oembed?url=a&amp;format=json">""") shouldBe
+            "https://site.example/oembed?url=a&format=json"
+        LinkInfo.oembedLink(head) shouldBe null
+    }
+    test("a post's text from its embed") {
+        LinkInfo.postText("""<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Happy 50th anniversary<br>to the <a href="x">Wilderness Act</a>! Here&#39;s</p>&mdash; Someone</blockquote>""") shouldBe
+            "Happy 50th anniversary to the Wilderness Act! Here's"
+        LinkInfo.postText("<iframe src=\"x\"></iframe>") shouldBe null
     }
     test("a video's ISO 8601 length") {
         LinkInfo.isoSeconds("PT4M13S") shouldBe 253
