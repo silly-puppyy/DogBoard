@@ -56,6 +56,7 @@ class RegressionUiTest(private val typed: String, private val expected: String, 
             arrayOf("the {123}1{123}sr x", "The 1st x", "1sr -> 1st (11-20)"),
             arrayOf("ofthe x", "Of the x", "two-word correction (11-19)"),
             arrayOf("try bit tonpause x", "Try not to pause x|Try bit to pause x", "tonpause -> to pause after a b/n slip (11-21)"),
+            arrayOf("try not tonpause x", "Try not to pause x", "a correct 'not' kept by hindsight before tonpause (11-21)"),
         )
     }
 }
