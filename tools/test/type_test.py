@@ -116,10 +116,11 @@ def wait_ime_shown(serial, timeout=10.0):
 
 
 def wait_engine_loaded(serial, timeout=20.0):
-    """Waits for the keyboard's "lexicon load took" mark: until then nothing is corrected."""
+    """Waits for the keyboard's "engine ready" mark: until then nothing is corrected."""
     end = time.time() + timeout
     while time.time() < end:
-        if "lexicon load took" in adb(serial, "logcat", "-d", "-s", "DogBoardPerf:I"):
+        # EngineLoader's mark once the word data is in (it was "lexicon load took" until the load stages were timed)
+        if "engine ready" in adb(serial, "logcat", "-d", "-s", "DogBoardPerf:I"):
             return True
         time.sleep(0.2)
     return False
