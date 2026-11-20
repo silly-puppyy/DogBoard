@@ -14,21 +14,95 @@ import kotlin.math.ln
  *     #dogboard-lexicon 1
  *     word<TAB>count
  */
-class Lexicon private constructor(capacity: Int) {
-    private var key = CharArray(capacity)
-    private var firstChild = IntArray(capacity)
-    private var nextSibling = IntArray(capacity)
-    private var parent = IntArray(capacity)
-    private var depth = ShortArray(capacity)
-    private var logProb = FloatArray(capacity)
-    private var mass = FloatArray(capacity)
-    private var best = IntArray(capacity)
-    private var wordId = IntArray(capacity)
+class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
+    // The node fields, by node. Hot fields (read for every search state) live in heap arrays. The cold ones (parent,
+    // mass, word nodes: ~7 MB for English) are read from the mapped snapshot for nodes below [base] (off the Java
+    // heap, for 128 MB-heap phones, 2026-11-20) and from [aParent] / [aMass] at index node - base above it (the
+    // learned words'); a mapped node's mass changed by a learned word is kept in [ov]. Mapping the hot fields as
+    // well saved 21 MB more but cost the decoder 40 %.
+    private var aKey = CharArray(capacity)
+    private var aFirst = IntArray(capacity)
+    private var aNext = IntArray(capacity)
+    private var aParent = IntArray(capacity)
+    private var aDepth = ShortArray(capacity)
+    private var aLogP = FloatArray(capacity)
+    private var aMass = FloatArray(capacity)
+    private var aBest = IntArray(capacity)
+    private var aWordId = IntArray(capacity)
+    private var base = 0
+    private val ov = Overrides()
     private var nodeCount = 0
 
-    /** Node of each word, by word id. */
-    private var wordNode = IntArray(capacity / 2 + 16)
+    /** Node of each word, by word id: [baseWords] mapped, the rest here (index id - baseWords). */
+    private var aWordNode = IntArray(capacity / 2 + 16)
+    private var baseWords = 0
     private var wordCount = 0
+
+    /**
+     * The snapshot's node fields in its mapped file (little-endian), read with absolute gets on one byte buffer at
+     * each field's offset (typed views cost a third more per decode, 2026-11-20).
+     */
+    private class Mapped(val b: java.nio.ByteBuffer, n: Int) {
+        val key = 0
+        val first = 2 * n
+        val next = first + 4 * n
+        val parent = next + 4 * n
+        val best = parent + 4 * n
+        val wordId = best + 4 * n
+        val depth = wordId + 4 * n
+        val logP = depth + 2 * n
+        val mass = logP + 4 * n
+        val wordNode = mass + 4 * n
+    }
+
+    /** The mass of mapped nodes changed by learned words (their ancestors), by node (sorted; few). */
+    private class Overrides {
+        var nodes = IntArray(0); var size = 0
+        var mass = FloatArray(0)
+        val has = java.util.BitSet()
+        fun indexOf(n: Int) = java.util.Arrays.binarySearch(nodes, 0, size, n)
+        /** The slot for [n], made from [init] on first use. */
+        fun slot(n: Int, init: (Int) -> Unit): Int {
+            val i = indexOf(n)
+            if (i >= 0) return i
+            val at = -i - 1
+            if (size == nodes.size) { val c = size * 2 + 16; nodes = nodes.copyOf(c); mass = mass.copyOf(c) }
+            System.arraycopy(nodes, at, nodes, at + 1, size - at)
+            System.arraycopy(mass, at, mass, at + 1, size - at)
+            nodes[at] = n; size++
+            has.set(n)
+            init(at)
+            return at
+        }
+    }
+
+    // the mapped buffer and the cold fields' offsets in it
+    private var mb: java.nio.ByteBuffer = java.nio.ByteBuffer.allocate(0)
+    private var oParent = 0; private var oMass = 0; private var oWordNode = 0
+
+    // hot fields (read for every search state): heap arrays by node
+    private fun gKey(n: Int): Char = aKey[n]
+    private fun gNext(n: Int): Int = aNext[n]
+    private fun gDepth(n: Int): Short = aDepth[n]
+    private fun gFirst(n: Int): Int = aFirst[n]
+    private fun gLogP(n: Int): Float = aLogP[n]
+    private fun gBest(n: Int): Int = aBest[n]
+    private fun gWordId(n: Int): Int = aWordId[n]
+    private fun sFirst(n: Int, v: Int) { aFirst[n] = v }
+    private fun sLogP(n: Int, v: Float) { aLogP[n] = v }
+    private fun sBest(n: Int, v: Int) { aBest[n] = v }
+    private fun sWordId(n: Int, v: Int) { aWordId[n] = v }
+
+    // cold fields (building a word, the key prior, setup): mapped below [base], arrays (index n - base) above
+    private fun gParent(n: Int): Int = if (n >= base) aParent[n - base] else mb.getInt(oParent + 4 * n)
+    private fun gWordNode(id: Int): Int = if (id >= baseWords) aWordNode[id - baseWords] else mb.getInt(oWordNode + 4 * id)
+    private fun gMass(n: Int): Float =
+        if (n >= base) aMass[n - base] else if (ov.size != 0 && ov.has.get(n)) ov.mass[ov.indexOf(n)] else mb.getFloat(oMass + 4 * n)
+    private fun sMass(n: Int, v: Float) { if (n >= base) aMass[n - base] = v else { val i = ovSlot(n); ov.mass[i] = v } }
+
+    /** The override slot of mapped node [n] (made from its mapped mass on first use). Call it before reading an [ov]
+     * array: it may grow them. */
+    private fun ovSlot(n: Int): Int = ov.slot(n) { i -> ov.mass[i] = mb.getFloat(oMass + 4 * n) }
 
     /**
      * Surface forms that differ from the lowercase path ("Paris", "I'm"), by node: words added after loading. The
@@ -57,7 +131,7 @@ class Lexicon private constructor(capacity: Int) {
     private val hasCasings = java.util.BitSet()
 
     init {
-        newNode(NONE, '\u0000')
+        if (withRoot) newNode(NONE, '\u0000')
     }
 
     val size: Int get() = wordCount
@@ -67,26 +141,26 @@ class Lexicon private constructor(capacity: Int) {
     var version = 0
         private set
 
-    fun firstChild(node: Int): Int = firstChild[node]
-    fun nextSibling(node: Int): Int = nextSibling[node]
-    fun key(node: Int): Char = key[node]
-    fun depth(node: Int): Int = depth[node].toInt()
-    fun isWord(node: Int): Boolean = wordId[node] != NONE
+    fun firstChild(node: Int): Int = gFirst(node)
+    fun nextSibling(node: Int): Int = gNext(node)
+    fun key(node: Int): Char = gKey(node)
+    fun depth(node: Int): Int = gDepth(node).toInt()
+    fun isWord(node: Int): Boolean = gWordId(node) != NONE
 
     /** ln P(word) of the word ending at [node], or NaN. */
-    fun logProb(node: Int): Double = if (wordId[node] == NONE) Double.NaN else logProb[node].toDouble()
+    fun logProb(node: Int): Double = if (gWordId(node) == NONE) Double.NaN else gLogP(node).toDouble()
 
     /** Total probability of the words at or below [node]. */
-    fun mass(node: Int): Double = mass[node].toDouble()
+    fun mass(node: Int): Double = gMass(node).toDouble()
 
     /** Node of the most frequent word at or below [node], or [NONE]. */
-    fun bestWord(node: Int): Int = best[node]
+    fun bestWord(node: Int): Int = gBest(node)
 
     /** Id of the word ending at [node] (0 until [size]), or [NONE]. */
-    fun wordId(node: Int): Int = wordId[node]
+    fun wordId(node: Int): Int = gWordId(node)
 
     /** Node of the word with id [id]. */
-    fun nodeOfWord(id: Int): Int = wordNode[id]
+    fun nodeOfWord(id: Int): Int = gWordNode(id)
 
     // each word's string once made (by word id): the decoder asks for the same few hundred words on
     // every keystroke, and rebuilding them was the typing path's largest garbage. Readers share the
@@ -95,7 +169,7 @@ class Lexicon private constructor(capacity: Int) {
 
     /** The word ending at [node] in its stored casing, or null. */
     fun word(node: Int): String? {
-        val id = wordId[node]
+        val id = gWordId(node)
         if (id == NONE) return null
         val cache = wordCache
         if (id < cache.size) cache[id]?.let { return it }
@@ -107,11 +181,11 @@ class Lexicon private constructor(capacity: Int) {
 
     private fun buildWord(node: Int): String {
         if (hasSurface.get(node)) surfaceOf(node)?.let { return it }
-        val chars = CharArray(depth[node].toInt())
+        val chars = CharArray(gDepth(node).toInt())
         var n = node
         for (i in chars.indices.reversed()) {
-            chars[i] = key[n]
-            n = parent[n]
+            chars[i] = gKey(n)
+            n = gParent(n)
         }
         return String(chars)
     }
@@ -121,9 +195,9 @@ class Lexicon private constructor(capacity: Int) {
 
     /** Every casing of the word at [node] with its own ln P, most likely first. */
     fun forms(node: Int): List<Pair<String, Double>> {
-        if (wordId[node] == NONE) return emptyList()
+        if (gWordId(node) == NONE) return emptyList()
         if (hasCasings.get(node)) casingsOf(node)?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
-        return listOf(word(node)!! to logProb[node].toDouble())
+        return listOf(word(node)!! to gLogP(node).toDouble())
     }
 
     /** The surface form stored for [node]: added after loading, else packed, else null. */
@@ -186,7 +260,7 @@ class Lexicon private constructor(capacity: Int) {
 
     /** The most likely casing of the word at [node] (forms(node).first() without the list), or null. */
     fun firstForm(node: Int): String? = when {
-        wordId[node] == NONE -> null
+        gWordId(node) == NONE -> null
         hasCasings.get(node) -> casingsOf(node)?.firstOrNull()?.first ?: word(node)
         else -> word(node)
     }
@@ -205,10 +279,10 @@ class Lexicon private constructor(capacity: Int) {
 
     /** The child of [node] for letter [c] (lowercase), or [NONE]. */
     fun child(node: Int, c: Char): Int {
-        var k = firstChild[node]
+        var k = gFirst(node)
         while (k != NONE) {
-            if (key[k] == c) return k
-            k = nextSibling[k]
+            if (gKey(k) == c) return k
+            k = gNext(k)
         }
         return NONE
     }
@@ -222,7 +296,7 @@ class Lexicon private constructor(capacity: Int) {
     fun contains(word: String): Boolean = find(word).let { it != NONE && isWord(it) }
 
     /** Id of [word] (case-insensitive), or -1. */
-    fun idOf(word: String): Int = find(word).let { if (it == NONE) NONE else wordId[it] }
+    fun idOf(word: String): Int = find(word).let { if (it == NONE) NONE else gWordId(it) }
 
     /** The node for [prefix] (case-insensitive), or [NONE]. */
     fun find(prefix: CharSequence): Int {
@@ -240,13 +314,13 @@ class Lexicon private constructor(capacity: Int) {
      */
     fun nextLetterLogProbs(prefix: CharSequence): Map<Char, Double>? {
         val node = find(prefix)
-        if (node == NONE || mass[node] <= 0f) return null
-        val total = mass[node].toDouble()
+        if (node == NONE || gMass(node) <= 0f) return null
+        val total = gMass(node).toDouble()
         return buildMap {
-            var k = firstChild[node]
+            var k = gFirst(node)
             while (k != NONE) {
-                if (mass[k] > 0f) put(key[k], ln(mass[k] / total))
-                k = nextSibling[k]
+                if (gMass(k) > 0f) put(gKey(k), ln(gMass(k) / total))
+                k = gNext(k)
             }
         }
     }
@@ -263,25 +337,25 @@ class Lexicon private constructor(capacity: Int) {
             node = child(node, lc).takeIf { it != NONE } ?: newNode(node, lc)
         }
         val added = when {
-            wordId[node] == NONE -> {
+            gWordId(node) == NONE -> {
                 setWord(node, word, logProb)
                 exp(logProb)
             }
-            logProb > this.logProb[node] -> {
-                val old = exp(this.logProb[node].toDouble())
-                this.logProb[node] = logProb.toFloat()
+            logProb > gLogP(node) -> {
+                val old = exp(gLogP(node).toDouble())
+                sLogP(node, logProb.toFloat())
                 exp(logProb) - old
             }
             else -> 0.0
         }
         var n = node
         while (n != NONE) {
-            mass[n] += added.toFloat()
-            val b = best[n]
-            if (b == NONE || this.logProb[node] > this.logProb[b]) best[n] = node
-            n = parent[n]
+            sMass(n, gMass(n) + added.toFloat())
+            val b = gBest(n)
+            if (b == NONE || gLogP(node) > gLogP(b)) sBest(n, node)
+            n = gParent(n)
         }
-        return wordId[node]
+        return gWordId(node)
     }
 
     /**
@@ -292,11 +366,15 @@ class Lexicon private constructor(capacity: Int) {
         val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
         val n = nodeCount
         d.writeInt(SNAPSHOT_MAGIC); d.writeInt(n); d.writeInt(wordCount)
-        for (i in 0 until n) d.writeChar(key[i].code)
-        for (a in listOf(firstChild, nextSibling, parent, best, wordId)) for (i in 0 until n) d.writeInt(a[i])
-        for (i in 0 until n) d.writeShort(depth[i].toInt())
-        for (a in listOf(logProb, mass)) for (i in 0 until n) d.writeFloat(a[i])
-        for (i in 0 until wordCount) d.writeInt(wordNode[i])
+        // the node fields little-endian (the byte order of phones and PCs): the app reads them in place from the
+        // mapped file, and big-endian views cost a byte swap per read (decoder 1.06 -> 1.51 ms a keystroke)
+        val nb = java.nio.ByteBuffer.allocate(n * 32 + wordCount * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        for (i in 0 until n) nb.putChar(gKey(i))
+        for (g in listOf(::gFirst, ::gNext, ::gParent, ::gBest, ::gWordId)) for (i in 0 until n) nb.putInt(g(i))
+        for (i in 0 until n) nb.putShort(gDepth(i))
+        for (g in listOf(::gLogP, ::gMass)) for (i in 0 until n) nb.putFloat(g(i))
+        for (i in 0 until wordCount) nb.putInt(gWordNode(i))
+        d.write(nb.array(), 0, nb.position())
         val surfaces = allSurfaces()
         d.writeInt(surfaces.size)
         for ((node, form) in surfaces) { d.writeInt(node); d.writeUTF(form) }
@@ -310,60 +388,64 @@ class Lexicon private constructor(capacity: Int) {
     }
 
     private fun setWord(node: Int, word: String, lp: Double) {
-        if (wordCount == wordNode.size) wordNode = wordNode.copyOf(wordNode.size * 3 / 2 + 16)
-        wordId[node] = wordCount
-        wordNode[wordCount++] = node
-        logProb[node] = lp.toFloat()
+        if (wordCount - baseWords == aWordNode.size) aWordNode = aWordNode.copyOf(aWordNode.size * 3 / 2 + 16)
+        sWordId(node, wordCount)
+        aWordNode[wordCount++ - baseWords] = node
+        sLogP(node, lp.toFloat())
         if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() }) { surface[node] = word; hasSurface.set(node) }
     }
 
     private fun newNode(parentNode: Int, c: Char): Int {
-        if (nodeCount == key.size) grow()
+        if (nodeCount == aKey.size) grow()
+        if (nodeCount - base == aParent.size) growCold()
         val n = nodeCount++
-        key[n] = c
-        firstChild[n] = NONE
-        parent[n] = parentNode
-        depth[n] = if (parentNode == NONE) 0 else (depth[parentNode] + 1).toShort()
-        wordId[n] = NONE
-        best[n] = NONE
-        logProb[n] = Float.NaN
-        mass[n] = 0f
+        aKey[n] = c
+        aFirst[n] = NONE
+        aParent[n - base] = parentNode // cold fields of a new node: after the mapped ones
+        aDepth[n] = if (parentNode == NONE) 0 else (gDepth(parentNode) + 1).toShort()
+        aWordId[n] = NONE
+        aBest[n] = NONE
+        aLogP[n] = Float.NaN
+        aMass[n - base] = 0f
         if (parentNode != NONE) {
-            nextSibling[n] = firstChild[parentNode]
-            firstChild[parentNode] = n
+            aNext[n] = gFirst(parentNode)
+            sFirst(parentNode, n)
         } else {
-            nextSibling[n] = NONE
+            aNext[n] = NONE
         }
         return n
     }
 
-    private fun grow() = resize(key.size * 3 / 2 + 64)
+    private fun grow() = resize(aKey.size * 3 / 2 + 64)
 
+    /** The hot fields' arrays to [cap] nodes (and the cold ones too while nothing is mapped). */
     private fun resize(cap: Int) {
-        key = key.copyOf(cap); firstChild = firstChild.copyOf(cap); nextSibling = nextSibling.copyOf(cap)
-        parent = parent.copyOf(cap); depth = depth.copyOf(cap); logProb = logProb.copyOf(cap)
-        mass = mass.copyOf(cap); best = best.copyOf(cap); wordId = wordId.copyOf(cap)
+        aKey = aKey.copyOf(cap); aFirst = aFirst.copyOf(cap); aNext = aNext.copyOf(cap)
+        aDepth = aDepth.copyOf(cap); aLogP = aLogP.copyOf(cap); aBest = aBest.copyOf(cap); aWordId = aWordId.copyOf(cap)
+        if (base == 0) { aParent = aParent.copyOf(cap); aMass = aMass.copyOf(cap) }
     }
+
+    private fun growCold() { val c = aParent.size * 3 / 2 + 64; aParent = aParent.copyOf(c); aMass = aMass.copyOf(c) }
 
     /** Fills [mass] and [best] bottom-up after loading (children always have larger indices). */
     private fun computeSubtrees() {
         for (n in nodeCount - 1 downTo 0) {
-            var m = if (wordId[n] != NONE) exp(logProb[n].toDouble()).toFloat() else 0f
-            var b = if (wordId[n] != NONE) n else NONE
-            var k = firstChild[n]
+            var m = if (gWordId(n) != NONE) exp(gLogP(n).toDouble()).toFloat() else 0f
+            var b = if (gWordId(n) != NONE) n else NONE
+            var k = gFirst(n)
             while (k != NONE) {
-                m += mass[k]
-                val kb = best[k]
-                if (kb != NONE && (b == NONE || logProb[kb] > logProb[b])) b = kb
-                k = nextSibling[k]
+                m += gMass(k)
+                val kb = gBest(k)
+                if (kb != NONE && (b == NONE || gLogP(kb) > gLogP(b))) b = kb
+                k = gNext(k)
             }
-            mass[n] = m
-            best[n] = b
+            sMass(n, m)
+            sBest(n, b)
         }
     }
 
     companion object {
-        private const val SNAPSHOT_MAGIC = 0x44474c32 // "DGL2": trie letters fold accents
+        private const val SNAPSHOT_MAGIC = 0x44474c33 // "DGL3": node fields little-endian, read in place (DGL2: big-endian)
 
         /** Reads what [writeSnapshot] wrote, or null if [bytes] isn't such a snapshot. */
         fun readSnapshot(bytes: ByteArray): Lexicon? = readSnapshot(java.nio.ByteBuffer.wrap(bytes))
@@ -373,21 +455,32 @@ class Lexicon private constructor(capacity: Int) {
          * the whole file on the heap first (that doubled the lexicon's memory while it loaded).
          */
         fun readSnapshot(b: java.nio.ByteBuffer): Lexicon? = runCatching {
+            b.order(java.nio.ByteOrder.BIG_ENDIAN)
             if (b.int != SNAPSHOT_MAGIC) return null
             val n = b.int
             val words = b.int
-            val lex = Lexicon(n + 1024) // room for learned words
-            b.asCharBuffer().get(lex.key, 0, n); b.position(b.position() + 2 * n)
-            for (a in listOf(lex.firstChild, lex.nextSibling, lex.parent, lex.best, lex.wordId)) {
-                b.asIntBuffer().get(a, 0, n); b.position(b.position() + 4 * n)
+            // the hot fields (read for every search state) copied into heap arrays; the cold ones (parent, mass, word
+            // nodes: 7 MB) left in the buffer (the app maps the snapshot file: off the Java heap). All mapped cost the
+            // decoder 40 % (1.06 -> 1.46 ms a keystroke, 2026-11-20)
+            val mm = Mapped(b, n)
+            val fields = (b.slice() as java.nio.ByteBuffer).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            b.position(b.position() + mm.wordNode + 4 * words)
+            val lex = Lexicon(n + 1024, withRoot = false) // room for learned words
+            fields.duplicate().order(java.nio.ByteOrder.LITTLE_ENDIAN).let { f ->
+                f.position(mm.key); f.asCharBuffer().get(lex.aKey, 0, n)
+                f.position(mm.first); f.asIntBuffer().get(lex.aFirst, 0, n)
+                f.position(mm.next); f.asIntBuffer().get(lex.aNext, 0, n)
+                f.position(mm.best); f.asIntBuffer().get(lex.aBest, 0, n)
+                f.position(mm.wordId); f.asIntBuffer().get(lex.aWordId, 0, n)
+                f.position(mm.depth); f.asShortBuffer().get(lex.aDepth, 0, n)
+                f.position(mm.logP); f.asFloatBuffer().get(lex.aLogP, 0, n)
             }
-            b.asShortBuffer().get(lex.depth, 0, n); b.position(b.position() + 2 * n)
-            for (a in listOf(lex.logProb, lex.mass)) {
-                b.asFloatBuffer().get(a, 0, n); b.position(b.position() + 4 * n)
-            }
-            lex.wordNode = IntArray(words + 1024)
-            b.asIntBuffer().get(lex.wordNode, 0, words); b.position(b.position() + 4 * words)
+            lex.aParent = IntArray(1024); lex.aMass = FloatArray(1024) // the learned words' cold fields
+            lex.mb = fields
+            lex.oParent = mm.parent; lex.oMass = mm.mass; lex.oWordNode = mm.wordNode
+            lex.base = n
             lex.nodeCount = n
+            lex.baseWords = words
             lex.wordCount = words
             val d = java.io.DataInputStream(b.asInputStream())
             repeat(d.readInt()) { val node = d.readInt(); lex.surface[node] = d.readUTF(); lex.hasSurface.set(node) }

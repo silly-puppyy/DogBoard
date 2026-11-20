@@ -19,17 +19,25 @@ class EngineCallsSpeedTest : FunSpec({
         val dir = Files.createTempDirectory("dogboard-speed").toFile()
         System.getenv("DOGBOARD_SPEED_PERSONALFILE")?.let { File(it).copyTo(File(dir, "personal.tsv")) }
         val a = "src/main/assets/dogboard/"
-        TypingEngine.unloadForTest()
-        TypingEngine.load(
-            openLexicon = { File(a + "en.lexicon.tsv").bufferedReader() },
-            openBigrams = { File(a + "en.bigrams.tsv").bufferedReader() },
-            personalModel = File(dir, "personal.tsv"),
-            openNoSuggest = { File(a + "en.nosuggest.txt").bufferedReader() },
-            openEmojiIndex = { File(a + "en.emoji.tsv").bufferedReader() },
-            openEmojiTones = { File(a + "en.emoji-tones.tsv").bufferedReader() },
-            emojiUsageFile = File(dir, "emoji_usage.tsv"),
-            openMisspellings = { File(a + "en.misspellings.txt").bufferedReader() },
-        )
+        // DOGBOARD_SPEED_SNAPSHOT=1: the lexicon and pairs mapped from their snapshot, as the app from its 2nd start
+        // (loaded twice: the first load writes the snapshot)
+        val snapshot = System.getenv("DOGBOARD_SPEED_SNAPSHOT") == "1"
+        repeat(if (snapshot) 2 else 1) {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(
+                openLexicon = { File(a + "en.lexicon.tsv").bufferedReader() },
+                openBigrams = { File(a + "en.bigrams.tsv").bufferedReader() },
+                personalModel = File(dir, "personal.tsv"),
+                openNoSuggest = { File(a + "en.nosuggest.txt").bufferedReader() },
+                openEmojiIndex = { File(a + "en.emoji.tsv").bufferedReader() },
+                openEmojiTones = { File(a + "en.emoji-tones.tsv").bufferedReader() },
+                emojiUsageFile = File(dir, "emoji_usage.tsv"),
+                openMisspellings = { File(a + "en.misspellings.txt").bufferedReader() },
+                snapshotDir = if (snapshot) File(dir, "snap").also { it.mkdirs() } else null,
+                snapshotKey = "speed",
+            )
+        }
+        if (snapshot) println("    ENGINECALLS lexicon from the snapshot (mapped)")
         TypingEngine.attachNgrams(File(a + "en.ngrams.bin").inputStream().use { NgramModel.readBinary(it) })
         TypingEngine.attachCharModel(File(a + "en.charlm.bin").inputStream().use { CharModel.read(it) })
         val keys = QwertyGeometry.keysWithSpace(375f, 216f)
