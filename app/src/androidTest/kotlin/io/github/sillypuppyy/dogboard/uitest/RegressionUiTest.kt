@@ -2,6 +2,7 @@ package io.github.sillypuppyy.dogboard.uitest
 
 import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +24,7 @@ class RegressionUiTest(private val typed: String, private val expected: String, 
     @After fun tearDown() = kb.close()
 
     @Test fun typesAsExpected() {
+        assumeFalse("Gboard: no symbols-page cases", kb.isGboard && "{123}" in typed)
         val area = kb.open()
         kb.waitForEngine()
         kb.type(area, typed)

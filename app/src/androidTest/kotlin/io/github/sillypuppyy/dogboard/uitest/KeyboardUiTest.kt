@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +25,7 @@ class KeyboardUiTest {
     @After fun tearDown() = kb.close()
 
     private fun typed(text: String, field: String? = null): String {
+        assumeFalse("Gboard: no symbols-page cases", kb.isGboard && "{123}" in text)
         val area = kb.open(field)
         kb.waitForEngine()
         kb.type(area, text)
@@ -45,6 +47,7 @@ class KeyboardUiTest {
     @Test fun capsField() = assertEquals("ABC", typed("abc", "caps"))
 
     @Test fun panelsOpenAndClose() {
+        assumeFalse("DogBoard's own panels", kb.isGboard)
         val area = kb.open()
         kb.screenshot("keys")
         for (p in listOf("clipboard", "emoji", "tools")) {

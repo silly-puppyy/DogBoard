@@ -27,14 +27,17 @@ class KeyboardDriver(
     private val ui = instrumentation.uiAutomation
     private val context = instrumentation.targetContext
     private val rng = Random(seed)
+    /** The keyboard under test: `-e keyboard gboard` runs the same cases on Gboard (the emulator's, for comparison). */
+    val isGboard = InstrumentationRegistry.getArguments().getString("keyboard") == "gboard"
+    private val imeId = if (isGboard) GBOARD else IME
 
     fun shell(cmd: String): String =
         ui.executeShellCommand(cmd).let { pfd -> android.os.ParcelFileDescriptor.AutoCloseInputStream(pfd).bufferedReader().use { it.readText() } }
 
-    /** Makes DogBoard the keyboard (the package is installed by the test run). */
+    /** Makes the keyboard under test (DogBoard unless `-e keyboard gboard`) the keyboard. */
     fun selectDogBoard() {
-        shell("ime enable $IME")
-        shell("ime set $IME")
+        shell("ime enable $imeId")
+        shell("ime set $imeId")
     }
 
     /** Opens the test screen with a fresh field ("field": email, url, name, caps, number...), and waits for the keys. */
@@ -54,9 +57,20 @@ class KeyboardDriver(
             (field?.let { " --es field $it" } ?: ""))
         // this screen's keyboard, not the last one: a new "onWindowShown" first (a key area line from before would
         // be read at once, and the first taps lost: ' X' for 'teh x', 2026-11-20)
+        if (isGboard) { SystemClock.sleep(3500); return gboardArea() }
         val end = SystemClock.uptimeMillis() + 15_000
         while (shownCount() <= shownBefore && SystemClock.uptimeMillis() < end) SystemClock.sleep(200)
         return waitForKeyArea() ?: error("the keyboard never reported its key area (is DogBoard selected? ${shell("settings get secure default_input_method").trim()})")
+    }
+
+    /**
+     * Gboard 17.2's key area, measured from a screenshot on the dogboard-test emulator (1080 x 2424, 420 dpi,
+     * 2026-11-20): first row's keys from y 1678, rows 154.7 px apart, 15 px gaps. Other screens: measure again.
+     */
+    private fun gboardArea(): KeyArea {
+        val (w, h) = context.resources.displayMetrics.let { it.widthPixels to it.heightPixels }
+        check(w == 1080) { "Gboard's key area is measured for the 1080 px wide emulator only (this screen: $w x $h)" }
+        return KeyArea(0f, 1663f, 1080f, 619f, 4, gboard = true)
     }
 
     private fun shownCount() = shell("logcat -d -s DogBoardPerf:I").lineSequence().count { "onWindowShown" in it }
@@ -87,17 +101,34 @@ class KeyboardDriver(
     fun resetLearningOnce(timeoutMs: Long = 60_000) {
         if (learningReset) return
         learningReset = true
+        if (isGboard) {
+            // Gboard's own learning and settings back to the defaults (the emulator's Gboard only); it restarts
+            shell("pm clear $GBOARD_PACKAGE"); selectDogBoard(); SystemClock.sleep(3000)
+            warmUp(); return
+        }
         open(); waitForEngine()
         val readyBefore = readyCount()
         io.github.sillypuppyy.dogboard.engine.TypingEngine.resetDictionary()
         val end = SystemClock.uptimeMillis() + timeoutMs
         while (readyCount() <= readyBefore && SystemClock.uptimeMillis() < end) SystemClock.sleep(300)
+        warmUp()
+    }
+
+    /**
+     * One word typed and thrown away after a reset: the first word after it went uncorrected on both keyboards
+     * ('teh x' -> 'Teh x' as the run's first case only, 2026-11-20), so no case is the first.
+     */
+    private fun warmUp() {
+        val area = open(); waitForEngine()
+        type(area, "the dog ")
+        SystemClock.sleep(1000)
     }
 
     private fun readyCount() = shell("logcat -d -s DogBoardPerf:I").lineSequence().count { "letter model attached" in it }
 
     /** Waits until the engine has loaded everything (its last stage, the letter model). */
     fun waitForEngine(timeoutMs: Long = 30_000) {
+        if (isGboard) { SystemClock.sleep(2000); return }
         val end = SystemClock.uptimeMillis() + timeoutMs
         while (SystemClock.uptimeMillis() < end) {
             // the last stage, as on a phone in use: the neural model and the letter model load after "engine ready",
@@ -158,11 +189,16 @@ class KeyboardDriver(
     }
 
     /** The key area on screen; key positions in keyboard3 width units (10 per row), as gen_layouts.py lays them out. */
-    data class KeyArea(val x: Float, val y: Float, val w: Float, val h: Float, val rows: Int) {
+    data class KeyArea(val x: Float, val y: Float, val w: Float, val h: Float, val rows: Int, val gboard: Boolean = false) {
         val unit get() = w / 10f
         val rowH get() = h / rows
 
         fun keyCentre(token: String): Pair<Float, Int> = when {
+            // Gboard's bottom row: ?123 , emoji space . enter (screenshot 2026-11-20)
+            gboard && token == " " -> 5.49f to rows - 1
+            gboard && token == "," -> 2.03f to rows - 1
+            gboard && token == "." -> 7.96f to rows - 1
+            gboard && token == "{123}" -> error("Gboard's symbols page is laid out differently: no {123} cases on Gboard")
             token == " " -> SPACE_CENTER_X to rows - 1
             token == "{123}" -> MODE_CENTER_X to rows - 1
             token == "<" -> BACKSPACE_CENTER_X to rows - 2
@@ -179,6 +215,8 @@ class KeyboardDriver(
     companion object {
         /** resetLearningOnce ran in this process (one per instrumentation run). */
         private var learningReset = false
+        const val GBOARD_PACKAGE = "com.google.android.inputmethod.latin"
+        const val GBOARD = "$GBOARD_PACKAGE/com.android.inputmethod.latin.LatinIME"
         const val IME = "io.github.sillypuppyy.dogboard.debug/dev.patrickgold.florisboard.FlorisImeService"
         private val GEOM = Regex("""key area (\d+) (\d+) (\d+) (\d+) rows (\d+)""")
         private val TOKENS = Regex("""\{123\}|.""")
