@@ -9,7 +9,7 @@
     <!-- Add default system subtype so we can properly set the icon and label -->
     <subtype
         android:label="@string/floris_app_name"
-        android:icon="@drawable/ic_subtype_paw"
+        android:icon="@drawable/ic_app_icon_monochrome"
         android:imeSubtypeMode="keyboard"
         android:imeSubtypeExtraValue="AsciiCapable"
         android:isAsciiCapable="true"
