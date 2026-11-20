@@ -924,7 +924,7 @@ object TypingEngine {
         val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates))
             .filter {
                 keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) &&
-                    keepsAmpersands(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
+                    keepsAmpersands(word.text, it.word) && noDoubleApostrophe(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
                     !isCommonLearnedTypo(word.text, it.word, rules.learnedTypoOverrides) && !isInvalidUserEntry(word.text, it.word)
             }
         // iOS exact-typed-string veto: a typed word at least as likely as the best candidate is left alone
@@ -1340,6 +1340,15 @@ object TypingEngine {
  */
 internal fun isCommonLearnedTypo(typed: String, candidate: String, overrides: Map<String, List<String>> = LanguageRules.ENGLISH.learnedTypoOverrides): Boolean =
     overrides[typed]?.let { bad -> candidate.split(' ').any { it.replace('’', '\'') in bad } } == true
+
+/**
+ * iOS FilterDoubleApostrophe (#9, spec 3.2): when the input has an apostrophe, no candidate with two
+ * apostrophes side by side across words ("dogs' 's"; audit 2026-11-20).
+ */
+internal fun noDoubleApostrophe(typed: String, candidate: String): Boolean {
+    if (typed.none { it == '\'' || it == '’' }) return true
+    return !Regex("['’] ['’]").containsMatchIn(candidate)
+}
 
 /** iOS FilterCharacterCount (#13): a correction keeps at least as many "&" as were typed ("AT&T"). */
 internal fun keepsAmpersands(typed: String, candidate: String): Boolean =

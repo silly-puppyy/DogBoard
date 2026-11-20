@@ -59,6 +59,12 @@ class FilterStackTest : FunSpec({
         keepsAmpersands("arty", "at&t") shouldBe true
     }
 
+    test("FilterDoubleApostrophe: no two apostrophes side by side when one was typed (#9)") {
+        noDoubleApostrophe("dogs'", "dogs' 's") shouldBe false
+        noDoubleApostrophe("dogs'", "dogs' house") shouldBe true
+        noDoubleApostrophe("dogs", "dogs' 's") shouldBe true // no apostrophe typed: the filter is off
+    }
+
     test("never-suggest words are not offered, but stay typeable") {
         val dir = Files.createTempDirectory("dogboard-nosuggest").toFile()
         try {
