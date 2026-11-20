@@ -910,7 +910,7 @@ class ImeController(
                 val tail = words.take(TypingEngine.HINDSIGHT_WORDS).joinToString(" ").trimEnd('.', '!', '?', ',', ';', ':')
                 scope.launch(Dispatchers.Default) {
                     val (fix, margin) = TypingEngine.hindsightFix(w.before, w.typed, tail) ?: return@launch
-                    if (logsText) android.util.Log.d("DogBoardAc", "hindsight ${w.typed} -> $fix before '$tail': margin %.2f".format(margin))
+                    if (logsText) android.util.Log.d("DogBoardAc", "hindsight ${w.typed} -> $fix before '$tail': margin " + "%.2f".format(margin))
                     if (margin <= TypingEngine.HINDSIGHT_THRESHOLD || TypingEngine.hindsightRejected(w.typed, fix)) return@launch
                     updateState { if (currentWord.isEmpty) applyHindsightFix(w, fix) else readyHindsightFix = w to fix }
                 }

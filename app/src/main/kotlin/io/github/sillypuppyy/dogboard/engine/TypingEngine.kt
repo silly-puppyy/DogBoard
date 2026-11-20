@@ -648,7 +648,9 @@ object TypingEngine {
         val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
         // Rule 3's inputs for splits (debug, the emulator's checks): the neural ln P and the words' static ln P
         for (c in decoded) if (c.words > 1) scores[c.word]?.let { n ->
-            android.util.Log.d("DogBoardAc", "split '${c.word}' after '${textBefore.takeLast(24)}': neural %.2f, static %.2f, n-gram lm %.2f".format(n, c.languageModel - c.contextSupport, c.languageModel))
+            android.util.Log.d("DogBoardAc", "split '${c.word}' after '${textBefore.takeLast(24)}': " +
+                // typed text stays out of the pattern: a '%' in it was read as a format code (crash 2026-11-21)
+                "neural %.2f, static %.2f, n-gram lm %.2f".format(n, c.languageModel - c.contextSupport, c.languageModel))
         }
         return withNeural(decoded, { scores[it] }, NEURAL_WEIGHT, power)
     }
