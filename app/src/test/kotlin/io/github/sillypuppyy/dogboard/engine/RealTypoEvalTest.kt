@@ -74,9 +74,28 @@ class RealTypoEvalTest : FunSpec({
         val rng = Random(7)
         val typos = ArrayList<List<String>>(n); val correct = ArrayList<List<String>>(n)
         var seenTypos = 0L; var seenCorrect = 0L
+        // DOGBOARD_APOSTROPHE_SET=n: n more cases, apostrophe words typed without it ("dont" for "don't", "its" for
+        // "it's"), made from correctly typed ones: the data has no such typos (every apostrophe word was typed with
+        // it), and phones' typists often skip the key. Tagged "apos": only in the per-kind lines, not the totals
+        val aposN = System.getenv("DOGBOARD_APOSTROPHE_SET")?.toIntOrNull() ?: 0
+        // its own random draws, so the main sample stays the same with or without it
+        val apos = ArrayList<List<String>>(aposN); var seenApos = 0L; val aposSeen = HashSet<String>(); val aposRng = Random(11)
         pairs!!.bufferedReader().useLines { lines ->
             for (line in lines) {
                 val row = line.split('\t')
+                // the word fields hold letters only: apostrophe words are taken from the sentence before the row
+                // (its context column), each with the words before it, once per sentence and position
+                if (aposN > 0 && row.size == 5) {
+                    val words = row[2].split(' ').filter { it.isNotEmpty() }
+                    for ((j, w0) in words.withIndex()) {
+                        val w = w0.trim('.', ',', '!', '?', ';', ':', '"', '(', ')')
+                        if (w.none { it == '\'' || it == '’' } || !aposSeen.add("${row[0]}\t$j")) continue
+                        val bare = w.filter { it != '\'' && it != '’' }
+                        if (bare.isEmpty() || !bare.all { c -> c.lowercaseChar() in keys }) continue
+                        val r = listOf(row[0], j.toString(), words.take(j).joinToString(" "), bare, w, "apos")
+                        if (apos.size < aposN) apos.add(r) else (aposRng.nextDouble() * ++seenApos).toLong().let { if (it < aposN) apos[it.toInt()] = r }
+                    }
+                }
                 if (row.size != 5 || row[3].isEmpty() || !row[3].all { c -> c.lowercaseChar() in keys }) continue
                 val typo = !row[3].equals(row[4], ignoreCase = true)
                 val (bucket, seen) = if (typo) typos to ++seenTypos else correct to ++seenCorrect
@@ -84,7 +103,7 @@ class RealTypoEvalTest : FunSpec({
                 else (rng.nextDouble() * seen).toLong().let { if (it < n) bucket[it.toInt()] = row }
             }
         }
-        val sample = typos + correct
+        val sample = typos + correct + apos
         // DOGBOARD_RETRO=1: retrocorrection as the keyboard runs it when the next word is finished (the
         // next word as typed, from the same sentence); DOGBOARD_RETRO_DUMP=file writes the two-word
         // readings for the neural model (tmp/llm retro_scores.py), DOGBOARD_RETRO_NEURAL=file uses its
@@ -182,10 +201,11 @@ class RealTypoEvalTest : FunSpec({
         }).get()
         pool.shutdown()
 
-        fun pct(kind: Boolean, r: String) = outcomes.count { it.typo == kind && it.result == r } * 100.0 / outcomes.count { it.typo == kind }
+        val main = outcomes.filter { it.row.size == 5 } // the totals leave out the synthetic apostrophe cases
+        fun pct(kind: Boolean, r: String) = main.count { it.typo == kind && it.result == r } * 100.0 / main.count { it.typo == kind }
         println("REALTYPO ${if (System.getenv("DOGBOARD_MISSED_SPACE") == "0") "no-missed-space " else ""}${if (charModel != null) "charlm " else ""}${if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") "misspellings " else ""}${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
-            endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, outcomes.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
-            outcomes.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
+            endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, main.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
+            main.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
         if (retro) println("RETRO %d words had a next word, %d changed%s".format(outcomes.count { nextTyped.containsKey("${it.row[0]}\t${it.row[1].toInt() + 1}") }, retroChanged.get(),
             if (retroNeural != null) ", neural weight $retroWeight" else ""))
         retroDump?.let { File(System.getenv("DOGBOARD_RETRO_DUMP")).writeText(it.toSet().joinToString("\n", postfix = "\n")) }
