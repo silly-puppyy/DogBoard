@@ -91,6 +91,7 @@ data class KbExtras(
     // Kb:615-619 bar modes
     val mTools: Boolean, val mClip: Boolean, val mAutofill: Boolean, val mRemoved: Boolean, val mVoice: Boolean,
     val mIncog: Boolean, val toolRow: List<KbTool>, val removedWord: String, val clipLabel: String, val clipMedia: Boolean,
+    val clipThumb: androidx.compose.ui.graphics.ImageBitmap?,
     // Kb:850-851 smart chips: the first filled (chip), the rest outlined
     val mChips: Boolean, val chips: List<KbChipData>,
     // Kb:637-644
@@ -196,7 +197,7 @@ object KbExtrasSpec {
 
         return KbExtras(
             mTools = special && P.bar == "tools", mClip = special && P.bar == "clip", mAutofill = special && P.bar == "autofill",
-            mRemoved = special && P.bar == "removed", mVoice = special && P.bar == "voice", mIncog = mIncog, toolRow = toolRow, removedWord = P.removedWord, clipLabel = P.clipLabel, clipMedia = P.clipMedia,
+            mRemoved = special && P.bar == "removed", mVoice = special && P.bar == "voice", mIncog = mIncog, toolRow = toolRow, removedWord = P.removedWord, clipLabel = P.clipLabel, clipMedia = P.clipMedia, clipThumb = P.clipThumb,
             mChips = special && P.bar in KbSpec.CHIPS, chips = P.chips ?: KbSpec.CHIPS[P.bar].orEmpty(),
             dev = P.dev && panel.isEmpty(), devKeys = devKeys,
             panel = panel, showPanel = panel.isNotEmpty() && !barless,

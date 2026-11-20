@@ -56,6 +56,8 @@ data class KbProps(
     val chips: List<KbChipData>? = null,
     /** The chip's thumbnail (images and videos; a text clip has none). */
     val clipMedia: Boolean = true,
+    /** The copied image (or video frame) itself, when loaded; null draws the canvas's striped placeholder. */
+    val clipThumb: androidx.compose.ui.graphics.ImageBitmap? = null,
     val trackpad: Boolean = false,
     /** Live trackpad: the finger's x in dp from the keyboard's left edge (the puck follows it). */
     val trackpadX: Float? = null,

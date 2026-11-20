@@ -210,6 +210,7 @@ fun LiveKbBar(
     /** The recent-copy chip's text, shown in place of predictions while nothing is typed (null: none). */
     clipLabel: String? = null,
     clipMedia: Boolean = false,
+    clipThumb: androidx.compose.ui.graphics.ImageBitmap? = null,
     /** Smart chips in place of the suggestions (Kb:840-851), and a tap on one. */
     chips: List<KbChipData> = emptyList(),
     onChip: (Int) -> Unit = {},
@@ -243,7 +244,7 @@ fun LiveKbBar(
             dark = dark, slots = if (toolRow || incognitoNote || removed != null || clip || chipBar) null else slots,
             bar = if (toolRow) "tools" else if (removed != null) "removed" else if (chipBar) "contact" else if (clip) "clip" else "empty",
             chips = if (chipBar) chips else null,
-            clipLabel = clipLabel ?: "", clipMedia = clipMedia,
+            clipLabel = clipLabel ?: "", clipMedia = clipMedia, clipThumb = clipThumb,
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
             removedWord = removed ?: "", clipFilter = clipFilter, emojiSearch = emojiSearch,
         )

@@ -113,6 +113,16 @@ fun TextInputLayout(
             // a copied code in a field that asks for a number (ClipKinds.code)
             val numberField = imeState.editor.info.inputAttributes.type == dev.patrickgold.florisboard.ime.editor.InputAttributes.Type.NUMBER
             var clipCode by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+            // the copied image's thumbnail for the paste chip (the clipboard panel's loader, off the main thread)
+            var clipThumb by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+            val thumbPx = with(androidx.compose.ui.platform.LocalDensity.current) { 28.dp.roundToPx() }
+            androidx.compose.runtime.LaunchedEffect(clipShown) {
+                val item = clipShown
+                clipThumb = if (item != null && !item.isSensitive && (item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE ||
+                        item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO))
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, thumbPx * 2) }.getOrNull() }
+                else null
+            }
             // a link's preview arriving redraws the chip with its title
             val linkChanges by io.github.sillypuppyy.dogboard.ime.LinkInfo.changes.collectAsState()
             androidx.compose.runtime.LaunchedEffect(primaryClip, isIncognitoMode, clipSuggestion, smartChips, numberField, linkChanges) {
@@ -184,6 +194,7 @@ fun TextInputLayout(
                     } else chips.getOrNull(i)?.let { c -> imeController.updateStateBlocking { emitChip(c.insert, space = c.insert == c.label) } }
                 },
                 clipLabel = if (clipChipsShown || undoChip) null else clipShown?.let { linkChanges.let { _ -> io.github.sillypuppyy.dogboard.ime.RecentClip.label(it) } },
+                clipThumb = clipThumb,
                 clipMedia = clipShown?.type.let { it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.IMAGE || it == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO },
                 onClip = {
                     clipShown?.let { item ->

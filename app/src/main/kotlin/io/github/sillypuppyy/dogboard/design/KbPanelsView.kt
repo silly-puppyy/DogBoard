@@ -170,7 +170,10 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                 Modifier.height(36.dp).tap(LocalKbActions.current?.onRecentClip).background(t.chip, PILL).padding(start = 4.dp, end = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (x.clipMedia) Box(Modifier.size(28.dp).clip(PILL).stripes(t.fn, t.key, 4f).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
+                // the copied image itself (user 2026-11-21: the chip showed an empty preview); the placeholder until it loads
+                if (x.clipMedia && x.clipThumb != null) androidx.compose.foundation.Image(x.clipThumb, null, Modifier.size(28.dp).clip(PILL),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                else if (x.clipMedia) Box(Modifier.size(28.dp).clip(PILL).stripes(t.fn, t.key, 4f).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
                 else Box(Modifier.size(6.dp))
                 DText(x.clipLabel, style = text(15, 500, t.chipFg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
