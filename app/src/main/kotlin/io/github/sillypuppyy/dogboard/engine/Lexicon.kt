@@ -30,14 +30,26 @@ class Lexicon private constructor(capacity: Int) {
     private var wordNode = IntArray(capacity / 2 + 16)
     private var wordCount = 0
 
-    /** Surface forms that differ from the lowercase path ("Paris", "I'm"), by node. */
+    /**
+     * Surface forms that differ from the lowercase path ("Paris", "I'm"), by node: words added after loading. The
+     * loaded ones are packed by [pack] into [surfNodes] (sorted) / [surfStart] / [surfChars]: 89k forms in a map
+     * cost ~100 bytes each (entry, boxed key, String), about 9 MB of the heap (2026-11-20, low-RAM phones).
+     */
     private val surface = HashMap<Int, String>()
+    private var surfNodes = IntArray(0)
+    private var surfStart = IntArray(1)
+    private var surfChars = CharArray(0)
 
     /**
      * Nodes stored in more than one casing ("google" and "Google"): each casing with its own
-     * ln P; the node's [logProb] is their total and [surface] the most likely casing.
+     * ln P; the node's [logProb] is their total and [surface] the most likely casing. Changed after loading here;
+     * the loaded ones packed by [pack] into [castNodes] (sorted) / [castStart] / [castWords] / [castLp].
      */
     private val casings = HashMap<Int, List<Pair<String, Float>>>()
+    private var castNodes = IntArray(0)
+    private var castStart = IntArray(1)
+    private var castWords = arrayOf<String>()
+    private var castLp = FloatArray(0)
 
     // which nodes have an entry in [surface] / [casings]: most don't, and a map lookup boxes the
     // node (the decoder asks for every word state on every keystroke)
@@ -94,7 +106,7 @@ class Lexicon private constructor(capacity: Int) {
     }
 
     private fun buildWord(node: Int): String {
-        if (hasSurface.get(node)) surface[node]?.let { return it }
+        if (hasSurface.get(node)) surfaceOf(node)?.let { return it }
         val chars = CharArray(depth[node].toInt())
         var n = node
         for (i in chars.indices.reversed()) {
@@ -110,9 +122,52 @@ class Lexicon private constructor(capacity: Int) {
     /** Every casing of the word at [node] with its own ln P, most likely first. */
     fun forms(node: Int): List<Pair<String, Double>> {
         if (wordId[node] == NONE) return emptyList()
-        if (hasCasings.get(node)) casings[node]?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
+        if (hasCasings.get(node)) casingsOf(node)?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
         return listOf(word(node)!! to logProb[node].toDouble())
     }
+
+    /** The surface form stored for [node]: added after loading, else packed, else null. */
+    private fun surfaceOf(node: Int): String? {
+        surface[node]?.let { return it }
+        val i = java.util.Arrays.binarySearch(surfNodes, node)
+        return if (i < 0) null else String(surfChars, surfStart[i], surfStart[i + 1] - surfStart[i])
+    }
+
+    /** The casings stored for [node]: changed after loading, else packed, else null. */
+    private fun casingsOf(node: Int): List<Pair<String, Float>>? {
+        casings[node]?.let { return it }
+        val i = java.util.Arrays.binarySearch(castNodes, node)
+        return if (i < 0) null else List(castStart[i + 1] - castStart[i]) { k -> castWords[castStart[i] + k] to castLp[castStart[i] + k] }
+    }
+
+    /** Moves the loaded surface forms and casings from the maps into compact arrays (the maps then hold later changes). */
+    private fun pack() {
+        val sn = surface.keys.sorted()
+        surfNodes = sn.toIntArray()
+        surfStart = IntArray(sn.size + 1)
+        val sb = StringBuilder()
+        for ((i, n) in sn.withIndex()) { surfStart[i] = sb.length; sb.append(surface[n]) }
+        surfStart[sn.size] = sb.length
+        surfChars = CharArray(sb.length).also { sb.toString().toCharArray(it, 0, 0, sb.length) }
+        surface.clear()
+        val cn = casings.keys.sorted()
+        castNodes = cn.toIntArray()
+        castStart = IntArray(cn.size + 1)
+        val words = ArrayList<String>(); val lps = ArrayList<Float>()
+        for ((i, n) in cn.withIndex()) { castStart[i] = words.size; for ((w, l) in casings[n]!!) { words.add(w); lps.add(l) } }
+        castStart[cn.size] = words.size
+        castWords = words.toTypedArray(); castLp = lps.toFloatArray()
+        casings.clear()
+    }
+
+    /** Every (node, surface form), packed and added. */
+    private fun allSurfaces(): List<Pair<Int, String>> =
+        (surfNodes.indices.map { i -> surfNodes[i] to String(surfChars, surfStart[i], surfStart[i + 1] - surfStart[i]) }
+            .filter { it.first !in surface } + surface.entries.map { it.key to it.value })
+
+    /** Every (node, casings), packed and changed. */
+    private fun allCasings(): List<Pair<Int, List<Pair<String, Float>>>> =
+        castNodes.filter { it !in casings }.map { it to casingsOf(it)!! } + casings.entries.map { it.key to it.value }
 
     /**
      * Adds [form] as a casing of a word the lexicon already has in other casings, with the share of the most likely
@@ -132,7 +187,7 @@ class Lexicon private constructor(capacity: Int) {
     /** The most likely casing of the word at [node] (forms(node).first() without the list), or null. */
     fun firstForm(node: Int): String? = when {
         wordId[node] == NONE -> null
-        hasCasings.get(node) -> casings[node]?.firstOrNull()?.first ?: word(node)
+        hasCasings.get(node) -> casingsOf(node)?.firstOrNull()?.first ?: word(node)
         else -> word(node)
     }
 
@@ -242,10 +297,12 @@ class Lexicon private constructor(capacity: Int) {
         for (i in 0 until n) d.writeShort(depth[i].toInt())
         for (a in listOf(logProb, mass)) for (i in 0 until n) d.writeFloat(a[i])
         for (i in 0 until wordCount) d.writeInt(wordNode[i])
-        d.writeInt(surface.size)
-        for ((node, form) in surface) { d.writeInt(node); d.writeUTF(form) }
-        d.writeInt(casings.size)
-        for ((node, forms) in casings) {
+        val surfaces = allSurfaces()
+        d.writeInt(surfaces.size)
+        for ((node, form) in surfaces) { d.writeInt(node); d.writeUTF(form) }
+        val allCasings = allCasings()
+        d.writeInt(allCasings.size)
+        for ((node, forms) in allCasings) {
             d.writeInt(node); d.writeInt(forms.size)
             for ((form, lp) in forms) { d.writeUTF(form); d.writeFloat(lp) }
         }
@@ -338,6 +395,7 @@ class Lexicon private constructor(capacity: Int) {
                 val node = d.readInt()
                 lex.casings[node] = List(d.readInt()) { d.readUTF() to d.readFloat() }; lex.hasCasings.set(node)
             }
+            lex.pack()
             lex
         }.getOrNull()
 
@@ -377,6 +435,7 @@ class Lexicon private constructor(capacity: Int) {
                 if (forms.size > 1) { lexicon.casings[node] = forms.map { (w, l) -> w to l.toFloat() }; lexicon.hasCasings.set(node) }
             }
             lexicon.computeSubtrees()
+            lexicon.pack()
             lexicon.resize(lexicon.nodeCount + 1024) // room for learned words
             return lexicon
         }
