@@ -66,6 +66,8 @@ data class KbClipRow(
     val leadIcon: String = "",
     /** A link's initial in the lead circle (previews off). */
     val leadLetter: String = "",
+    /** The site's icon in the lead circle (previews on; the initial shows until it loads). */
+    val leadImage: (suspend (sizePx: Int) -> ImageBitmap?)? = null,
     /** P:166: a colour's swatch. */
     val swatch: Color? = null,
     /** P:163-165: an 80 x 45 thumbnail (a link's banner or a video link's frame), with [duration] on it. */
@@ -179,8 +181,16 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
                 r.thumb || r.window -> Thumb(r, img)
                 r.swatch != null -> Box(Modifier.size(28.dp).background(r.swatch, RoundedCornerShape(8.dp)))
                 r.leadIcon.isNotEmpty() || r.leadLetter.isNotEmpty() -> Box(Modifier.size(32.dp).background(t.fn, PILL), contentAlignment = Alignment.Center) {
-                    if (r.leadIcon.isNotEmpty()) Symbol(r.leadIcon, 18.sp, t.fnFg, weight = 500)
-                    else DText(r.leadLetter, style = text(14, 600, t.fnFg))
+                    val icon by produceState<ImageBitmap?>(null, r.leadImage) {
+                        value = r.leadImage?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 18.dp.roundToPx() }) } }
+                    }
+                    val i = icon
+                    when {
+                        // C: the site's icon, 18 dp, 4 dp corners
+                        i != null -> Image(i, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(18.dp).clip(RoundedCornerShape(4.dp)))
+                        r.leadIcon.isNotEmpty() -> Symbol(r.leadIcon, 18.sp, t.fnFg, weight = 500)
+                        else -> DText(r.leadLetter, style = text(14, 600, t.fnFg))
+                    }
                 }
             }
             Box(Modifier.weight(1f)) { Label(t, r, window) }
@@ -259,7 +269,12 @@ private fun Label(t: KbTokens, r: KbClipRow, window: Boolean) {
 private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean) {
     val actions = LocalKbClipActions.current
     val circle = if (window) t.key else t.fn
+    // An unpinned pin is a bare icon in an unfilled circle: after filled marks or chips its gap looks 5 dp wider
+    // than theirs (8 dp + the circle's empty 5 dp), so they move 5 dp towards it; the pin stays in line with
+    // the other rows' pins (user 2026-11-20: equal, but not optically)
+    val bare = !r.pinned && !window && (r.expanded != null || r.cleaned != null || r.formats.isNotEmpty() || r.reveal)
     Row(Modifier.fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
+      Row(Modifier.fillMaxHeight().offset(x = if (bare) 5.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
         r.formats.forEachIndexed { k, f ->
             val on = k == r.format
             Box(Modifier.fillMaxHeight().tap({ actions?.onFormat?.invoke(i, k) }).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
@@ -281,6 +296,7 @@ private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean
                 Mark(if (on) circle else null, t, "bug_report", on, ring = !on)
             }
         }
+      }
         // P:145-149
         Slot(if (r.pinned) "Pinned. Tap to unpin" else "Pin", { actions?.onPin?.invoke(i) }) {
             Box(Modifier.size(28.dp).background(if (r.pinned) t.act else if (window) t.key else Color.Transparent, PILL), contentAlignment = Alignment.Center) {
@@ -291,8 +307,8 @@ private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean
 }
 
 @Composable
-private fun Slot(label: String, onTap: () -> Unit, content: @Composable () -> Unit) {
-    Box(Modifier.width(36.dp).fillMaxHeight().semantics { contentDescription = label }.tap(onTap), contentAlignment = Alignment.Center) { content() }
+private fun Slot(label: String, onTap: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Box(modifier.width(36.dp).fillMaxHeight().semantics { contentDescription = label }.tap(onTap), contentAlignment = Alignment.Center) { content() }
 }
 
 /** P:136-139: a 28 dp mark; [bg] null = no fill (undone: a 1 dp ring); [slash] = the trackers' crossed bug (P:138). */
@@ -378,7 +394,7 @@ fun demoClipRows(): List<KbClipRow> {
 /**
  * A live clip as a row (catalogue kinds, C). Links: the site's initial and a page name read from the
  * address (previews, which need the site, are off: clipboard-rows.md). Not yet live: the password's eye
- * (the clip is stored masked here), one-time codes' expiry, files and addresses (no clip kind or detector yet).
+ * (the clip is stored masked here), one-time codes' expiry, files (no clip kind yet).
  */
 fun clipRow(d: KbClipData): KbClipRow = clipRowKind(d).copy(pasteFile = d.pasteFile, shareFile = d.shareFile)
 
@@ -395,12 +411,20 @@ private fun clipRowKind(d: KbClipData): KbClipRow {
             KbClipRow(s, "Colour", titleWeight = 500, swatch = Color(c.argb or 0xFF000000), formats = formats, format = copied, pinned = d.pinned)
         } ?: LINK.matchEntire(s)?.let { m ->
             val host = m.groupValues[2].lowercase()
-            KbClipRow(pageName(m.groupValues[3]) ?: (host + m.groupValues[3].trimEnd('/')), host, leadLetter = host.take(1),
+            val title = d.linkTitle ?: pageName(m.groupValues[3]) ?: (host + m.groupValues[3].trimEnd('/'))
+            val sub = d.linkSite ?: host
+            // C: with a banner (or a video's frame) the thumbnail leads, else the site's icon (or initial)
+            if (d.linkImage != null) KbClipRow(title, sub, titleLines = 2, thumb = true, image = d.linkImage, duration = d.linkDuration,
+                expanded = d.expanded, cleaned = d.cleaned, pinned = d.pinned, action = "Open link", actionIcon = "open_in_new")
+            else KbClipRow(title, sub, leadLetter = host.take(1), leadImage = d.linkIcon,
                 expanded = d.expanded, cleaned = d.cleaned, pinned = d.pinned, action = "Open link", actionIcon = "open_in_new")
         } ?: when {
-            CODE.matches(s) -> KbClipRow(s, "One-time code", titleWeight = 500, titleSpacing = 1f, leadIcon = "pin", pinned = d.pinned)
+            // a type only where it is certain (user 2026-11-20): an email by its form; phone numbers, addresses
+            // and one-time codes only when Android's classifier gives the whole clip that type (ClipTypes)
             EMAIL.matches(s) -> KbClipRow(s, "Email address", leadIcon = "mail", pinned = d.pinned, action = "Send email", actionIcon = "mail")
-            PHONE.matches(s) && s.count(Char::isDigit) in 7..15 -> KbClipRow(s, "Phone number", leadIcon = "call", pinned = d.pinned, action = "Call", actionIcon = "call")
+            d.systemType == "otp" -> KbClipRow(s, "One-time code", titleWeight = 500, titleSpacing = 1f, leadIcon = "pin", pinned = d.pinned)
+            d.systemType == "phone" -> KbClipRow(s, "Phone number", leadIcon = "call", pinned = d.pinned, action = "Call", actionIcon = "call")
+            d.systemType == "address" -> KbClipRow(s.replace(Regex("\\s+"), " "), "Address", leadIcon = "location_on", pinned = d.pinned, action = "Open in Maps", actionIcon = "map")
             else -> KbClipRow(s.replace(Regex("\\s+"), " "), titleLines = 2, pinned = d.pinned)
         }
     }
@@ -416,6 +440,4 @@ internal fun pageName(path: String): String? {
 }
 
 private val LINK = Regex("(?i)(https?://)?(?:www\\.)?((?:[a-z0-9-]+\\.)+[a-z]{2,})(/\\S*)?")
-private val CODE = Regex("\\d{3}[ -]?\\d{3}|\\d{4,8}")
 private val EMAIL = Regex("[^\\s@]+@[^\\s@]+\\.[A-Za-z]{2,}")
-private val PHONE = Regex("\\+?[\\d ()./-]{7,}")

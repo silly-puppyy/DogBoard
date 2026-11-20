@@ -26,8 +26,8 @@ object ShortLinks {
     /** Short link -> where it points; filled by [expandAll] (memory only, this session). */
     private val cache = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-    /** [text] with each short link that has been expanded replaced by its target (no network). */
-    fun withExpanded(text: String): String = URL.replace(text) { m -> cache[m.value] ?: m.value }
+    /** [text] with each link that has been expanded replaced by its target (no network): [LinkInfo]'s, or this session's. */
+    fun withExpanded(text: String): String = URL.replace(text) { m -> LinkInfo.get(m.value)?.target ?: cache[m.value] ?: m.value }
 
     /**
      * Asks the shorteners for the short links in [text] (off the main thread; at most 3 hops, each a

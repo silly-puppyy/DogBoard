@@ -19,6 +19,8 @@ object ClipIntents {
             android.util.Patterns.EMAIL_ADDRESS.matcher(s).matches() -> Uri.parse("mailto:$s")
             s.matches(Regex("\\+?[\\d ()./-]{7,}")) -> Uri.parse("tel:" + s.filter { it.isDigit() || it == '+' })
             android.util.Patterns.WEB_URL.matcher(s).matches() -> Uri.parse(if (s.contains("://")) s else "https://$s")
+            // the menu offers this only for an address row (ClipTypes): the maps app searches it
+            ClipTypes.of(text) == "address" -> Uri.parse("geo:0,0?q=" + Uri.encode(s))
             else -> return false
         }
         val action = if (uri.scheme == "tel") Intent.ACTION_DIAL else Intent.ACTION_VIEW

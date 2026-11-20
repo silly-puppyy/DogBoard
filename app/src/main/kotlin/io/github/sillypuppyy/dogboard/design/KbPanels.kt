@@ -26,6 +26,14 @@ data class KbClipData(
     /** Link marks (clipboard rows): null = the step doesn't change this link; true = applied; false = undone. */
     val expanded: Boolean? = null,
     val cleaned: Boolean? = null,
+    /** A link's preview (LinkInfo, Settings › Clipboard › Link previews): page title, site, a video's length, banner, icon. */
+    val linkTitle: String? = null,
+    val linkSite: String? = null,
+    val linkDuration: String = "",
+    val linkImage: (suspend (sizePx: Int) -> androidx.compose.ui.graphics.ImageBitmap?)? = null,
+    val linkIcon: (suspend (sizePx: Int) -> androidx.compose.ui.graphics.ImageBitmap?)? = null,
+    /** Android's on-device classifier's type for the whole clip ("phone", "address", "otp"; ClipTypes), or null. */
+    val systemType: String? = null,
     /** The hold menu offers "Paste as file" / "Share as file" for this clip. */
     val pasteFile: Boolean = false,
     val shareFile: Boolean = false,

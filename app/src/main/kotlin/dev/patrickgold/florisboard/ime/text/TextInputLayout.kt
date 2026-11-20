@@ -99,10 +99,15 @@ fun TextInputLayout(
             val stripTrackers by prefs.clipboard.stripTrackers.collectAsState()
             val expandShort by prefs.clipboard.expandShortLinks.collectAsState()
             // Expand short links (opt-in): asked once when a copy holds one, so the paste is instant
-            androidx.compose.runtime.LaunchedEffect(primaryClip, stripTrackers, expandShort) {
+            val linkPreviews by prefs.clipboard.linkPreviews.collectAsState()
+            val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+            androidx.compose.runtime.LaunchedEffect(primaryClip, stripTrackers, expandShort, linkPreviews) {
                 val text = primaryClip?.takeIf { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive }?.text
-                if (expandShort && text != null && !isIncognitoMode) {
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.ShortLinks.expandAll(text) }
+                if ((expandShort || linkPreviews) && text != null && !isIncognitoMode) {
+                    // one fetch per link: where it leads (Expand links), and its page preview (Link previews)
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        io.github.sillypuppyy.dogboard.ime.LinkInfo.fetchAll(appContext, text, expandShort, linkPreviews)
+                    }
                 }
             }
             // a copied code in a field that asks for a number (ClipKinds.code)

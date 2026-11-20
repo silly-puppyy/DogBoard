@@ -19,11 +19,15 @@ class ClipRowTest : FunSpec({
         pageName("/watch?v=abc") shouldBe null
         pageName("/recipes/lemon_drizzle-cake.html") shouldBe "Lemon drizzle cake"
     }
-    test("email, phone and one-time code get their icons") {
+    test("email by its form; phone, address and code only from the system classifier") {
         text("sam@example.com").leadIcon shouldBe "mail"
-        text("+44 20 7946 0958").leadIcon shouldBe "call"
-        text("482 913").leadIcon shouldBe "pin"
-        text("482913").sub shouldBe "One-time code"
+        fun typed(t: String, type: String?) = clipRow(KbClipData(media = false, icon = "", label = "", text = t, pinned = false, systemType = type))
+        typed("+44 20 7946 0958", "phone").leadIcon shouldBe "call"
+        typed("221 Baker Street, London", "address").action shouldBe "Open in Maps"
+        typed("482 913", "otp").sub shouldBe "One-time code"
+        // numbers alone are never guessed to be a code or a phone number
+        text("482913").leadIcon shouldBe ""
+        text("+44 20 7946 0958").leadIcon shouldBe ""
     }
     test("a colour: swatch and formats, the copied one picked") {
         val r = text("rgb(61, 123, 245)")
@@ -41,5 +45,15 @@ class ClipRowTest : FunSpec({
     test("the phone's own photos and videos fill the row") {
         clipRow(KbClipData(media = true, icon = "image", label = "Image", text = "", pinned = false)).window shouldBe true
         clipRow(KbClipData(media = true, icon = "play_circle", label = "Video", text = "", pinned = false)).video shouldBe true
+    }
+})
+
+class ClipTypesFormTest : FunSpec({
+    test("a phone number needs a phone's form, a bare number never is one") {
+        io.github.sillypuppyy.dogboard.ime.ClipTypes.looksLikePhone("482913") shouldBe false
+        io.github.sillypuppyy.dogboard.ime.ClipTypes.looksLikePhone("6502530000") shouldBe false
+        io.github.sillypuppyy.dogboard.ime.ClipTypes.looksLikePhone("+1 650-253-0000") shouldBe true
+        io.github.sillypuppyy.dogboard.ime.ClipTypes.looksLikePhone("(650) 253 0000") shouldBe true
+        io.github.sillypuppyy.dogboard.ime.ClipTypes.looksLikePhone("12-34") shouldBe false
     }
 })

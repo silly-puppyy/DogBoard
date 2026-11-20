@@ -24,6 +24,7 @@ fun DogClipboardScreen() {
     val smart by c.smartChips.collectAsState()
     val strip by c.stripTrackers.collectAsState()
     val expandShort by c.expandShortLinks.collectAsState()
+    val previews by c.linkPreviews.collectAsState()
     val suggest by c.suggestionEnabled.collectAsState()
     val cleanOld by c.historyAutoCleanOldEnabled.collectAsState()
     val oldAfter by c.historyAutoCleanOldAfter.collectAsState()
@@ -47,10 +48,15 @@ fun DogClipboardScreen() {
                 scope.launch { c.stripTrackers.set(v) }
             }
             SetSwitchRow(
-                "cb:expand", "Expand short links",
-                "Short links like vm.tiktok.com and pin.it carry a code that points back to your account. DogBoard asks the link service once where it leads and pastes that address instead. Needs the internet; only known link services are asked.",
+                "cb:expand", "Expand links",
+                "Short links like vm.tiktok.com and pin.it carry a code that points back to your account. DogBoard opens each copied link once, without cookies, and pastes where it leads instead. Needs the internet.",
                 expandShort,
             ) { v -> scope.launch { c.expandShortLinks.set(v) } }
+            SetSwitchRow(
+                "cb:previews", "Link previews",
+                "Copied links show their page title, site, picture and a video's length in the clipboard. DogBoard reads the page once, without cookies; the site sees the request. Needs the internet.",
+                previews,
+            ) { v -> scope.launch { c.linkPreviews.set(v); if (!v) io.github.sillypuppyy.dogboard.ime.LinkInfo.clear() } }
             SetSwitchRow("cb:history", "Clipboard history", "Keep what you copy, to paste again from the clipboard panel.", history) { v ->
                 scope.launch { c.historyEnabled.set(v) }
             }

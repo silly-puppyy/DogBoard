@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard.ime.keyboard3.ui
 
+import androidx.compose.ui.graphics.asImageBitmap
 import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import androidx.compose.foundation.background
@@ -366,14 +367,38 @@ fun ImeKeyboardBox(
                 val clipFilter by io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.collectAsState()
                 val expandLinks by prefs.clipboard.expandShortLinks.collectAsState()
                 val stripLinks by prefs.clipboard.stripTrackers.collectAsState()
+                val linkPreviews by prefs.clipboard.linkPreviews.collectAsState()
+                val linkChanges by io.github.sillypuppyy.dogboard.ime.LinkInfo.changes.collectAsState()
+                // the clips' types from Android's on-device classifier (ClipTypes), asked once per text when the panel opens
+                var typesAsked by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+                androidx.compose.runtime.LaunchedEffect(livePanel, history) {
+                    if (livePanel != "clipboard") return@LaunchedEffect
+                    val texts = history.all.filter { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive }
+                        .mapNotNull { it.text }.filter { !io.github.sillypuppyy.dogboard.ime.ClipTypes.isKnown(it) }
+                    if (texts.isEmpty()) return@LaunchedEffect
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { texts.forEach { io.github.sillypuppyy.dogboard.ime.ClipTypes.classify(context, it) } }
+                    typesAsked++
+                }
+                // links already in the history learn their target and preview when the clipboard opens
+                androidx.compose.runtime.LaunchedEffect(livePanel, expandLinks, linkPreviews) {
+                    if (livePanel != "clipboard" || !(expandLinks || linkPreviews)) return@LaunchedEffect
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        io.github.sillypuppyy.dogboard.ime.LinkInfo.load(context)
+                        for (item in history.all) {
+                            if (item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT || item.isSensitive) continue
+                            item.text?.let { io.github.sillypuppyy.dogboard.ime.LinkInfo.fetchAll(context, it, expandLinks, linkPreviews) }
+                        }
+                    }
+                }
                 val pasteAsFile by prefs.clipboard.pasteAsFile.collectAsState()
                 val shareAsFile by prefs.clipboard.shareAsFile.collectAsState()
                 val clipItems = remember(history, clipFilter) {
-                    when (clipFilter) {
+                    // the clipboard rows' order (design/clipboard-rows.md): pinned clips on top, then newest first
+                    (when (clipFilter) {
                         1 -> history.all.filter { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive && io.github.sillypuppyy.dogboard.design.isLinkClip(it.text.orEmpty()) }
                         2 -> history.all.filter { it.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT }
                         else -> history.all
-                    }
+                    }).sortedWith(compareByDescending<dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem> { it.isPinned }.thenByDescending { it.creationTimestampMs })
                 }
                 // asked when a panel opens, not on every redraw (a cross-process call per keystroke)
                 // a password clip's countdown (auto-clear on): ticks each second while the clipboard is open
@@ -465,7 +490,7 @@ fun ImeKeyboardBox(
                         )
                     },
                     clipFilter = clipFilter,
-                    clips = remember(clipItems, expandLinks, stripLinks, pasteAsFile, shareAsFile, imeState.editor.info) { clipItems.map { item ->
+                    clips = remember(clipItems, expandLinks, stripLinks, pasteAsFile, shareAsFile, imeState.editor.info, linkPreviews, linkChanges, typesAsked) { clipItems.map { item ->
                         val media = item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT
                         val video = item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO
                         io.github.sillypuppyy.dogboard.design.KbClipData(
@@ -486,7 +511,16 @@ fun ImeKeyboardBox(
                                 io.github.sillypuppyy.dogboard.ime.ClipKinds.color(item.text.orEmpty().trim()) != null -> "image/png"
                                 else -> "text/plain"
                             }
+                            // the link's preview, when Link previews is on and the page has been read
+                            val info = if (linkPreviews && !media && !item.isSensitive) item.text?.let { io.github.sillypuppyy.dogboard.ime.LinkInfo.linkIn(it) }
+                                ?.let { io.github.sillypuppyy.dogboard.ime.LinkInfo.get(it) } else null
+                            fun loader(name: String?): (suspend (Int) -> androidx.compose.ui.graphics.ImageBitmap?)? =
+                                io.github.sillypuppyy.dogboard.ime.LinkInfo.imageFile(name)?.let { f -> { _: Int -> android.graphics.BitmapFactory.decodeFile(f.path)?.asImageBitmap() } }
                             val withFiles = d.copy(
+                                systemType = if (media || item.isSensitive) null else item.text?.let { io.github.sillypuppyy.dogboard.ime.ClipTypes.of(it) },
+                                linkTitle = info?.title, linkSite = info?.site,
+                                linkDuration = info?.duration?.let { "%d:%02d".format(it / 60, it % 60) }.orEmpty(),
+                                linkImage = loader(info?.image), linkIcon = loader(info?.icon),
                                 pasteFile = pasteAsFile && !item.isSensitive && io.github.sillypuppyy.dogboard.ime.ClipFiles.accepts(imeState.editor.info.base, mime),
                                 shareFile = shareAsFile && !item.isSensitive,
                             )
