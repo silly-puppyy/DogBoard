@@ -189,6 +189,26 @@ class RealTypoEvalTest : FunSpec({
         if (retro) println("RETRO %d words had a next word, %d changed%s".format(outcomes.count { nextTyped.containsKey("${it.row[0]}\t${it.row[1].toInt() + 1}") }, retroChanged.get(),
             if (retroNeural != null) ", neural weight $retroWeight" else ""))
         retroDump?.let { File(System.getenv("DOGBOARD_RETRO_DUMP")).writeText(it.toSet().joinToString("\n", postfix = "\n")) }
+        // per kind of word (benchmark review 2026-11-20: one total hides where a change helps or hurts): typos
+        // fixed / left / wrong and correct words broken, for short words, names mid-sentence, words with an
+        // apostrophe, words meant as two, and the rest
+        fun kind(o: Outcome): String {
+            val w = o.row[4]
+            val midSentence = o.row[2].isNotBlank() && o.row[2].trimEnd().last() !in ".!?"
+            return when {
+                ' ' in w -> "split"
+                '\'' in w || '’' in w -> "apostrophe"
+                w.first().isUpperCase() && midSentence -> "name"
+                w.length <= 3 -> "short"
+                else -> "other"
+            }
+        }
+        for ((k, os) in outcomes.groupBy(::kind).toSortedMap()) {
+            val t = os.filter { it.typo }; val c = os.filter { !it.typo }
+            fun p(l: List<Outcome>, r: String) = if (l.isEmpty()) 0.0 else l.count { it.result == r } * 100.0 / l.size
+            println("REALTYPO-KIND %-10s %4d typos: fixed %5.1f%%, left %5.1f%%, wrong %5.1f%% | %4d correct: broken %.1f%%".format(
+                k, t.size, p(t, "fixed"), p(t, "left"), p(t, "wrong"), c.size, p(c, "broken")))
+        }
         // real-word slips: the typo is itself a word ("form" for "from"), only context can tell
         val realWord = outcomes.filter { it.typo && lexicon.contains(it.row[3].lowercase()) }
         if (realWord.isNotEmpty()) println("REALWORD %d real-word slips: fixed %.1f%%, left %.1f%%, wrong word %.1f%%".format(realWord.size,
