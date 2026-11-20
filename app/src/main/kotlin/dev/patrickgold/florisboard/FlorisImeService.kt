@@ -514,7 +514,9 @@ class FlorisImeService : LifecycleInputMethodService() {
             return false
         }
         return when (prefs.keyboard.landscapeInputUiMode.get()) {
-            LandscapeInputUiMode.DYNAMICALLY_SHOW -> super.onEvaluateFullscreenMode()
+            // DogBoard: no full-screen editing on a tablet (smallest width 600 dp+), as Gboard: Android's default
+            // goes full screen in any landscape (Android 12 tablet emulator, 2026-11-20)
+            LandscapeInputUiMode.DYNAMICALLY_SHOW -> config.smallestScreenWidthDp < 600 && super.onEvaluateFullscreenMode()
             LandscapeInputUiMode.NEVER_SHOW -> false
             LandscapeInputUiMode.ALWAYS_SHOW -> true
         }
