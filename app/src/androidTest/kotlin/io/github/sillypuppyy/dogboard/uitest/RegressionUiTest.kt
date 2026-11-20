@@ -4,6 +4,7 @@ import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -16,12 +17,16 @@ import org.junit.runners.Parameterized
 @RunWith(Parameterized::class)
 class RegressionUiTest(private val typed: String, private val expected: String, @Suppress("unused") private val report: String) {
     private val kb = KeyboardDriver()
+    @get:Rule val shots = ScreenshotRule(kb)
 
     @Before fun setUp() {
         kb.selectDogBoard()
         kb.resetLearningOnce()
     }
-    @After fun tearDown() = kb.close()
+    @After fun tearDown() {
+        shots.end()
+        kb.close()
+    }
 
     @Test fun typesAsExpected() {
         assumeFalse("Gboard: no symbols-page cases", kb.isGboard && "{123}" in typed)

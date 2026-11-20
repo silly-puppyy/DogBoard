@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -17,12 +18,16 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class KeyboardUiTest {
     private val kb = KeyboardDriver()
+    @get:Rule val shots = ScreenshotRule(kb)
 
     @Before fun setUp() {
         kb.selectDogBoard()
         kb.resetLearningOnce()
     }
-    @After fun tearDown() = kb.close()
+    @After fun tearDown() {
+        shots.end()
+        kb.close()
+    }
 
     private fun typed(text: String, field: String? = null): String {
         assumeFalse("Gboard: no symbols-page cases", kb.isGboard && "{123}" in text)

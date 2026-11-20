@@ -1,6 +1,6 @@
 #!/bin/bash
 # DogBoard UI tests (tier 2: app/src/androidTest, KeyboardUiTest): typing with real timings, field types, panels,
-# screenshots to files/uitest/ on the device.
+# screenshots to files/uitest/ on the device: one per test as it ended (FAIL-... when it failed) plus the panels.
 #
 #   tools/test/uitest.sh local [serial]       build, install on an emulator (default emulator-5554), run, pull screenshots
 #   tools/test/uitest.sh testlab [model ...]   build, run on Firebase Test Lab (needs `gcloud auth login` and a
@@ -33,7 +33,8 @@ case "${1:-local}" in
     build
     $ADB -s "$SERIAL" install -r -t "$APK" >/dev/null
     $ADB -s "$SERIAL" install -r -t "$TEST_APK" >/dev/null
-    mkdir -p "$OUT/$SERIAL"
+    mkdir -p "$OUT/$SERIAL"; rm -rf "$OUT/$SERIAL/uitest"
+    $ADB -s "$SERIAL" shell rm -rf /sdcard/Android/data/io.github.sillypuppyy.dogboard.debug/files/uitest
     $ADB -s "$SERIAL" shell am instrument -w -r io.github.sillypuppyy.dogboard.debug.test/androidx.test.runner.AndroidJUnitRunner \
       | tee "$OUT/$SERIAL/instrument.txt" | grep -E "OK \(|FAILURES|Tests run|^Error in" || true
     $ADB -s "$SERIAL" pull /sdcard/Android/data/io.github.sillypuppyy.dogboard.debug/files/uitest "$OUT/$SERIAL/" >/dev/null 2>&1 || true
