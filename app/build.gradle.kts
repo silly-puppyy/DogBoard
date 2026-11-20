@@ -234,6 +234,10 @@ dependencies {
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    // DogBoard UI tests on devices (emulators, Firebase Test Lab): taps injected with real timings
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
 }
 
 fun getGitCommitHash(short: Boolean = false): Provider<String> {
