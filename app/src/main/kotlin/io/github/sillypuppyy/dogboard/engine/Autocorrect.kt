@@ -27,8 +27,15 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var contextEndOmission: Boolean = true
 
-    /** Rule 3's bar (ln of iOS's 0.1); -infinity turns the rule off (benchmarks). */
-    var minContextSupport: Double = MIN_CONTEXT_SUPPORT
+    /**
+     * Rule 3's bar: -infinity = off (2026-11-20). Our context support (n-gram or neural ln P in context minus the
+     * words' unigram ln P) is not iOS's measure (its denominator is the dictionary's own word probability, scale
+     * not decoded): common words are rarely likelier in context than overall, so good splits fell under ln 0.1
+     * ("later and waited" -4.98, "of the" -3.14) while a garbage one sat in between ("bomb flush" -4.44). Measured:
+     * missed-space set with neural scores fixed 87.1 -> 90.2 %, wrong 0.4 both; the main typo set unchanged with
+     * and without neural scores. Back to MIN_CONTEXT_SUPPORT once the iOS measure is decoded.
+     */
+    var minContextSupport: Double = Double.NEGATIVE_INFINITY
 
     /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
     private fun isWordAsTyped(typed: String): Boolean {
