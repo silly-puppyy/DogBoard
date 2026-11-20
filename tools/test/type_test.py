@@ -104,11 +104,16 @@ def settled_geometry(serial, tries=80):
     return None
 
 
-def wait_ime_shown(serial, timeout=10.0):
-    """Waits for the test screen's "ime shown" mark (end of the keyboard's slide-in)."""
+def ime_shown_count(serial):
+    return adb(serial, "logcat", "-d", "-s", "DogBoardPerf:I").count("ime shown")
+
+
+def wait_ime_shown(serial, before, timeout=10.0):
+    """Waits for a new "ime shown" mark (end of the keyboard's slide-in) after [before] of them: the log keeps
+    the earlier cases' marks, so any mark would not wait at all (2026-11-20: a name field's first tap was lost)."""
     end = time.time() + timeout
     while time.time() < end:
-        if "ime shown" in adb(serial, "logcat", "-d", "-s", "DogBoardPerf:I"):
+        if ime_shown_count(serial) > before:
             time.sleep(0.2)
             return True
         time.sleep(0.2)
@@ -191,9 +196,10 @@ def main():
         adb(args.serial, "logcat", "-c")
         # NEW_TASK | CLEAR_TASK: always a fresh test screen, so the field type extra applies
         start = ["shell", "am", "start", "-f", "0x10008000", "-n", ACTIVITY, *(["--es", "field", field] if field else [])]
+        shown = ime_shown_count(args.serial)
         adb(args.serial, *start)
         # the key area is laid out before the window has slid in; taps during the slide are lost
-        wait_ime_shown(args.serial)
+        wait_ime_shown(args.serial, shown)
         geom = settled_geometry(args.serial)
         if not geom:
             # the key area may not have moved since the last run, so nothing new was logged
