@@ -35,8 +35,8 @@ object LinkInfo {
         val version: Int = 0,
     )
 
-    /** 2: short links followed first, platform oEmbed endpoints, PNG icons (2026-11-21: TikTok showed its generic page title). */
-    private const val VERSION = 2
+    /** 3: short links followed first, platform oEmbed endpoints, TikTok's page data, PNG icons (2026-11-21: TikTok showed its generic page title). */
+    private const val VERSION = 3
 
     private val json = Json { ignoreUnknownKeys = true }
     private val infos = ConcurrentHashMap<String, Info>()
@@ -45,6 +45,8 @@ object LinkInfo {
     private var dir: File? = null
     private val URL_RE = Regex("""https?://[^\s<>"]+""", RegexOption.IGNORE_CASE)
     private const val UA = "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36"
+    /** TikTok gives its video data (caption, author, cover, length) only to a desktop browser (2026-11-21). */
+    private const val DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 
     @Synchronized
     fun load(context: Context) {
@@ -85,11 +87,11 @@ object LinkInfo {
     }
 
     /** Follows redirects (at most 5, each a GET without cookies); the last address, or null if it doesn't move. */
-    internal fun resolve(url: String): String? {
+    internal fun resolve(url: String, ua: String = UA): String? {
         var u = url
         repeat(5) {
             val next = runCatching {
-                open(u).let { c ->
+                open(u, ua).let { c ->
                     try {
                         if (c.responseCode in 300..399) c.getHeaderField("Location")?.let { URL(URL(u), it).toString() } else null
                     } finally { c.disconnect() }
@@ -100,19 +102,21 @@ object LinkInfo {
         return u.takeIf { it != url }
     }
 
-    private fun open(u: String): HttpURLConnection = (URL(u).openConnection() as HttpURLConnection).apply {
+    private fun open(u: String, ua: String = UA): HttpURLConnection = (URL(u).openConnection() as HttpURLConnection).apply {
         instanceFollowRedirects = false
         useCaches = false
         connectTimeout = 5000
         readTimeout = 5000
-        setRequestProperty("User-Agent", UA)
+        setRequestProperty("User-Agent", ua)
         setRequestProperty("Accept-Language", "en")
     }
 
     private fun withPreview(info: Info, link: String): Info {
         // a short link first leads to the real page: the platforms' oEmbed endpoints refuse short links
         // ("vm.tiktok.com/..." gave TikTok's generic "Make Your Day" page) and the icon lives on the real host
-        val page = info.target ?: resolve(link) ?: link
+        val tiktok = isTikTok(link) || info.target?.let(::isTikTok) == true
+        val ua = if (tiktok) DESKTOP_UA else UA
+        val page = info.target ?: resolve(link, ua) ?: link
         val host = runCatching { URL(page).host.removePrefix("www.").lowercase() }.getOrNull() ?: return info.copy(previews = true, version = VERSION)
         var title: String? = null; var site: String? = null; var image: String? = null; var duration: Int? = null
         fun fromOembed(o: String) = runCatching {
@@ -128,7 +132,11 @@ object LinkInfo {
         // the platforms' own oEmbed answers (title or post text, author, frame); the page for the rest
         oembedFor(page)?.let(::fromOembed)
         // 1 MB: video pages put the length late (YouTube's at ~650 KB, 2026-11-20)
-        val html = read(page, 1024 * 1024)
+        val html = read(page, 1024 * 1024, ua)
+        // TikTok: its oEmbed now answers with the player only; the page's own data has the caption
+        if (tiktok && html != null) tiktokItem(html)?.let { v ->
+            title = v.caption ?: title; site = v.author ?: site; image = v.cover ?: image; duration = v.seconds ?: duration
+        }
         if (html != null) {
             val head = html.substringBefore("</head>")
             // any other site that offers oEmbed says so in its head
@@ -145,14 +153,14 @@ object LinkInfo {
         // the page's icons, PNG ones first (a .ico doesn't decode everywhere), then the real host's favicon.ico
         val icons = (html?.let { iconHrefs(it.substringBefore("</head>")) }.orEmpty().mapNotNull { runCatching { URL(URL(page), it).toString() }.getOrNull() } +
             "https://${URL(page).host}/favicon.ico").distinct()
-        val icon = icons.asSequence().take(4).mapNotNull { saveImage(it, "$key-icon.png", 64) }.firstOrNull()
+        val icon = icons.asSequence().take(4).mapNotNull { saveImage(it, "$key-icon.png", 128) }.firstOrNull()
         return info.copy(title = title?.take(200), site = site?.take(80), duration = duration, image = banner, icon = icon, previews = true, version = VERSION)
     }
 
-    private fun read(u: String, max: Int): String? = runCatching {
+    private fun read(u: String, max: Int, ua: String = UA): String? = runCatching {
         var url = u
         repeat(5) {
-            val c = open(url)
+            val c = open(url, ua)
             try {
                 when (c.responseCode) {
                     in 300..399 -> url = c.getHeaderField("Location")?.let { URL(URL(url), it).toString() } ?: return@runCatching null
@@ -249,6 +257,22 @@ object LinkInfo {
             else -> null
         }
     }
+
+    internal fun isTikTok(url: String): Boolean =
+        runCatching { URL(url).host.lowercase().let { it == "tiktok.com" || it.endsWith(".tiktok.com") } }.getOrDefault(false)
+
+    data class TikTokItem(val caption: String?, val author: String?, val cover: String?, val seconds: Int?)
+
+    /** A TikTok video page's own data (script __UNIVERSAL_DATA_FOR_REHYDRATION__, webapp.video-detail). */
+    internal fun tiktokItem(html: String): TikTokItem? = runCatching {
+        val data = Regex("""(?s)<script[^>]+id=["']__UNIVERSAL_DATA_FOR_REHYDRATION__["'][^>]*>(.*?)</script>""").find(html)?.groupValues?.get(1) ?: return null
+        fun obj(e: kotlinx.serialization.json.JsonElement?, k: String) = (e as? kotlinx.serialization.json.JsonObject)?.get(k)
+        fun str(e: kotlinx.serialization.json.JsonElement?) = (e as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content?.trim()?.takeIf { it.isNotEmpty() }
+        val item = listOf("__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct").fold(json.parseToJsonElement(data) as kotlinx.serialization.json.JsonElement?) { e, k -> obj(e, k) } ?: return null
+        val video = obj(item, "video")
+        TikTokItem(str(obj(item, "desc")), str(obj(obj(item, "author"), "nickname")), str(obj(video, "cover")),
+            (obj(video, "duration") as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()?.takeIf { it > 0 })
+    }.getOrNull()
 
     /** A JSON oEmbed endpoint the page advertises in its head. */
     internal fun oembedLink(head: String): String? =

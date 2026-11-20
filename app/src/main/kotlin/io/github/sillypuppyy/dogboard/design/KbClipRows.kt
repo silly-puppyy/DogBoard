@@ -180,16 +180,17 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
                 window -> {}
                 r.thumb || r.window -> Thumb(r, img)
                 r.swatch != null -> Box(Modifier.size(28.dp).background(r.swatch, RoundedCornerShape(8.dp)))
-                r.leadIcon.isNotEmpty() || r.leadLetter.isNotEmpty() -> Box(Modifier.size(32.dp).background(t.fn, PILL), contentAlignment = Alignment.Center) {
+                r.leadIcon.isNotEmpty() || r.leadLetter.isNotEmpty() -> {
                     val icon by produceState<ImageBitmap?>(null, r.leadImage) {
-                        value = r.leadImage?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 18.dp.roundToPx() }) } }
+                        value = r.leadImage?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 32.dp.roundToPx() }) } }
                     }
                     val i = icon
-                    when {
-                        // C: the site's icon, 18 dp, 4 dp corners
-                        i != null -> Image(i, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(18.dp).clip(RoundedCornerShape(4.dp)))
-                        r.leadIcon.isNotEmpty() -> Symbol(r.leadIcon, 18.sp, t.fnFg, weight = 500)
-                        else -> DText(r.leadLetter, style = text(14, 600, t.fnFg))
+                    // the site's icon fills the whole 32 dp lead, 8 dp corners (user 2026-11-21: it sat small in a circle;
+                    // the canvas had 18 dp inside the pill); the pill with a symbol or letter until it loads
+                    if (i != null) Image(i, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)))
+                    else Box(Modifier.size(32.dp).background(t.fn, PILL), contentAlignment = Alignment.Center) {
+                        if (r.leadIcon.isNotEmpty()) Symbol(r.leadIcon, 18.sp, t.fnFg, weight = 500)
+                        else DText(r.leadLetter, style = text(14, 600, t.fnFg))
                     }
                 }
             }

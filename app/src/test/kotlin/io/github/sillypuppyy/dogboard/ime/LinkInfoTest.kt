@@ -41,6 +41,15 @@ class LinkInfoTest : FunSpec({
             "https://site.example/oembed?url=a&format=json"
         LinkInfo.oembedLink(head) shouldBe null
     }
+    test("a TikTok page's own video data") {
+        val page = """<html><head><title>TikTok - Make Your Day</title></head><body><script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">""" +
+            """{"__DEFAULT_SCOPE__":{"webapp.video-detail":{"itemInfo":{"itemStruct":{"desc":"Scramble up ur name #fyp","author":{"nickname":"Scout"},""" +
+            """"video":{"cover":"https://p16.example/cover.jpg","duration":10}}},"statusCode":0}}}</script></body></html>"""
+        LinkInfo.tiktokItem(page) shouldBe LinkInfo.TikTokItem("Scramble up ur name #fyp", "Scout", "https://p16.example/cover.jpg", 10)
+        LinkInfo.tiktokItem("<html></html>") shouldBe null
+        LinkInfo.isTikTok("https://vm.tiktok.com/ZM1/") shouldBe true
+        LinkInfo.isTikTok("https://example.com/tiktok.com") shouldBe false
+    }
     test("a post's text from its embed") {
         LinkInfo.postText("""<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Happy 50th anniversary<br>to the <a href="x">Wilderness Act</a>! Here&#39;s</p>&mdash; Someone</blockquote>""") shouldBe
             "Happy 50th anniversary to the Wilderness Act! Here's"
