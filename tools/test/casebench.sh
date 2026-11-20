@@ -35,7 +35,7 @@ for k in "${KEYBOARDS[@]}"; do
   $ADB shell am instrument -w -r -e keyboard "$k" -e casebench 1 \
     -e class io.github.sillypuppyy.dogboard.uitest.CaseBenchUiTest \
     io.github.sillypuppyy.dogboard.debug.test/androidx.test.runner.AndroidJUnitRunner > "$OUT/$k-instrument.txt"
-  $ADB logcat -d -s DogBoardBench:I | grep -o "case .*" > "$OUT/$k-results.txt" || true
+  $ADB pull /sdcard/Android/data/io.github.sillypuppyy.dogboard.debug/files/casebench/results.txt "$OUT/$k-results.txt" >/dev/null
   python3 - "$OUT/key.tsv" "$OUT/$k-results.txt" "$k" <<'EOF'
 import collections, sys
 key = {l.split('\t')[0]: l.rstrip('\n').split('\t')[1:] for l in open(sys.argv[1])}
