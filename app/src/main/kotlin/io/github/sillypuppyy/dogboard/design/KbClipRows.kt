@@ -392,7 +392,7 @@ fun clipRow(d: KbClipData): KbClipRow {
                 expanded = d.expanded, cleaned = d.cleaned, pinned = d.pinned, action = "Open link", actionIcon = "open_in_new")
         } ?: when {
             CODE.matches(s) -> KbClipRow(s, "One-time code", titleWeight = 500, titleSpacing = 1f, leadIcon = "pin", pinned = d.pinned)
-            android.util.Patterns.EMAIL_ADDRESS.matcher(s).matches() -> KbClipRow(s, "Email address", leadIcon = "mail", pinned = d.pinned, action = "Send email", actionIcon = "mail")
+            EMAIL.matches(s) -> KbClipRow(s, "Email address", leadIcon = "mail", pinned = d.pinned, action = "Send email", actionIcon = "mail")
             PHONE.matches(s) && s.count(Char::isDigit) in 7..15 -> KbClipRow(s, "Phone number", leadIcon = "call", pinned = d.pinned, action = "Call", actionIcon = "call")
             else -> KbClipRow(s.replace(Regex("\\s+"), " "), titleLines = 2, pinned = d.pinned)
         }
@@ -403,10 +403,12 @@ fun clipRow(d: KbClipData): KbClipRow {
 internal fun pageName(path: String): String? {
     val seg = path.substringBefore('?').substringBefore('#').trimEnd('/').substringAfterLast('/')
         .substringBeforeLast('.').replace(Regex("[-_+]+"), " ").trim()
-    if (seg.count { it.isLetter() } < 4 || ' ' !in seg && seg.any { it.isDigit() }) return null
+    // a slug of words ("night-trains-are-coming-back"); one word is a path part ("watch", "status"), not a name
+    if (seg.count { it.isLetter() } < 4 || ' ' !in seg) return null
     return seg.replaceFirstChar { it.uppercase() }
 }
 
 private val LINK = Regex("(?i)(https?://)?(?:www\\.)?((?:[a-z0-9-]+\\.)+[a-z]{2,})(/\\S*)?")
 private val CODE = Regex("\\d{3}[ -]?\\d{3}|\\d{4,8}")
+private val EMAIL = Regex("[^\\s@]+@[^\\s@]+\\.[A-Za-z]{2,}")
 private val PHONE = Regex("\\+?[\\d ()./-]{7,}")
