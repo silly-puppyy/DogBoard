@@ -265,6 +265,9 @@ data class KbRender(
     val dimA: Float,
 )
 
+
+/** A letter key's label (Latin and Latin Extended), compiled once: layout runs on every keystroke (phone JankWatch 2026-11-20). */
+private val LETTER_RE = Regex("[a-zA-ZÀ-ɏ]")
 object KbSpec {
     /** Kb:577: long-press bar cell width and the key caps' side margin (dp). */
     const val LP_CELL = 34f
@@ -620,7 +623,6 @@ object KbSpec {
         } ?: emptyMap()
 
         // Kb:521-568 keys
-        val letterRe = Regex("[a-zA-ZÀ-ɏ]")
         val rows = spec.mapIndexed { ri, row ->
             var x = stripL.w
             KbRow(row.mapIndexed { ci, k ->
@@ -638,7 +640,7 @@ object KbSpec {
                 val isFnTone = k.kind in listOf("shift", "bksp", "mode", "fn", "fnchar", "spaceicon")
                 if (isFnTone) { bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs }
                 if (k.kind == "char") {
-                    fs = (if (letterRe.matches(label.take(1)) && label.length == 1) 25 else 24) * scale
+                    fs = (if (LETTER_RE.matches(label.take(1)) && label.length == 1) 25 else 24) * scale
                     if (label == ".com") { fs = 16f; fw = 500 }
                     val base = k.base.ifEmpty { k.id }
                     // Kb:747-751

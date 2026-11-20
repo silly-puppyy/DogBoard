@@ -27,6 +27,14 @@ class CaseAdaptTest : FunSpec({
     fun adapt(candidate: String, typed: String, auto: Boolean = false, context: Context = Context.NONE, capsLock: Boolean = false) =
         CaseAdapt.apply(candidate, typed, flags(typed, auto, capsLock), if (capsLock) Context.CAPS_LOCK else context, casing)
 
+    test("a capital shifted inside a word is kept (user 2026-11-20: DiT -> Dit -> Fit)") {
+        adapt("fit", "DiT", auto = true, context = Context.AUTOSHIFT) shouldBe null
+        adapt("dit", "DiT", auto = true, context = Context.AUTOSHIFT) shouldBe null
+        adapt("fit", "DiT") shouldBe null
+        // a candidate that keeps what was typed still goes
+        adapt("DiTs", "DiT") shouldBe "DiTs"
+    }
+
     test("classification") {
         CaseAdapt.classify("google", flags("google"), Context.NONE) shouldBe Type.NONE
         CaseAdapt.classify("Google", flags("Google"), Context.SHIFT) shouldBe Type.EXPLICIT_SHIFT
@@ -60,7 +68,7 @@ class CaseAdaptTest : FunSpec({
     }
     test("gOOgle: mixed case is not corrected into another word") {
         adapt("google", "gOOgel").shouldBeNull()
-        adapt("google", "gOOgle") shouldBe "google" // same word in other capitals is accepted
+        adapt("google", "gOOgle").shouldBeNull() // iOS keeps the typed capitals (no case-insensitive accept; decompile 2026-11-20)
     }
     test("McDonald: one shifted capital is corrected, two shifted capitals are left as typed") {
         adapt("McDonald", "Mcdonals") shouldBe "McDonald" // explicit shift; the dictionary's capitals stay

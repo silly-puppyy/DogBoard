@@ -16,9 +16,9 @@ package io.github.sillypuppyy.dogboard.engine
  *   dictionary or exists there capitalised; otherwise it has to pass the mixed-case test, then
  *   gets its first letter capitalised.
  * - [Type.ALL_CAPS] ("GOOGLE", or one letter in caps lock): all capitals.
- * - [Type.MIXED] ("gOOgle"): accepted only when at most one letter was shifted by the user and the
- *   input is all letters, or the candidate is the typed word in other capitals, or it keeps the
- *   typed letters as a case-sensitive prefix; first letter capitalised if the user shifted it.
+ * - [Type.MIXED] ("gOOgle"): accepted only when at most one letter was shifted by the user, none of them
+ *   after the first, and the input is all letters, or when the candidate keeps the typed letters as a
+ *   case-sensitive prefix; first letter capitalised if it was shifted.
  * Returns null when the candidate is not acceptable for this input (it is filtered out).
  */
 object CaseAdapt {
@@ -79,16 +79,29 @@ object CaseAdapt {
                     capitaliseFirst(candidate)
                 } else null
             }
-            Type.MIXED -> if (!acceptsForMixedCase(candidate, input, flags)) null
-                else if (flags[0] and SHIFTED != 0 && !casing.keepsLowercaseStart(candidate)) capitaliseFirst(candidate)
+            // a capital the user shifted after the first letter was meant ("DiT", "iPhone": on a phone the shift
+            // lets go after one letter, so it took a shift tap mid-word): only a candidate that keeps the typed
+            // letters as they are goes (iOS's fallback test; user 2026-11-20 "DiT" -> "Dit" -> "Fit"). The first
+            // letter takes the capital when the user or the keyboard shifted it (it was dropped when autoshifted)
+            Type.MIXED -> if (!acceptsForMixedCase(candidate, input, flags, allowOneCapital = !shiftedInside(flags))) null
+                else if (flags[0] and (SHIFTED or AUTOSHIFTED) != 0 && !casing.keepsLowercaseStart(candidate)) capitaliseFirst(candidate)
                 else candidate
         }
 
-    /** Mixed-case acceptance (should_accept_candidate_for_mixed_case_input). */
-    internal fun acceptsForMixedCase(candidate: String, input: String, flags: List<Int>): Boolean {
+    /** A letter after the first that the user shifted (not the keyboard). */
+    private fun shiftedInside(flags: List<Int>): Boolean = flags.drop(1).any { it and SHIFTED != 0 && it and AUTOSHIFTED == 0 }
+
+    /**
+     * Mixed-case acceptance (should_accept_candidate_for_mixed_case_input, decompiled 2026-11-20): with fewer
+     * than two user capitals and letters only it accepts when a flag of the input manager (+0x2db, set in
+     * syncToKeyboardState from an Objective-C call not yet named) is on; else only a candidate whose capitalised
+     * form starts with the input as typed (or a shortcut's sort-key match).
+     */
+    internal fun acceptsForMixedCase(candidate: String, input: String, flags: List<Int>, allowOneCapital: Boolean = true): Boolean {
         val explicitCapitals = flags.count { it and SHIFTED != 0 && it and AUTOSHIFTED == 0 }
-        if (explicitCapitals < 2 && input.all { it.isLetter() }) return true
-        if (candidate.equals(input, ignoreCase = true)) return true
+        if (allowOneCapital && explicitCapitals < 2 && input.all { it.isLetter() }) return true
+        // no case-insensitive match: iOS compares sort keys only for a text-replacement word (Word+0xe0), so
+        // "dit" for "DiT" is not the same word in other capitals (decompile 2026-11-20; it made "DiT" -> "Dit")
         return candidate.length >= input.length && candidate.startsWith(input)
     }
 

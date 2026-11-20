@@ -25,6 +25,10 @@ object JankWatch {
     private lateinit var sampler: Handler
     private val main = Looper.getMainLooper().thread
 
+    /** Key caps composed / drawn since the last message (KbView counts them): what a slow frame redid. */
+    @JvmField val capsComposed = java.util.concurrent.atomic.AtomicInteger()
+    @JvmField val capsDrawn = java.util.concurrent.atomic.AtomicInteger()
+
     private val sample = object : Runnable {
         override fun run() {
             if (start == 0L) return
@@ -40,6 +44,7 @@ object JankWatch {
         Looper.getMainLooper().setMessageLogging { line ->
             if (line.startsWith(">>>>> Dispatching")) {
                 samples.clear()
+                capsComposed.set(0); capsDrawn.set(0)
                 start = SystemClock.uptimeMillis()
                 what = line
                 sampler.postDelayed(sample, SAMPLE_MS)
@@ -47,7 +52,7 @@ object JankWatch {
                 val ms = SystemClock.uptimeMillis() - start
                 start = 0
                 sampler.removeCallbacks(sample)
-                if (ms > FRAME_MS) Log.w("DogBoardJank", "main thread blocked $ms ms: ${what.removePrefix(">>>>> Dispatching to ").take(160)}${hotFrames()}")
+                if (ms > FRAME_MS) Log.w("DogBoardJank", "main thread blocked $ms ms: ${what.removePrefix(">>>>> Dispatching to ").take(160)}; caps composed ${capsComposed.get()} drawn ${capsDrawn.get()}${hotFrames()}")
             }
         }
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyLog().build())

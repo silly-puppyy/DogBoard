@@ -176,6 +176,7 @@ private data class CapFrame(
 
 @Composable
 private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
+    io.github.sillypuppyy.dogboard.perf.JankWatch.capsComposed.incrementAndGet() // perf counters (debug logs only)
     val shape = if (k.pill) RoundedCornerShape(50) else RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
     // Kb:558: where the spec puts this cap, for the lint's spacing check
     val rowTop = r.rowTops.getOrElse(ri) { ri * r.rowH }; val rowH = r.rowHs.getOrElse(ri) { r.rowH }
@@ -185,7 +186,7 @@ private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
     val inArea = Rect(k.x + r.mh, rowTop + r.mv, k.x + k.w - r.mh, rowTop + rowH - r.mv)
     Box(Modifier.placeAt(inArea)) {
         Box(
-            Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape)
+            Modifier.fillMaxSize().drawBehind { io.github.sillypuppyy.dogboard.perf.JankWatch.capsDrawn.incrementAndGet() }.alpha(r.capOp).cssShadow(k.shadow, shape)
                 .then(k.bgGradient?.let { Modifier.background(it.brush(), shape) } ?: Modifier.background(k.bg, shape))
                 .lint(capId, DesignLint.Kind.CAP, expected),
             contentAlignment = Alignment.Center,
