@@ -46,13 +46,14 @@ for l in open(sys.argv[2]):
 c = collections.Counter()
 for i, (typed, want, kind) in key.items():
     if i not in got: c[kind, 'missing'] += 1; continue
+    if got[i].startswith('HARNESS:'): c[kind, 'missing'] += 1; c['harness'] += 1; continue
     g = got[i].lower()
     if kind == 'typo': c[kind, 'fixed' if g == want.lower() else 'left' if g == typed else 'wrong'] += 1
     else: c[kind, 'kept' if g == want.lower() else 'broken'] += 1
 nt = sum(v for (k, _), v in c.items() if k == 'typo'); nc = sum(v for (k, _), v in c.items() if k == 'correct')
 pct = lambda k, o, n: f"{100 * c[k, o] / max(1, n):.1f}%"
 print(f"{sys.argv[3]}: {nt} typos: fixed {pct('typo','fixed',nt)}, left {pct('typo','left',nt)}, wrong {pct('typo','wrong',nt)}"
-      f" (missing {c['typo','missing']}) | {nc} correct: kept {pct('correct','kept',nc)}, broken {pct('correct','broken',nc)}")
+      f" (missing {c['typo','missing']}, harness errors {c['harness']}) | {nc} correct: kept {pct('correct','kept',nc)}, broken {pct('correct','broken',nc)}")
 EOF
 done
 $ADB shell ime set io.github.sillypuppyy.dogboard.debug/dev.patrickgold.florisboard.FlorisImeService >/dev/null

@@ -37,6 +37,18 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var minContextSupport: Double = Double.NEGATIVE_INFINITY
 
+    /** The typed-word margin also for a typed non-word (the old way; benchmarks: DOGBOARD_NONWORD_MARGIN=1). */
+    var nonWordMargin: Boolean = false
+
+    /** [exactSplitFirst] on (benchmarks: DOGBOARD_EXACT_SPLITS=0 turns it off). */
+    var exactSplitsEnabled: Boolean = true
+
+    /**
+     * ln P(second | first) - ln P(second) from the word-pair model (TypingEngine sets it): how much likelier the
+     * second word is after the first than anywhere; null = unknown. Without it [exactSplitFirst] is off.
+     */
+    var pairSupport: ((String, String) -> Double?)? = null
+
     /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
     private fun isWordAsTyped(typed: String): Boolean {
         val node = lexicon.find(typed)
@@ -92,6 +104,12 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          */
         val MIN_CONTEXT_SUPPORT = ln(0.1)
 
+        /** [Autocorrect.pairSupport] from the word-pair model: ln P(second | first) - ln P(second). */
+        fun pairSupport(lexicon: Lexicon, bigrams: Bigrams): (String, String) -> Double? = { first, second ->
+            val w = second.lowercase()
+            lexicon.logProb(w)?.let { u -> bigrams.logProb(bigrams.contextId(first.lowercase()), lexicon.idOf(w), u) - u }
+        }
+
         /**
          * iOS FilterNondominantCorrectionOfMoreWords (SortKeyMatchBoostRatio 1.39): a candidate
          * that keeps more of the typed words wins when within this ratio of the top. For one typed
@@ -144,6 +162,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         val cased = ranked
             .mapNotNull { c -> case(c.word)?.let { c to it } }
             .let(::boostPlainer)
+            .let { exactSplitFirst(typed, it) }
         val (top, t) = cased.firstOrNull() ?: return null
         // Rule 3 (spec 4.1): a multi-word top without linguistic support rejects the correction; iOS judges
         // only the top, so the next candidate down doesn't take its place (audit 2026-11-20)
@@ -155,10 +174,14 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         if (t.length > typed.length && oneLetterWords(t) < oneLetterWords(typed)) return null
         // iOS filter 20 (keep more typed words when nearly as likely), and Gentle's larger margin;
         // a correction with the typed letters ("dont" -> "don't") keeps the typed word already
-        if (sortKey(t) != sortKey(typed)) {
+        if (sortKey(t) != sortKey(typed) && !isExactSplit(typed, top)) {
             val asTyped = ranked.firstOrNull { it.isTypedString || (it.word.equals(typed, ignoreCase = true) && isWordAsTyped(typed)) }
-            // the typed word stays, as the dictionary spells it ("mr" -> "Mr", as when it is the top)
-            if (asTyped != null && top.score - asTyped.score < ln(level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)
+            // the typed word stays, as the dictionary spells it ("mr" -> "Mr", as when it is the top). Only a typed
+            // WORD gets this margin: iOS never ranks a typed non-word (spec 2.6), so its filter 20 can't protect one;
+            // ours did, and the neural model's vote for "Teh" (-3.96 vs "the" -3.76, 2026-11-20 emulator) or the
+            // letter model's for "thankyou" kept real typos within 1.39x (nonWordMargin = the old way, benchmarks)
+            if (asTyped != null && (!asTyped.isTypedString || nonWordMargin) && top.score - asTyped.score < ln(level.leadOverTyped))
+                return keptAsTyped(typed, asTyped, case)
         }
         // Rule 4: a correction that is not a completion of what was typed is taken as is.
         if (!(t.length >= typed.length && t.startsWith(typed))) return t
@@ -194,6 +217,34 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      * apostrophes, hyphens or accents scores within 10% of the top ("were" vs "we're"), it goes
      * first. Only spellings without capitals after the first letter qualify.
      */
+    /**
+     * [c] is [typed]'s letters with spaces put in, nothing else changed ("thankyou" -> "thank you"), into words that
+     * go together: each next word at least as likely after the one before as anywhere (pair support >= 0). That keeps
+     * a brand or unknown word made of unrelated words ("Gumroad" not "Gum road", "befour" not "be four", "Nowember"
+     * not "now ember": held-out bench 2026-11-20) and splits run-together phrases (thank you, of the, what I, will it).
+     */
+    private fun isExactSplit(typed: String, c: Candidate): Boolean {
+        val support = pairSupport ?: return false
+        if (!exactSplitsEnabled || c.words < 2 || c.isCompletion || !c.word.replace(" ", "").equals(typed, ignoreCase = true)) return false
+        return c.word.split(' ').zipWithNext().all { (a, b) -> (support(a, b) ?: return false) >= 0.0 }
+    }
+
+    /**
+     * A typed NON-word that is exactly two or more dictionary words with the spaces missing: the best real
+     * candidate, when it is that split, goes ahead of the typed string (and skips the typed-word margin below).
+     * The split explains every letter; the letter model rates a run-together of common words ("thankyou",
+     * "ofthe") as a plausible unknown word and kept it ahead by a hair (user 2026-11-20: "the keyboard can
+     * correctly split words apart but just doesn't do it"). iOS never ranks a typed non-word at all (spec 2.6); this
+     * takes that rule only where the alternative is an exact split. A learned word is a dictionary word: kept.
+     */
+    private fun exactSplitFirst(typed: String, cased: List<Pair<Candidate, String>>): List<Pair<Candidate, String>> {
+        if (!exactSplitsEnabled || cased.size < 2 || !cased[0].first.isTypedString) return cased
+        if (cased.any { (c, _) -> !c.isTypedString && c.words == 1 && c.word.equals(typed, ignoreCase = true) }) return cased
+        val best = cased.firstOrNull { (c, _) -> !c.isTypedString } ?: return cased
+        if (!isExactSplit(typed, best.first)) return cased
+        return listOf(best) + cased.filter { it !== best }
+    }
+
     private fun boostPlainer(cased: List<Pair<Candidate, String>>): List<Pair<Candidate, String>> {
         if (cased.size < 2) return cased
         val (top, t) = cased[0]

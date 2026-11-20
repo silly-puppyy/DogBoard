@@ -88,7 +88,10 @@ object TypingEngine {
             bigrams,
             rules = rules,
         )
-        val autocorrect = Autocorrect(lexicon)
+        val autocorrect = Autocorrect(lexicon).also { ac ->
+            // a typed non-word that is two words run together is split only when the words go together
+            if (bigrams != null) ac.pairSupport = Autocorrect.pairSupport(lexicon, bigrams)
+        }
 
         /** A second decoder for looking back at the previous word, so the live one keeps its search. */
         val retroDecoder = Decoder(

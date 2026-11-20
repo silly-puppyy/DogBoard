@@ -36,6 +36,9 @@ class KeyboardDriver(
 
     /** Makes the keyboard under test (DogBoard unless `-e keyboard gboard`) the keyboard. */
     fun selectDogBoard() {
+        // the neural model on, as on a phone in use (the emulator's 4 GB is under its RAM bar; debug builds read this
+        // at load; a property is lost on reboot: 'going hom' went uncorrected after one, 2026-11-20)
+        if (!isGboard) shell("setprop debug.dogboard.neural 1")
         shell("ime enable $imeId")
         shell("ime set $imeId")
     }
@@ -60,7 +63,9 @@ class KeyboardDriver(
         if (isGboard) { SystemClock.sleep(3500); return gboardArea() }
         val end = SystemClock.uptimeMillis() + 15_000
         while (shownCount() <= shownBefore && SystemClock.uptimeMillis() < end) SystemClock.sleep(200)
-        return waitForKeyArea() ?: error("the keyboard never reported its key area (is DogBoard selected? ${shell("settings get secure default_input_method").trim()})")
+        // a settle pause: on a slow emulator the first tap after the keyboard appears was dropped ('Nsplash',
+        // ' Use Gboard', 'Eh-' for 'teh-', 2026-11-20, 2 vCPUs + the neural model)
+        return (waitForKeyArea() ?: error("the keyboard never reported its key area (is DogBoard selected? ${shell("settings get secure default_input_method").trim()})")).also { SystemClock.sleep(SETTLE_MS) }
     }
 
     /**
@@ -158,6 +163,19 @@ class KeyboardDriver(
         inject(MotionEvent.obtain(t, SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, x, y, 0))
     }
 
+    /** A hardware key press (down, up) injected directly: no `input` process started in the emulator per key. */
+    fun key(code: Int, meta: Int = 0) {
+        val t = SystemClock.uptimeMillis()
+        for (action in intArrayOf(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.ACTION_UP))
+            ui.injectInputEvent(android.view.KeyEvent(t, t, action, code, 0, meta), true)
+    }
+
+    /** Empties the focused field (select all, delete). */
+    fun clearField() {
+        key(android.view.KeyEvent.KEYCODE_A, android.view.KeyEvent.META_CTRL_ON or android.view.KeyEvent.META_CTRL_LEFT_ON)
+        key(android.view.KeyEvent.KEYCODE_DEL)
+    }
+
     private fun inject(e: MotionEvent) {
         e.source = InputDevice.SOURCE_TOUCHSCREEN
         ui.injectInputEvent(e, true)
@@ -215,6 +233,7 @@ class KeyboardDriver(
     companion object {
         /** resetLearningOnce ran in this process (one per instrumentation run). */
         private var learningReset = false
+        private const val SETTLE_MS = 700L
         const val GBOARD_PACKAGE = "com.google.android.inputmethod.latin"
         const val GBOARD = "$GBOARD_PACKAGE/com.android.inputmethod.latin.LatinIME"
         const val IME = "io.github.sillypuppyy.dogboard.debug/dev.patrickgold.florisboard.FlorisImeService"

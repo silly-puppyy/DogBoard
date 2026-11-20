@@ -31,11 +31,19 @@ class CaseBenchUiTest {
             // a fresh field for each case (select all, delete): no context from the case before
             // the log cleared too: reading the field dumps the log, ~40 s per case once the 16 MB buffer filled
             kb.shell("logcat -c")
-            kb.shell("input keycombination 113 29"); kb.shell("input keyevent 67")
+            kb.clearField()
             SystemClock.sleep(300)
             kb.type(area, (if (context.isBlank()) "" else "$context ") + "$typed ")
-            val last = kb.text().trim().substringAfterLast(' ')
-            out.appendText("case $i $last\n")
+            val text = kb.text().trim()
+            // the field must hold the context's words and one more: anything else is the harness (a lost space, a
+            // starved emulator turning a tap into a long press), not the keyboard; scored apart
+            val words = text.split(' ').filter { it.isNotEmpty() }
+            val expected = context.split(' ').count { it.isNotEmpty() } + 1
+            out.appendText(when (words.size) {
+                expected -> "case $i ${words.last()}\n"
+                expected + 1 -> "case $i ${words.takeLast(2).joinToString(" ")}\n" // the keyboard split the word
+                else -> "case $i HARNESS:${text.replace(' ', '_')}\n"
+            })
         }
     }
 }
