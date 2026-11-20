@@ -210,7 +210,7 @@ class RealTypoEvalTest : FunSpec({
             if (retroNeural != null) ", neural weight $retroWeight" else ""))
         retroDump?.let { File(System.getenv("DOGBOARD_RETRO_DUMP")).writeText(it.toSet().joinToString("\n", postfix = "\n")) }
         // per kind of word (benchmark review 2026-11-20: one total hides where a change helps or hurts): typos
-        // fixed / left / wrong and correct words broken, for short words, names mid-sentence, words with an
+        // fixed / left / wrong and correct words broken, for short words, capitalised words after others, words with an
         // apostrophe, words meant as two, and the rest
         fun kind(o: Outcome): String {
             val w = o.row[4]
@@ -218,7 +218,9 @@ class RealTypoEvalTest : FunSpec({
             return when {
                 ' ' in w -> "split"
                 '\'' in w || '’' in w -> "apostrophe"
-                w.first().isUpperCase() && midSentence -> "name"
+                // capitalised after other words: mostly names, but sentence starts too where the data's context
+                // has no closing mark ("Thanks", "If"), so not a clean names set
+                w.first().isUpperCase() && midSentence -> "capital"
                 w.length <= 3 -> "short"
                 else -> "other"
             }
