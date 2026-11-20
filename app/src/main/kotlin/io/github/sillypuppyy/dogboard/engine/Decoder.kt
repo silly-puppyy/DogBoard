@@ -728,7 +728,23 @@ class Decoder(
             val l = typedStringLogProb(typed)
             add(Candidate(typed, geometry + w * l, geometry, l, 0, isCompletion = false, isTypedString = true))
         }
-        return results.values.sortedByDescending { it.score }.take(maxResults)
+        return withHyphensPricedAsSpaces(results.values).sortedByDescending { it.score }.take(maxResults)
+    }
+
+    /**
+     * A skipped hyphen is free (so "tshirt" reaches "T-shirt") and a skipped space is not, so "thankyou" went to
+     * "thank-you" though "thank you" is the likelier reading (user 2026-11-20; on the iPhone it is "thank you").
+     * When the same letters are a candidate with spaces too, the hyphenated one pays the same as the spaced one,
+     * and the language model decides ("well-known" keeps its lead over "well known").
+     */
+    private fun withHyphensPricedAsSpaces(cs: Collection<Candidate>): Collection<Candidate> {
+        if (cs.none { '-' in it.word }) return cs
+        val spaced = cs.filter { ' ' in it.word }.associateBy { it.word.lowercase() }
+        return cs.map { c ->
+            val s = if ('-' in c.word) spaced[c.word.lowercase().replace('-', ' ')] else null
+            if (s == null || s.geometry >= c.geometry) c
+            else c.copy(geometry = s.geometry, score = c.score - (c.geometry - s.geometry))
+        }
     }
 
     /**
