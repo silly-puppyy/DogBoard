@@ -56,6 +56,24 @@ class LearningTest : FunSpec({
         }
     }
 
+    test("iOS negative learning: undoing a correction into a little-used learned word forgets it") {
+        val dir = Files.createTempDirectory("dogboard-neg").toFile()
+        val userWords = File(dir, "user_words.txt")
+        try {
+            TypingEngine.unloadForTest()
+            TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() }, userWords = userWords)
+            TypingEngine.learn("comman")
+            userWords.readLines() shouldBe listOf("comman")
+            TypingEngine.reject("commen", "comman") // the user undid a correction into the learned typo
+            val end = System.currentTimeMillis() + 3000
+            while (userWords.readLines().isNotEmpty() && System.currentTimeMillis() < end) Thread.sleep(20)
+            userWords.readLines() shouldBe emptyList()
+        } finally {
+            TypingEngine.unloadForTest()
+            dir.deleteRecursively()
+        }
+    }
+
     test("words with symbols or digits are not learned") {
         val dir = Files.createTempDirectory("dogboard-learn").toFile()
         val userWords = File(dir, "user_words.txt")

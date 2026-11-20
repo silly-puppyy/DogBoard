@@ -270,6 +270,9 @@ object TypingEngine {
     /** The neural model's share of a candidate's language score (RealTypoEvalTest: 0.5 best of 0.5 / 0.75 / 1.0). */
     const val NEURAL_WEIGHT = 0.5
 
+    /** iOS: a learned word with negative evidence is removed while its usage is below 7 (LanguageModeling, notes). */
+    const val FORGET_BELOW_USES = 7
+
     /** The neural language model for next-word predictions (EngineLoader, when its files are in the app). */
     fun attachNeuralLm(model: io.github.sillypuppyy.dogboard.engine.lm.NeuralLm?) {
         neuralLm = model
@@ -963,6 +966,21 @@ object TypingEngine {
     fun reject(typed: String, correction: String) {
         rejections.recordHard(typed, correction)
         if (adaptiveStrength) strength.reverted() // off: it neither learns nor changes step
+        forgetRejectedLearnedWords(correction)
+    }
+
+    /**
+     * iOS negative learning (decompiled 2026-11-20): undoing a correction registers negative evidence against the
+     * rejected correction (TIRevisionHistory rejectCandidate:forInput:hint: -> registerNegativeEvidence, the typed
+     * word as "intended"), and a learned word with a penalty and fewer than [FORGET_BELOW_USES] uses leaves the
+     * learned words. So a typo DogBoard learned and then corrected another word into is forgotten on undo.
+     * Words added on the dictionary page are the user's list and stay.
+     */
+    private fun forgetRejectedLearnedWords(correction: String) {
+        val forget = correction.split(' ').map { it.lowercase() }.filter { k ->
+            lock.read { k in learnedWords && k !in addedWords } && personal.uses(k) < FORGET_BELOW_USES
+        }
+        if (forget.isNotEmpty()) Thread { forget.forEach(::forgetWord) }.apply { isDaemon = true; name = "DogBoardForget" }.start()
     }
 
     /** Autocorrection just turned [typed] into [correction]. */
