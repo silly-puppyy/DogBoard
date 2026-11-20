@@ -8,7 +8,12 @@ Sources are public lists on the data drive (never the user's text):
   surnames        2010 US census surnames, title case (public domain)
   british         SCOWL british-only words, common sizes (the 'colour' case)
 
-    tools/test/make_leave_alone.py <data dir> <lexicon.tsv> <out dir> [n=500]"""
+    tools/test/make_leave_alone.py <data dir> <lexicon.tsv> <out dir> [n=500] [sentences.txt]
+
+With a sentences file (Leipzig eng_wikipedia_2016_1M, not in the neural model's training mix): each word inside a
+real sentence that contains it, with the words before it as context (files leave-ctx-*.tsv): a name alone tells the
+language models nothing; in a sentence they can see a name is likely (user 2026-11-20: "put words in context, it's
+unlikely someone will just type random words")."""
 import csv, os, random, sys
 
 data, lexicon, out = sys.argv[1:4]
@@ -41,10 +46,31 @@ for size in (10, 20, 35, 40, 50):
         british += [w.strip() for w in open(path, encoding='latin-1') if letters(w.strip()) and w.strip().islower()]
 sets['british'] = british
 
-for name, words in sets.items():
-    words = list(dict.fromkeys(words))
-    pick = rnd.sample(words, min(n, len(words)))
-    with open(f'{out}/leave-{name}.tsv', 'w', encoding='utf-8') as f:
-        for i, w in enumerate(pick):
-            f.write(f'{name}-{i}\t0\t\t{w}\t{w}\n')
-    print(f'{name}: {len(pick)} of {len(words)}')
+sentences = sys.argv[5] if len(sys.argv) > 5 else None
+if sentences is None:
+    for name, words in sets.items():
+        words = list(dict.fromkeys(words))
+        pick = rnd.sample(words, min(n, len(words)))
+        with open(f'{out}/leave-{name}.tsv', 'w', encoding='utf-8') as f:
+            for i, w in enumerate(pick):
+                f.write(f'{name}-{i}\t0\t\t{w}\t{w}\n')
+        print(f'{name}: {len(pick)} of {len(words)}')
+else:
+    # the first sentence that has each word as a whole word (exact case), not as the sentence's first word
+    want = {w for words in sets.values() for w in words}
+    found = {}
+    strip = '.,;:!?"()[]\'' + "\u201c\u201d\u2018\u2019"
+    for line in open(sentences, encoding='utf-8'):
+        toks = line.rstrip('\n').split('\t')[-1].split()
+        for j, t in enumerate(toks):
+            w = t.strip(strip)
+            if j > 0 and w in want and w not in found:
+                found[w] = ' '.join(x.strip(strip) for x in toks[:j] if x.strip(strip))
+    for name, words in sets.items():
+        words = [w for w in dict.fromkeys(words) if w in found]
+        pick = rnd.sample(words, min(n, len(words)))
+        with open(f'{out}/leave-ctx-{name}.tsv', 'w', encoding='utf-8') as f:
+            for i, w in enumerate(pick):
+                ctx = found[w]
+                f.write(f'{name}-{i}\t{len(ctx.split())}\t{ctx}\t{w}\t{w}\n')
+        print(f'{name} in context: {len(pick)} of {len(words)} found')
