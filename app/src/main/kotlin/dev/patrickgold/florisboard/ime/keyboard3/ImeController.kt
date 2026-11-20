@@ -237,6 +237,14 @@ class ImeController(
     private var rejectedWord: String? = null
     private var suggestionJob: Job? = null
     @Volatile private var latestDecode: Pair<String, List<Candidate>>? = null
+
+    /**
+     * A word that ended before its decode (DogBoard): corrected when the decode lands, if the text still ends with
+     * the word and its separator. Phone timing 2026-11-20: 2 of 21 word ends had no decode (the typed word stayed);
+     * waiting at the space is out (user 2026-11-17: no pause before autocorrect).
+     */
+    private class LateWord(val key: String, val word: CurrentWord, val typed: String, val separator: String)
+    @Volatile private var lateWord: LateWord? = null
     // DogBoard: the decoder's own candidates for the same key (before the neural refinement), and the
     // experimental neural look back's scores for the current word
     @Volatile private var latestStage1: Pair<String, List<Candidate>>? = null
@@ -530,6 +538,9 @@ class ImeController(
         }
 
         override fun emit(value: K3StringOrDescriptor) {
+            // any key after a word end cancels its late correction: the edit may only touch text nothing has followed
+            // (with the next letter already sent, the cached text lagged and the late edit was lost: emulator 2026-11-20)
+            lateWord = null
             val interceptor = emitInterceptor.load()
             if (interceptor != null) {
                 interceptor.onEmit(value)
@@ -734,6 +745,30 @@ class ImeController(
             return true
         }
 
+        private fun slowDecodeMs(): Long = runCatching {
+            (Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, "debug.dogboard.slowdecode") as String).toLong()
+        }.getOrDefault(0L)
+
+        /** The late correction for [late], when the text still ends with its word and separator (nothing typed since). */
+        private fun applyLate(late: LateWord, candidates: List<Candidate>) {
+            if (lateWord !== late) return
+            lateWord = null
+            if (!correctionAllowed() || state.content.selection.isNotCollapsed()) return
+            val tail = late.typed + late.separator
+            if (!state.content.surroundingText.textBefore.endsWith(tail)) return
+            val corrected = TypingEngine.correction(late.word, candidates, null, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)
+            if (logsText) android.util.Log.d("DogBoardAc", "late decode for '${late.typed}': corrected=$corrected")
+            android.util.Log.i("DogBoardPerf", "word end: late correction ${if (corrected != null && corrected != late.typed) "applied" else "none"}")
+            if (corrected == null || corrected == late.typed) return
+            if (!replaceBeforeCursor(tail, corrected + late.separator)) return
+            // a backspace right after puts back what was typed, as for a correction made at the word end
+            lastCorrection = LastCorrection(late.word, corrected, late.separator)
+            if (!state.flags.isIncognitoMode) {
+                unconfirmedCorrection = late.typed to corrected
+                scope.launch { TypingEngine.noteCorrected(late.typed, corrected) }
+            }
+        }
+
         /** Called before a word separator is typed: autocorrects the finished word. */
         private fun finishWord(separator: String) {
             lastCorrection = null
@@ -774,7 +809,17 @@ class ImeController(
                 // iOS never computes at the word end: it applies the correction already found, or keeps
                 // the typed word when none is ready ("avoided autocorrect deadlock"); no decode here
                 val ready = latestDecode?.takeIf { it.first == key }?.second
-                if (ready == null && logsText) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept")
+                if (ready == null && logsText) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept for now")
+                // corrected when its decode lands (applyLate), unless the user types on first. The word's own decode
+                // job may never run (cancelled before it started, when the space came): a decode of its own, off the
+                // main thread (emulator 2026-11-20: 2 word ends without a decode, none corrected late)
+                lateWord = if (ready == null) LateWord(key, word.snapshot(), typed, separator) else null
+                lateWord?.let { late ->
+                    scope.launch {
+                        val decoded = TypingEngine.candidates(late.word, context, previous2 = context2)
+                        launch(Dispatchers.Main) { applyLate(late, decoded) }
+                    }
+                }
                 // perf (phone logs 2026-11-20: 'neural late' counts mid-word keys too): what the word end decided with
                 android.util.Log.i("DogBoardPerf", "word end: " + when {
                     ready == null -> "no decode yet"
@@ -1420,9 +1465,15 @@ class ImeController(
                 val key = decodeKey(word.text, context, context2)
                 // stage 1: the decoder's candidates, published at once (the word end uses them: it never
                 // waits for the neural model, user 2026-11-17: "pausing right before it autocorrects")
+                // debug builds: `setprop debug.dogboard.slowdecode <ms>` delays this decode, so word ends come before it
+                // (tests the late correction on an emulator, which is otherwise too fast)
+                if (BuildConfig.DEBUG) slowDecodeMs().takeIf { it > 0 }?.let { kotlinx.coroutines.delay(it) }
                 val decoded = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
                 latestDecode = key to decoded
                 latestStage1 = key to decoded
+                // a word that already ended waits for exactly this decode: correct it now (on the main thread; a new
+                // coroutine, so the cancelled job of the finished word still delivers)
+                lateWord?.takeIf { it.key == key }?.let { late -> scope.launch(Dispatchers.Main) { applyLate(late, decoded) } }
                 fun publish(candidates: List<io.github.sillypuppyy.dogboard.engine.Candidate>) {
                     val previousChoice = latestCorrection?.takeIf { it.first == word.text.dropLast(1) }?.second
                     val correction = if (withCorrection && word.text != rejected) TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), level) else null

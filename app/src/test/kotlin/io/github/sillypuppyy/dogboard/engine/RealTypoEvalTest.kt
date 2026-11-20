@@ -37,6 +37,8 @@ class RealTypoEvalTest : FunSpec({
         val lexicon = if (appPath) TypingEngine.lexiconForTest()!! else File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
         val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val ngrams = ngramFile!!.inputStream().use { NgramModel.readBinary(it) }!!
+        // DOGBOARD_NO_TRIGRAM=1: the decoders score with the word pairs only (ablation; the file still enables the test)
+        val noTrigram = System.getenv("DOGBOARD_NO_TRIGRAM") == "1"
         // DOGBOARD_SPACE_KEY=1: the space bar among the keys a tap may have meant (word breaks at a tap)
         val keys = if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f) else QwertyGeometry.letterKeys(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
@@ -64,7 +66,7 @@ class RealTypoEvalTest : FunSpec({
         val misspellings = File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
         val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) } else null
         val decoders = ThreadLocal.withInitial {
-            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0"), bigrams = bigrams, context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
+            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0"), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
                 .also { it.unknownWords = charModel; if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") it.knownMisspellings = misspellings }
         }
 

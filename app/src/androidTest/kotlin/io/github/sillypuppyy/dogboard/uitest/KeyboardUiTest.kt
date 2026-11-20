@@ -46,6 +46,20 @@ class KeyboardUiTest {
 
     @Test fun capsField() = assertEquals("ABC", typed("abc", "caps"))
 
+    /** A word end before its decode is corrected when the decode lands, if the user paused (decode slowed on purpose). */
+    @Test fun lateCorrectionAfterPause() {
+        assumeFalse("DogBoard's own late correction", kb.isGboard)
+        kb.shell("setprop debug.dogboard.slowdecode 400")
+        try {
+            val area = kb.open(); kb.waitForEngine()
+            kb.type(area, "teh ")
+            android.os.SystemClock.sleep(1500)
+            assertEquals("The ", kb.text())
+        } finally {
+            kb.shell("setprop debug.dogboard.slowdecode 0")
+        }
+    }
+
     @Test fun panelsOpenAndClose() {
         assumeFalse("DogBoard's own panels", kb.isGboard)
         val area = kb.open()
