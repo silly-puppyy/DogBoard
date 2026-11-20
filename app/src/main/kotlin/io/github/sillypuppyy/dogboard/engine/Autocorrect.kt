@@ -53,6 +53,18 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     var exactSplitsEnabled: Boolean = true
 
     /**
+     * A short word typed in capitals throughout (2-5 letters: CKM, GOST, NAFO) is left as typed, as Gboard does
+     * (measured 2026-11-20): autocapitalisation only ever capitals the first letter, so these are deliberate
+     * abbreviations. Longer ones and [knownMisspellings] ("TEH", "GOOGEL" in caps lock) are still corrected.
+     * Typed as written: unknown brands changed 15.8 -> 10.4 %, real typos unchanged (benchmarks:
+     * DOGBOARD_ALLCAPS_SHIELD=0 turns it off).
+     */
+    var allCapsShield: Boolean = true
+
+    /** Known misspellings, lowercase (en.misspellings.txt): never shielded as an abbreviation. */
+    var knownMisspellings: Set<String> = emptySet()
+
+    /**
      * ln P(second | first) - ln P(second) from the word-pair model (TypingEngine sets it): how much likelier the
      * second word is after the first than anywhere; null = unknown. Without it [exactSplitFirst] is off.
      */
@@ -173,6 +185,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             .let(::boostPlainer)
             .let { exactSplitFirst(typed, it) }
         val (top, t) = cased.firstOrNull() ?: return null
+        if (allCapsShield && typed.count { it.isLetter() } in 2..5 && typed.none { it.isLowerCase() } && typed.lowercase() !in knownMisspellings) return null
         // Rule 3 (spec 4.1): a multi-word top without linguistic support rejects the correction; iOS judges
         // only the top, so the next candidate down doesn't take its place (audit 2026-11-20)
         if (top.words > 1 && top.contextSupport < minContextSupport) return null

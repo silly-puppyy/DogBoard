@@ -207,6 +207,7 @@ object TypingEngine {
         engine.retroDecoder.unknownWords = charModel
         engine.joinDecoder.unknownWords = charModel
         for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
+        engine.autocorrect.knownMisspellings = misspellings
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 val w = line.trim()
@@ -257,6 +258,7 @@ object TypingEngine {
         engine.retroDecoder.unknownWords = charModel
         engine.joinDecoder.unknownWords = charModel
         for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
+        engine.autocorrect.knownMisspellings = misspellings
     }
 
     @Volatile

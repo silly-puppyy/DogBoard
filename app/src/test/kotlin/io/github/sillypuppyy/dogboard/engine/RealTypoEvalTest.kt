@@ -57,9 +57,11 @@ class RealTypoEvalTest : FunSpec({
         System.getenv("DOGBOARD_SPLIT_SUPPORT")?.toDoubleOrNull()?.let { autocorrect.minPairSupport = kotlin.math.ln(it) }
         // DOGBOARD_EXACT_SPLITS=0: Autocorrect.exactSplitsEnabled off (a typed non-word stays ahead of its exact split)
         autocorrect.exactSplitsEnabled = System.getenv("DOGBOARD_EXACT_SPLITS") != "0"
+        autocorrect.allCapsShield = System.getenv("DOGBOARD_ALLCAPS_SHIELD") != "0"
         // DOGBOARD_RULE3=x: Rule 3's bar as a probability ratio (iOS 0.1), "off" = no bar
         System.getenv("DOGBOARD_RULE3")?.let { autocorrect.minContextSupport = if (it == "off") Double.NEGATIVE_INFINITY else kotlin.math.ln(it.toDouble()) }
         val handMm = System.getenv("DOGBOARD_REAL_TYPOS_HAND")?.toDoubleOrNull()
+        val typedCase = System.getenv("DOGBOARD_TYPED_CASE") == "1"
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
@@ -176,7 +178,9 @@ class RealTypoEvalTest : FunSpec({
                     withNeural(decoded, { w -> m["${row[2]}\t$typed\t${w.replace(",", "")}"] }, neuralWeight, Decoder.LANGUAGE_POWER_CONTEXT)
                 } ?: decoded
                 var got = if (appPath) {
-                    val word = CurrentWord().apply { typed.forEachIndexed { i, c -> addLetter(c, taps[i], keys, params) } }
+                    // DOGBOARD_TYPED_CASE=1: the typed capitals as written (shifted letters: "CKM", "iPhone"); else all lowercase
+                    val asWritten = row[3].takeIf { typedCase && it.length == typed.length } ?: typed
+                    val word = CurrentWord().apply { typed.forEachIndexed { i, c -> addLetter(asWritten[i], taps[i], keys, params) } }
                     TypingEngine.correction(word, candidates, level = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD")) ?: typed
                 } else autocorrect.correction(typed, candidates) ?: typed
                 val next = if (retro) nextTyped["${row[0]}\t${row[1].toInt() + 1}"] else null

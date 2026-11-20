@@ -14,7 +14,12 @@ private val LEXICON by lazy {
 private val KEYS = QwertyGeometry.letterKeys(375f, 216f)
 private val PARAMS = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
 private val DECODER by lazy { Decoder(LEXICON, Decoder.Config(languagePower = Decoder.LANGUAGE_POWER_UNIGRAM)) }
-private val AUTOCORRECT by lazy { Autocorrect(LEXICON) }
+// with the known misspellings, as the app loads them (they keep "TEH" in caps from the all-caps shield)
+private val AUTOCORRECT by lazy {
+    Autocorrect(LEXICON).apply {
+        knownMisspellings = java.io.File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.map { it.trim().lowercase() }.toHashSet()
+    }
+}
 
 /** Taps at the centres of the keys for [letters]. */
 private fun centreTaps(letters: String) =
@@ -124,6 +129,8 @@ class EngineTest : FunSpec({
             corrected("i") shouldBe "I"
             corrected("Teh") shouldBe "The"
             corrected("TEH") shouldBe "THE"
+            // a short word in capitals throughout is an abbreviation: left as typed (all-caps shield, 2026-11-21)
+            corrected("NAFO") shouldBe "NAFO"
         }
         test("capitals follow the iOS case rules (google / Google / GOOGLE, YouTube)") {
             corrected("googel") shouldBe "Google" // the lexicon has one casing for now: the company
