@@ -18,7 +18,9 @@ class EngineMemoryTest : FunSpec({
             last = now
         }
         val lexicon = File(a + "en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }.also { keep.add(it) }
-        println("ENGINEMEM %-14s %7.1f MB (%d words)".format("lexicon", (used() - last) / 1048576.0, lexicon.size)); last = used()
+        println("ENGINEMEM %-14s %7.1f MB (%d words, %d trie nodes = %.1f MB of node arrays at 32 B each)".format("lexicon", (used() - last) / 1048576.0, lexicon.size, lexicon.nodes, lexicon.nodes * 32 / 1048576.0)); last = used()
+        // the word strings the engine caches (one String per word id, made on first use)
+        part("word strings (all cached)") { (0 until lexicon.size).map { lexicon.word(lexicon.nodeOfWord(it)) } }
         // what later starts hold: the lexicon as loaded from its snapshot (exact-size arrays)
         val snap = File.createTempFile("lexicon", ".bin").also { it.deleteOnExit() }
         snap.outputStream().use { lexicon.writeSnapshot(it) }
