@@ -18,15 +18,32 @@ object EngineLoader {
     private fun pack(app: Context): LanguagePack =
         pack ?: (LanguagePack.open(app.assets, LanguagePack.DEFAULT_TAG) ?: error("no language pack ${LanguagePack.DEFAULT_TAG}")).also { pack = it }
 
+    /** The key of this install's cached data files (an update makes new ones). */
+    private fun snapshotKey(app: Context): String =
+        app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" }
+
     private fun loadNgrams(app: Context): io.github.sillypuppyy.dogboard.engine.NgramModel? = runCatching {
         app.assets.openFd(pack(app).path("ngrams") ?: return null).use { fd ->
             java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
                 val t0 = android.os.SystemClock.uptimeMillis()
+                // the vocabulary index (~7 MB built on the heap) mapped from a file written on the first start, kept
+                // beside the lexicon snapshot (same key: an app update builds it again)
+                val indexFile = File(File(app.noBackupFilesDir, "dogboard-data"), "ngramindex-${snapshotKey(app)}.bin")
+                val index = indexFile.takeIf { it.isFile }?.let { f ->
+                    runCatching { java.io.RandomAccessFile(f, "r").channel.use { c -> c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size()) } }.getOrNull()
+                }
                 io.github.sillypuppyy.dogboard.engine.NgramModel.fromBuffer(
-                    ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length),
+                    ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length), index,
                 ).also { m ->
                     android.util.Log.i("DogBoardPerf", "trigram model: ${m?.pairCount} pairs, ${m?.tripleCount} triples, " +
-                        "${android.os.SystemClock.uptimeMillis() - t0} ms")
+                        "${android.os.SystemClock.uptimeMillis() - t0} ms, index ${if (index != null) "mapped" else "built"}")
+                    // the next start maps it (written atomically: a half-written file is never read)
+                    if (m != null && index == null) runCatching {
+                        indexFile.parentFile?.mkdirs()
+                        val tmp = File(indexFile.path + ".tmp")
+                        tmp.outputStream().use { m.writeVocabIndex(it) }
+                        tmp.renameTo(indexFile)
+                    }
                 }
             }
         }
@@ -107,7 +124,7 @@ object EngineLoader {
             openMisspellings = { assets.open(asset("misspellings")).bufferedReader() },
             // parsed word data, rebuilt when the app (and so its assets) changes
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
-            snapshotKey = app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" },
+            snapshotKey = snapshotKey(app),
             rules = p.path("rules")?.let { r -> runCatching { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(assets.open(r).bufferedReader().use { it.readText() }) }.getOrNull() }
                 ?: io.github.sillypuppyy.dogboard.engine.LanguageRules(),
         )

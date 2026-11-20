@@ -62,4 +62,18 @@ class NgramModelTest : FunSpec({
         r.logProb(r.idOf("<s>"), r.idOf("i"), r.idOf("love")) shouldBe m.logProb(id("<s>"), id("i"), id("love"))
         NgramModel.readBinary("junk".byteInputStream()) shouldBe null
     }
+
+    test("a vocabulary index written once reads back the same model (the app maps it: nothing on the heap)") {
+        val bytes = java.io.ByteArrayOutputStream().also { m.writeBinary(it) }.toByteArray()
+        val built = NgramModel.fromBuffer(java.nio.ByteBuffer.wrap(bytes))!!
+        val index = java.io.ByteArrayOutputStream().also { built.writeVocabIndex(it) shouldBe true }.toByteArray()
+        val mapped = NgramModel.fromBuffer(java.nio.ByteBuffer.wrap(bytes), java.nio.ByteBuffer.wrap(index))!!
+        mapped.size shouldBe built.size
+        for (w in listOf("i", "love", "you", "<s>", "lobe")) mapped.idOf(w) shouldBe built.idOf(w)
+        mapped.idOf("nope") shouldBe -1
+        mapped.logProb(mapped.idOf("i"), mapped.idOf("love"), mapped.idOf("you")) shouldBe built.logProb(built.idOf("i"), built.idOf("love"), built.idOf("you"))
+        (0 until mapped.size).map { mapped.word(it) } shouldBe (0 until built.size).map { built.word(it) }
+        // an index for another vocabulary is not used (the model builds its own)
+        NgramModel.fromBuffer(java.nio.ByteBuffer.wrap(bytes), java.nio.ByteBuffer.wrap("junk1234junk".toByteArray()))!!.idOf("love") shouldBe built.idOf("love")
+    }
 })

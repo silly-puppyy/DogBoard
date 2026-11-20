@@ -10,6 +10,11 @@ class EngineMemoryTest : FunSpec({
         fun used(): Long { repeat(4) { System.gc(); Thread.sleep(150) }; return rt.totalMemory() - rt.freeMemory() }
         val a = "src/main/assets/dogboard/"
         val keep = ArrayList<Any>()
+        // the trigram's vocabulary index, written before measuring (the app writes it on the first start)
+        val ngramIndex = File.createTempFile("ngramindex", ".bin").also { it.deleteOnExit() }
+        java.io.RandomAccessFile(a + "en.ngrams.bin", "r").channel.use { ch ->
+            NgramModel.fromBuffer(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size()))!!.let { m -> ngramIndex.outputStream().use { m.writeVocabIndex(it) } }
+        }
         var last = used()
         fun part(name: String, load: () -> Any) {
             keep.add(load())
@@ -30,6 +35,10 @@ class EngineMemoryTest : FunSpec({
         part("bigrams") { File(a + "en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) } }
         part("trigram (mmap, as the app)") {
             java.io.RandomAccessFile(a + "en.ngrams.bin", "r").channel.use { ch -> NgramModel.fromBuffer(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size()))!! }
+        }
+        part("trigram (mmap + mapped index, as the app from the 2nd start)") {
+            val idx = java.io.RandomAccessFile(ngramIndex, "r").channel.use { it.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, it.size()) }
+            java.io.RandomAccessFile(a + "en.ngrams.bin", "r").channel.use { ch -> NgramModel.fromBuffer(ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, ch.size()), idx)!! }
         }
         part("letter model") { File(a + "en.charlm.bin").inputStream().use { CharModel.read(it)!! } }
         part("misspellings") { File(a + "en.misspellings.txt").readLines().toHashSet() }

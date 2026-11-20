@@ -38,6 +38,9 @@ class NgramModel private constructor(
     /** The model's id for [word] (lowercase), or -1. */
     fun idOf(word: String): Int = vocab.idOf(word)
 
+    /** Writes the vocabulary's index for [fromBuffer]'s `index` (a model read from a buffer only); false otherwise. */
+    fun writeVocabIndex(out: java.io.OutputStream): Boolean = (vocab as? MappedVocab)?.writeIndex(out)?.let { true } ?: false
+
     fun word(id: Int): String = vocab.word(id)
 
     /** Index of the pair ([a], [b]), or -1. */
@@ -200,16 +203,23 @@ class NgramModel private constructor(
          * Views [writeBinary]'s layout in [buf] (big-endian) without copying the tables: pass a
          * memory-mapped file to keep them off the heap. Null if it isn't one.
          */
-        fun fromBuffer(buf: java.nio.ByteBuffer): NgramModel? = runCatching {
+        fun fromBuffer(buf: java.nio.ByteBuffer, index: java.nio.ByteBuffer? = null): NgramModel? = runCatching {
             val b = buf.duplicate().order(java.nio.ByteOrder.BIG_ENDIAN)
             if (b.int != MAGIC) return null
             val nv = b.int; val nb = b.int; val nt = b.int
-            // the words stay in the buffer (a mapped file: off the heap), found through a hash table of ids
+            // the words stay in the buffer (a mapped file: off the heap), found through a hash table of ids: read
+            // from [index] (written by writeVocabIndex) when it fits, else built here
             val start = b.position()
-            val offsets = IntArray(nv + 1)
-            for (i in 0 until nv) { offsets[i] = b.position() - start; val len = b.short.toInt() and 0xffff; b.position(b.position() + len) }
-            offsets[nv] = b.position() - start
-            val vocab = MappedVocab((b.duplicate().position(start) as java.nio.ByteBuffer).slice(), offsets)
+            val words = (b.duplicate().position(start) as java.nio.ByteBuffer).slice()
+            var vocab = index?.let { MappedVocab.readIndex(words, it, nv) }
+            if (vocab == null) {
+                val offsets = IntArray(nv + 1)
+                for (i in 0 until nv) { offsets[i] = b.position() - start; val len = b.short.toInt() and 0xffff; b.position(b.position() + len) }
+                offsets[nv] = b.position() - start
+                vocab = MappedVocab.build(words, offsets)
+            } else {
+                for (i in 0 until nv) { val len = b.short.toInt() and 0xffff; b.position(b.position() + len) }
+            }
             while (b.position() % 8 != 0) b.get()
             fun floats(n: Int) = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asFloatBuffer().limit(n) as java.nio.FloatBuffer).also { b.position(b.position() + 4 * n) }
             fun ints(n: Int) = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asIntBuffer().limit(n) as java.nio.IntBuffer).also { b.position(b.position() + 4 * n) }
@@ -223,7 +233,7 @@ class NgramModel private constructor(
             while (b.position() % 8 != 0) b.get()
             val tk = (b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asLongBuffer().limit(nt) as java.nio.LongBuffer).also { b.position(b.position() + 8 * nt) }
             val tp = bytes(nt)
-            NgramModel(vocab, up, ub, off, bw, bp, bbo, pb, bb, tk, tp, tb)
+            NgramModel(vocab!!, up, ub, off, bw, bp, bbo, pb, bb, tk, tp, tb)
         }.getOrNull()
 
         /** Quantile codebook of [values] (256 bins' means) and each value's code; exact for <= 256 values. */
@@ -341,22 +351,61 @@ internal class ArrayVocab(private val words: Array<String>) : Vocab {
  * 33 MB of heap for the shipped model; this holds about 12 bytes a word, and makes a string only
  * when one is asked for.
  */
-internal class MappedVocab(private val bytes: java.nio.ByteBuffer, private val offsets: IntArray) : Vocab {
-    override val size: Int get() = offsets.size - 1
-    private val table = IntArray(Integer.highestOneBit(maxOf(4, size) * 2) shl 1) // id + 1, 0 = empty
-
-    init {
-        val mask = table.size - 1
-        for (id in 0 until size) {
-            var h = hash(id) and mask
-            while (table[h] != 0) h = (h + 1) and mask
-            table[h] = id + 1
-        }
-    }
+/**
+ * The vocabulary as stored in the model file (a 2-byte length, then the bytes, per word), found through [offsets]
+ * (one per word, plus the end) and a hash table of ids ([table]: id + 1, 0 = empty). Both are built at load
+ * (~7 MB of heap for the English vocabulary), or viewed from an index file written once ([writeIndex], kept with
+ * the lexicon snapshot): then nothing of the model sits on the heap (2026-11-20, low-RAM phones).
+ */
+internal class MappedVocab private constructor(
+    private val bytes: java.nio.ByteBuffer,
+    private val offsets: java.nio.IntBuffer,
+    private val table: java.nio.IntBuffer,
+) : Vocab {
+    override val size: Int get() = offsets.limit() - 1
 
     /** Each entry: a 2-byte length, then the bytes: [offsets] point at the length. */
     private fun start(id: Int) = offsets[id] + 2
     private fun length(id: Int) = offsets[id + 1] - offsets[id] - 2
+
+    /** [offsets] and [table] for an index file ([readIndex]). */
+    fun writeIndex(out: java.io.OutputStream) {
+        val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
+        d.writeInt(INDEX_MAGIC); d.writeInt(offsets.limit()); d.writeInt(table.limit())
+        for (i in 0 until offsets.limit()) d.writeInt(offsets[i])
+        for (i in 0 until table.limit()) d.writeInt(table[i])
+        d.flush()
+    }
+
+    companion object {
+        private const val INDEX_MAGIC = 0x44474e49 // "DGNI"
+
+        /** Builds the index of the words in [bytes] at [offsets] (an array on the heap). */
+        fun build(bytes: java.nio.ByteBuffer, offsets: IntArray): MappedVocab {
+            val size = offsets.size - 1
+            val t = IntArray(Integer.highestOneBit(maxOf(4, size) * 2) shl 1)
+            val v = MappedVocab(bytes, java.nio.IntBuffer.wrap(offsets), java.nio.IntBuffer.wrap(t))
+            val mask = t.size - 1
+            for (id in 0 until size) {
+                var h = v.hash(id) and mask
+                while (t[h] != 0) h = (h + 1) and mask
+                t[h] = id + 1
+            }
+            return v
+        }
+
+        /** The index [writeIndex] wrote, viewed in [index] (mapped), if it fits [words] words; else null. */
+        fun readIndex(bytes: java.nio.ByteBuffer, index: java.nio.ByteBuffer, words: Int): MappedVocab? = runCatching {
+            val b = index.duplicate().order(java.nio.ByteOrder.BIG_ENDIAN)
+            if (b.int != INDEX_MAGIC) return null
+            val no = b.int; val nt = b.int
+            if (no != words + 1 || nt != Integer.highestOneBit(maxOf(4, words) * 2) shl 1) return null
+            val ints = b.slice().order(java.nio.ByteOrder.BIG_ENDIAN).asIntBuffer()
+            val off = (ints.duplicate().limit(no) as java.nio.IntBuffer).slice()
+            val tab = (ints.duplicate().position(no).limit(no + nt) as java.nio.IntBuffer).slice()
+            MappedVocab(bytes, off, tab)
+        }.getOrNull()
+    }
 
     private fun hash(id: Int): Int {
         var h = -0x7ee3623b // FNV-1a
@@ -376,7 +425,7 @@ internal class MappedVocab(private val bytes: java.nio.ByteBuffer, private val o
         val w = word.toByteArray(Charsets.UTF_8)
         var h = -0x7ee3623b
         for (x in w) h = (h xor (x.toInt() and 0xff)) * 0x01000193
-        val mask = table.size - 1
+        val mask = table.limit() - 1
         h = h and mask
         while (true) {
             val e = table[h]
