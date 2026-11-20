@@ -89,6 +89,9 @@ data class KbClipRow(
     /** H:38: the hold menu's item for this kind (Open link, Open in Maps, Call, Send email, Show), or "". */
     val action: String = "",
     val actionIcon: String = "",
+    /** The hold menu's "Paste as file" (the app takes this kind of file) and "Share as file" (settings, user 2026-11-20). */
+    val pasteFile: Boolean = false,
+    val shareFile: Boolean = false,
 )
 
 /** Taps on a row's parts, by the row's position in the list. */
@@ -99,7 +102,7 @@ class KbClipActions(
     val onMark: (Int, String) -> Unit = { _, _ -> },
     val onFormat: (Int, Int) -> Unit = { _, _ -> },
     val onReveal: (Int) -> Unit = {},
-    /** H:31-36: "paste", "action", "edit", "share", "delete". */
+    /** H:31-36: "paste", "pastefile", "action", "edit", "share", "sharefile", "delete". */
     val onMenu: (Int, String) -> Unit = { _, _ -> },
     /** The hold menu's Edit (an editor above the keyboard); hidden while there is none. */
     val canEdit: Boolean = true,
@@ -334,9 +337,11 @@ private fun HoldMenu(t: KbTokens, r: KbClipRow, i: Int, close: () -> Unit) {
                 }
             }
             item("content_paste", "Paste", "paste")
+            if (r.pasteFile) item("attach_file", "Paste as file", "pastefile")
             if (r.action.isNotEmpty()) item(r.actionIcon, r.action, "action")
             if (actions?.canEdit != false) item("edit", "Edit", "edit")
             item("share", "Share", "share")
+            if (r.shareFile) item("draft", "Share as file", "sharefile")
             Box(Modifier.padding(vertical = 4.dp).fillMaxWidth().height(1.dp).background(t.div))
             item("delete", "Delete", "delete", if (t.pop.luminance() > 0.5f) Color(0xFF93000A) else Color(0xFFFFB4AB))
         }
@@ -354,7 +359,7 @@ fun demoClipRows(): List<KbClipRow> {
         KbClipRow("221 Baker Street, London NW1 6XE", "Address", leadIcon = "location_on", pinned = true, action = "Open in Maps", actionIcon = "map"),
         KbClipRow("Photo", window = true, placeholder = sunset),
         KbClipRow("Dog learns to open the fridge by himself", "shortvideo.example", titleLines = 2, thumb = true, duration = "0:42", placeholder = fridge,
-            expanded = true, cleaned = true, action = "Open link", actionIcon = "open_in_new"),
+            expanded = true, cleaned = true, action = "Open link", actionIcon = "open_in_new", pasteFile = true, shareFile = true),
         KbClipRow("#3D7BF5", "Colour", titleWeight = 500, swatch = Color(0xFF3D7BF5), formats = listOf("HEX", "RGB", "HSL")),
         KbClipRow("export.bin", "some/path, 2.4 MB", titleWeight = 500, leadIcon = "draft"),
         // the catalogue's "pin" icon for a code (the Panel frame drew "password", which the catalogue gives passwords)
@@ -375,7 +380,9 @@ fun demoClipRows(): List<KbClipRow> {
  * address (previews, which need the site, are off: clipboard-rows.md). Not yet live: the password's eye
  * (the clip is stored masked here), one-time codes' expiry, files and addresses (no clip kind or detector yet).
  */
-fun clipRow(d: KbClipData): KbClipRow {
+fun clipRow(d: KbClipData): KbClipRow = clipRowKind(d).copy(pasteFile = d.pasteFile, shareFile = d.shareFile)
+
+private fun clipRowKind(d: KbClipData): KbClipRow {
     val s = d.text.trim()
     return when {
         d.media -> if (d.icon == "play_circle") KbClipRow("Video", d.label.takeIf { it != "Video" }.orEmpty(), window = true, video = true, image = d.thumbnail, pinned = d.pinned)

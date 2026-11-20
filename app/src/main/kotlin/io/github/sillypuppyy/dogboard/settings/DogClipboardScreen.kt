@@ -33,6 +33,8 @@ fun DogClipboardScreen() {
     val limit by c.historySizeLimit.collectAsState()
     val hideOnPaste by c.historyHideOnPaste.collectAsState()
     val hideNextField by c.historyHideOnNextTextField.collectAsState()
+    val pasteFile by c.pasteAsFile.collectAsState()
+    val shareFile by c.shareAsFile.collectAsState()
     SetPage("Clipboard") {
         SetGroup("Clipboard") {
             SetSwitchRow("cb:suggest", "Suggest what you copied", "For 2 minutes after you copy something, the bar offers to paste it.", suggest) { v ->
@@ -89,6 +91,12 @@ fun DogClipboardScreen() {
                 }
                 SetSwitchRow("cb:hidenext", "Close in the next field", "The clipboard panel doesn’t stay open when you move to another field.", hideNextField) { v ->
                     scope.launch { c.historyHideOnNextTextField.set(v) }
+                }
+                SetSwitchRow("cb:pastefile", "Paste as file", "Hold a clip to paste it as a file (text as .txt, a colour as a .png) where the app takes that kind of file.", pasteFile) { v ->
+                    scope.launch { c.pasteAsFile.set(v) }
+                }
+                SetSwitchRow("cb:sharefile", "Share as file", "Hold a clip to send it as a file through the share sheet, to any app.", shareFile) { v ->
+                    scope.launch { c.shareAsFile.set(v) }
                 }
             }
         }

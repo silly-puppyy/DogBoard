@@ -366,6 +366,8 @@ fun ImeKeyboardBox(
                 val clipFilter by io.github.sillypuppyy.dogboard.ime.LiveUi.clipFilter.collectAsState()
                 val expandLinks by prefs.clipboard.expandShortLinks.collectAsState()
                 val stripLinks by prefs.clipboard.stripTrackers.collectAsState()
+                val pasteAsFile by prefs.clipboard.pasteAsFile.collectAsState()
+                val shareAsFile by prefs.clipboard.shareAsFile.collectAsState()
                 val clipItems = remember(history, clipFilter) {
                     when (clipFilter) {
                         1 -> history.all.filter { it.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT && !it.isSensitive && io.github.sillypuppyy.dogboard.design.isLinkClip(it.text.orEmpty()) }
@@ -445,6 +447,17 @@ fun ImeKeyboardBox(
                                     "paste" -> paste(i)
                                     "delete" -> clipboardManager.deleteClip(item, onlyIfUnpinned = false)
                                     "share" -> io.github.sillypuppyy.dogboard.ime.ClipIntents.share(context, item)
+                                    // as a file: the text as it would be pasted (links cleaned per the clip)
+                                    "pastefile", "sharefile" -> {
+                                        val pasted = item.text?.let { io.github.sillypuppyy.dogboard.ime.ClipLinkSteps.of(it, prefs.clipboard.expandShortLinks.get() && !item.keepShortLink, prefs.clipboard.stripTrackers.get() && !item.keepTrackers).pasted }
+                                        io.github.sillypuppyy.dogboard.ime.ClipFiles.of(context, item, pasted)?.let { f ->
+                                            if (what == "sharefile") io.github.sillypuppyy.dogboard.ime.ClipIntents.shareFile(context, f)
+                                            else {
+                                                ui.closePanel()
+                                                imeController.updateStateBlocking { state.editor.performPasteFile(f.uri, f.mime, f.name) }
+                                            }
+                                        }
+                                    }
                                     "action" -> io.github.sillypuppyy.dogboard.ime.ClipIntents.open(context, item.text.orEmpty())
                                 }
                             } },
@@ -452,7 +465,7 @@ fun ImeKeyboardBox(
                         )
                     },
                     clipFilter = clipFilter,
-                    clips = remember(clipItems, expandLinks, stripLinks) { clipItems.map { item ->
+                    clips = remember(clipItems, expandLinks, stripLinks, pasteAsFile, shareAsFile, imeState.editor.info) { clipItems.map { item ->
                         val media = item.type != dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.TEXT
                         val video = item.type == dev.patrickgold.florisboard.ime.clipboard.provider.ItemType.VIDEO
                         io.github.sillypuppyy.dogboard.design.KbClipData(
@@ -467,9 +480,19 @@ fun ImeKeyboardBox(
                             thumbnail = if (media) { px -> io.github.sillypuppyy.dogboard.ime.ClipThumbnails.load(context, item, px) } else null,
                         ).let { d ->
                             // the link marks: each step that changes this clip, filled while applied
-                            if (media || item.isSensitive) d else {
+                            // the hold menu's file items (settings): pasting needs the field to take that kind of file
+                            val mime = when {
+                                media -> item.mimeTypes.firstOrNull() ?: "*/*"
+                                io.github.sillypuppyy.dogboard.ime.ClipKinds.color(item.text.orEmpty().trim()) != null -> "image/png"
+                                else -> "text/plain"
+                            }
+                            val withFiles = d.copy(
+                                pasteFile = pasteAsFile && !item.isSensitive && io.github.sillypuppyy.dogboard.ime.ClipFiles.accepts(imeState.editor.info.base, mime),
+                                shareFile = shareAsFile && !item.isSensitive,
+                            )
+                            if (media || item.isSensitive) withFiles else {
                                 val steps = io.github.sillypuppyy.dogboard.ime.ClipLinkSteps.of(item.text.orEmpty(), expandLinks && !item.keepShortLink, stripLinks && !item.keepTrackers)
-                                d.copy(
+                                withFiles.copy(
                                     expanded = if (expandLinks && steps.expands) !item.keepShortLink else null,
                                     cleaned = if (stripLinks && steps.strips) !item.keepTrackers else null,
                                 )

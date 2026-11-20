@@ -40,6 +40,17 @@ object ClipIntents {
         return start(context, Intent.createChooser(send, null))
     }
 
+    /** The share sheet with the clip as a file (ClipFiles: .txt, .png, or the picture or video itself). */
+    fun shareFile(context: Context, file: ClipFiles.ClipFile): Boolean {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = file.mime
+            putExtra(Intent.EXTRA_STREAM, file.uri)
+            clipData = android.content.ClipData.newRawUri(file.name, file.uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        return start(context, Intent.createChooser(send, null).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    }
+
     private fun start(context: Context, intent: Intent): Boolean = try {
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         true

@@ -152,6 +152,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val stripTrackers = boolean(key = "clipboard__strip_trackers", default = false)
         // with it: short links (vm.tiktok.com, pin.it...) asked once for their target (ShortLinks; network)
         val expandShortLinks = boolean(key = "clipboard__expand_short_links", default = false)
+        /** DogBoard, the clipboard's hold menu: "Paste as file" where the app takes that file type (user 2026-11-20). */
+        val pasteAsFile = boolean(key = "clipboard__paste_as_file", default = true)
+        /** DogBoard, the clipboard's hold menu: "Share as file" through the share sheet (user 2026-11-20). */
+        val shareAsFile = boolean(key = "clipboard__share_as_file", default = true)
         val clearPrimaryClipAffectsHistoryIfUnpinned = boolean(
             key = "clipboard__clear_primary_clip_affects_history_if_unpinned",
             default = true,

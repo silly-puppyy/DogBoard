@@ -224,6 +224,14 @@ open class ImeEditor(
         return InputConnectionCompat.commitContent(ic, info.base, inputContentInfo, flags, null)
     }
 
+    /** DogBoard: a file given to the app as content ("Paste as file"), as [performClipboardPasteMedia] does. */
+    fun performPasteFile(uri: android.net.Uri, mime: String, name: String): Boolean {
+        val ic = ic.get() ?: return false
+        val inputContentInfo = InputContentInfoCompat(uri, ClipDescription(name, arrayOf(mime)), null)
+        ic.finishComposingText()
+        return InputConnectionCompat.commitContent(ic, info.base, inputContentInfo, InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION, null)
+    }
+
     fun performSelectAll(): Boolean {
         val ic = ic.get() ?: return false
         ic.finishComposingText()

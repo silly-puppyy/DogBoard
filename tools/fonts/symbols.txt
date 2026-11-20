@@ -4,6 +4,7 @@ arrow_back
 arrow_downward
 arrow_forward
 arrow_upward
+attach_file
 auto_fix_high
 backspace
 brightness_auto

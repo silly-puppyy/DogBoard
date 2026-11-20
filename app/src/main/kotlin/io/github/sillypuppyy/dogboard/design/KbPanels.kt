@@ -26,6 +26,9 @@ data class KbClipData(
     /** Link marks (clipboard rows): null = the step doesn't change this link; true = applied; false = undone. */
     val expanded: Boolean? = null,
     val cleaned: Boolean? = null,
+    /** The hold menu offers "Paste as file" / "Share as file" for this clip. */
+    val pasteFile: Boolean = false,
+    val shareFile: Boolean = false,
 )
 
 /**

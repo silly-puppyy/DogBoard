@@ -9,6 +9,7 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "arrow_downward" to 0xE5DB,
     "arrow_forward" to 0xE5C8,
     "arrow_upward" to 0xE5D8,
+    "attach_file" to 0xE226,
     "auto_fix_high" to 0xE663,
     "backspace" to 0xE14A,
     "brightness_auto" to 0xE1AB,
