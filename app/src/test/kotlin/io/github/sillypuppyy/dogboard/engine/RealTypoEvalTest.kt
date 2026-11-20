@@ -48,6 +48,7 @@ class RealTypoEvalTest : FunSpec({
         System.getenv("DOGBOARD_NAME_RANK")?.toIntOrNull()?.let { autocorrect.nameAsTypedRank = it }
         // DOGBOARD_CONTEXT_END_OMISSION=0: Autocorrect.contextEndOmission off (2026-11-19 on: fixed 49.5 -> 49.6 %, broken 0.4 % both)
         autocorrect.contextEndOmission = System.getenv("DOGBOARD_CONTEXT_END_OMISSION") != "0"
+        val handMm = System.getenv("DOGBOARD_REAL_TYPOS_HAND")?.toDoubleOrNull()
         val sigma = System.getenv("DOGBOARD_REAL_TYPOS_SIGMA")?.split('x')?.let { (a, b) -> a.toDouble() to b.toDouble() } ?: (0.0 to 0.0)
         // DOGBOARD_END_INSERTION=cost: the skipped-key cost after the last tap (Decoder.Config.endInsertion)
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
@@ -151,10 +152,13 @@ class RealTypoEvalTest : FunSpec({
                 // taps at the key centres read as certain letters, which makes autocorrect shy;
                 // DOGBOARD_REAL_TYPOS_SIGMA=1.5x2.0 (mm) adds the touch noise the other evals use
                 val tapRng = Random(row[0].hashCode() * 31L + row[1].hashCode())
+                // DOGBOARD_REAL_TYPOS_HAND=s (mm): a steady miss per sentence, drawn once from N(0, s) in x and y
+                // (a hand that lands off the keys the same way, as iOS's touch history models), on top of the noise
+                val hand = handMm?.let { s -> Random(row[0].hashCode().toLong()).let { r -> r.nextGaussian() * s to r.nextGaussian() * s } } ?: (0.0 to 0.0)
                 val taps = typed.map { c ->
                     val k = keys.getValue(c)
-                    Tap((k.centerX + tapRng.nextGaussian() * sigma.first * GaussianTouch.POINTS_PER_MM).toFloat(),
-                        (k.centerY + tapRng.nextGaussian() * sigma.second * GaussianTouch.POINTS_PER_MM).toFloat())
+                    Tap((k.centerX + (hand.first + tapRng.nextGaussian() * sigma.first) * GaussianTouch.POINTS_PER_MM).toFloat(),
+                        (k.centerY + (hand.second + tapRng.nextGaussian() * sigma.second) * GaussianTouch.POINTS_PER_MM).toFloat())
                 }
                 val decoded = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(prev), typed = typed, previous2 = prev2?.let { bigrams.contextId(it) } ?: -1)
                 val candidates = neuralScores?.let { m ->
@@ -203,7 +207,7 @@ class RealTypoEvalTest : FunSpec({
 
         val main = outcomes.filter { it.row.size == 5 } // the totals leave out the synthetic apostrophe cases
         fun pct(kind: Boolean, r: String) = main.count { it.typo == kind && it.result == r } * 100.0 / main.count { it.typo == kind }
-        println("REALTYPO ${if (System.getenv("DOGBOARD_MISSED_SPACE") == "0") "no-missed-space " else ""}${if (charModel != null) "charlm " else ""}${if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") "misspellings " else ""}${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
+        println("REALTYPO ${handMm?.let { "hand $it mm " } ?: ""}${if (System.getenv("DOGBOARD_MISSED_SPACE") == "0") "no-missed-space " else ""}${if (charModel != null) "charlm " else ""}${if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") "misspellings " else ""}${if (System.getenv("DOGBOARD_SPACE_KEY") == "1") "space-key ${System.getenv("DOGBOARD_SPACE_TAP") ?: Decoder.SPACE_TAP} " else ""}${if (neuralScores != null) "neural $neuralWeight " else ""}level ${System.getenv("DOGBOARD_LEVEL") ?: "STANDARD"} power ${System.getenv("DOGBOARD_LANGUAGE_POWER") ?: "level default"}, end-insertion %s, end-omission stem %s, sigma %.1fx%.1f mm, %d typos: fixed %.1f%%, left %.1f%%, wrong word %.1f%% | %d correct words: kept %.1f%%, broken %.1f%%".format(
             endInsertion ?: "default", System.getenv("DOGBOARD_END_OMISSION_STEM") ?: "off", sigma.first, sigma.second, main.count { it.typo }, pct(true, "fixed"), pct(true, "left"), pct(true, "wrong"),
             main.count { !it.typo }, pct(false, "kept"), pct(false, "broken")))
         if (retro) println("RETRO %d words had a next word, %d changed%s".format(outcomes.count { nextTyped.containsKey("${it.row[0]}\t${it.row[1].toInt() + 1}") }, retroChanged.get(),
