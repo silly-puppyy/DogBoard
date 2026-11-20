@@ -17,7 +17,10 @@ import org.junit.runner.RunWith
 class KeyboardUiTest {
     private val kb = KeyboardDriver()
 
-    @Before fun setUp() = kb.selectDogBoard()
+    @Before fun setUp() {
+        kb.selectDogBoard()
+        kb.resetLearningOnce()
+    }
     @After fun tearDown() = kb.close()
 
     private fun typed(text: String, field: String? = null): String {

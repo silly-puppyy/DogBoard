@@ -1,7 +1,6 @@
 package io.github.sillypuppyy.dogboard.uitest
 
 import android.app.Instrumentation
-import android.content.Intent
 import android.graphics.Bitmap
 import android.os.SystemClock
 import android.view.InputDevice
@@ -45,14 +44,22 @@ class KeyboardDriver(
         // current; an empty-text mark keeps an earlier test's text from being read
         shell("logcat -G 16M")
         shell("log -t DogBoardText text=[]")
+        val shownBefore = shownCount()
         // the test screen runs in its own process (":imetest"), as an app apart from the keyboard; the test runs in
         // the keyboard's process, so it can reach the keyboard's state (LiveUi) but reads the field from the log
-        val intent = Intent().setClassName(context, "io.github.sillypuppyy.dogboard.imetest.ImeTestActivity")
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        if (field != null) intent.putExtra("field", field)
-        context.startActivity(intent)
+        // started by the shell, not context.startActivity: HyperOS blocks an app's background activity starts
+        // ("MIUILOG- Permission Denied Activity", Test Lab Xiaomi 14, 2026-11-20); never -S, which force-stops the
+        // package, the keyboard included
+        shell("am start -W --activity-clear-task -n ${context.packageName}/io.github.sillypuppyy.dogboard.imetest.ImeTestActivity" +
+            (field?.let { " --es field $it" } ?: ""))
+        // this screen's keyboard, not the last one: a new "onWindowShown" first (a key area line from before would
+        // be read at once, and the first taps lost: ' X' for 'teh x', 2026-11-20)
+        val end = SystemClock.uptimeMillis() + 15_000
+        while (shownCount() <= shownBefore && SystemClock.uptimeMillis() < end) SystemClock.sleep(200)
         return waitForKeyArea() ?: error("the keyboard never reported its key area (is DogBoard selected? ${shell("settings get secure default_input_method").trim()})")
     }
+
+    private fun shownCount() = shell("logcat -d -s DogBoardPerf:I").lineSequence().count { "onWindowShown" in it }
 
     /** The key area's screen bounds from DogBoard's DogBoardGeom log line, once it stops moving (slide-in). */
     private fun waitForKeyArea(timeoutMs: Long = 15_000): KeyArea? {
@@ -72,16 +79,35 @@ class KeyboardDriver(
         return null
     }
 
-    /** Waits until the engine has its word data ("engine ready"), else typing is not corrected. */
+    /**
+     * Forgets what earlier runs taught the keyboard (Your words > Forget: learned words, rejections, personal model),
+     * once per run, and waits for the reload. A case that fails leaves its typo uncorrected, the keyboard learns it,
+     * and every later run fails the same way ("Thankyou" learned on the emulator, 2026-11-20).
+     */
+    fun resetLearningOnce(timeoutMs: Long = 60_000) {
+        if (learningReset) return
+        learningReset = true
+        open(); waitForEngine()
+        val readyBefore = readyCount()
+        io.github.sillypuppyy.dogboard.engine.TypingEngine.resetDictionary()
+        val end = SystemClock.uptimeMillis() + timeoutMs
+        while (readyCount() <= readyBefore && SystemClock.uptimeMillis() < end) SystemClock.sleep(300)
+    }
+
+    private fun readyCount() = shell("logcat -d -s DogBoardPerf:I").lineSequence().count { "letter model attached" in it }
+
+    /** Waits until the engine has loaded everything (its last stage, the letter model). */
     fun waitForEngine(timeoutMs: Long = 30_000) {
         val end = SystemClock.uptimeMillis() + timeoutMs
         while (SystemClock.uptimeMillis() < end) {
-            if ("engine ready" in shell("logcat -d -s DogBoardPerf:I")) return
+            // the last stage, as on a phone in use: the neural model and the letter model load after "engine ready",
+            // and a word typed before decides without them ('thankyou' left as typed, 2026-11-20)
+            if ("letter model attached" in shell("logcat -d -s DogBoardPerf:I")) return
             SystemClock.sleep(300)
         }
     }
 
-    /** Types [text] ('{123}' = the mode key, '<' = backspace) by tapping keys in [area]. */
+    /** Types [text] ('{123}' = the mode key, '^' = shift, '<' = backspace) by tapping keys in [area]. */
     fun type(area: KeyArea, text: String) {
         for (token in TOKENS.findAll(text).map { it.value }) {
             val (ux, row) = area.keyCentre(token)
@@ -140,9 +166,10 @@ class KeyboardDriver(
             token == " " -> SPACE_CENTER_X to rows - 1
             token == "{123}" -> MODE_CENTER_X to rows - 1
             token == "<" -> BACKSPACE_CENTER_X to rows - 2
+            token == "^" -> SHIFT_CENTER_X to rows - 2
             token in DIGITS -> DIGITS.indexOf(token) + 0.5f to rows - 4
             token in SYM_ROW2 -> SYM_ROW2.indexOf(token) + 0.5f to rows - 3
-            token in WIDE_PUNCT -> 1.28f + 0.2133f + WIDE_PUNCT.indexOf(token) * 1.4f + 0.7f to rows - 2
+            token in WIDE_PUNCT -> 1.5f + WIDE_PUNCT.indexOf(token) * 1.4f + 0.7f to rows - 2 // #+= 1.5, five 1.4 keys
             else -> LETTER_ROWS.withIndex().firstNotNullOfOrNull { (r, letters) ->
                 letters.indexOf(token.lowercase()).takeIf { it >= 0 }?.let { ROW_X0[r] + it + 0.5f to rows - 4 + r }
             } ?: error("no key for '$token'")
@@ -150,14 +177,17 @@ class KeyboardDriver(
     }
 
     companion object {
+        /** resetLearningOnce ran in this process (one per instrumentation run). */
+        private var learningReset = false
         const val IME = "io.github.sillypuppyy.dogboard.debug/dev.patrickgold.florisboard.FlorisImeService"
         private val GEOM = Regex("""key area (\d+) (\d+) (\d+) (\d+) rows (\d+)""")
         private val TOKENS = Regex("""\{123\}|.""")
         private val LETTER_ROWS = listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")
-        private val ROW_X0 = listOf(0f, 0.5f, 48f / 37.5f + 8f / 37.5f)
+        private val ROW_X0 = listOf(0f, 0.5f, 1.5f) // gen_layouts.py: shift and delete 1.5 units (Gboard)
         private const val SPACE_CENTER_X = (46.5f + 47f + 188f / 2) / 37.5f
-        private const val BACKSPACE_CENTER_X = 10 - 1.28f / 2
+        private const val BACKSPACE_CENTER_X = 10 - 1.5f / 2
         private const val MODE_CENTER_X = 1.24f / 2
+        private const val SHIFT_CENTER_X = 1.5f / 2
         private const val DIGITS = "1234567890"
         private const val SYM_ROW2 = "-/:;()$&@\""
         private const val WIDE_PUNCT = ".,?!'"

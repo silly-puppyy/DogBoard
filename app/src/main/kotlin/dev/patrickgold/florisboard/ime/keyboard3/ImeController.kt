@@ -787,7 +787,10 @@ class ImeController(
                 val corrected = TypingEngine.correction(word, candidates, previousChoice, curlyApostrophes(), prefs.correction.autocorrectLevel.get(), commit = true)
                 if (logsText) {
                     android.util.Log.d("DogBoardAc", "typed=$typed corrected=$corrected cached=${latestDecode?.first == decodeKey(typed, context, context2)} " +
-                        candidates.take(4).joinToString { "%s %.2f".format(it.word, it.score) })
+                        candidates.take(4).joinToString { c ->
+                            // a split's context support too (Rule 3 rejects it under ln 0.1 = -2.30)
+                            if (c.words > 1) "%s %.2f (support %.2f)".format(c.word, c.score, c.contextSupport) else "%s %.2f".format(c.word, c.score)
+                        })
                 }
                 if (corrected != null && corrected != typed && replaceBeforeCursor(typed, corrected)) {
                     // the app flashes the corrected word (Android's correction highlight, as Gboard)

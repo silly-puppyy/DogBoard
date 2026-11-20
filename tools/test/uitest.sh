@@ -5,9 +5,12 @@
 #   tools/test/uitest.sh local [serial]       build, install on an emulator (default emulator-5554), run, pull screenshots
 #   tools/test/uitest.sh testlab [model ...]   build, run on Firebase Test Lab (needs `gcloud auth login` and a
 #                                              project: `gcloud config set project <id>`); default: a small mix
+#   tools/test/uitest.sh smoke                 one test on one virtual Test Lab device: run this first after any change
+#                                              to the pipeline (Spark quota: 5 physical + 10 virtual runs a day)
 #   tools/test/uitest.sh models                list Test Lab's Android devices (Samsung, Xiaomi, ...)
 #
-# Never installs on a phone: a serial that is not an emulator is refused unless DOGBOARD_ALLOW_DEVICE=1.
+# Never installs on a phone: a serial that is not an emulator is refused unless DOGBOARD_ALLOW_DEVICE=1. The tests
+# FORGET EVERY LEARNED WORD on the device they run on (a clean start each run): never on a phone in use.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 ADB=/opt/android-sdk/platform-tools/adb
@@ -38,17 +41,23 @@ case "${1:-local}" in
     ;;
   testlab)
     shift
-    build
+    [[ ${DOGBOARD_NO_BUILD:-0} == 1 ]] || build
     MODELS=("$@")
-    # default: PLACEHOLDERS (not checked against the catalogue yet): replace with ids from `models`, aiming for a
-    # Pixel, a Samsung and a Xiaomi
-    [[ ${#MODELS[@]} -eq 0 ]] && MODELS=("model=oriole,version=33" "model=a51,version=31" "model=MediumPhone.arm,version=34")
+    # default (catalogue 2026-11-20): Pixel 8, Galaxy S24 (One UI), Xiaomi 14 (HyperOS), Galaxy A10 on Android 10
+    # (low end, the oldest supported); Spark's free tier is 5 physical runs a day, so 4 devices = one run a day
+    [[ ${#MODELS[@]} -eq 0 ]] && MODELS=("model=shiba,version=36" "model=SC-51E,version=36" "model=houji,version=35" "model=a10,version=29")
     DEVICES=(); for m in "${MODELS[@]}"; do DEVICES+=(--device "$m"); done
     gcloud firebase test android run --type instrumentation --app "$APK" --test "$TEST_APK" \
       "${DEVICES[@]}" --timeout 15m --directories-to-pull /sdcard/Android/data/io.github.sillypuppyy.dogboard.debug/files/uitest
     ;;
+  smoke)
+    [[ ${DOGBOARD_NO_BUILD:-0} == 1 ]] || build
+    gcloud firebase test android run --type instrumentation --app "$APK" --test "$TEST_APK" \
+      --device model=MediumPhone.arm,version=34 --timeout 5m \
+      --test-targets "class io.github.sillypuppyy.dogboard.uitest.KeyboardUiTest#plainWords"
+    ;;
   models)
     gcloud firebase test android models list --format="table(id,brand,name,form,supportedVersionIds.list())"
     ;;
-  *) echo "usage: $0 local [serial] | testlab [model ...] | models"; exit 2 ;;
+  *) echo "usage: $0 local [serial] | smoke | testlab [model ...] | models"; exit 2 ;;
 esac
