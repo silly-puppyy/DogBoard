@@ -239,8 +239,9 @@ internal fun withNeural(candidates: List<Candidate>, neural: (String) -> Double?
     candidates.map { c ->
         neural(c.word)?.let { n ->
             val l = (1 - weight) * c.languageModel + weight * n
-            // Rule 3's context probability for a split from the neural model (the spec's "context probability"
-            // is inferred, and the n-gram backs off on an unseen pair, so "nonbnglish" -> "bomb flush" passed; the
+            // Rule 3's context probability for a split from the neural model (iOS: Word+0x38, written by the
+            // neural refinement as the LM's static conditional probability, ios-decomp notes; the n-gram backs
+            // off on an unseen pair, so "nonbnglish" -> "bomb flush" passed; the
             // neural model gives it -5.0 against ln 0.1 = -2.3, and "later and" -> "layer and" -6.4; 2026-11-20).
             // The words' static log probability is what the n-gram support was measured against:
             // languageModel - contextSupport.
