@@ -7,8 +7,8 @@
   "files": {
     "lexicon": {
       "path": "dogboard/en.lexicon.tsv",
-      "size": 4288368,
-      "sha256": "b5f4bc569b0bb122de273cd54ee1fd3666052c57ee0f4656ad6491c9bab2ec26"
+      "size": 4288428,
+      "sha256": "672087d6d28792da2323669f99d77b71823e31867389a58f461e7bb4257aae3c"
     },
     "bigrams": {
       "path": "dogboard/en.bigrams.tsv",
