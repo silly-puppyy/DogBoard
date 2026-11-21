@@ -335,6 +335,9 @@ def run(dev, name, ime, sentences, args):
     typo_right = 0
     for typed, expected in TYPOS:
         dev.fresh_field()
+        # the sentence loop's lift clock gives the field time to take input; without it the first tap was lost on
+        # every keyboard ("becuse" -> "Excuse", 2026-11-22)
+        time.sleep(0.5)
         type_text(dev, keys, typed + " ", random.Random(0), 0.0, args.gap)
         got = dev.text().strip()
         ok = words_of(got) == words_of(expected)
