@@ -19,9 +19,15 @@ import kotlin.random.Random
  */
 @RunWith(AndroidJUnit4::class)
 class DecodeSpeedDeviceTest {
-    @Test fun keystrokeDecodeSpeed() {
+    @Test fun keystrokeDecodeSpeed() = measure(learned = false)
+
+    /** As on a phone in use: the personal model has learned the common words first (a fresh one knows none). */
+    @Test fun keystrokeDecodeSpeedLearned() = measure(learned = true)
+
+    private fun measure(learned: Boolean) {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(context)
+        if (learned) repeat(20) { for (s in SENTENCES) { var p: String? = null; var p2: String? = null; for (w in s.split(' ')) { TypingEngine.accepted(p, w, p2); p2 = p; p = w } } }
         val keys = QwertyGeometry.keysWithSpace(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         val rng = Random(3); val px = GaussianTouch.POINTS_PER_MM
@@ -42,7 +48,7 @@ class DecodeSpeedDeviceTest {
         }
         times.sort()
         val mean = times.average() / 1000
-        android.util.Log.i("DogBoardTest", "DEVICESPEED keystrokes ${times.size}: mean %.2f ms, median %.2f, p90 %.2f, max %.2f (beam ${TypingEngine.beam})".format(
+        android.util.Log.i("DogBoardTest", "DEVICESPEED ${if (learned) "learned" else "fresh"} keystrokes ${times.size}: mean %.2f ms, median %.2f, p90 %.2f, max %.2f (beam ${TypingEngine.beam})".format(
             mean, times[times.size / 2] / 1000.0, times[times.size * 9 / 10] / 1000.0, times.last() / 1000.0))
     }
 
