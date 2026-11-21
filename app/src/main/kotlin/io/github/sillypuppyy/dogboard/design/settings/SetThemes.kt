@@ -254,7 +254,7 @@ fun SetThemes(state: SetThemesState) {
 
             // :71-75 filter chips
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for ((id, label) in listOf("all" to "All", "light" to "Light", "dark" to "Dark", "pair" to "Day and night")) {
+                for ((id, label) in listOf("all" to "All", "yours" to "Yours", "light" to "Light", "dark" to "Dark", "pair" to "Day and night")) {
                     val on = filter == id
                     Row(
                         Modifier.height(32.dp).clip(RoundedCornerShape(8.dp)).background(if (on) SetColors.secondaryContainer else Color.Transparent)
@@ -275,11 +275,13 @@ fun SetThemes(state: SetThemesState) {
             }
             // :77-113 the sections of theme tiles
             for (sec in ThemeChoice.SECTIONS) {
-                if (sec.id == "everyday" && filter == "all") UserPackSections(state, primary) { newIn = it }
+                // the built-in Photos pack sits with the built-in packs, before your themes; your packs follow your themes
+                if (sec.id == "yours" && filter == "all") UserPackSections(state, primary, { it.isBuiltInPhotos() }) { newIn = it }
+                if (filter == "yours" && sec.id != "yours") continue
                 if (sec.id in state.hidden) continue
                 // with saved photo themes, the built-in Photo tile (the same photo slot) would show "In use" twice
-                val ids = sec.ids.filter { ThemeChoice.keep(filter, ThemeChoice.theme(it).mode) && (it != "glass" || state.userPacks.isEmpty()) }
-                val add = sec.add?.takeIf { filter == "all" }
+                val ids = sec.ids.filter { (filter == "yours" || ThemeChoice.keep(filter, ThemeChoice.theme(it).mode)) && (it != "glass" || state.userPacks.isEmpty()) }
+                val add = sec.add?.takeIf { filter == "all" || filter == "yours" }
                 if (ids.isEmpty() && add == null) continue
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
@@ -297,6 +299,9 @@ fun SetThemes(state: SetThemesState) {
                     }
                 }
             }
+
+            // your own packs, after your themes (all, or the Yours filter)
+            if (filter == "all" || filter == "yours") UserPackSections(state, primary, { !it.isBuiltInPhotos() }) { newIn = it }
 
             // theme packs: one place to order, show or hide, share and import them (user 2026-11-19: the show / hide
             // switches here "seem a bit pointless"; chose a Manage packs page)
@@ -390,7 +395,9 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
         onDispose { io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = null }
     }
     val from = ThemeChoice.SECTIONS.firstOrNull { id in it.ids }?.let { if (it.pack) "${it.title} pack, built in" else "Built into DogBoard" } ?: "Your theme"
-    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SetColors.screen) {
+    // always fully open: half-open, the sheet snapped back down once the keyboard came up (user 2026-11-22)
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = SetColors.screen) {
         // above the keyboard while trying the theme (the field and the buttons were under it)
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             // no picture of the keyboard: the real one opens below in this theme (user 2026-11-22: "putting the image twice is
@@ -558,15 +565,15 @@ private fun PageSwitch(on: Boolean, onClick: () -> Unit) {
  *  edit it; hold: rename, move to another pack, delete. Each pack: a "+" tile and a menu (rename, move, delete). */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun UserPackSections(state: SetThemesState, primary: Color, onNew: (String) -> Unit) {
+private fun UserPackSections(state: SetThemesState, primary: Color, which: (io.github.sillypuppyy.dogboard.design.UserThemes.Pack) -> Boolean = { true }, onNew: (String) -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     for ((pi, pack) in state.userPacks.withIndex()) {
-        if (pack.hidden) continue
+        if (pack.hidden || !which(pack)) continue
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     DText(pack.name, style = setText(14f, 500, primary).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                    DText((if (pack.shared) "Shared with you, " else "Your pack, ") + "${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    DText((if (pack.isBuiltInPhotos()) "Built in, " else if (pack.shared) "Shared with you, " else "Your pack, ") + "${pack.themes.size} ${if (pack.themes.size == 1) "theme" else "themes"}", style = setText(12f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                 }
                 var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                 Box {
@@ -652,3 +659,6 @@ private fun UserPackSections(state: SetThemesState, primary: Color, onNew: (Stri
     }
     // "New pack" lives with Manage packs at the end of the page (user 2026-11-22: a button before Built in was confusing)
 }
+
+/** The built-in photos' pack (UserThemes.installPhotos makes it once, its id ending "ph"): built in, not the user's. */
+private fun io.github.sillypuppyy.dogboard.design.UserThemes.Pack.isBuiltInPhotos() = id.endsWith("ph") && name == "Photos"
