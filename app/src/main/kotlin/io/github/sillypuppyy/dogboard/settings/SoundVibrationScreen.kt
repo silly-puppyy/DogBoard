@@ -38,6 +38,8 @@ fun SoundVibrationScreen() {
     val style by fb.hapticStyle.collectAsState()
     val sound by fb.audioEnabled.collectAsState()
     val volume by fb.audioVolume.collectAsState()
+    val soundStyle by fb.audioStyle.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val hPress by fb.hapticFeatKeyPress.collectAsState()
     val hLong by fb.hapticFeatKeyLongPress.collectAsState()
     val hRepeat by fb.hapticFeatKeyRepeatedAction.collectAsState()
@@ -69,6 +71,26 @@ fun SoundVibrationScreen() {
             }
             SetGroup("Sound") {
                 SetSwitchRow("sv:sound", "Sound", "A click on each key.", sound) { v -> scope.launch { fb.audioEnabled.set(v) } }
+                if (sound) {
+                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TitleSub("Key sound", "Your phone’s own click, or one of DogBoard’s: short tones for keys, lower ones for delete, two tones for shift. Picking one plays it.")
+                        val ids = listOf("system") + io.github.sillypuppyy.dogboard.feel.KeySounds.styleIds
+                        Segmented("sv:soundstyle", listOf("Phone", "Tick", "Drop", "Glass", "Thock", "Classic"), ids.indexOf(soundStyle).coerceAtLeast(0)) { i ->
+                            scope.launch {
+                                fb.audioStyle.set(ids[i])
+                                if (ids[i] != "system") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                                    io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(context, ids[i])
+                                    // a short preview: three keys, a delete, a shift (SoundPool loads asynchronously)
+                                    kotlinx.coroutines.delay(150)
+                                    val v = volume / 100f
+                                    for (k in listOf(io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY, io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY,
+                                        io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY, io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.DELETE,
+                                        io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.MODIFIER)) { io.github.sillypuppyy.dogboard.feel.KeySounds.play(k, v); kotlinx.coroutines.delay(180) }
+                                }
+                            }
+                        }
+                    }
+                }
                 SetSliderRow(
                     "sv:volume", "Volume", "How loud the key click is.",
                     volume.toFloat(), fb.audioVolume.default.toFloat(), 1f..100f, 1f, { v -> "${v.toInt()} %" },
