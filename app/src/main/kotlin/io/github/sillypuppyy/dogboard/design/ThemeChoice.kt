@@ -47,8 +47,11 @@ object ThemeChoice {
     data class Section(val id: String, val title: String, val sub: String, val ids: List<String>, val pack: Boolean = false, val add: Pair<String, String>? = null)
 
     val SECTIONS: List<Section> = listOf(
-        Section("yours", "Yours", "Built in", listOf("dogboard", "brand", "glass"), add = "add_photo_alternate" to "From a photo"),
-        Section("everyday", "Everyday", "Built in", listOf("paper", "midnight", "ink", "borderless", "bold")),
+        // user 2026-11-22: "Yours / My themes / Photos / a New pack button before Everyday" was confusing, and "Warm" looked
+        // like Dog: your own themes first (the photo slot, then saved packs), then the built-in ones, then each pack;
+        // "brand" (Warm) is no longer listed (kept for whoever has it picked)
+        Section("yours", "Your themes", "", listOf("glass"), add = "add_photo_alternate" to "From a photo"),
+        Section("everyday", "Built in", "", listOf("dogboard", "paper", "midnight", "ink", "borderless", "bold")),
         Section("breeds", "Breeds", "Pack, 5 themes", listOf("dog", "lab", "husky", "greyhound", "dalmatian"), pack = true),
         Section("gradients", "Gradients", "Pack, 3 themes", listOf("dusk", "lagoon", "peach"), pack = true, add = "gradient" to "New gradient"),
         Section("retro", "Retro", "Pack, 1 theme", listOf("gloss"), pack = true),

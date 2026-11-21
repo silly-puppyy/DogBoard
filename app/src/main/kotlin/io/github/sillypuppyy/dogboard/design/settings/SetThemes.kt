@@ -292,6 +292,11 @@ fun SetThemes(state: SetThemesState) {
             // switches here "seem a bit pointless"; chose a Manage packs page)
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Theme packs", Modifier.padding(start = 4.dp, top = 8.dp), style = setText(14f, 500, primary))
+                Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.row).clickable { state.onNewPack() }.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("add", 22.sp, primary) }
+                    DText("New pack", Modifier.weight(1f), style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                }
                 Row(Modifier.fillMaxWidth().heightIn(min = 72.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.row).clickable { state.onManagePacks() }.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) { Symbol("palette", 22.sp, SetColors.onSurfaceVariant) }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -328,12 +333,11 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
             if (!sel) TileOutline()
             if (sel) InUseBadge(primary, Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp))
         }
-        Row(Modifier.padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            DText(t.name, Modifier.weight(1f), style = setText(15f, if (sel) 600 else 400).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 1)
-            Symbol(ThemeChoice.MODE.getValue(t.mode).first, 18.sp, SetColors.onSurfaceVariant)
-        }
-        DText(if (sel) where else t.sub, Modifier.padding(horizontal = 2.dp).heightIn(min = 18.dp),
-            style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
+        // the name only (user 2026-11-22: no day/night icon, the tile shows it; the description moved into the press-and-hold
+        // sheet); a status line only for the theme in use
+        DText(t.name, Modifier.padding(horizontal = 2.dp), style = setText(15f, if (sel) 600 else 400).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 1)
+        if (sel) DText(where, Modifier.padding(horizontal = 2.dp),
+            style = setText(13f, color = primary).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 2)
     }
 }
 
@@ -583,13 +587,5 @@ private fun UserPackSections(state: SetThemesState, primary: Color, onNew: (Stri
             }
         }
     }
-    // a new pack (the first theme from a photo makes "My themes" when there is none)
-    Row(Modifier.padding(horizontal = 16.dp)) {
-        Row(
-            Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).border(1.dp, SetColors.outline, RoundedCornerShape(20.dp)).clickable { state.onNewPack() }.padding(start = 12.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Symbol("add", 18.sp, primary); DText("New pack", style = setText(14f, 500, primary))
-        }
-    }
+    // "New pack" lives with Manage packs at the end of the page (user 2026-11-22: a button before Built in was confusing)
 }
