@@ -516,6 +516,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard Layout elements (user 2026-11-17, mix and match): the symbol pages ("iphone" / "android")
         // and ?123 / action keys drawn as pills
         val symbolPages = string(key = "keyboard__symbol_pages", default = "iphone")
+        // DogBoard (user 2026-11-21): when the symbols page returns to the letters: "any" key, "space" (and an
+        // apostrophe, as on an iPhone; the default) or "none"
+        val symbolsReturn = string(key = "keyboard__symbols_return", default = "space")
         val pillKeys = boolean(key = "keyboard__pill_keys", default = false)
         // DogBoard: the letter layout (tools/layouts/gen_layouts.py ids); autocorrection and
         // suggestions are English-only until the internationalisation pass

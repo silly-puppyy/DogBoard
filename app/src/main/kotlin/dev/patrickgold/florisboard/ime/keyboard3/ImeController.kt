@@ -665,8 +665,14 @@ class ImeController(
                 lastSpaceUptime = null
             }
             expectedContentQueue.push(state.content)
-            // iOS: on the 123 and #+= planes, space or an apostrophe returns to the letters
-            if ((value == SPACE || text == "'" || text == "’") && state.touchLayerId in SYMBOL_LAYERS) { // ’: smart quotes on
+            // Settings › Layout › Back to letters (user 2026-11-21): after any key, after a space (iOS: on the 123 and
+            // #+= planes, space or an apostrophe returns to the letters; the default) or never
+            val backToLetters = when (prefs.keyboard.symbolsReturn.get()) {
+                "any" -> true
+                "none" -> false
+                else -> value == SPACE || text == "'" || text == "’" // ’: smart quotes on
+            }
+            if (backToLetters && state.touchLayerId in SYMBOL_LAYERS) {
                 switchTouchLayer(ImeLayerIds.Base)
             }
             reevaluateInputShiftState()

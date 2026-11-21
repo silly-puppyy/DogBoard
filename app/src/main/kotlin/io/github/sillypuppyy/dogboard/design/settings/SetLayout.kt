@@ -55,6 +55,8 @@ data class LayoutElements(
     // user 2026-11-17, mix and match: the symbol pages and ?123 / action keys as pills
     val symbols: String = "iphone", // iphone (123 / #+=), android (?123 / =\<)
     val pill: Boolean = false,
+    /** When the symbols page goes back to the letters (user 2026-11-21): any, space (default, as on an iPhone), none. */
+    val symbolsReturn: String = "space",
 ) {
     companion object {
         /** SetLayout.dc.html:96-97: the two presets. */
@@ -205,6 +207,9 @@ fun SetLayout(state: SetLayoutState) {
                 }
                 ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.SIMPLE.symbols, { state.onChange(st.copy(symbols = LayoutElements.SIMPLE.symbols)) }) {
                     ElementSeg("symbols", listOf("iphone" to "iPhone-style", "android" to "Android-style"), st.symbols) { state.onChange(st.copy(symbols = it)) }
+                }
+                ElementRow("Back to letters", "When the symbols page returns to the letters: after any key, after a space (as on an iPhone), or never.", st.symbolsReturn != LayoutElements.SIMPLE.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.SIMPLE.symbolsReturn)) }) {
+                    ElementSeg("symbolsReturn", listOf("any" to "Any key", "space" to "Space", "none" to "Never"), st.symbolsReturn) { state.onChange(st.copy(symbolsReturn = it)) }
                 }
                 ElementRow("Round keys", "123 and the action key as round pills, as on Android.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {
                     ElementSeg("pill", listOf("off" to "Off", "on" to "On"), if (st.pill) "on" else "off") { state.onChange(st.copy(pill = it == "on")) }

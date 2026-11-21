@@ -23,6 +23,7 @@ object LayoutPrefs {
         caseMode = if (prefs.keyboard.capsLabels.get()) "caps" else "shift",
         symbols = prefs.keyboard.symbolPages.get(),
         pill = prefs.keyboard.pillKeys.get(),
+        symbolsReturn = prefs.keyboard.symbolsReturn.get(),
     )
 
     suspend fun write(prefs: FlorisPreferenceModel, e: LayoutElements) {
@@ -35,6 +36,7 @@ object LayoutPrefs {
         prefs.keyboard.capsLabels.set(e.caseMode == "caps")
         prefs.keyboard.symbolPages.set(e.symbols)
         prefs.keyboard.pillKeys.set(e.pill)
+        prefs.keyboard.symbolsReturn.set(e.symbolsReturn)
     }
 
     /** Settings home "Layout style": 0 iPhone-style, 1 Android-style, 2 Custom (any mix). */
@@ -58,6 +60,7 @@ fun LayoutScreen() {
     prefs.keyboard.capsLabels.collectAsState().value
     prefs.keyboard.symbolPages.collectAsState().value
     prefs.keyboard.pillKeys.collectAsState().value
+    prefs.keyboard.symbolsReturn.collectAsState().value
     SetLayout(SetLayoutState(
         elements = LayoutPrefs.read(prefs),
         onChange = { e -> scope.launch { LayoutPrefs.write(prefs, e) } },
