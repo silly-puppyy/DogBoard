@@ -702,6 +702,9 @@ object TypingEngine {
         lastNeuralUnscoredMulti = decoded.count { it.word !in scores && ' ' in it.word }
         val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
         // Rule 3's inputs for splits (debug, the emulator's checks): the neural ln P and the words' static ln P
+        // typed text: debug builds only, and only with `setprop log.tag.DogBoardAc DEBUG` (it logged in every build until
+        // 2026-11-22, typed words and the text before them; the user's phone must never log what is typed)
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG && android.util.Log.isLoggable("DogBoardAc", android.util.Log.DEBUG))
         for (c in decoded) if (c.words > 1) scores[c.word]?.let { n ->
             android.util.Log.d("DogBoardAc", "split '${c.word}' after '${textBefore.takeLast(24)}': " +
                 // typed text stays out of the pattern: a '%' in it was read as a format code (crash 2026-11-21)

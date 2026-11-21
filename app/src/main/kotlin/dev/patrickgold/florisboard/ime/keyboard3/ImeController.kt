@@ -199,7 +199,7 @@ class ImeController(
                 xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
             )
         }
-        android.util.Log.i("DogBoardPerf", "swipe: ${xs.size} points -> ${words.firstOrNull()} in ${SystemClock.uptimeMillis() - t0} ms (${io.github.sillypuppyy.dogboard.engine.TypingEngine.lastSwipeTiming})")
+        android.util.Log.i("DogBoardPerf", "swipe: ${xs.size} points -> ${words.size} words in ${SystemClock.uptimeMillis() - t0} ms (${io.github.sillypuppyy.dogboard.engine.TypingEngine.lastSwipeTiming})")
         if (words.isEmpty()) return
         updateState { acceptSwipe(words) }
     }

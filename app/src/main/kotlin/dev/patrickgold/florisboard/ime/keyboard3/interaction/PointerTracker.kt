@@ -235,7 +235,7 @@ class PointerTracker(
     context(scope: CoroutineScope)
     suspend fun handleDown(down: PointerInputChange, size: IntSize) {
         if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
-            android.util.Log.i("DogBoardTouch", "down id=${down.id.value} at ${down.position} tracker=${this@PointerTracker.hashCode()}")
+            android.util.Log.i("DogBoardTouch", "down id=${down.id.value} tracker=${this@PointerTracker.hashCode()}")
         }
         val lastUpKey = lastUpKeyState
 
