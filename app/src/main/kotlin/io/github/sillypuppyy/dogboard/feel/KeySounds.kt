@@ -2,8 +2,6 @@ package io.github.sillypuppyy.dogboard.feel
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.SoundPool
-import java.io.File
 import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.sin
@@ -64,13 +62,16 @@ object KeySounds {
     val styleIds: List<String> get() = STYLES.keys.toList()
 
     private const val SR = 44100
-    private var pool: SoundPool? = null
-    // the settings' previews play on the media stream: key sounds follow the ringer (silent on silent, as Gboard's
-    // and an iPhone's), so a phone on vibrate previewed nothing (user 2026-11-21: "I can't hear anything")
-    private var previewPool: SoundPool? = null
+    // Low-latency static AudioTracks, built once per style: a press only rewinds a ready buffer (SoundPool has no
+    // low-latency path and the sound came noticeably after the touch on a Pixel 10, user 2026-11-21: "a bit of
+    // latency, disorienting"). Two tracks per voice, used in turn, so fast presses overlap instead of cutting off.
+    // Typing sounds use the sonification stream (silent on silent, as Gboard's and an iPhone's); the settings'
+    // previews and Play on silent use the media stream (a phone on vibrate previewed nothing).
+    private const val COPIES = 2
+    private var tracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
+    private var mediaTracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
+    private val next = IntArray(Kind.entries.size)
     private var loadedStyle: String? = null
-    private val ids = IntArray(Kind.entries.size)
-    private val previewIds = IntArray(Kind.entries.size)
     private val rng = java.util.Random(11)
 
     /** 16-bit mono PCM of [v], peak at 0.4 of full scale (iOS's clicks peak near -8 dBFS). */
@@ -90,36 +91,27 @@ object KeySounds {
         return ShortArray(n) { i -> ((x[i] - mean) / peak * 0.4 * Short.MAX_VALUE).toInt().toShort() }
     }
 
-    private fun wav(file: File, pcm: ShortArray) {
-        val data = java.nio.ByteBuffer.allocate(44 + pcm.size * 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        data.put("RIFF".toByteArray()).putInt(36 + pcm.size * 2).put("WAVE".toByteArray()).put("fmt ".toByteArray())
-            .putInt(16).putShort(1).putShort(1).putInt(SR).putInt(SR * 2).putShort(2).putShort(16)
-            .put("data".toByteArray()).putInt(pcm.size * 2)
-        for (s in pcm) data.putShort(s)
-        file.writeBytes(data.array())
-    }
+    private fun track(pcm: ShortArray, usage: Int): android.media.AudioTrack =
+        android.media.AudioTrack.Builder()
+            .setAudioAttributes(AudioAttributes.Builder().setUsage(usage).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+            .setAudioFormat(android.media.AudioFormat.Builder().setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT).setSampleRate(SR)
+                .setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).build())
+            .setTransferMode(android.media.AudioTrack.MODE_STATIC)
+            .setPerformanceMode(android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+            .setBufferSizeInBytes(pcm.size * 2)
+            .build().also { it.write(pcm, 0, pcm.size) }
 
-    /** Builds and loads [style]'s sounds (once per style; off the main thread is better: a few ms). */
+    /** Builds [style]'s sounds (once per style; a few ms: off the main thread when it can be). */
     @Synchronized
-    fun prepare(context: Context, style: String) {
+    fun prepare(@Suppress("UNUSED_PARAMETER") context: Context, style: String) {
         if (style == loadedStyle) return
         val st = STYLES[style] ?: return
-        val p = pool ?: SoundPool.Builder().setMaxStreams(4).setAudioAttributes(
-            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
-        ).build().also { pool = it }
-        val pp = previewPool ?: SoundPool.Builder().setMaxStreams(2).setAudioAttributes(
-            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
-        ).build().also { previewPool = it }
-        val dir = File(context.cacheDir, "keysounds").apply { mkdirs() }
-        for (k in Kind.entries) {
-            val voice = when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }
-            val f = File(dir, "$style-${k.name.lowercase()}.wav")
-            wav(f, render(voice, k.ordinal.toLong()))
-            if (ids[k.ordinal] != 0) p.unload(ids[k.ordinal])
-            ids[k.ordinal] = p.load(f.path, 1)
-            if (previewIds[k.ordinal] != 0) pp.unload(previewIds[k.ordinal])
-            previewIds[k.ordinal] = pp.load(f.path, 1)
+        for (set in tracks + mediaTracks) for (t in set) t?.release()
+        val pcm = Kind.entries.map { k ->
+            render(when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }, k.ordinal.toLong())
         }
+        tracks = Array(Kind.entries.size) { k -> Array(COPIES) { runCatching { track(pcm[k], AudioAttributes.USAGE_ASSISTANCE_SONIFICATION) }.getOrNull() } }
+        mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { runCatching { track(pcm[k], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
         loadedStyle = style
     }
 
@@ -128,9 +120,15 @@ object KeySounds {
      * [preview]: on the media stream, heard on silent too (the settings' previews, and Play on silent).
      */
     fun play(kind: Kind, volume: Float, preview: Boolean = false) {
-        val p = (if (preview) previewPool else pool) ?: return
-        val id = (if (preview) previewIds else ids)[kind.ordinal].takeIf { it != 0 } ?: return
+        val set = (if (preview) mediaTracks else tracks).getOrNull(kind.ordinal) ?: return
+        val i = next[kind.ordinal]; next[kind.ordinal] = (i + 1) % COPIES
+        val t = set[i] ?: return
         val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.12f)).coerceIn(0f, 1f)
-        p.play(id, v, v, 1, 0, 1f)
+        runCatching {
+            if (t.playState == android.media.AudioTrack.PLAYSTATE_PLAYING) t.stop()
+            t.reloadStaticData()
+            t.setVolume(v)
+            t.play()
+        }
     }
 }
