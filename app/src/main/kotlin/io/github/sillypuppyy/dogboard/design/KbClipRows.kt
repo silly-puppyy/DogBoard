@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -200,28 +201,32 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
     } }
 }
 
-/** P:157-158: the image fills the row, centred, sliding at a third of the scroll (clipboard-rows.md). */
+/**
+ * P:157-158: the image fills the row's width at its own height, and the row is a window onto it: as the row travels
+ * up the list the visible slice moves through the whole picture, from its bottom (row at the list's bottom) to its
+ * top (user 2026-11-21: "the image segment ... scroll with the user's scrolling"; the first version slid at a third
+ * of the scroll inside a 1.4x zoom, about 11 dp of travel, which read as still).
+ */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.WindowImage(r: KbClipRow, img: ImageBitmap?, list: LazyListState, i: Int) {
     val m = Modifier.matchParentSize()
     if (img == null) r.placeholder?.let { Box(m.background(it)) }
-    else Box(m.clip(RoundedCornerShape(0.dp))) {
-        Image(
-            img, contentDescription = null, contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize().graphicsLayer {
-                // the row's centre against the list's centre, a third of it the other way: the picture
-                // seems to stay behind as the row moves over it
-                val info = list.layoutInfo
-                val item = info.visibleItemsInfo.firstOrNull { it.index == i }
-                if (item != null) {
-                    val mid = (info.viewportStartOffset + info.viewportEndOffset) / 2f
-                    val off = item.offset + item.size / 2f - mid
-                    val scale = 1.4f // room to slide
-                    scaleX = scale; scaleY = scale
-                    translationY = (-off / 3f).coerceIn(-size.height * (scale - 1) / 2, size.height * (scale - 1) / 2)
-                }
-            },
-        )
+    else {
+        var rowH by remember { mutableStateOf(0) }
+        Box(m.clip(RoundedCornerShape(0.dp)).onSizeChanged { rowH = it.height }) {
+            Image(
+                img, contentDescription = null, contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true).graphicsLayer {
+                    val info = list.layoutInfo
+                    val item = info.visibleItemsInfo.firstOrNull { it.index == i } ?: return@graphicsLayer
+                    // where the row sits in the list: 0 at the top, 1 at the bottom
+                    val travel = (info.viewportEndOffset - info.viewportStartOffset - item.size).toFloat()
+                    val frac = if (travel <= 0f) 0.5f else ((item.offset - info.viewportStartOffset) / travel).coerceIn(0f, 1f)
+                    val overflow = (size.height - rowH).coerceAtLeast(0f)
+                    translationY = -overflow * frac
+                },
+            )
+        }
     }
     // P:159: the scrim
     Box(m.background(Brush.horizontalGradient(0f to Color(0x73000000), 0.55f to Color(0x00000000), 1f to Color(0x59000000))))
