@@ -85,6 +85,10 @@ fun SoundVibrationScreen() {
                         "glass" to "Glass" to "Bright and clear.",
                         "thock" to "Thock" to "Deep and woody.",
                         "classic" to "Classic" to "A crisp, slightly noisy click.",
+                        "clack" to "Clack" to "A quick wooden clack, recorded.",
+                        "pen" to "Pen" to "A ballpoint pen’s click, recorded.",
+                        "mouse" to "Mouse" to "A computer mouse button, recorded.",
+                        "mechkeys" to "Mech keys" to "A mechanical keyboard, recorded.",
                     )
                     var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                     var variationPreview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }

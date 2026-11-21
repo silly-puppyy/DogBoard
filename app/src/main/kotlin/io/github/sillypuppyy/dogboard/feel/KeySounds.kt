@@ -59,9 +59,41 @@ object KeySounds {
         ),
     )
 
-    val styleIds: List<String> get() = STYLES.keys.toList()
+    /**
+     * Recorded packs: assets/dogboard/sounds/<id>/<kind>-<n>.pcm, 16-bit mono at [PACK_RATE], keystrokes cut from CC0
+     * Freesound recordings and levelled by loudness (user's picks 2026-11-21; sources in ATTRIBUTION.txt).
+     */
+    private val RECORDED = listOf("clack", "pen", "mouse", "mechkeys")
+    private const val PACK_RATE = 48000
 
-    private const val SR = 44100
+    val styleIds: List<String> get() = STYLES.keys.toList() + RECORDED
+
+    /** [pack]'s takes for [kind] ("key", "space", "delete"), or empty. */
+    private fun packTakes(context: Context, pack: String, kind: String): List<ShortArray> {
+        val dir = "dogboard/sounds/$pack"
+        val names = runCatching { context.assets.list(dir) }.getOrNull().orEmpty().filter { it.startsWith("$kind-") && it.endsWith(".pcm") }.sorted()
+        return names.mapNotNull { n ->
+            runCatching {
+                val b = context.assets.open("$dir/$n").use { it.readBytes() }
+                ShortArray(b.size / 2) { i -> ((b[2 * i].toInt() and 0xff) or (b[2 * i + 1].toInt() shl 8)).toShort() }
+            }.getOrNull()
+        }
+    }
+
+    /** [pcm] played [ratio] times faster (linear interpolation): the output rate, and a variant's pitch. */
+    private fun resample(pcm: ShortArray, ratio: Double): ShortArray {
+        if (ratio == 1.0) return pcm
+        val n = ((pcm.size - 1) / ratio).toInt().coerceAtLeast(1)
+        return ShortArray(n) { i ->
+            val x = i * ratio; val j = x.toInt(); val f = x - j
+            val a = pcm[j.coerceAtMost(pcm.size - 1)].toDouble(); val b = pcm[(j + 1).coerceAtMost(pcm.size - 1)].toDouble()
+            (a + (b - a) * f).toInt().toShort()
+        }
+    }
+
+    // the output's own rate (usually 48 kHz): a track at another rate is resampled, and Android may refuse it the fast
+    // (low-latency) path; 44.1 kHz was fixed before 2026-11-21
+    private var SR = 48000
     // Low-latency static AudioTracks, built once per style: a press only rewinds a ready buffer (SoundPool has no
     // low-latency path and the sound came noticeably after the touch on a Pixel 10, user 2026-11-21: "a bit of
     // latency, disorienting"). Two tracks per voice, used in turn, so fast presses overlap instead of cutting off.
@@ -115,16 +147,38 @@ object KeySounds {
     @Synchronized
     fun prepare(@Suppress("UNUSED_PARAMETER") context: Context, style: String, variationPercent: Int = 50) {
         if (style == loadedStyle && variationPercent == loadedVariation) return
-        val st = STYLES[style] ?: return
+        val st = STYLES[style]
+        if (st == null && style !in RECORDED) return
         val amount = variationPercent.coerceIn(0, 100) / 100.0
+        (context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager)
+            ?.getProperty(android.media.AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)?.toIntOrNull()?.takeIf { it in 8000..192000 }?.let { SR = it }
         for (set in tracks + mediaTracks) for (t in set) t?.release()
-        val pcm = Kind.entries.map { k ->
+        val pcm = if (st != null) Kind.entries.map { k ->
             val voice = when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }
             List(COPIES) { variant -> render(voice, k.ordinal.toLong(), variant, amount) }
+        } else {
+            val key = packTakes(context, style, "key").ifEmpty { return }
+            val takes = mapOf(
+                Kind.KEY to key, Kind.MODIFIER to key,
+                Kind.SPACE to packTakes(context, style, "space").ifEmpty { key },
+                Kind.DELETE to packTakes(context, style, "delete").ifEmpty { key },
+            )
+            Kind.entries.map { k ->
+                val list = takes.getValue(k)
+                // the takes in turn; each variant a little higher or lower as Variation says (the first as recorded)
+                val jitter = java.util.Random(k.ordinal * 131L)
+                List(COPIES) { variant ->
+                    val pf = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.07 * amount
+                    resample(list[variant % list.size], PACK_RATE.toDouble() / SR * pf)
+                }
+            }
         }
         tracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_ASSISTANCE_SONIFICATION) }.getOrNull() } }
         mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
         loadedStyle = style; loadedVariation = variationPercent; variation = amount
+        // how many tracks Android actually put on its fast path (a mixer has 8 fast slots, one its own: 2026-11-21)
+        fun fast(set: Array<Array<android.media.AudioTrack?>>) = set.sumOf { kind -> kind.count { it?.performanceMode == android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY } }
+        android.util.Log.i("DogBoardPerf", "key sounds $style at $SR Hz: typing ${fast(tracks)} of ${tracks.sumOf { it.size }} tracks fast, media ${fast(mediaTracks)} of ${mediaTracks.sumOf { it.size }}")
     }
 
     /**

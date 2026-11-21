@@ -88,3 +88,13 @@ swipe/en-qwerty.tflite (swipe typing recogniser, tools/swipe)
   FUTO swipe dataset (https://huggingface.co/datasets/futo-org/swipe.futo.org), MIT License,
   Copyright (c) 2025 FUTO; notice in licenses/FUTO-swipe-dataset-MIT.txt. FUTO's own models and code
   are not used.
+
+sounds/ (recorded key sound packs: Settings > Sound and vibration > Key sound)
+  Single strikes cut from recordings on Freesound (https://freesound.org), all released under CC0 1.0
+  (public domain, no credit required; credited here with thanks). Levelled and resampled by DogBoard.
+  clack:    "Quick Clack" by effectator (freesound.org/s/443328)
+  pen:      pen clicks by anagar (267944), dmunk (331967), deleted_user_7146007 (383436),
+            LexzachGames (431492), freemaster2 (487213)
+  mouse:    "Mouse Clicks.wav" by joebro10 (219318), "mouse clicks" by chestnutjam (399443)
+  mechkeys: "Mechanical keyboard clicking. Different keys (4)" by humi74 (412926),
+            "Mechanical Keyboard" by bangcorrupt (833612)
