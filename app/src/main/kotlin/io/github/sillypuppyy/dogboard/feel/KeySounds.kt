@@ -255,6 +255,21 @@ object KeySounds {
         android.os.Handler(t.looper)
     }
 
+    /**
+     * Plays 300 ms of silence on the typing stream ([media]: the media stream, for Play on silent), so an idle output (and
+     * a suspended Bluetooth link) is awake by the first key; silence played still opens the route.
+     */
+    fun wakeOutput(media: Boolean = false) {
+        audio.post {
+            runCatching {
+                val n = SR * 3 / 10
+                val t = track(ShortArray(n), if (media) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                t.play()
+                audio.postDelayed({ runCatching { t.stop(); t.release() } }, 400)
+            }
+        }
+    }
+
     fun play(kind: Kind, volume: Float, preview: Boolean = false) {
         audio.post { playNow(kind, volume, preview) }
     }

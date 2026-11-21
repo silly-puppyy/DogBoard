@@ -478,6 +478,17 @@ class FlorisImeService : LifecycleInputMethodService() {
         super.onWindowShown()
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onWindowShown") // DogBoard: startup timing
         io.github.sillypuppyy.dogboard.ime.LiveUi.shown.value++ // DogBoard: a new Dalmatian coat per opening
+        // DogBoard: key sounds ready before the first key (user 2026-11-21: "when I open the keyboard, for a bit the keys
+        // don't make sounds"): built off the UI thread, and the audio output woken (it sleeps after a few idle seconds;
+        // a Bluetooth link takes up to a second to resume and drops clicks meanwhile)
+        val fb = prefs.inputFeedback
+        if (fb.audioEnabled.get() && fb.audioStyle.get() != "system") {
+            val style = fb.audioStyle.get(); val variation = fb.audioVariation.get(); val bypass = fb.audioBypassSilent.get()
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(this@FlorisImeService, style, variation)
+                io.github.sillypuppyy.dogboard.feel.KeySounds.wakeOutput(media = bypass)
+            }
+        }
         // DogBoard: the system clip may have changed while another keyboard was in use
         runCatching { clipboardManager().value.syncFromSystem() }
         if (windowController.onWindowShown()) {
