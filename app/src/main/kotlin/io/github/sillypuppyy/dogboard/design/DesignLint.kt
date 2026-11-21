@@ -206,8 +206,12 @@ private fun LayoutCoordinates.unclippedDp(density: Float): Rect {
 private fun SquashedText(text: String, modifier: Modifier, style: TextStyle, id: String?, kind: DesignLint.Kind) {
     val measurer = rememberTextMeasurer()
     BoxWithConstraints(modifier) {
-        val natural = remember(text, style) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width }
         val available = constraints.maxWidth
+        // a word that can't be wider than its slot isn't measured: no glyph is wider than 1.25 em, so code points x 1.25 em
+        // bounds its width (measuring each suggestion on every keystroke was the UI thread's top cost, phone 2026-11-21)
+        val emPx = with(androidx.compose.ui.platform.LocalDensity.current) { if (style.fontSize.isSp) style.fontSize.toPx() else 0f }
+        val surelyFits = emPx > 0f && text.codePointCount(0, text.length) * emPx * 1.25f <= available
+        val natural = if (surelyFits) 0 else remember(text, style) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width }
         // Narrowing is not exactly linear (glyph positions round), so measure, correct and repeat
         // until the squashed line really fits, or the floor is reached.
         val scale = remember(text, style, available) {
