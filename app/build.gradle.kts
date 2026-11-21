@@ -168,6 +168,8 @@ ksp {
 }
 
 tasks.withType<Test> {
+    // DogBoard: DOGBOARD_JFR=<file.jfr> records the test JVM with Java Flight Recorder (allocation profiling)
+    System.getenv("DOGBOARD_JFR")?.let { jvmArgs("-XX:StartFlightRecording=filename=$it,settings=profile") }
     testLogging {
         events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
     }
