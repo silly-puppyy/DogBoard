@@ -803,9 +803,11 @@ class ImeController(
                 // (delay_to_wait_for_suggestions_before_commit_ms); the decode is published before
                 // the neural refinement, so this is short
                 val key = decodeKey(typed, context, context2)
+                val tWait = android.os.SystemClock.uptimeMillis()
                 if (latestDecode?.first != key) suggestionJob?.takeIf { it.isActive }?.let { job ->
                     runBlocking { withTimeoutOrNull(WAIT_FOR_DECODE_MS) { job.join() } }
                 }
+                val waitedMs = android.os.SystemClock.uptimeMillis() - tWait
                 // iOS never computes at the word end ("avoided autocorrect deadlock"), so a word typed faster than its
                 // decode stayed uncorrected (emulator with a 400 ms decode: 7 of 14 regression cases; the user's phone
                 // 2 of 21 word ends). The decoder alone takes a few ms, so it runs here when nothing is ready; the
@@ -827,7 +829,7 @@ class ImeController(
                 // perf (phone logs 2026-11-20: 'neural late' counts mid-word keys too): what the word end decided with
                 android.util.Log.i("DogBoardPerf", "word end: " + when {
                     ready == null -> "no decode yet"
-                    waited == null -> "decoded at the word end in ${android.os.SystemClock.uptimeMillis() - t0} ms"
+                    waited == null -> "decoded at the word end in ${android.os.SystemClock.uptimeMillis() - t0} ms (after ${waitedMs} ms waiting)"
                     ready === latestStage1?.second -> "decoder only (neural not ready or not run)"
                     else -> "neural ready"
                 })
@@ -1473,7 +1475,10 @@ class ImeController(
                 // debug builds: `setprop debug.dogboard.slowdecode <ms>` delays this decode, so word ends come before it
                 // (tests the late correction on an emulator, which is otherwise too fast)
                 if (BuildConfig.DEBUG) slowDecodeMs().takeIf { it > 0 }?.let { kotlinx.coroutines.delay(it) }
+                val tDecode = android.os.SystemClock.uptimeMillis()
                 val decoded = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
+                // slow phones (Galaxy A10: word ends waited 52-149 ms on the decoder): how long a keystroke's decode takes
+                (android.os.SystemClock.uptimeMillis() - tDecode).takeIf { it >= 20 }?.let { android.util.Log.i("DogBoardPerf", "decode took ${it} ms") }
                 latestDecode = key to decoded
                 latestStage1 = key to decoded
                 // a word that already ended waits for exactly this decode: correct it now (on the main thread; a new
