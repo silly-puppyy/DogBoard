@@ -76,7 +76,12 @@ fun liveTheme(): LiveTheme {
     val context = LocalContext.current
     // the photo theme's versions (bright, dark or both); they also set its day / night mode for resolve()
     val versions by produceState<PhotoVersions?>(null, stamp, looks) { value = withContext(Dispatchers.IO) { PhotoSlot.versions(context, prefs) } }
-    val (id, dark) = ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
+    // a theme being test-driven (its sheet open on the Themes page) wins over the chosen one, in its own light or dark
+    val preview by io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.collectAsState()
+    val (id, dark) = preview?.let { p ->
+        val mode = ThemeChoice.theme(p).mode
+        p to (mode == "dark" || (mode != "light" && liveDark()))
+    } ?: ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
     // Dalmatian "every time it opens": a new coat each time the keyboard is shown, else the kept one (the view
     // lives on between showings, so remembering per view gave one coat for good; user 2026-11-19)
     val shown by io.github.sillypuppyy.dogboard.ime.LiveUi.shown.collectAsState()

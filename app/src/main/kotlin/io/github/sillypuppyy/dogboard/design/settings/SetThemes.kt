@@ -3,6 +3,7 @@ package io.github.sillypuppyy.dogboard.design.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,6 +103,9 @@ fun SetThemes(state: SetThemesState) {
     val primary = SetColors.primary
     // New theme (user 2026-11-19: one button for photo, gradient and solid colour): the pack it goes in, "" the default
     var newIn by remember { mutableStateOf<String?>(null) }
+    // press and hold a theme: its sheet, the keyboard test-driving it meanwhile
+    var sheetFor by remember { mutableStateOf<String?>(null) }
+    sheetFor?.let { id -> ThemeSheet(id, state.seed, primary, onUse = { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m }) { sheetFor = null } }
     newIn?.let { pack -> NewThemeSheet({ newIn = null }) { kind ->
         val p = pack.ifEmpty { null }
         when (kind) {
@@ -281,7 +285,7 @@ fun SetThemes(state: SetThemesState) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             for (id in row) {
                                 if (id == null) NewTile("add", "New theme") { newIn = "" }
-                                else ThemeTile(id, c, state.seed, primary) { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m }
+                                else ThemeTile(id, c, state.seed, primary, onLongPress = { sheetFor = id }) { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m }
                             }
                         }
                     }
@@ -313,7 +317,7 @@ fun SetThemes(state: SetThemesState) {
 
 /** :86-108 a theme tile: the keyboard (a pair split diagonally into its night version), check, name, mode, where it is used. */
 @Composable
-private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Color, onPick: () -> Unit) {
+private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Color, onLongPress: () -> Unit = {}, onPick: () -> Unit) {
     val t = ThemeChoice.theme(id)
     val where = ThemeChoice.where(c, id)
     val sel = where.isNotEmpty()
@@ -322,7 +326,7 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
         Box(
             Modifier.size(w.dp, h.dp)
                 .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(TILE_R)) else Modifier)
-                .clip(RoundedCornerShape(TILE_R)).clickable(onClick = onPick),
+                .clip(RoundedCornerShape(TILE_R)).combinedClickable(onLongClick = onLongPress, onClick = onPick),
         ) {
             Preview(id, t.mode == "dark", seed, w, h, w / 375f, null)
             // :90-92 a pair shows its night version in the lower-right triangle
@@ -364,6 +368,61 @@ private fun tileH(w: Float) = w * 137f / 173f
 private fun InUseBadge(primary: Color, modifier: Modifier = Modifier) {
     Box(modifier.size(24.dp).cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 2f, Color.White)), RoundedCornerShape(12.dp)).background(primary, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
         Symbol("check", 18.sp, Color.White)
+    }
+}
+
+/**
+ * Press and hold a theme (user 2026-11-22: "tap and hold to test drive a theme + title, description, credits"): the
+ * keyboard draws it while this sheet is open (LiveUi.themePreview), a field to try it in, what it is, where it comes from.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit, onDismiss: () -> Unit) {
+    val t = ThemeChoice.theme(id)
+    androidx.compose.runtime.DisposableEffect(id) {
+        io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = id
+        onDispose { io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = null }
+    }
+    val from = ThemeChoice.SECTIONS.firstOrNull { id in it.ids }?.let { if (it.pack) "${it.title} pack, built in" else "Built into DogBoard" } ?: "Your theme"
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SetColors.screen) {
+        // above the keyboard while trying the theme (the field and the buttons were under it)
+        Column(Modifier.fillMaxWidth().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            val w = 320f; val h = tileH(w)
+            Box(Modifier.align(Alignment.CenterHorizontally).size(w.dp, h.dp).clip(RoundedCornerShape(16.dp))) {
+                Preview(id, t.mode == "dark", seed, w, h, w / 375f, null)
+                if (t.mode == "pair") Box(Modifier.size(w.dp, h.dp).clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
+                    Preview(id, true, seed, w, h, w / 375f, null)
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                DText(t.name, style = setText(24f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                DText(t.sub, style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+            }
+            SetRows {
+                for ((icon, text) in listOf(ThemeChoice.MODE.getValue(t.mode).first to ThemeChoice.MODE.getValue(t.mode).second, "info" to from)) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).background(SetColors.row).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Symbol(icon, 20.sp, SetColors.onSurfaceVariant)
+                        DText(text, Modifier.weight(1f), style = setText(15f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    }
+                }
+            }
+            // the test drive: type here and the keyboard shows this theme
+            var tryText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+            androidx.compose.foundation.text.BasicTextField(
+                tryText, { tryText = it },
+                Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(26.dp)).background(SetColors.surfaceContainerHighest).padding(horizontal = 20.dp, vertical = 15.dp),
+                textStyle = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start),
+                decorationBox = { inner -> Box { if (tryText.isEmpty()) DText("Type here to try it", style = setText(16f, color = SetColors.onSurfaceVariant)); inner() } },
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).clickable(onClick = onDismiss).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                    DText("Close", style = setText(14f, 500, primary))
+                }
+                Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).background(primary).clickable { onUse(); onDismiss() }.padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
+                    DText("Use this theme", style = setText(14f, 500, SetColors.screen))
+                }
+            }
+        }
     }
 }
 

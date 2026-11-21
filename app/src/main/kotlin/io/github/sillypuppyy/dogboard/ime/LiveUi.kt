@@ -14,6 +14,9 @@ import kotlinx.coroutines.launch
  * Tools are named by their icon in Kb.dc.html (Kb:663-674).
  */
 object LiveUi {
+    /** A theme being test-driven (Themes › press and hold a theme): the keyboard draws it until the sheet closes. */
+    val themePreview = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+
     /** The current theme's suggestion-chip colours (background, text), for inline autofill chips; null before the bar draws. */
     @Volatile var autofillChip: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? = null
 
