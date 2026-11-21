@@ -330,9 +330,18 @@ internal fun ranked(candidates: List<Candidate>, level: Autocorrect.Level): List
  * text before) as (1 - [weight]) x n-gram + [weight] x neural, and the score is geometry + [power] x
  * that; a candidate the model has no score for keeps its n-gram score.
  */
+/**
+ * The neural model also scores the typed non-word: it keeps names and British spellings typed in a sentence
+ * (unknown brands changed 13.8 -> 12.4 %, British 42 -> 30 %), but also long typos it reads as plausible pieces
+ * ("havig", "goesd", "differnce": fixed without it, kept with it; 2026-11-21). Measured off: typos about even (main
+ * fixed 48.8 -> 48.5 %, wrong 4.8 -> 4.4 %; Gboard set 49.1 -> 49.3 %), unknown brands in context 10.2 -> 7.8 %
+ * changed, but British spellings 26.4 -> 40.2 % changed: kept on. Benchmarks: DOGBOARD_NEURAL_TYPED=0.
+ */
+@Volatile internal var neuralScoresTyped: Boolean = true
+
 internal fun withNeural(candidates: List<Candidate>, neural: (String) -> Double?, weight: Double, power: Double): List<Candidate> =
     candidates.map { c ->
-        neural(c.word)?.let { n ->
+        (if (c.isTypedString && !neuralScoresTyped) null else neural(c.word))?.let { n ->
             val l = (1 - weight) * c.languageModel + weight * n
             // Rule 3's context probability for a split from the neural model (iOS: Word+0x38, written by the
             // neural refinement as the LM's static conditional probability, ios-decomp notes; the n-gram backs
