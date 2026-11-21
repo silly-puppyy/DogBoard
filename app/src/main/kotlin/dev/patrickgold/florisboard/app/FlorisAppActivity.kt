@@ -139,10 +139,11 @@ class FlorisAppActivity : ComponentActivity() {
                     val day by prefs.keyboard.themeDay.collectAsState()
                     val night by prefs.keyboard.themeNight.collectAsState()
                     val followSystem by prefs.keyboard.themeFollow.collectAsState()
+                    val fixedNight by prefs.keyboard.themeFixedNight.collectAsState()
                     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
                     val theme = if (followKeyboard && appTheme.isAuto) {
                         val keyboardDark = io.github.sillypuppyy.dogboard.design.ThemeChoice.resolve(
-                            io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(day, night, followSystem), systemDark,
+                            io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(day, night, followSystem, fixedNight), systemDark,
                         ).second
                         if (keyboardDark) AppTheme.DARK else AppTheme.LIGHT
                     } else appTheme

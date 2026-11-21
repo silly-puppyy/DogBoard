@@ -59,7 +59,8 @@ class SetThemesState(
     /** Section ids of the hidden theme packs. */
     val hidden: Set<String>,
     val onPick: (String) -> Unit,
-    val onFollow: (Boolean) -> Unit,
+    /** "system", "day" or "night". */
+    val onFollow: (String) -> Unit,
     val onReroll: (String) -> Unit,
     val onShuffle: () -> Unit,
     val onHidePack: (String, Boolean) -> Unit,
@@ -133,10 +134,8 @@ fun SetThemes(state: SetThemesState) {
             Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(SetColors.row, RoundedCornerShape(24.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     // :201-203
-                    val slots = if (c.follow) listOf(
-                        Triple(c.day, "light_mode", "Day"),
-                        Triple(c.night, "dark_mode", "Night"),
-                    ) else listOf(Triple(c.day, "palette", "Always"))
+                    // both slots always (user 2026-11-22): following the system switches between them, else one is used
+                    val slots = listOf(Triple(c.day, "light_mode", "Day"), Triple(c.night, "dark_mode", "Night"))
                     for ((id, icon, label) in slots) {
                         val t = ThemeChoice.theme(id)
                         val dark = if (label == "Night") t.mode != "light" else t.mode == "dark"
@@ -156,18 +155,17 @@ fun SetThemes(state: SetThemesState) {
                 }
                 // :211 the message, or what picking does
                 DText(
-                    msg.ifEmpty { if (c.follow) "Pick any theme: a light one sets Day, a dark one sets Night, a pair sets both." else "One theme all the time." },
+                    msg.ifEmpty { if (c.follow) "Pick any theme: a light one sets Day, a dark one sets Night, a pair sets both." else if (c.fixedNight) "The Night theme all the time." else "The Day theme all the time." },
                     Modifier.fillMaxWidth().heightIn(min = 20.dp).padding(horizontal = 2.dp),
                     style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.45f).sp),
                     maxLines = 8,
                 )
                 Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
-                Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DText("Follow system dark mode", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        DText(if (c.follow) "Day and night themes switch with the system" else "The same theme all the time", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                    }
-                    PageSwitch(c.follow) { state.onFollow(!c.follow); msg = "" }
+                Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DText("Which theme", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    // user 2026-11-22: "ignore system theme, then pick which one is chosen" (was a Follow switch that dropped Night)
+                    val modes = listOf("system", "day", "night")
+                    Segmented("th:follow", listOf("Follow system", "Always day", "Always night"), modes.indexOf(if (c.follow) "system" else if (c.fixedNight) "night" else "day")) { i -> state.onFollow(modes[i]); msg = "" }
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
                 // App colours (user 2026-11-19: "match keyboard | match wallpaper | none", keyboard by default)

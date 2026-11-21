@@ -74,12 +74,14 @@ object ThemeChoice {
     )
 
     /** The stored choice: the day and night themes and whether the night one follows system dark mode. */
-    data class Choice(val day: String = "dogboard", val night: String = "dogboard", val follow: Boolean = true)
+    /** [fixedNight]: not following the system, the night slot is used all the time (else the day slot). */
+    data class Choice(val day: String = "dogboard", val night: String = "dogboard", val follow: Boolean = true, val fixedNight: Boolean = false)
 
     /** :169-175 picking a tile: the new choice and the page's message (empty: none). */
     fun pick(c: Choice, id: String): Pair<Choice, String> {
         val t = theme(id)
-        if (!c.follow) return c.copy(day = id, night = id) to ""
+        // always one slot: only that slot changes (the other is kept for when following the system again)
+        if (!c.follow) return (if (c.fixedNight) c.copy(night = id) else c.copy(day = id)) to "${t.name} all the time."
         return when (t.mode) {
             "pair" -> c.copy(day = id, night = id) to "${t.name} by day, ${t.nightName ?: t.name + " dark"} at night."
             "both" -> c.copy(day = id, night = id) to "${t.name} day and night."
@@ -90,7 +92,7 @@ object ThemeChoice {
 
     /** :177-183 what a tile says when it is in use. */
     fun where(c: Choice, id: String): String = when {
-        !c.follow -> if (c.day == id) "In use" else ""
+        !c.follow -> if ((if (c.fixedNight) c.night else c.day) == id) "In use" else ""
         c.day == id && c.night == id -> "Day and night"
         c.day == id -> "Day"
         c.night == id -> "Night"
@@ -115,11 +117,12 @@ object ThemeChoice {
         (pref.split(';').filter { it.isNotBlank() && it.substringBefore('=') != id } + "$id=${if (always) "always" else "actions"}").joinToString(";")
 
     fun resolve(c: Choice, systemDark: Boolean): Pair<String, Boolean> {
-        val id = if (c.follow && systemDark) c.night else c.day
+        val night = if (c.follow) systemDark else c.fixedNight
+        val id = if (night) c.night else c.day
         val dark = when (theme(id).mode) {
             "dark" -> true
             "light" -> false
-            "pair" -> c.follow && systemDark
+            "pair" -> night
             else -> systemDark
         }
         return id to dark

@@ -70,6 +70,7 @@ fun liveTheme(): LiveTheme {
     val day by prefs.keyboard.themeDay.collectAsState()
     val night by prefs.keyboard.themeNight.collectAsState()
     val follow by prefs.keyboard.themeFollow.collectAsState()
+    val fixedNight by prefs.keyboard.themeFixedNight.collectAsState()
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val keptSeed by prefs.keyboard.spotSeed.collectAsState()
     val retPref by prefs.keyboard.retColour.collectAsState()
@@ -81,7 +82,7 @@ fun liveTheme(): LiveTheme {
     val (id, dark) = preview?.let { p ->
         val mode = ThemeChoice.theme(p).mode
         p to (mode == "dark" || (mode != "light" && liveDark()))
-    } ?: ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow), liveDark())
+    } ?: ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow, fixedNight), liveDark())
     // Dalmatian "every time it opens": a new coat each time the keyboard is shown, else the kept one (the view
     // lives on between showings, so remembering per view gave one coat for good; user 2026-11-19)
     val shown by io.github.sillypuppyy.dogboard.ime.LiveUi.shown.collectAsState()

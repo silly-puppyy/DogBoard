@@ -47,8 +47,9 @@ fun getColorScheme(
     val themeDay by prefs.keyboard.themeDay.collectAsState()
     val themeNight by prefs.keyboard.themeNight.collectAsState()
     val themeFollow by prefs.keyboard.themeFollow.collectAsState()
+    val themeFixedNight by prefs.keyboard.themeFixedNight.collectAsState()
     val (kbTheme, kbDark) = io.github.sillypuppyy.dogboard.design.ThemeChoice.resolve(
-        io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(themeDay, themeNight, themeFollow), isDark,
+        io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(themeDay, themeNight, themeFollow, themeFixedNight), isDark,
     )
     // Themes › App colours (user 2026-11-19): from the keyboard theme (a photo theme's return-key colour), the
     // wallpaper, or none (DogBoard's own colours)

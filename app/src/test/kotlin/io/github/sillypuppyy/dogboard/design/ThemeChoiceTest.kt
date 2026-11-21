@@ -19,8 +19,18 @@ class ThemeChoiceTest : FunSpec({
         m3 shouldBe "Labrador by day, Chocolate Lab at night."
     }
 
-    test("not following the system: any pick is the one theme") {
-        ThemeChoice.pick(start.copy(follow = false), "ink").first shouldBe ThemeChoice.Choice("ink", "ink", false)
+    // user 2026-11-22: not following the system, one slot is used all the time; a pick changes only that slot
+    test("always day: a pick sets the day slot, the night slot is kept") {
+        val (c, _) = ThemeChoice.pick(start.copy(follow = false), "ink")
+        c shouldBe start.copy(follow = false, day = "ink")
+        ThemeChoice.resolve(c, systemDark = true).first shouldBe "ink"
+    }
+
+    test("always night: a pick sets the night slot and it is used even when the system is light") {
+        val fixed = start.copy(follow = false, fixedNight = true)
+        val (c, _) = ThemeChoice.pick(fixed, "ink")
+        c shouldBe fixed.copy(night = "ink")
+        ThemeChoice.resolve(c, systemDark = false).first shouldBe "ink"
     }
 
     test("tiles say where a theme is used") {

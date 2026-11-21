@@ -607,6 +607,9 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val themeDay = string(key = "keyboard__theme_day", default = "dogboard")
         val themeNight = string(key = "keyboard__theme_night", default = "dogboard")
         val themeFollow = boolean(key = "keyboard__theme_follow", default = true)
+        // DogBoard: with themeFollow off, which slot is used all the time (user 2026-11-22: "ignore system theme, then pick
+        // which one is chosen"; before, turning follow off just dropped the night theme)
+        val themeFixedNight = boolean(key = "keyboard__theme_fixed_night", default = false)
         // Dalmatian: "open" = new spots each time the keyboard opens, "keep" = until shuffled; the kept coat
         val spotReroll = string(key = "keyboard__spot_reroll", default = "open")
         // DogBoard: Themes › Return key per theme (user 2026-11-19), "id=always;id=actions" (ThemeChoice.retAlways)

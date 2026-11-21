@@ -23,12 +23,13 @@ fun ThemesScreen() {
     val day by prefs.keyboard.themeDay.collectAsState()
     val night by prefs.keyboard.themeNight.collectAsState()
     val follow by prefs.keyboard.themeFollow.collectAsState()
+    val fixedNight by prefs.keyboard.themeFixedNight.collectAsState()
     val appColours by prefs.other.settingsColours.collectAsState()
     val retPref by prefs.keyboard.retColour.collectAsState()
     val reroll by prefs.keyboard.spotReroll.collectAsState()
     val seed by prefs.keyboard.spotSeed.collectAsState()
     val hidden by prefs.keyboard.hiddenThemePacks.collectAsState()
-    val choice = ThemeChoice.Choice(day, night, follow)
+    val choice = ThemeChoice.Choice(day, night, follow, fixedNight)
     // the user's saved themes, in their packs (UserThemes); reloaded after a change
     val context = androidx.compose.ui.platform.LocalContext.current
     val userTheme by prefs.keyboard.userTheme.collectAsState()
@@ -54,8 +55,9 @@ fun ThemesScreen() {
         prefs.keyboard.themeDay.set(c.day)
         prefs.keyboard.themeNight.set(c.night)
         prefs.keyboard.themeFollow.set(c.follow)
+        prefs.keyboard.themeFixedNight.set(c.fixedNight)
         // the Photo theme is the glass look (its photo and settings live on the photo page)
-        prefs.keyboard.glassEnabled.set(c.day == "glass" || (c.follow && c.night == "glass"))
+        prefs.keyboard.glassEnabled.set(c.day == "glass" || c.night == "glass")
     }
     // a shared .dogtheme pack: added as a new pack; a note says how it went
     val importPack = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
@@ -94,7 +96,8 @@ fun ThemesScreen() {
         hidden = hidden.split(',').filter { it.isNotBlank() }.toSet(),
         onPick = { id -> scope.launch { store(ThemeChoice.pick(choice, id).first) } },
         // :212 turning following off keeps the day theme for all the time
-        onFollow = { on -> scope.launch { store(choice.copy(follow = on, night = choice.day)) } },
+        // follow the system, or always one slot; both slots are kept either way
+        onFollow = { mode -> scope.launch { store(choice.copy(follow = mode == "system", fixedNight = mode == "night")) } },
         onReroll = { mode -> scope.launch { prefs.keyboard.spotReroll.set(mode) } },
         appColours = appColours,
         retPref = retPref,
