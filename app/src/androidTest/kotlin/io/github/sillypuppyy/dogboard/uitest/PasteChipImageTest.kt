@@ -1,7 +1,7 @@
 package io.github.sillypuppyy.dogboard.uitest
 
 import android.content.ClipData
-import android.content.ClipboardManager
+import dev.patrickgold.florisboard.clipboardManager
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -36,14 +36,24 @@ class PasteChipImageTest {
         val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)!!
         context.contentResolver.openOutputStream(uri)!!.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
         try {
-            kb.instrumentation.runOnMainSync {
-                (context.getSystemService(ClipboardManager::class.java)).setPrimaryClip(ClipData.newUri(context.contentResolver, "image", uri))
-            }
+            // straight to the keyboard's clipboard (the test runs in its process), as its system-clipboard listener does:
+            // a copy made from the test's background process never reached either keyboard
+            val clip = ClipData.newUri(context.contentResolver, "image", uri)
+            val item = dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem.fromClipData(context, clip, cloneUri = true)
+            context.clipboardManager().value.updatePrimaryClip(item)
             kb.open()
             // the chip shows on the plain bar, not over the tool row
             kb.instrumentation.runOnMainSync { io.github.sillypuppyy.dogboard.ime.LiveUi.toolRow.value = false }
             SystemClock.sleep(3000)
             kb.screenshot("paste-chip-image")
+            // the clipboard panel's row for it: a window onto the picture (KbClipRows.WindowImage)
+            kb.panel("clipboard")
+            SystemClock.sleep(1500)
+            kb.screenshot("clipboard-image-row")
+            // the list scrolled up a little (the row higher in the list): the slice moves up the picture
+            kb.shell("input swipe 540 2150 540 2060 900")
+            SystemClock.sleep(1200)
+            kb.screenshot("clipboard-image-row-scrolled")
         } finally {
             context.contentResolver.delete(uri, null, null)
             kb.close()

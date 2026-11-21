@@ -82,7 +82,6 @@ fun TextInputLayout(
             var wordsAsked by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
             androidx.compose.runtime.LaunchedEffect(fieldEmpty) { if (!fieldEmpty) wordsAsked = false }
             val autoTools = beforeTyping == "tools" && fieldEmpty && !wordsAsked
-            val toolRow = toolRowOpen || autoTools
             val panel by ui.panel.collectAsState()
             val removed by io.github.sillypuppyy.dogboard.ime.LiveStrip.removed.collectAsState()
             val refresh = { imeController.updateStateBlocking { refreshSuggestions() } }
@@ -150,6 +149,9 @@ fun TextInputLayout(
             // the autofill service's chips (passwords, addresses, cards: Google's or any other), drawn
             // by the service itself, over the bar's slot area between the tools button and the mic
             val inlineAutofill by dev.patrickgold.florisboard.ime.nlp.NlpInlineAutofill.suggestions.collectAsState()
+            // a fresh copy's paste chip comes before the automatic tool row: an empty field is where it gets pasted
+            // (Gboard offers it there; the tool row had hidden the chip, 2026-11-21)
+            val toolRow = toolRowOpen || (autoTools && clipShown == null)
             val showAutofill = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R && inlineAutofill.isNotEmpty() && !toolRow && panel.isEmpty()
             Box {
             val contactChips by io.github.sillypuppyy.dogboard.ime.LiveStrip.chips.collectAsState()
@@ -211,7 +213,7 @@ fun TextInputLayout(
                     imeController.updateStateBlocking { emitCandidate(io.github.sillypuppyy.dogboard.ime.DogBoardCandidate(s)) }
                 },
                 // the left button swaps the suggestions for the tool row (Kb:668)
-                onLeft = { if (autoTools && !toolRowOpen) wordsAsked = true else ui.toolRow.value = !ui.toolRow.value },
+                onLeft = { if (autoTools && clipShown == null && !toolRowOpen) wordsAsked = true else ui.toolRow.value = !ui.toolRow.value },
                 toolRow = toolRow,
                 panel = panel,
                 onTool = { icon -> ui.run(icon, imeController) },
