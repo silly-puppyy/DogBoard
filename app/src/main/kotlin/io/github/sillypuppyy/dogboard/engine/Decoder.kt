@@ -296,6 +296,18 @@ class Decoder(
         var table = IntArray(LayerMap.tableSizeFor(64)) // entry index + 1, 0 = empty
         var size = 0
 
+        /** The value for [k], or -1. */
+        fun get(k: Long): Int {
+            val mask = table.size - 1
+            var h = LayerMap.mix(k) and mask
+            while (true) {
+                val e = table[h]
+                if (e == 0) return -1
+                if (keys[e - 1] == k) return values[e - 1]
+                h = (h + 1) and mask
+            }
+        }
+
         inline fun getOrPut(k: Long, make: () -> Int): Int {
             val mask = table.size - 1
             var h = LayerMap.mix(k) and mask
@@ -532,6 +544,11 @@ class Decoder(
             return prefixes.size - 1
         }
         fun restart(sPrefix: Int, sNode: Int): Int = sr.restartIds.getOrPut(key(sPrefix, sNode)) { newRestart(sPrefix, sNode) }
+        /** The language score a restart of [sPrefix] with the word at [sNode] has, without making its prefix. */
+        fun restartLanguageModel(sPrefix: Int, sNode: Int): Double {
+            sr.restartIds.get(key(sPrefix, sNode)).takeIf { it >= 0 }?.let { id -> prefixes[id]?.let { return it.languageModel } }
+            return (prefixes[sPrefix]?.languageModel ?: 0.0) + lm(sNode, context(sPrefix), context2(sPrefix))
+        }
 
         /** The score prune ranks a state by. */
         fun pruneScore(node: Int, geometry: Double, prefix: Int): Double {
@@ -630,23 +647,27 @@ class Decoder(
             // error); only the most likely few, which keeps the search near its one-word size
             if (config.splitWords && config.missedSpace && i in 1 until n) {
                 // the best MAX_RESTARTS by score, ties in layer order (no boxing: this runs on every
-                // layer of every keystroke); every word end still gets its prefix, as before
-                val topGeometry = DoubleArray(MAX_RESTARTS); val topEdits = IntArray(MAX_RESTARTS); val topPrefix = IntArray(MAX_RESTARTS); val topScore = DoubleArray(MAX_RESTARTS)
+                // layer of every keystroke). Only the winners get a prefix: making one for every word end
+                // to read its score was 56 % of the decoder's allocations (JFR, 2026-11-21); the score is
+                // the same sum newRestart stores, so the choice is unchanged
+                val topGeometry = DoubleArray(MAX_RESTARTS); val topEdits = IntArray(MAX_RESTARTS); val topScore = DoubleArray(MAX_RESTARTS)
+                val topFrom = IntArray(MAX_RESTARTS); val topNode = IntArray(MAX_RESTARTS)
                 var count = 0
                 for (j in 0 until layer.size) {
                     val sNode = layer.node(j); val sGeometry = layer.geometry(j); val sEdits = layer.edits(j); val sPrefix = layer.prefix(j)
                     if (!lexicon.isWord(sNode) || (prefixes[sPrefix]?.count ?: 0) >= MAX_WORDS - 1) continue
-                    val p = restart(sPrefix, sNode)
-                    if (p < 0) continue
-                    val sc = sGeometry + w * prefixes[p]!!.languageModel
+                    val sc = sGeometry + w * restartLanguageModel(sPrefix, sNode)
                     if (count == MAX_RESTARTS && sc <= topScore[count - 1]) continue
                     var at = if (count < MAX_RESTARTS) count++ else count - 1
                     while (at > 0 && topScore[at - 1] < sc) {
-                        topGeometry[at] = topGeometry[at - 1]; topEdits[at] = topEdits[at - 1]; topPrefix[at] = topPrefix[at - 1]; topScore[at] = topScore[at - 1]; at--
+                        topGeometry[at] = topGeometry[at - 1]; topEdits[at] = topEdits[at - 1]; topFrom[at] = topFrom[at - 1]; topNode[at] = topNode[at - 1]; topScore[at] = topScore[at - 1]; at--
                     }
-                    topGeometry[at] = sGeometry; topEdits[at] = sEdits; topPrefix[at] = p; topScore[at] = sc
+                    topGeometry[at] = sGeometry; topEdits[at] = sEdits; topFrom[at] = sPrefix; topNode[at] = sNode; topScore[at] = sc
                 }
-                for (t in 0 until count) offer(layer, Lexicon.ROOT, topGeometry[t] + INSERTION + qi, topEdits[t] + 1, topPrefix[t])
+                for (t in 0 until count) {
+                    val p = restart(topFrom[t], topNode[t])
+                    if (p >= 0) offer(layer, Lexicon.ROOT, topGeometry[t] + INSERTION + qi, topEdits[t] + 1, p)
+                }
             }
             prune(layer, w, prefixes)
         }
