@@ -806,9 +806,13 @@ class ImeController(
                 if (latestDecode?.first != key) suggestionJob?.takeIf { it.isActive }?.let { job ->
                     runBlocking { withTimeoutOrNull(WAIT_FOR_DECODE_MS) { job.join() } }
                 }
-                // iOS never computes at the word end: it applies the correction already found, or keeps
-                // the typed word when none is ready ("avoided autocorrect deadlock"); no decode here
-                val ready = latestDecode?.takeIf { it.first == key }?.second
+                // iOS never computes at the word end ("avoided autocorrect deadlock"), so a word typed faster than its
+                // decode stayed uncorrected (emulator with a 400 ms decode: 7 of 14 regression cases; the user's phone
+                // 2 of 21 word ends). The decoder alone takes a few ms, so it runs here when nothing is ready; the
+                // neural refinement (~110 ms on the phone) is what made the background decode late
+                val t0 = android.os.SystemClock.uptimeMillis()
+                val waited = latestDecode?.takeIf { it.first == key }?.second
+                val ready = waited ?: runCatching { TypingEngine.candidates(word, context, previous2 = context2) }.getOrNull()
                 if (ready == null && logsText) android.util.Log.d("DogBoardAc", "word end before its decode: '$typed' kept for now")
                 // corrected when its decode lands (applyLate), unless the user types on first. The word's own decode
                 // job may never run (cancelled before it started, when the space came): a decode of its own, off the
@@ -823,6 +827,7 @@ class ImeController(
                 // perf (phone logs 2026-11-20: 'neural late' counts mid-word keys too): what the word end decided with
                 android.util.Log.i("DogBoardPerf", "word end: " + when {
                     ready == null -> "no decode yet"
+                    waited == null -> "decoded at the word end in ${android.os.SystemClock.uptimeMillis() - t0} ms"
                     ready === latestStage1?.second -> "decoder only (neural not ready or not run)"
                     else -> "neural ready"
                 })
