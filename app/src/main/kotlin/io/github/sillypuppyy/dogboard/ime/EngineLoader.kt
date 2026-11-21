@@ -114,8 +114,29 @@ object EngineLoader {
     private const val NEURAL_MIN_RAM_BYTES = 5_000_000_000L
 
     /** The neural model again after a memory-pressure release, when this phone runs it (call off the main thread). */
+    /** When memory pressure last released a model (uptime ms), or 0. */
+    @Volatile private var pressureAt = 0L
+
+    /** Memory pressure released a model: it stays released for [PRESSURE_HOLD_MS] (FlorisImeService.onTrimMemory). */
+    fun notePressure() { pressureAt = android.os.SystemClock.uptimeMillis() }
+
+    /**
+     * Whether a released model may come back: not within [PRESSURE_HOLD_MS] of the pressure, nor while the system
+     * reports low memory. A Galaxy A10 released both models during the load, then reloaded them at once on the next
+     * show, twice in parallel, and ran out of memory (Test Lab 2026-11-21).
+     */
+    private fun mayReload(context: Context): Boolean {
+        if (pressureAt != 0L && android.os.SystemClock.uptimeMillis() - pressureAt < PRESSURE_HOLD_MS) return false
+        val am = context.getSystemService(android.app.ActivityManager::class.java) ?: return true
+        return !android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }.lowMemory
+    }
+
+    private const val PRESSURE_HOLD_MS = 120_000L
+
+    // one load at a time: two shows in a row started two (each ~50 MB with its buffers)
+    @Synchronized
     fun ensureNeural(context: Context) {
-        if (!TypingEngine.isReady || TypingEngine.hasNeuralLm || !neuralTier(context)) return
+        if (!TypingEngine.isReady || TypingEngine.hasNeuralLm || !neuralTier(context) || !mayReload(context)) return
         TypingEngine.attachNeuralLm(loadNeuralLm(context.applicationContext))
     }
 
@@ -130,8 +151,9 @@ object EngineLoader {
     }.onFailure { android.util.Log.i("DogBoardPerf", "swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
     /** The swipe recogniser again after a memory-pressure release (call off the main thread). */
+    @Synchronized
     fun ensureSwipe(context: Context) {
-        if (!TypingEngine.isReady || TypingEngine.hasSwipeNet) return
+        if (!TypingEngine.isReady || TypingEngine.hasSwipeNet || !mayReload(context)) return
         TypingEngine.attachSwipeNet(loadSwipeNet(context.applicationContext))
         android.util.Log.i("DogBoardPerf", "swipe recogniser loaded again")
     }

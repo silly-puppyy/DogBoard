@@ -408,6 +408,7 @@ class FlorisImeService : LifecycleInputMethodService() {
             level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND
         ) {
             io.github.sillypuppyy.dogboard.engine.TypingEngine.releaseNeuralLm()
+            io.github.sillypuppyy.dogboard.ime.EngineLoader.notePressure()
             android.util.Log.i("DogBoardPerf", "memory pressure (level $level): neural model released")
         }
         // the swipe recogniser (~12 MB native) only when it is critical or the process is about to go: swiping
