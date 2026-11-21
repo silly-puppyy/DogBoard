@@ -250,6 +250,9 @@ fun LiveKbBar(
         )
         val themed = liveTheme().apply(props)
         val render = remember(themed) { KbSpec.render(themed) }
+        // the current theme's chip colours for the autofill chips the password manager draws in this bar (user
+        // 2026-11-22: they were off-theme, styled from FlorisBoard's old theme); read when a field asks for them
+        androidx.compose.runtime.SideEffect { io.github.sillypuppyy.dogboard.ime.LiveUi.autofillChip = render.t.chip to render.t.chipFg }
         val actions = remember(strip, onPick, onLeft, onTool, onBack, onMic, onLongPick, onUndo, onClip, onChip, onEmojiSearch) {
             KbActions(
                 onSlot = { i -> strip.getOrNull(i)?.let(onPick) }, onSlotLong = { i -> strip.getOrNull(i)?.let(onLongPick) },

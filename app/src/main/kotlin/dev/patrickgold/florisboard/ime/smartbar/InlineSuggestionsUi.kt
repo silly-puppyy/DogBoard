@@ -84,9 +84,12 @@ fun InlineSuggestionsStyleCache() {
 @SuppressLint("RestrictedApi")
 @RequiresApi(Build.VERSION_CODES.R)
 fun createInlineSuggestionUiStyleBundle(context: Context): Bundle? {
-    val styleSet = CachedInlineSuggestionsChipStyleSet ?: return null
-    val bgColor = styleSet.background(default = Color.White)
-    val fgColor = styleSet.foreground(default = Color.Black)
+    // DogBoard: the theme's chip colours (LiveKbBar publishes them), else FlorisBoard's style set
+    val dog = io.github.sillypuppyy.dogboard.ime.LiveUi.autofillChip
+    val styleSet = CachedInlineSuggestionsChipStyleSet
+    if (dog == null && styleSet == null) return null
+    val bgColor = dog?.first ?: styleSet!!.background(default = Color.White)
+    val fgColor = dog?.second ?: styleSet!!.foreground(default = Color.Black)
 
     val bgDrawableId = R.drawable.inline_autofill_chip_bg
     val bgDrawable = Icon.createWithResource(context, bgDrawableId).apply {

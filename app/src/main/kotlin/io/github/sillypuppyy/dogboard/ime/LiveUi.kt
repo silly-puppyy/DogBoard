@@ -14,6 +14,9 @@ import kotlinx.coroutines.launch
  * Tools are named by their icon in Kb.dc.html (Kb:663-674).
  */
 object LiveUi {
+    /** The current theme's suggestion-chip colours (background, text), for inline autofill chips; null before the bar draws. */
+    @Volatile var autofillChip: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? = null
+
     /** Settings written from bar buttons: off the main thread, so a tap never waits on the disk. */
     private val prefsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     /** Counts the keyboard's showings (FlorisImeService.onWindowShown): what changes "every time it opens". */
