@@ -71,6 +71,12 @@ object EngineLoader {
      * [NEURAL_MIN_RAM_BYTES] of memory (phones sold as 6 GB report about 5.5 GB: they run it; 4 GB
      * phones and below keep the trigram).
      */
+    /** Phones whose app heap is this small (2 GB devices) hold back the trigram on a first start. */
+    private const val LOW_HEAP_MB = 128
+
+    private fun heapMb(context: Context): Int =
+        context.getSystemService(android.app.ActivityManager::class.java)?.memoryClass ?: Int.MAX_VALUE
+
     fun neuralTier(context: Context): Boolean {
         val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
         if (!prefs.correction.neuralModel.get()) return false // Advanced > Neural model
@@ -150,7 +156,11 @@ object EngineLoader {
         // the trigram model (when built into this app), attached after the engine is ready so
         // startup isn't slowed: memory-mapped from the package, which stores it uncompressed
         // (build.gradle.kts noCompress), so nothing is copied to the heap
-        TypingEngine.attachNgrams(loadNgrams(app))
+        // a first start parses the word lists, the heap's peak: on a 128 MB heap (2 GB phones) that and the trigram
+        // index built on top ran out of memory (Test Lab Galaxy A10, 2026-11-20). The trigram (the smallest loss:
+        // -0.5 fixed, T7; the neural model or the n-grams cover context) waits for the next start, which maps it
+        if (TypingEngine.parsedAtLoad && heapMb(app) <= LOW_HEAP_MB) android.util.Log.i("DogBoardPerf", "trigram held back (first start on a ${heapMb(app)} MB heap)")
+        else TypingEngine.attachNgrams(loadNgrams(app))
         nativeMark("trigram")
         // the neural language model for next-word predictions, when its files are in this build
         // (assets/dogboard/lm: built privately, not in git yet): memory-mapped like the trigram.

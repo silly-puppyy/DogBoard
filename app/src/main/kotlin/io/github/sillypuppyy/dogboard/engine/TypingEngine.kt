@@ -14,6 +14,11 @@ import kotlin.math.ln
  * Words the user teaches it are added to the lexicon under a write lock; lookups take the read lock.
  */
 object TypingEngine {
+    /** The last load parsed the word lists (a first start: no snapshot yet), the heap's peak. */
+    @Volatile
+    var parsedAtLoad: Boolean = false
+        private set
+
     @Volatile
     private var loaded: Loaded? = null
 
@@ -195,6 +200,7 @@ object TypingEngine {
             lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
         }
         mark(if (cachedLexicon != null) "lexicon (snapshot)" else "lexicon (parsed)")
+        parsedAtLoad = cachedLexicon == null
         val bigrams = openBigrams?.let { open ->
             bigramSnapshot?.takeIf { cachedLexicon != null && it.isFile }
                 ?.let { runCatching { Bigrams.readSnapshot(map(it), lexicon) }.getOrNull() }
