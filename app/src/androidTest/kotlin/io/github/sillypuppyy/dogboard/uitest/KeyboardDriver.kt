@@ -61,7 +61,8 @@ class KeyboardDriver(
         // this screen's keyboard, not the last one: a new "onWindowShown" first (a key area line from before would
         // be read at once, and the first taps lost: ' X' for 'teh x', 2026-11-20)
         if (isGboard) { SystemClock.sleep(3500); return gboardArea() }
-        val end = SystemClock.uptimeMillis() + 15_000
+        // 30 s: a Galaxy A10's first showing compiles the layout (~7 s) while the engine unpacks (Test Lab 2026-11-21)
+        val end = SystemClock.uptimeMillis() + 30_000
         while (shownCount() <= shownBefore && SystemClock.uptimeMillis() < end) SystemClock.sleep(200)
         // a settle pause: on a slow emulator the first tap after the keyboard appears was dropped ('Nsplash',
         // ' Use Gboard', 'Eh-' for 'teh-', 2026-11-20, 2 vCPUs + the neural model)
@@ -81,7 +82,7 @@ class KeyboardDriver(
     private fun shownCount() = shell("logcat -d -s DogBoardPerf:I").lineSequence().count { "onWindowShown" in it }
 
     /** The key area's screen bounds from DogBoard's DogBoardGeom log line, once it stops moving (slide-in). */
-    private fun waitForKeyArea(timeoutMs: Long = 15_000): KeyArea? {
+    private fun waitForKeyArea(timeoutMs: Long = 30_000): KeyArea? {
         val end = SystemClock.uptimeMillis() + timeoutMs
         var previous: KeyArea? = null
         while (SystemClock.uptimeMillis() < end) {
