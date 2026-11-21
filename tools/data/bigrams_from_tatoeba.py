@@ -23,18 +23,20 @@ MIN_COUNT = 5
 START = "<s>"
 # Tatoeba's example sentences use a few names constantly ("Tom" is its third most common word);
 # pairs with them would teach the keyboard to suggest them everywhere.
-OVERUSED_NAMES = {"tom", "mary"}
+OVERUSED_NAMES = {"tom", "mary", "maría"}  # Spanish Tatoeba translates Mary as María
 TOKEN = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)*|[.!?]")
+# other languages: Latin-1 letters too (English keeps the ASCII tokens its shipped file was built with)
+TOKEN_LATIN1 = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)*|[.!?]")
 
 
 def is_eval_sentence(sentence_id: str) -> bool:
     return sentence_id.endswith("0")
 
 
-def tokens(sentence):
+def tokens(sentence, token=TOKEN):
     """Lowercase words of a sentence, with START at the beginning and after . ! ?"""
     out = [START]
-    for t in TOKEN.findall(sentence):
+    for t in token.findall(sentence):
         if t in ".!?":
             if out[-1] != START:
                 out.append(START)
@@ -49,6 +51,7 @@ def main():
     ap.add_argument("sentences", help="Tatoeba <lang>_sentences.tsv")
     ap.add_argument("--lexicon", default=LEXICON)
     ap.add_argument("--out", default=DST)
+    ap.add_argument("--lang", default="en")
     a = ap.parse_args()
     src = a.sentences
     vocab = {line.split("\t")[0].lower() for line in open(a.lexicon, encoding="utf-8") if not line.startswith("#")}
@@ -57,7 +60,7 @@ def main():
         parts = line.rstrip("\n").split("\t")
         if len(parts) < 3 or is_eval_sentence(parts[0]):
             continue
-        toks = tokens(parts[2])
+        toks = tokens(parts[2], TOKEN if a.lang == "en" else TOKEN_LATIN1)
         for prev, word in zip(toks, toks[1:]):
             if word == START:
                 continue
@@ -69,8 +72,8 @@ def main():
     ]
     kept.sort(key=lambda x: (x[0], -x[2], x[1]))
     with open(a.out, "w", encoding="utf-8") as out:
-        out.write("#dogboard-bigrams 1\n#lang en\n")
-        out.write(f"#source Tatoeba (https://tatoeba.org) English sentences, CC-BY 2.0 FR; min count {MIN_COUNT}\n")
+        out.write(f"#dogboard-bigrams 1\n#lang {a.lang}\n")
+        out.write(f"#source Tatoeba (https://tatoeba.org) {"English" if a.lang == "en" else a.lang} sentences, CC-BY 2.0 FR; min count {MIN_COUNT}\n")
         for p, w, c in kept:
             out.write(f"{p}\t{w}\t{c}\n")
     print(f"{len(kept)} bigrams -> {a.out}", file=sys.stderr)

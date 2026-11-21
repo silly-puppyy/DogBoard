@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Converts a KenLM ARPA trigram model into DogBoard's binary n-gram file (NgramModel.readBinary).
 
-    python3 tools/data/arpa_to_dogboard.py MODEL.arpa OUT.bin [--max-pairs N] [--max-triples N]
+    python3 tools/data/arpa_to_dogboard.py MODEL.arpa OUT.bin [--max-pairs N] [--max-triples N] [--lexicon PACK.lexicon.tsv]
 
 Keeps only words of the shipped lexicon (lowercase keys) plus <s> and </s>; n-grams with other
 words are dropped. Then keeps the most probable pairs/triples up to the given limits (the
@@ -26,9 +26,10 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--max-pairs", type=int, default=3_000_000)
     ap.add_argument("--max-triples", type=int, default=3_000_000)
+    ap.add_argument("--lexicon", default=LEX, help="the pack's lexicon (default: English)")
     ap.add_argument("--legacy", action="store_true", help="the earlier float layout (DGN1); the app reads only DGN2")
     args = ap.parse_args()
-    lex = {l.split("\t")[0].lower() for l in open(LEX, encoding="utf-8") if not l.startswith("#")}
+    lex = {l.split("\t")[0].lower() for l in open(args.lexicon, encoding="utf-8") if not l.startswith("#")}
     keep = lex | {"<s>", "</s>"}
 
     vocab, uni_p, uni_b, ids = [], [], [], {}
