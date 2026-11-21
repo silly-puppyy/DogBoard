@@ -183,13 +183,83 @@ object KeySounds {
         // how many tracks Android actually put on its fast path (a mixer has 8 fast slots, one its own: 2026-11-21)
         fun fast(set: Array<Array<android.media.AudioTrack?>>) = set.sumOf { kind -> kind.count { it?.performanceMode == android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY } }
         android.util.Log.i("DogBoardPerf", "key sounds $style at $SR Hz: typing ${fast(tracks)} of ${tracks.sumOf { it.size }} tracks fast, media ${fast(mediaTracks)} of ${mediaTracks.sumOf { it.size }}")
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG && !probed) { probed = true; appContext = context.applicationContext; probeFastPath() }
     }
+
+    private var probed = false
+
+    /**
+     * Debug builds: which kinds of track this phone puts on the fast path (a Pixel 10 gave our static sonification tracks
+     * none of it, 2026-11-21): static and streaming tracks for three usages, built, logged and released.
+     */
+    private fun probeFastPath() {
+        val usages = listOf("sonification" to AudioAttributes.USAGE_ASSISTANCE_SONIFICATION, "media" to AudioAttributes.USAGE_MEDIA, "game" to AudioAttributes.USAGE_GAME)
+        val out = StringBuilder("fast path probe at $SR Hz:")
+        for ((name, usage) in usages) for (static in listOf(true, false)) {
+            val t = runCatching {
+                val fmt = android.media.AudioFormat.Builder().setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT).setSampleRate(SR)
+                    .setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).build()
+                val min = android.media.AudioTrack.getMinBufferSize(SR, android.media.AudioFormat.CHANNEL_OUT_MONO, android.media.AudioFormat.ENCODING_PCM_16BIT)
+                android.media.AudioTrack.Builder()
+                    .setAudioAttributes(AudioAttributes.Builder().setUsage(usage).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                    .setAudioFormat(fmt)
+                    .setTransferMode(if (static) android.media.AudioTrack.MODE_STATIC else android.media.AudioTrack.MODE_STREAM)
+                    .setPerformanceMode(android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                    .setBufferSizeInBytes(if (static) 4800 else min)
+                    .build()
+            }.getOrNull()
+            val fast = t?.performanceMode == android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY
+            out.append(" ").append(name).append(if (static) "/static=" else "/stream=").append(if (t == null) "fail" else if (fast) "FAST" else "normal")
+            if (t != null && !static) out.append("(").append(t.bufferSizeInFrames).append(" frames)")
+            t?.release()
+        }
+        // a streaming track asking for only two of the mixer's bursts, mono and stereo
+        val am = appContext?.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+        val burst = am?.getProperty(android.media.AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)?.toIntOrNull() ?: 0
+        for (stereo in listOf(false, true)) {
+            val mask = if (stereo) android.media.AudioFormat.CHANNEL_OUT_STEREO else android.media.AudioFormat.CHANNEL_OUT_MONO
+            val t = runCatching {
+                android.media.AudioTrack.Builder()
+                    .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
+                    .setAudioFormat(android.media.AudioFormat.Builder().setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT).setSampleRate(SR).setChannelMask(mask).build())
+                    .setTransferMode(android.media.AudioTrack.MODE_STREAM)
+                    .setPerformanceMode(android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY)
+                    .setBufferSizeInBytes(maxOf(burst, 96) * 2 * (if (stereo) 4 else 2))
+                    .build()
+            }.getOrNull()
+            out.append(if (stereo) " stream-small-stereo=" else " stream-small-mono=")
+                .append(if (t == null) "fail" else if (t.performanceMode == android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY) "FAST" else "normal")
+            if (t != null) out.append("(").append(t.bufferSizeInFrames).append(" frames)")
+            t?.release()
+        }
+        // the phone's low-latency support and where sound goes now (device types only)
+        val pm = appContext?.packageManager
+        out.append("; low_latency feature=").append(pm?.hasSystemFeature("android.hardware.audio.low_latency"))
+            .append(" pro=").append(pm?.hasSystemFeature("android.hardware.audio.pro"))
+            .append(" burst=").append(burst)
+        val outs = am?.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS).orEmpty().map { it.type }.distinct()
+        out.append(" outputs=").append(outs.joinToString(",")) // 2 speaker, 7/8 Bluetooth SCO/A2DP, 26/27 BLE, 3/4 wired, 22 USB headset
+        android.util.Log.i("DogBoardPerf", out.toString())
+    }
+
+    private var appContext: Context? = null
 
     /**
      * Plays [kind] in the loaded style at [volume] (0..1): the next of its variants, its volume varied per press;
      * [preview]: on the media stream, heard on silent too (the settings' previews, and Play on silent).
      */
+    // playback runs on its own thread at audio priority: AudioTrack.stop/reload/play cost the UI thread a few ms per key
+    // (the phone's stall samples showed AudioTrack.native_start, 2026-11-21) and waited behind its frames
+    private val audio by lazy {
+        val t = android.os.HandlerThread("DogBoardKeySounds", android.os.Process.THREAD_PRIORITY_URGENT_AUDIO).apply { start() }
+        android.os.Handler(t.looper)
+    }
+
     fun play(kind: Kind, volume: Float, preview: Boolean = false) {
+        audio.post { playNow(kind, volume, preview) }
+    }
+
+    private fun playNow(kind: Kind, volume: Float, preview: Boolean) {
         if (preview && mediaTracks.isEmpty() && loadedPcm.isNotEmpty()) synchronized(this) {
             if (mediaTracks.isEmpty()) mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(loadedPcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
         }
