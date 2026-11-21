@@ -68,23 +68,26 @@ object KeySounds {
     // Typing sounds use the sonification stream (silent on silent, as Gboard's and an iPhone's); the settings'
     // previews and Play on silent use the media stream (a phone on vibrate previewed nothing).
     // Four variants per voice, played in turn (round-robin, as game audio does with several recordings of one action):
-    // each with its own pitch (+-3.5 %) and decay (+-12 %). Volume alone (+-6 %) was barely audible and typing sounded
-    // mechanical (user 2026-11-21); recorded key sounds vary because every take differs (Kenney's UI Audio).
+    // each with its own pitch and decay, and each press its own volume. Volume alone (+-6 %) was barely audible and typing
+    // sounded mechanical (user 2026-11-21); recorded key sounds vary because every take differs (Kenney's UI Audio).
+    // How much is Settings › Key sound › Variation (0-100): at 100 pitch +-7 %, decay +-24 %, volume +-20 %.
     private const val COPIES = 4
     private var tracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
     private var mediaTracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
     private val next = IntArray(Kind.entries.size)
     private var loadedStyle: String? = null
+    private var loadedVariation = -1
+    private var variation = 0.5
     private val rng = java.util.Random(11)
 
     /** 16-bit mono PCM of [v], peak at 0.4 of full scale (iOS's clicks peak near -8 dBFS). */
-    private fun render(v: Voice, seed: Long, variant: Int = 0): ShortArray {
+    private fun render(v: Voice, seed: Long, variant: Int = 0, amount: Double = 0.5): ShortArray {
         val n = (v.length * SR).toInt()
         val noise = java.util.Random(seed * 31 + variant)
         // variant 0 is the voice as designed; the others shift pitch and decay a little (fixed seeds: the same set every time)
         val jitter = java.util.Random(seed * 131 + variant * 7919L)
-        val pf = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.035
-        val df = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.12
+        val pf = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.07 * amount
+        val df = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.24 * amount
         val x = DoubleArray(n) { i ->
             val t = i.toDouble() / SR
             var s = 0.0
@@ -108,30 +111,31 @@ object KeySounds {
             .setBufferSizeInBytes(pcm.size * 2)
             .build().also { it.write(pcm, 0, pcm.size) }
 
-    /** Builds [style]'s sounds (once per style; a few ms: off the main thread when it can be). */
+    /** Builds [style]'s sounds with [variationPercent] (0-100) of variation (again only when either changes; a few ms). */
     @Synchronized
-    fun prepare(@Suppress("UNUSED_PARAMETER") context: Context, style: String) {
-        if (style == loadedStyle) return
+    fun prepare(@Suppress("UNUSED_PARAMETER") context: Context, style: String, variationPercent: Int = 50) {
+        if (style == loadedStyle && variationPercent == loadedVariation) return
         val st = STYLES[style] ?: return
+        val amount = variationPercent.coerceIn(0, 100) / 100.0
         for (set in tracks + mediaTracks) for (t in set) t?.release()
         val pcm = Kind.entries.map { k ->
             val voice = when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }
-            List(COPIES) { variant -> render(voice, k.ordinal.toLong(), variant) }
+            List(COPIES) { variant -> render(voice, k.ordinal.toLong(), variant, amount) }
         }
         tracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_ASSISTANCE_SONIFICATION) }.getOrNull() } }
         mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
-        loadedStyle = style
+        loadedStyle = style; loadedVariation = variationPercent; variation = amount
     }
 
     /**
-     * Plays [kind] in the loaded style at [volume] (0..1): the next of its variants, at +-10 % volume per press;
+     * Plays [kind] in the loaded style at [volume] (0..1): the next of its variants, its volume varied per press;
      * [preview]: on the media stream, heard on silent too (the settings' previews, and Play on silent).
      */
     fun play(kind: Kind, volume: Float, preview: Boolean = false) {
         val set = (if (preview) mediaTracks else tracks).getOrNull(kind.ordinal) ?: return
         val i = next[kind.ordinal]; next[kind.ordinal] = (i + 1) % COPIES
         val t = set[i] ?: return
-        val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.2f)).coerceIn(0f, 1f)
+        val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.4f * variation.toFloat())).coerceIn(0f, 1f)
         runCatching {
             if (t.playState == android.media.AudioTrack.PLAYSTATE_PLAYING) t.stop()
             t.reloadStaticData()

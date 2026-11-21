@@ -171,7 +171,7 @@ private class AndroidInteractionController(
             // DogBoard: our own key sounds (Settings › Sound and vibration › Key sound), else Android's
             val style = prefs.inputFeedback.audioStyle.get()
             if (style != "system") context.get()?.let { ctx ->
-                io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(ctx, style)
+                io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(ctx, style, prefs.inputFeedback.audioVariation.get())
                 val soundKind = when (feedbackClassFor(kind, output)) {
                     io.github.sillypuppyy.dogboard.feel.KeyFeedbackClass.DELETE, io.github.sillypuppyy.dogboard.feel.KeyFeedbackClass.DELETE_REPEAT,
                     io.github.sillypuppyy.dogboard.feel.KeyFeedbackClass.DELETE_RAPID -> io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.DELETE

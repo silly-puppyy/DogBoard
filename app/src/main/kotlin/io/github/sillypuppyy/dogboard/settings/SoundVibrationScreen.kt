@@ -43,6 +43,7 @@ fun SoundVibrationScreen() {
     val volume by fb.audioVolume.collectAsState()
     val soundStyle by fb.audioStyle.collectAsState()
     val bypassSilent by fb.audioBypassSilent.collectAsState()
+    val variation by fb.audioVariation.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val hPress by fb.hapticFeatKeyPress.collectAsState()
     val hLong by fb.hapticFeatKeyLongPress.collectAsState()
@@ -86,11 +87,12 @@ fun SoundVibrationScreen() {
                         "classic" to "Classic" to "A crisp, slightly noisy click.",
                     )
                     var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                    var variationPreview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }
                     val current = names.firstOrNull { it.first.first == soundStyle } ?: names.first()
-                    fun preview(id: String) = scope.launch {
+                    fun preview(id: String, variationPercent: Int = variation) = scope.launch {
                         fb.audioStyle.set(id)
                         if (id != "system") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                            io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(context, id)
+                            io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(context, id, variationPercent)
                             // a short preview: three keys, a delete, a shift (SoundPool loads asynchronously)
                             kotlinx.coroutines.delay(150)
                             val v = volume / 100f
@@ -104,6 +106,17 @@ fun SoundVibrationScreen() {
                             TitleSub("Key sound", "${current.first.second}: ${current.second} Picking one plays it, even on silent.")
                         }
                         SetMenu(open, { open = false }, names.map { (idName, sub) -> "${idName.second}, ${sub.lowercase().trimEnd('.')}" to { preview(idName.first) } })
+                    }
+                    // how much each press differs from the last (DogBoard's sounds only; Android's click is one fixed sound)
+                    if (soundStyle != "system") SetSliderRow(
+                        "sv:variation", "Variation", "How much each press differs, like a real keyboard where no two clicks sound alike.",
+                        variation.toFloat(), fb.audioVariation.default.toFloat(), 0f..100f, 10f, { v -> "${v.toInt()} %" },
+                    ) { v ->
+                        // the slider reports every move: one preview per new value, the last one cut short
+                        if (v.toInt() != variation) {
+                            scope.launch { fb.audioVariation.set(v.toInt()) }
+                            variationPreview?.cancel(); variationPreview = preview(soundStyle, v.toInt())
+                        }
                     }
                     // Android's own click always follows silent mode; DogBoard's sounds can play on the media stream
                     if (soundStyle != "system") SetSwitchRow("sv:bypass", "Play on silent", "Key sounds even when your phone is on silent or vibrate, at the media volume.", bypassSilent) { v -> scope.launch { fb.audioBypassSilent.set(v) } }
