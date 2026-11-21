@@ -46,7 +46,10 @@ internal suspend fun compileLayout(path: String): K3CompileResult {
 class QwertyEnLayoutTest : FunSpec({
     // DOGBOARD_SPEED set: how long compiling the layout takes (the keyboard compiles it at every cold start)
     test("compile speed").config(enabled = System.getenv("DOGBOARD_SPEED") != null) {
-        repeat(5) { compileLayout("keyboard/qwerty-en.xml") }
+        // the first compile in a fresh JVM is the cold start's (classes load, code not yet compiled)
+        val cold = System.nanoTime().let { t0 -> compileLayout("keyboard/qwerty-en.xml"); (System.nanoTime() - t0) / 1e6 }
+        println("SPEED layout compile: first %.0f ms".format(cold))
+        repeat(4) { compileLayout("keyboard/qwerty-en.xml") }
         val times = (1..20).map { val t0 = System.nanoTime(); compileLayout("keyboard/qwerty-en.xml"); (System.nanoTime() - t0) / 1e6 }
         println("SPEED layout compile: mean %.1f ms, min %.1f ms (after 5 warm-ups)".format(times.average(), times.min()))
     }
