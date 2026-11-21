@@ -63,6 +63,17 @@ object SetHomeSpec {
         s("tune", "Advanced", "Neural model, suggestion-bar taps, backup", S),
         s("info", "About", "Version, licenses, credits", T),
     )
+
+    /**
+     * The home page's cards, Gboard style (user 2026-11-21: "split out sections in the main settings page like gboard,
+     * to make it easier to find what you're looking for"): setup, typing, your data, the app; no headers, as Gboard.
+     */
+    val groups: List<List<Section>> = listOf(
+        listOf("Languages", "Layout", "Theme"),
+        listOf("Autocorrect and typing", "Sound and vibration", "Gestures", "Timing and feel", "Emoji and GIFs"),
+        listOf("Clipboard", "Privacy"),
+        listOf("Advanced", "About"),
+    ).map { titles -> titles.map { t -> sections.first { it.title == t } } }
 }
 
 /** SetHome.dc.html:16-101, the settings home page as drawn (static, like the canvas). */
@@ -129,9 +140,9 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                     Symbol("search", 24.sp, SetColors.onSurfaceVariant)
                     DText("Search settings", Modifier.weight(1f), style = setText(16f, color = SetColors.onSurfaceVariant))
                 }
-                // settings tree v3: every section in one list, no "Main choices" (Gboard's home)
-                SetRows(Modifier.fillMaxWidth()) {
-                    for (s in SetHomeSpec.sections) {
+                // settings tree v3 in Gboard's order, split into cards as Gboard's home is
+                for (group in SetHomeSpec.groups) SetRows(Modifier.fillMaxWidth()) {
+                    for (s in group) {
                         val (bg, fg) = SetColors.container(s.bg, s.fg)
                         val sub = if (s.title == "Theme") actions?.lookSub ?: s.sub else s.sub
                         SetSectionRow(s.icon, s.title, sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
