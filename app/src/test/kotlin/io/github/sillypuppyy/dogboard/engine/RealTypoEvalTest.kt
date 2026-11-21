@@ -58,6 +58,7 @@ class RealTypoEvalTest : FunSpec({
         // DOGBOARD_EXACT_SPLITS=0: Autocorrect.exactSplitsEnabled off (a typed non-word stays ahead of its exact split)
         autocorrect.exactSplitsEnabled = System.getenv("DOGBOARD_EXACT_SPLITS") != "0"
         autocorrect.allCapsShield = System.getenv("DOGBOARD_ALLCAPS_SHIELD") != "0"
+        System.getenv("DOGBOARD_MIN_TARGET")?.let { autocorrect.minTargetLogProb = it.toDouble() }
         // DOGBOARD_RULE3=x: Rule 3's bar as a probability ratio (iOS 0.1), "off" = no bar
         System.getenv("DOGBOARD_RULE3")?.let { autocorrect.minContextSupport = if (it == "off") Double.NEGATIVE_INFINITY else kotlin.math.ln(it.toDouble()) }
         val handMm = System.getenv("DOGBOARD_REAL_TYPOS_HAND")?.toDoubleOrNull()

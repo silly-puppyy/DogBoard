@@ -61,6 +61,15 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var allCapsShield: Boolean = true
 
+    /**
+     * A one-word correction to a word rarer than this (ln P, the lexicon's) is not made: it stays a suggestion.
+     * Our 307k lexicon offers rare words a smaller one lacks ("moknday" -> "noonday", "ghandi" -> "chandi",
+     * "ekinf" -> "eking"; Gboard's 2.5 % wrong vs our 5.6 %, 2026-11-21). -16 (about the 100,000th word): main set
+     * fixed 46.8 -> 46.7 %, wrong 5.6 -> 5.4 %; held-out ITE dev set fixed 56.0 -> 55.9 %, wrong 6.7 -> 6.2 % (-15 and
+     * -14 trade away more fixes). Negative infinity = off (benchmarks: DOGBOARD_MIN_TARGET=x).
+     */
+    var minTargetLogProb: Double = -16.0
+
     /** Known misspellings, lowercase (en.misspellings.txt): never shielded as an abbreviation. */
     var knownMisspellings: Set<String> = emptySet()
 
@@ -191,6 +200,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         if (top.words > 1 && top.contextSupport < minContextSupport) return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
+        // (only a change of letters: a casing or apostrophe fix of what was typed stays, "gboard" -> "Gboard")
+        if (top.words == 1 && minTargetLogProb > Double.NEGATIVE_INFINITY && sortKey(t) != sortKey(typed) &&
+            (lexicon.logProb(top.word) ?: lexicon.logProb(top.word.lowercase()) ?: Double.NEGATIVE_INFINITY) < minTargetLogProb) return null
         // Rule 2 (spec 4.1): a correction longer than the input that has fewer one-letter words than it is
         // rejected ("a" -> "and", and as well "o" -> "in"; audit 2026-11-20: ours needed T to start with I)
         if (t.length > typed.length && oneLetterWords(t) < oneLetterWords(typed)) return null
