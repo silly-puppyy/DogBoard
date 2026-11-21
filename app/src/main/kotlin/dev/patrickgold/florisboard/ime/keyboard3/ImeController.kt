@@ -54,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -279,14 +280,36 @@ class ImeController(
     // DogBoard: letterPrior is asked on every key-down, on the UI thread (two lexicon walks under the engine's read
     // lock, ~4 % of the UI thread while typing, simpleperf 2026-11-21): kept for the last text, and worked out ahead on
     // the decode thread after each keystroke's decode, so a key-down usually finds it ready
-    private class PriorEntry(val textBefore: String, val prior: ((Char) -> Double)?)
+    private class PriorEntry(val prefix: String, val previous: String?, val prior: ((Char) -> Double)?)
     @Volatile private var priorCache: PriorEntry? = null
 
+    /**
+     * The next key's prior, worked out on the decode thread right after a letter, once the editor shows it (the decode
+     * itself waits for the editor too and came after the next key-down: 33 % cache hits, emulator 2026-11-21).
+     */
+    private fun warmPrior(word: String) {
+        scope.launch(decodeDispatcher) {
+            val text = kotlinx.coroutines.withTimeoutOrNull(300) {
+                activeState.first { it.content.surroundingText.textBefore.endsWith(word) }.content.surroundingText.textBefore.toString()
+            } ?: return@launch
+            priorFor(text)
+        }
+    }
+
     private fun priorFor(textBefore: String): ((Char) -> Double)? {
-        priorCache?.let { if (it.textBefore == textBefore) return it.prior }
         val prefix = trailingWord(textBefore)
-        val prior = TypingEngine.keyPrior(prefix, previousContext(textBefore.substring(0, textBefore.length - prefix.length)))
-        priorCache = PriorEntry(textBefore, prior)
+        return priorFor(prefix, previousContext(textBefore.substring(0, textBefore.length - prefix.length)))
+    }
+
+    /** Keyed by the word so far and the word before it: the decode knows both exactly, before the editor shows the key. */
+    private fun priorFor(prefix: String, previous: String?): ((Char) -> Double)? {
+        val onUi = android.os.Looper.myLooper() == android.os.Looper.getMainLooper()
+        priorCache?.let { if (it.prefix == prefix && it.previous == previous) { if (BuildConfig.DEBUG && onUi) io.github.sillypuppyy.dogboard.perf.GcStats.add("prior hits (count)", 1024); return it.prior } }
+        if (BuildConfig.DEBUG && onUi) {
+            io.github.sillypuppyy.dogboard.perf.GcStats.add("prior misses (count)", 1024)
+        }
+        val prior = TypingEngine.keyPrior(prefix, previous)
+        priorCache = PriorEntry(prefix, previous, prior)
         return prior
     }
 
@@ -654,6 +677,7 @@ class ImeController(
                         InputShiftState.UNSHIFTED -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.NONE
                     }
                     currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params, shiftFlag, caseContext)
+                    warmPrior(currentWord.text)
                     lastCorrection = null
                 }
                 isTerminator(text) -> finishWord(text)
@@ -796,6 +820,7 @@ class ImeController(
 
         /** Called before a word separator is typed: autocorrects the finished word. */
         private fun finishWord(separator: String) {
+            if (separator.isNotEmpty()) warmPrior(separator) // the next word's first key
             lastCorrection = null
             confirmPendingRetro() // the retrocorrection before the last word wasn't undone
             if (joinAcrossSpace(separator)) { spaceTap = null; return }
@@ -1503,7 +1528,6 @@ class ImeController(
                 val tDecode = android.os.SystemClock.uptimeMillis()
                 val decoded = kotlinx.coroutines.withContext(decodeDispatcher) {
                     io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
-                        .also { priorFor(textBefore) }
                 }
                 // slow phones (Galaxy A10: word ends waited 52-149 ms on the decoder): how long a keystroke's decode takes
                 val decodeMs = android.os.SystemClock.uptimeMillis() - tDecode
