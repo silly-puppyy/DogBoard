@@ -18,6 +18,17 @@ object EngineLoader {
     private fun pack(app: Context): LanguagePack =
         pack ?: (LanguagePack.open(app.assets, LanguagePack.DEFAULT_TAG) ?: error("no language pack ${LanguagePack.DEFAULT_TAG}")).also { pack = it }
 
+    /**
+     * A word-data snapshot built with the app (tools: SnapshotExportTest), gunzipped as it streams, or null when the
+     * app has none for this pack's word lists: its name carries the first 8 hex of the lexicon's and the bigrams'
+     * SHA-256 from the pack manifest, so a snapshot left over from older word lists is never used.
+     */
+    private fun shippedSnapshot(app: Context, p: LanguagePack, name: String): java.io.InputStream? = runCatching {
+        val key = listOf("lexicon", "bigrams").joinToString("") { p.manifest.files[it]?.sha256?.take(8).orEmpty() }
+        if (key.length != 16) return null
+        java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${p.tag}-$name-$key.dgz"), 64 * 1024)
+    }.getOrNull()
+
     /** The key of this install's cached data files (an update makes new ones). */
     private fun snapshotKey(app: Context): String =
         app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" }
@@ -148,6 +159,7 @@ object EngineLoader {
             // parsed word data, rebuilt when the app (and so its assets) changes
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
             snapshotKey = snapshotKey(app),
+            openShipped = { name -> shippedSnapshot(app, p, name) },
             rules = p.path("rules")?.let { r -> runCatching { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(assets.open(r).bufferedReader().use { it.readText() }) }.getOrNull() }
                 ?: io.github.sillypuppyy.dogboard.engine.LanguageRules(),
         )

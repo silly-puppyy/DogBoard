@@ -160,6 +160,12 @@ object TypingEngine {
         openMisspellings: (() -> BufferedReader)? = null,
         /** The language's rules (the pack's rules.json). */
         rules: LanguageRules = LanguageRules.ENGLISH,
+        /**
+         * The word-data snapshots built with the app ("lexicon", "bigrams"), unpacked, or null when it has none for
+         * these word lists: a first start copies them instead of parsing (the parse was the heap's peak on 2 GB
+         * phones, and ~20 s on a Galaxy A10).
+         */
+        openShipped: ((String) -> java.io.InputStream?)? = null,
     ) {
         if (loaded != null) return
         // load stages timed for the log (cold start; i18n step 2 decides what to prebuild from this)
@@ -177,7 +183,7 @@ object TypingEngine {
             load(
                 openLexicon, openBigrams, userWords, blockedWords, rejectedCorrections, autocorrectStrength, personalOffsetsFile, openAbbreviations, personalModel,
                 textReplacements, openEmojiIndex, openEmojiTones, emojiUsageFile, openNoSuggest, snapshotDir, snapshotKey, addedWords,
-                openCharModel, openMisspellings, rules,
+                openCharModel, openMisspellings, rules, openShipped,
             )
         }
         noSuggest = openNoSuggest?.let { open ->
@@ -194,10 +200,23 @@ object TypingEngine {
         // mapped, not read into a byte array: the arrays are copied straight from the file's pages
         fun map(f: File) = java.io.RandomAccessFile(f, "r").channel.use { it.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, it.size()) }
         mark("small lists")
+        // a first start: the snapshots that came with the app, when they match these word lists
+        if (lexiconSnapshot != null && !lexiconSnapshot.isFile) openShipped?.let { open ->
+            runCatching {
+                val lex = open("lexicon") ?: return@runCatching
+                snapshotDir?.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() }
+                lex.use { s -> writeAtomically(lexiconSnapshot) { s.copyTo(it, 64 * 1024) } }
+                bigramSnapshot?.let { f -> open("bigrams")?.use { s -> writeAtomically(f) { s.copyTo(it, 64 * 1024) } } }
+                mark("snapshots unpacked")
+            }.onFailure { lexiconSnapshot.delete(); bigramSnapshot?.delete() }
+        }
         val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it)) }.getOrNull() }
-        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.also { lex ->
+        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.let { lex ->
             snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
             lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
+            // the parsed lexicon holds everything on the heap; the snapshot just written maps its cold half, ~40 MB
+            // less for the rest of the session (a Galaxy A10 stayed at its 128 MB cap after a parse, 2026-11-21)
+            lexiconSnapshot?.takeIf { it.isFile }?.let { f -> runCatching { Lexicon.readSnapshot(map(f)) }.getOrNull() } ?: lex
         }
         mark(if (cachedLexicon != null) "lexicon (snapshot)" else "lexicon (parsed)")
         parsedAtLoad = cachedLexicon == null

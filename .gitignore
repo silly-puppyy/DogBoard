@@ -74,3 +74,6 @@ app/src/main/assets/dogboard/en.ngrams.bin
 
 # DogBoard neural LM files: built privately (tmp/llm), not distributed until the training-data licences are reviewed
 app/src/main/assets/dogboard/lm
+
+# word-data snapshots built for the APK (SnapshotExportTest)
+app/src/main/assets/dogboard/snapshot/
