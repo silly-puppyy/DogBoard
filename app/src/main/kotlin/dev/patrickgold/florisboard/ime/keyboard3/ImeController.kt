@@ -54,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -111,6 +112,12 @@ class ImeController(
 ) {
     private val prefs by FlorisPreferenceStore
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    // DogBoard: keystroke decodes on their own thread at display priority. On the shared default pool they ran like any
+    // background work, often on a big.LITTLE phone's slow cores (a Pixel 10 logged 20-50 ms decodes that take ~2 ms on
+    // the emulator's one core, 2026-11-21); decodes are serialised by the decoder's lock anyway
+    private val decodeDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread({ android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_DISPLAY); r.run() }, "DogBoardDecode")
+    }.asCoroutineDispatcher()
     private val breakIterators = BreakIterators()
     private val expectedContentQueue = ExpectedContentQueue()
     private var emitInterceptor = AtomicReference<EmitInterceptor?>(null)
@@ -1482,7 +1489,9 @@ class ImeController(
                 // (tests the late correction on an emulator, which is otherwise too fast)
                 if (BuildConfig.DEBUG) slowDecodeMs().takeIf { it > 0 }?.let { kotlinx.coroutines.delay(it) }
                 val tDecode = android.os.SystemClock.uptimeMillis()
-                val decoded = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
+                val decoded = kotlinx.coroutines.withContext(decodeDispatcher) {
+                    io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
+                }
                 // slow phones (Galaxy A10: word ends waited 52-149 ms on the decoder): how long a keystroke's decode takes
                 val decodeMs = android.os.SystemClock.uptimeMillis() - tDecode
                 // the decoder's own time decides the beam; the wall time also counts waiting behind another keystroke
