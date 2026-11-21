@@ -148,11 +148,17 @@ private class AndroidInteractionController(
     }.stateIn(scope, SharingStarted.Eagerly, InteractionFeedbackOptions.Fallback)
 
     private var lastLoggedStyle: String? = null
+    private var lastSkip: String? = null
+
+    /** Debug: why a key press made no sound (2026-11-21: Play on silent on, yet silence and no "key sound" line). */
+    private fun logSoundSkip(why: String) {
+        if (why != lastSkip) { lastSkip = why; android.util.Log.i("DogBoardPerf", "key sound skipped: $why") }
+    }
 
     override fun performAudioFeedback(kind: InteractionKind, output: K3StringOrDescriptor?) {
         val feedbackOptions = activeFeedbackOptions.value
-        val composeView = composeView.get() ?: return
-        if (!composeView.isSoundEffectsEnabled) return
+        val composeView = composeView.get() ?: return Unit.also { logSoundSkip("no keyboard view") }
+        if (!composeView.isSoundEffectsEnabled) return Unit.also { logSoundSkip("view sound effects off") }
         val audioManager = audioManager.get() ?: return
         val effect = when (output) {
             ImeActions.Backspace -> AudioManager.FX_KEYPRESS_DELETE
@@ -169,11 +175,12 @@ private class AndroidInteractionController(
             InteractionKind.TextHandleMove -> 0.4
         }
         val volume = (feedbackOptions.getAudioVolume() * factor) / 100.0
+        if (volume !in 0.01..1.00) logSoundSkip("volume $volume")
         if (volume in 0.01..1.00) {
             // DogBoard: our own key sounds (Settings › Sound and vibration › Key sound), else Android's
             val style = prefs.inputFeedback.audioStyle.get()
             // which sound a key press uses, logged when it changes (2026-11-21: the phone showed no "key sounds" line)
-            if (style != lastLoggedStyle) { lastLoggedStyle = style; android.util.Log.i("DogBoardPerf", "key sound style $style, volume ${(volume * 100).toInt()} %") }
+            if (style != lastLoggedStyle) { lastLoggedStyle = style; android.util.Log.i("DogBoardPerf", "key sound style $style, volume ${(volume * 100).toInt()} %, play on silent ${prefs.inputFeedback.audioBypassSilent.get()}") }
             if (style != "system") context.get()?.let { ctx ->
                 io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(ctx, style, prefs.inputFeedback.audioVariation.get())
                 val soundKind = when (feedbackClassFor(kind, output)) {

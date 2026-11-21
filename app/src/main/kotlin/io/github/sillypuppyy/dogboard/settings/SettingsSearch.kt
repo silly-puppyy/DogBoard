@@ -67,13 +67,61 @@ object SettingsSearch {
         Entry("Neural model", "Advanced", "advanced", "battery memory ai language model"),
         Entry("Show the app icon", "Advanced", "advanced", "launcher hide icon"),
         Entry("About", "About", "about", "version licenses credits"),
+        // rows added after the first index (user 2026-11-21: "settings search only searches the top level pages");
+        // SettingsSearchCoverageTest fails when a settings row has no entry
+        Entry("Back to letters", "Layout", "layout", "symbols page return letters after space key comma"),
+        Entry("Key sound", "Sound and vibration", "feedback", "click sound pack style pen mouse clack mech keys tick drop glass thock classic"),
+        Entry("Variation", "Sound and vibration", "feedback", "sound vary random pitch natural"),
+        Entry("Play on silent", "Sound and vibration", "feedback", "silent vibrate mute media bypass sound"),
+        Entry("Volume", "Sound and vibration", "feedback", "sound loud quiet click"),
+        Entry("Style", "Sound and vibration", "feedback", "vibration haptic rich plain soft tap"),
+        Entry("Vibrate on key presses", "Sound and vibration › When", "feedback", "haptic vibration keys"),
+        Entry("Vibrate while delete repeats", "Sound and vibration › When", "feedback", "haptic backspace hold"),
+        Entry("Vibrate on long press", "Sound and vibration › When", "feedback", "haptic hold accents"),
+        Entry("Vibrate while sliding", "Sound and vibration › When", "feedback", "haptic cursor slide space delete"),
+        Entry("Click on key presses", "Sound and vibration › When", "feedback", "sound keys"),
+        Entry("Click while delete repeats", "Sound and vibration › When", "feedback", "sound backspace hold"),
+        Entry("Fix the previous word", "Autocorrect and typing › Autocorrect", "autocorrect", "hindsight look back retro previous word change later"),
+        Entry("Neural look-back (experimental)", "Autocorrect and typing › Autocorrect", "autocorrect", "neural model retro hindsight experimental"),
+        Entry("Rejoin split words", "Autocorrect and typing › Autocorrect", "autocorrect", "join space split words missed space"),
+        Entry("How readily", "Autocorrect and typing › Autocorrect", "autocorrect", "level strength gentle standard strong"),
+        Entry("Tell me when it changes", "Autocorrect and typing › Autocorrect", "autocorrect", "notification adaptive strength"),
+        Entry("Hold to move the cursor", "Gestures", "gestures", "space bar hold cursor trackpad"),
+        Entry("Repeat speed", "Timing and feel", "finetuning", "delete backspace hold speed"),
+        Entry("Start repeating after", "Timing and feel", "finetuning", "delete backspace hold delay"),
+        Entry("Switch to whole words after", "Timing and feel", "finetuning", "delete backspace words hold"),
+        Entry("Word repeat speed", "Timing and feel", "finetuning", "delete backspace words speed"),
+        Entry("Hold time", "Timing and feel", "finetuning", "long press delay accents"),
+        Entry("Cursor speed", "Timing and feel", "finetuning", "space bar trackpad cursor"),
+        Entry("Recent emoji", "Emoji and GIFs", "emoji", "recent history"),
+        Entry("How many to keep", "Emoji and GIFs", "emoji", "recent emoji count"),
+        Entry("Skin tone", "Emoji and GIFs", "emoji", "skin colour color tone default"),
+        Entry("Expand links", "Clipboard", "clipboard", "short links unshorten redirect url"),
+        Entry("Link previews", "Clipboard", "clipboard", "preview title icon favicon url"),
+        Entry("Clear passwords after", "Clipboard", "clipboard", "password sensitive clear time"),
+        Entry("Delete after", "Clipboard", "clipboard", "clips expire time old"),
+        Entry("Limit the history", "Clipboard", "clipboard", "clips count limit"),
+        Entry("Clips to keep", "Clipboard", "clipboard", "count limit history"),
+        Entry("Close after pasting", "Clipboard", "clipboard", "panel close paste"),
+        Entry("Close in the next field", "Clipboard", "clipboard", "panel close field"),
+        Entry("Paste as file", "Clipboard", "clipboard", "image file paste"),
+        Entry("Share as file", "Clipboard", "clipboard", "image file share"),
     )
+
+    /**
+     * Everything searchable: the hand-written entries above (with synonyms), then every other row of the settings pages,
+     * generated at build time with its description as search words (SettingsIndexGenerated, app/build.gradle.kts).
+     */
+    val all: List<Entry> by lazy {
+        val byTitle = entries.associateBy { it.title }
+        entries + SettingsIndexGenerated.entries.filter { it.title !in byTitle }
+    }
 
     /** Entries matching [query]: every word of it starts a word of the title, page or synonyms. */
     fun search(query: String): List<Entry> {
         val terms = query.lowercase().split(' ').filter { it.isNotBlank() }
         if (terms.isEmpty()) return emptyList()
-        return entries.filter { e ->
+        return all.filter { e ->
             val words = "${e.title} ${e.page} ${e.words}".lowercase().split(' ', '›', '-', '“', '”').filter { it.isNotBlank() }
             terms.all { t -> words.any { it.startsWith(t) } }
         }

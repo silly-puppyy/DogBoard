@@ -278,15 +278,23 @@ object KeySounds {
         if (preview && mediaTracks.isEmpty() && loadedPcm.isNotEmpty()) synchronized(this) {
             if (mediaTracks.isEmpty()) mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(loadedPcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
         }
-        val set = (if (preview) mediaTracks else tracks).getOrNull(kind.ordinal) ?: return
+        val set = (if (preview) mediaTracks else tracks).getOrNull(kind.ordinal) ?: return Unit.also { logPlay("no ${if (preview) "media" else "typing"} tracks (${mediaTracks.size}/${tracks.size}, pcm ${loadedPcm.size})") }
         val i = next[kind.ordinal]; next[kind.ordinal] = (i + 1) % COPIES
-        val t = set[i] ?: return
+        val t = set[i] ?: return Unit.also { logPlay("track $i of $kind missing") }
         val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.4f * variation.toFloat())).coerceIn(0f, 1f)
         runCatching {
             if (t.playState == android.media.AudioTrack.PLAYSTATE_PLAYING) t.stop()
             t.reloadStaticData()
             t.setVolume(v)
             t.play()
-        }
+            logPlay("played ${if (preview) "media" else "typing"} $kind at volume %.2f, state ${t.playState}, routed to ${t.routedDevice?.type}".format(v))
+        }.onFailure { logPlay("play failed: $it") }
+    }
+
+    private var playLogs = 0
+
+    /** Debug builds: the first few plays per process (2026-11-21: Play on silent on and nothing heard). */
+    private fun logPlay(what: String) {
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG && playLogs++ < 6) android.util.Log.i("DogBoardPerf", "key sound play: $what")
     }
 }

@@ -27,6 +27,8 @@ val LocalInteractionController = staticCompositionLocalOf<InteractionController>
     error("no touch feedback handler provided")
 }
 
+private var loggedAudioOff = false
+
 interface InteractionController {
     val activeSystemTimingOptions: StateFlow<InteractionTimingOptions>
 
@@ -41,6 +43,9 @@ interface InteractionController {
         val feedbackOptions = activeFeedbackOptions.value
         if (feedbackOptions.isAudioFeedbackEnabled(kind)) {
             performAudioFeedback(kind, output)
+        } else if (kind == InteractionKind.KeyPress && dev.patrickgold.florisboard.BuildConfig.DEBUG && !loggedAudioOff) {
+            loggedAudioOff = true
+            android.util.Log.i("DogBoardPerf", "key sound skipped: audio feedback off for key presses")
         }
         if (feedbackOptions.isHapticFeedbackEnabled(kind)) {
             performHapticFeedback(kind, output)
