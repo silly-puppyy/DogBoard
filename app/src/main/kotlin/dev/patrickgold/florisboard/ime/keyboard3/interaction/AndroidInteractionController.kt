@@ -147,6 +147,8 @@ private class AndroidInteractionController(
         }
     }.stateIn(scope, SharingStarted.Eagerly, InteractionFeedbackOptions.Fallback)
 
+    private var lastLoggedStyle: String? = null
+
     override fun performAudioFeedback(kind: InteractionKind, output: K3StringOrDescriptor?) {
         val feedbackOptions = activeFeedbackOptions.value
         val composeView = composeView.get() ?: return
@@ -170,6 +172,8 @@ private class AndroidInteractionController(
         if (volume in 0.01..1.00) {
             // DogBoard: our own key sounds (Settings › Sound and vibration › Key sound), else Android's
             val style = prefs.inputFeedback.audioStyle.get()
+            // which sound a key press uses, logged when it changes (2026-11-21: the phone showed no "key sounds" line)
+            if (style != lastLoggedStyle) { lastLoggedStyle = style; android.util.Log.i("DogBoardPerf", "key sound style $style, volume ${(volume * 100).toInt()} %") }
             if (style != "system") context.get()?.let { ctx ->
                 io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(ctx, style, prefs.inputFeedback.audioVariation.get())
                 val soundKind = when (feedbackClassFor(kind, output)) {
