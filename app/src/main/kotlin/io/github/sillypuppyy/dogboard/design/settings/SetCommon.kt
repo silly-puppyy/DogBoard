@@ -321,7 +321,7 @@ fun Segmented(
 @Composable
 fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color, onClick: (() -> Unit)? = null) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row)
+        Modifier.fillMaxWidth().heightIn(min = if (sub.isEmpty()) 64.dp else 72.dp).background(SetColors.row)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .lint("section:$title").padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
@@ -331,7 +331,8 @@ fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DText(title, style = setText(16f), maxLines = 3)
                 // white-space: nowrap; text-overflow: ellipsis (the lint reports a cut)
-                DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), overflow = TextOverflow.Ellipsis)
+                // no line at all without one (home rows show a status only, as Gboard's: user 2026-11-22)
+                if (sub.isNotEmpty()) DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), overflow = TextOverflow.Ellipsis)
             }
         }
     }

@@ -52,10 +52,11 @@ internal fun SetPage(title: String, content: @Composable ColumnScope.() -> Unit)
 
 /** A row that opens a page: title, line, chevron. */
 @Composable
-internal fun SetPageLink(id: String, title: String, sub: String, onClick: () -> Unit) {
+internal fun SetPageLink(id: String, title: String, sub: String, icon: String = "chevron_right", onClick: () -> Unit) {
     SetLinkRow(id, onClick) {
         TitleSub(title, sub, Modifier.weight(1f))
-        Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
+        // chevron: another page; content_copy / open_in_new: what a tap does instead (About, user 2026-11-22)
+        Symbol(icon, if (icon == "chevron_right") 24.sp else 20.sp, SetColors.onSurfaceVariant)
     }
 }
 
@@ -81,11 +82,11 @@ fun TypingCorrectionScreen() {
         val secondary = SetColors.container(css("#dbe2f9"), css("#3f4759"))
         val tertiary = SetColors.container(css("#fbd7fc"), css("#583e5b"))
         SetRows(Modifier.fillMaxWidth()) {
-            SetSectionRow("auto_fix_high", "Autocorrect", "$levelName, undo with backspace, learning", primary.first, primary.second) { nav.navigate(Routes.Settings.AutocorrectPage) }
-            SetSectionRow("lightbulb", "Suggestions", "Words above the keys, emoji, contacts", secondary.first, secondary.second) { nav.navigate(Routes.Settings.SuggestionsPage) }
-            SetSectionRow("match_case", "Capitals", "Sentence starts, names and “I”, caps lock", tertiary.first, tertiary.second) { nav.navigate(Routes.Settings.CapitalsPage) }
-            SetSectionRow("format_quote", "Smart punctuation", "Curly quotes, dashes, double-space full stop", primary.first, primary.second) { nav.navigate(Routes.Settings.PunctuationPage) }
-            SetSectionRow("menu_book", "Your words", "Learned and blocked words, shortcuts", secondary.first, secondary.second) { nav.navigate(Routes.Settings.Dictionary) }
+            SetSectionRow("auto_fix_high", "Autocorrect", levelName, primary.first, primary.second) { nav.navigate(Routes.Settings.AutocorrectPage) }
+            SetSectionRow("lightbulb", "Suggestions", "", secondary.first, secondary.second) { nav.navigate(Routes.Settings.SuggestionsPage) }
+            SetSectionRow("match_case", "Capitals", "", tertiary.first, tertiary.second) { nav.navigate(Routes.Settings.CapitalsPage) }
+            SetSectionRow("format_quote", "Smart punctuation", "", primary.first, primary.second) { nav.navigate(Routes.Settings.PunctuationPage) }
+            SetSectionRow("menu_book", "Your words", "", secondary.first, secondary.second) { nav.navigate(Routes.Settings.Dictionary) }
         }
     }
 }

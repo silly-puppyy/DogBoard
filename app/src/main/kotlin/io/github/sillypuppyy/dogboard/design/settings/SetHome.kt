@@ -144,7 +144,9 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 for (group in SetHomeSpec.groups) SetRows(Modifier.fillMaxWidth()) {
                     for (s in group) {
                         val (bg, fg) = SetColors.container(s.bg, s.fg)
-                        val sub = if (s.title == "Theme") actions?.lookSub ?: s.sub else s.sub
+                        // a status, not a description (user 2026-11-22: drop the descriptions to avoid clutter, as Gboard,
+                        // whose home shows only the language under Languages)
+                        val sub = if (s.title == "Languages") s.sub else ""
                         SetSectionRow(s.icon, s.title, sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
                     }
                 }

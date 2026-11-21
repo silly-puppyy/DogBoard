@@ -30,7 +30,7 @@ fun DogAboutScreen() {
     var taps by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     SetPage("About") {
         SetGroup("DogBoard") {
-            SetPageLink("ab:version", "Version", "$version. Tap to copy") {
+            SetPageLink("ab:version", "Version", version, icon = "content_copy") {
                 runCatching { clipboard.addNewPlaintext(version) }
                 // 7 taps unlock Developer options in Advanced (as Android's build number)
                 taps++
@@ -43,7 +43,7 @@ fun DogAboutScreen() {
                 }
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             }
-            SetPageLink("ab:floris", "Built on FlorisBoard", "The open-source keyboard DogBoard started from") { uri.openUri("https://github.com/florisboard/florisboard") }
+            SetPageLink("ab:floris", "Built on FlorisBoard", "The open-source keyboard DogBoard started from", icon = "open_in_new") { uri.openUri("https://github.com/florisboard/florisboard") }
         }
         SetGroup("Licenses") {
             SetPageLink("ab:license", "DogBoard’s license", "Apache License 2.0, as FlorisBoard") { nav.navigate(Routes.Settings.ProjectLicense) }
