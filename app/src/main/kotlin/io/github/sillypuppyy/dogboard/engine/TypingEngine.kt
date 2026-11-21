@@ -626,6 +626,9 @@ object TypingEngine {
      * Runs the model: call it off the main thread.
      */
     /** The beam the decoders use now (full, or [SLOW_BEAM] on a slow phone). */
+    /** The main decoder's own time for its last decode (ms; no lock wait), what [adaptBeam] should judge. */
+    val lastDecodeMillis: Long get() = loaded?.decoder?.lastDecodeMillis ?: 0L
+
     @Volatile var beam: Int = FULL_BEAM
         private set
     private var slowDecodes = 0

@@ -468,6 +468,24 @@ class Decoder(
         /** The word before [previous] (same kind of id), -1 for none: for a two-word-context model. */
         previous2: Int = -1,
     ): List<Candidate> {
+        // timed once the lock is held: a decode queued behind another keystroke's isn't slow itself (a Pixel 10 narrowed
+        // its beam on 20-50 ms that were mostly waiting, 2026-11-21)
+        val t0 = System.nanoTime()
+        try {
+            return decodeImpl(taps, keys, params, maxResults, includeCompletions, previous, typed, personal, previous2)
+        } finally {
+            lastDecodeMillis = (System.nanoTime() - t0) / 1_000_000
+        }
+    }
+
+    /** How long the last [decode] computed, without any wait for the lock (ms). */
+    @Volatile var lastDecodeMillis = 0L
+        private set
+
+    private fun decodeImpl(
+        taps: List<Tap>, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params, maxResults: Int, includeCompletions: Boolean,
+        previous: Int, typed: String?, personal: PersonalMix?, previous2: Int,
+    ): List<Candidate> {
         val n = taps.size
         if (n == 0) return emptyList()
         val w = config.languagePower

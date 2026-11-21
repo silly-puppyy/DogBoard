@@ -1485,9 +1485,11 @@ class ImeController(
                 val decoded = io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
                 // slow phones (Galaxy A10: word ends waited 52-149 ms on the decoder): how long a keystroke's decode takes
                 val decodeMs = android.os.SystemClock.uptimeMillis() - tDecode
-                decodeMs.takeIf { it >= 20 }?.let { android.util.Log.i("DogBoardPerf", "decode took ${it} ms (beam ${TypingEngine.beam})") }
+                // the decoder's own time decides the beam; the wall time also counts waiting behind another keystroke
+                val computeMs = TypingEngine.lastDecodeMillis
+                decodeMs.takeIf { it >= 20 }?.let { android.util.Log.i("DogBoardPerf", "decode took ${it} ms, ${computeMs} ms computing (beam ${TypingEngine.beam})") }
                 val beamBefore = TypingEngine.beam
-                TypingEngine.adaptBeam(decodeMs)
+                TypingEngine.adaptBeam(computeMs)
                 if (TypingEngine.beam != beamBefore) android.util.Log.i("DogBoardPerf", "beam ${beamBefore} -> ${TypingEngine.beam}")
                 latestDecode = key to decoded
                 latestStage1 = key to decoded
