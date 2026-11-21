@@ -209,8 +209,14 @@ private fun SquashedText(text: String, modifier: Modifier, style: TextStyle, id:
         val available = constraints.maxWidth
         // a word that can't be wider than its slot isn't measured: no glyph is wider than 1.25 em, so code points x 1.25 em
         // bounds its width (measuring each suggestion on every keystroke was the UI thread's top cost, phone 2026-11-21)
-        val emPx = with(androidx.compose.ui.platform.LocalDensity.current) { if (style.fontSize.isSp) style.fontSize.toPx() else 0f }
-        val surelyFits = emPx > 0f && text.codePointCount(0, text.length) * emPx * 1.25f <= available
+        val quick = quickTextWidth(text, style)
+        val surelyFits = quick >= 0f && quick * 1.05f <= available
+        if (dev.patrickgold.florisboard.BuildConfig.DEBUG && quickChecks < 30) remember(text, style) {
+            quickChecks++
+            if (quick < 0f) { android.util.Log.i("DogBoardPerf", "quick width check: unresolved font ${style.fontFamily}"); return@remember }
+            val real = measurer.measure(text, style, maxLines = 1, softWrap = false).size.width
+            android.util.Log.i("DogBoardPerf", "quick width check: quick %.0f px, laid out %d px (%+.1f %%)".format(quick, real, (real - quick) / quick * 100))
+        }
         val natural = if (surelyFits) 0 else remember(text, style) { measurer.measure(text, style, maxLines = 1, softWrap = false).size.width }
         // Narrowing is not exactly linear (glyph positions round), so measure, correct and repeat
         // until the squashed line really fits, or the floor is reached.
@@ -230,6 +236,29 @@ private fun SquashedText(text: String, modifier: Modifier, style: TextStyle, id:
         )
     }
 }
+
+/**
+ * [text]'s width in px with Android's plain Paint in [style]'s resolved typeface and size, or -1 when the font can't be
+ * resolved. Far cheaper than a Compose text layout (a TextMeasurer builds a full paragraph), and close to it: callers
+ * keep a margin, and lay out properly only when the word may not fit (suggestions, 2026-11-21).
+ */
+@Composable
+fun quickTextWidth(text: String, style: TextStyle): Float {
+    val resolver = androidx.compose.ui.platform.LocalFontFamilyResolver.current
+    val density = LocalDensity.current
+    return remember(text, style, density) {
+        if (!style.fontSize.isSp) return@remember -1f
+        val typeface = runCatching {
+            resolver.resolve(style.fontFamily, style.fontWeight ?: androidx.compose.ui.text.font.FontWeight.Normal).value as? android.graphics.Typeface
+        }.getOrNull() ?: return@remember -1f
+        quickPaint.typeface = typeface
+        quickPaint.textSize = with(density) { style.fontSize.toPx() }
+        quickPaint.measureText(text)
+    }
+}
+
+private val quickPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+private var quickChecks = 0
 
 /** Narrowest horizontal scale for squashed text; below this, letters get hard to tell apart. */
 const val SQUASH_MIN_SCALE = 0.7f
