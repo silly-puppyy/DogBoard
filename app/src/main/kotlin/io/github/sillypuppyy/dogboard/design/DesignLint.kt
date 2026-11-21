@@ -246,11 +246,14 @@ private fun SquashedText(text: String, modifier: Modifier, style: TextStyle, id:
 fun quickTextWidth(text: String, style: TextStyle): Float {
     val resolver = androidx.compose.ui.platform.LocalFontFamilyResolver.current
     val density = LocalDensity.current
-    return remember(text, style, density) {
-        if (!style.fontSize.isSp) return@remember -1f
-        val typeface = runCatching {
+    // the typeface once per family and weight (resolving it per word was the phone's top UI cost after this change)
+    val typeface = remember(style.fontFamily, style.fontWeight, resolver) {
+        runCatching {
             resolver.resolve(style.fontFamily, style.fontWeight ?: androidx.compose.ui.text.font.FontWeight.Normal).value as? android.graphics.Typeface
-        }.getOrNull() ?: return@remember -1f
+        }.getOrNull()
+    }
+    return remember(text, style, density, typeface) {
+        if (!style.fontSize.isSp || typeface == null) return@remember -1f
         quickPaint.typeface = typeface
         quickPaint.textSize = with(density) { style.fontSize.toPx() }
         quickPaint.measureText(text)
