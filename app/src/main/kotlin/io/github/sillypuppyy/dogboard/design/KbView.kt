@@ -409,7 +409,7 @@ private fun RowScope.KbSlots(r: KbRender) {
             val slotText = (maxWidth - dividers.dp) / r.slots.size - SLOT_PADDING_H * 2
             // kept per text: measured on every recomposition it was the suggestion bar's largest cost (phone stall samples 2026-11-21)
             val style = slotStyle(centre)
-            val natural = remember(centre.text, style) { measurer.measure(centre.text, style, maxLines = 1, softWrap = false).size.width }
+            val natural = androidx.compose.runtime.remember(centre.text, style) { measurer.measure(centre.text, style, maxLines = 1, softWrap = false).size.width }
             natural * SQUASH_MIN_SCALE > with(density) { slotText.toPx() }
         }
         val actions = LocalKbActions.current

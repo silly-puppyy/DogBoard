@@ -53,6 +53,11 @@ object GcStats {
         synchronized(sections) { sections[name] = (sections[name] ?: 0L) + used }
     }
 
+    /** Adds [bytes] to section [name] (JankWatch: the UI thread's messages by kind). */
+    fun add(name: String, bytes: Long) {
+        synchronized(sections) { sections[name] = (sections[name] ?: 0L) + bytes }
+    }
+
     private var mainLast = -1L
 
     /**

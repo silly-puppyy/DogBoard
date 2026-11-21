@@ -43,6 +43,7 @@ object JankWatch {
         sampler = Handler(HandlerThread("DogBoardJankSampler").apply { start() }.looper)
         Looper.getMainLooper().setMessageLogging { line ->
             if (line.startsWith(">>>>> Dispatching")) {
+                @Suppress("DEPRECATION") run { allocStart = android.os.Debug.getThreadAllocSize().toLong() }
                 samples.clear()
                 capsComposed.set(0); capsDrawn.set(0)
                 start = SystemClock.uptimeMillis()
@@ -51,12 +52,21 @@ object JankWatch {
             } else if (line.startsWith("<<<<< Finished") && start > 0) {
                 val ms = SystemClock.uptimeMillis() - start
                 start = 0
+                @Suppress("DEPRECATION") val bytes = android.os.Debug.getThreadAllocSize() - allocStart
+                val kind = when {
+                    "Choreographer" in what -> "frames"
+                    "AndroidUiDispatcher" in what -> "compose"
+                    else -> "other"
+                }
+                GcStats.add("UI $kind", bytes)
                 sampler.removeCallbacks(sample)
                 if (ms > FRAME_MS) Log.w("DogBoardJank", "main thread blocked $ms ms: ${what.removePrefix(">>>>> Dispatching to ").take(160)}; caps composed ${capsComposed.get()} drawn ${capsDrawn.get()}${hotFrames()}")
             }
         }
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectDiskReads().detectDiskWrites().detectNetwork().penaltyLog().build())
     }
+
+    private var allocStart = 0L
 
     /** The frames this message's samples were in most often.*/
     private fun hotFrames(): String {
