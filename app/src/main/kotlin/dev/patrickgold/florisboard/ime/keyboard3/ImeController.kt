@@ -273,9 +273,21 @@ class ImeController(
         if (attrs.type != InputAttributes.Type.TEXT || attrs.variation in NO_DOUBLE_SPACE_VARIATIONS ||
             attrs.flagTextNoSuggestions || state.content.selection.isNotCollapsed()
         ) return null
-        val textBefore = state.content.surroundingText.textBefore
+        return priorFor(state.content.surroundingText.textBefore.toString())
+    }
+
+    // DogBoard: letterPrior is asked on every key-down, on the UI thread (two lexicon walks under the engine's read
+    // lock, ~4 % of the UI thread while typing, simpleperf 2026-11-21): kept for the last text, and worked out ahead on
+    // the decode thread after each keystroke's decode, so a key-down usually finds it ready
+    private class PriorEntry(val textBefore: String, val prior: ((Char) -> Double)?)
+    @Volatile private var priorCache: PriorEntry? = null
+
+    private fun priorFor(textBefore: String): ((Char) -> Double)? {
+        priorCache?.let { if (it.textBefore == textBefore) return it.prior }
         val prefix = trailingWord(textBefore)
-        return TypingEngine.keyPrior(prefix, previousContext(textBefore.substring(0, textBefore.length - prefix.length)))
+        val prior = TypingEngine.keyPrior(prefix, previousContext(textBefore.substring(0, textBefore.length - prefix.length)))
+        priorCache = PriorEntry(textBefore, prior)
+        return prior
     }
 
     /** DogBoard: where the space bar was last tapped (set on touch down, kept with the finished word). */
@@ -1491,6 +1503,7 @@ class ImeController(
                 val tDecode = android.os.SystemClock.uptimeMillis()
                 val decoded = kotlinx.coroutines.withContext(decodeDispatcher) {
                     io.github.sillypuppyy.dogboard.perf.GcStats.track("candidates") { TypingEngine.candidates(word, context, previous2 = context2) }
+                        .also { priorFor(textBefore) }
                 }
                 // slow phones (Galaxy A10: word ends waited 52-149 ms on the decoder): how long a keystroke's decode takes
                 val decodeMs = android.os.SystemClock.uptimeMillis() - tDecode
