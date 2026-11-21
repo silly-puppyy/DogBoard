@@ -25,7 +25,26 @@ class TypedProbeTest : FunSpec({
             ?.let { TypingEngine.attachNgrams(it) }
         File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         try {
-            for (line in cases) {
+            // DOGBOARD_PROBE_NOISE=n: n tries per case with taps scattered 1.5 x 2 mm (6.3 dp a mm), outcomes counted
+            val tries = System.getenv("DOGBOARD_PROBE_NOISE")?.toIntOrNull()
+            val rnd = java.util.Random(1)
+            if (tries != null) for (line in cases) {
+                val (before, typed) = line.split('\t')
+                val words = before.split(' ').filter { it.isNotEmpty() }
+                val outcomes = HashMap<String, Int>()
+                repeat(tries) {
+                    val word = CurrentWord().apply {
+                        for (c in typed) keys[c.lowercaseChar()]?.let {
+                            addLetter(c, Tap((it.centerX + rnd.nextGaussian() * 1.5 * 6.3).toFloat(), (it.centerY + rnd.nextGaussian() * 2.0 * 6.3).toFloat()), keys, params)
+                        }
+                    }
+                    val candidates = TypingEngine.candidates(word, words.lastOrNull() ?: ".", previous2 = words.getOrNull(words.size - 2))
+                    val result = TypingEngine.correction(word, candidates, commit = true) ?: word.text
+                    outcomes.merge(result, 1, Int::plus)
+                }
+                println("PROBE-NOISE %-12s %-10s %s".format(before.takeLast(12), typed, outcomes.entries.sortedByDescending { it.value }.take(8).joinToString(" ") { "${it.key}:${it.value}" }))
+            }
+            if (tries == null) for (line in cases) {
                 val (before, typed) = line.split('\t')
                 val word = CurrentWord().apply {
                     for (c in typed) keys[c.lowercaseChar()]?.let { addLetter(c, Tap(it.centerX, it.centerY), keys, params) }
