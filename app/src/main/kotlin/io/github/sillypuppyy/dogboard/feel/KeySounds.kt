@@ -67,7 +67,10 @@ object KeySounds {
     // latency, disorienting"). Two tracks per voice, used in turn, so fast presses overlap instead of cutting off.
     // Typing sounds use the sonification stream (silent on silent, as Gboard's and an iPhone's); the settings'
     // previews and Play on silent use the media stream (a phone on vibrate previewed nothing).
-    private const val COPIES = 2
+    // Four variants per voice, played in turn (round-robin, as game audio does with several recordings of one action):
+    // each with its own pitch (+-3.5 %) and decay (+-12 %). Volume alone (+-6 %) was barely audible and typing sounded
+    // mechanical (user 2026-11-21); recorded key sounds vary because every take differs (Kenney's UI Audio).
+    private const val COPIES = 4
     private var tracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
     private var mediaTracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
     private val next = IntArray(Kind.entries.size)
@@ -75,14 +78,18 @@ object KeySounds {
     private val rng = java.util.Random(11)
 
     /** 16-bit mono PCM of [v], peak at 0.4 of full scale (iOS's clicks peak near -8 dBFS). */
-    private fun render(v: Voice, seed: Long): ShortArray {
+    private fun render(v: Voice, seed: Long, variant: Int = 0): ShortArray {
         val n = (v.length * SR).toInt()
-        val noise = java.util.Random(seed)
+        val noise = java.util.Random(seed * 31 + variant)
+        // variant 0 is the voice as designed; the others shift pitch and decay a little (fixed seeds: the same set every time)
+        val jitter = java.util.Random(seed * 131 + variant * 7919L)
+        val pf = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.035
+        val df = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.12
         val x = DoubleArray(n) { i ->
             val t = i.toDouble() / SR
             var s = 0.0
-            for (p in v.partials) s += p.level * sin(2 * PI * p.f * t) * exp(-t / p.tau) * minOf(1.0, t / 0.0002)
-            v.packet?.let { q -> s += sin(2 * PI * q.f * (t - q.centre)) * exp(-0.5 * ((t - q.centre) / q.width).let { it * it }) }
+            for (p in v.partials) s += p.level * sin(2 * PI * p.f * pf * t) * exp(-t / (p.tau * df)) * minOf(1.0, t / 0.0002)
+            v.packet?.let { q -> s += sin(2 * PI * q.f * pf * (t - q.centre)) * exp(-0.5 * ((t - q.centre) / (q.width * df)).let { it * it }) }
             if (v.noiseDecay > 0) s += 0.5 * noise.nextGaussian() * exp(-t / v.noiseDecay)
             s
         }
@@ -108,22 +115,23 @@ object KeySounds {
         val st = STYLES[style] ?: return
         for (set in tracks + mediaTracks) for (t in set) t?.release()
         val pcm = Kind.entries.map { k ->
-            render(when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }, k.ordinal.toLong())
+            val voice = when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }
+            List(COPIES) { variant -> render(voice, k.ordinal.toLong(), variant) }
         }
-        tracks = Array(Kind.entries.size) { k -> Array(COPIES) { runCatching { track(pcm[k], AudioAttributes.USAGE_ASSISTANCE_SONIFICATION) }.getOrNull() } }
-        mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { runCatching { track(pcm[k], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
+        tracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_ASSISTANCE_SONIFICATION) }.getOrNull() } }
+        mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
         loadedStyle = style
     }
 
     /**
-     * Plays [kind] in the loaded style at [volume] (0..1), varied by +-6 % per press so typing doesn't sound mechanical;
+     * Plays [kind] in the loaded style at [volume] (0..1): the next of its variants, at +-10 % volume per press;
      * [preview]: on the media stream, heard on silent too (the settings' previews, and Play on silent).
      */
     fun play(kind: Kind, volume: Float, preview: Boolean = false) {
         val set = (if (preview) mediaTracks else tracks).getOrNull(kind.ordinal) ?: return
         val i = next[kind.ordinal]; next[kind.ordinal] = (i + 1) % COPIES
         val t = set[i] ?: return
-        val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.12f)).coerceIn(0f, 1f)
+        val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.2f)).coerceIn(0f, 1f)
         runCatching {
             if (t.playState == android.media.AudioTrack.PLAYSTATE_PLAYING) t.stop()
             t.reloadStaticData()
