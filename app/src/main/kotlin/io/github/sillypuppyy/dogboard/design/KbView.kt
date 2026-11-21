@@ -184,7 +184,9 @@ private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
     val capId = "cap:$ri:${k.id}"
     val expected = Rect(k.x + r.mh, capTop, k.x + k.w - r.mh, capTop + rowH - 2 * r.mv)
     val inArea = Rect(k.x + r.mh, rowTop + r.mv, k.x + k.w - r.mh, rowTop + rowH - r.mv)
-    Box(Modifier.placeAt(inArea)) {
+    // its own layer: a cap's drawing is recorded once and reused when something else in the keyboard changes (the
+    // phone's slow frames redrew all 32 caps, text included, on every key press: 2026-11-21)
+    Box(Modifier.placeAt(inArea).graphicsLayer()) {
         Box(
             Modifier.fillMaxSize().drawBehind { io.github.sillypuppyy.dogboard.perf.JankWatch.capsDrawn.incrementAndGet() }.alpha(r.capOp).cssShadow(k.shadow, shape)
                 .then(k.bgGradient?.let { Modifier.background(it.brush(), shape) } ?: Modifier.background(k.bg, shape))
