@@ -43,6 +43,10 @@ class AutoCapitalTest : FunSpec({
         File(a + "en.ngrams.bin").takeIf { it.isFile }?.let { f -> TypingEngine.attachNgrams(f.inputStream().use { NgramModel.readBinary(it) }) }
         try {
             finished("Aldo", auto = true) shouldBe "Also"
+            // the user's "ie" became "or" (2026-11-21): a full stop is skipped like an apostrophe, as iOS folds it out of
+            // its sort key, so "ie" reaches "i.e."; "am" stays (a.m. is rarer than the word)
+            finished("ie", auto = false) shouldBe "i.e."
+            finished("am", auto = false) shouldBe "am"
         } finally {
             TypingEngine.unloadForTest()
         }

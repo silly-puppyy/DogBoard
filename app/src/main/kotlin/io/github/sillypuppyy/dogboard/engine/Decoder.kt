@@ -686,13 +686,15 @@ class Decoder(
             // one skipped key per position, optionally after an apostrophe (iOS compares words by
             // a sort key without apostrophes, so "dont" reaches "don't" at no cost; a hyphen too, so "tshirt" reaches
             // "T-shirt", as iOS's hyphenated words are reached; user report 'nonbnglish' 2026-11-19); an ampersand
-            // likewise ("hm" reaches "H&M", "att" "AT&T": the sort key has letters only)
+            // likewise ("hm" reaches "H&M", "att" "AT&T": the sort key has letters only), and a full stop ("ie" -> "i.e.")
             fun insertAfter(sPrefix: Int, sNode: Int, sGeometry: Double, sEdits: Int, allowApostrophe: Boolean) {
                 // an insertion makes the node one deeper: at most MAX_EXTRA_LETTERS beyond the i taps (iOS 2;
                 // the cap allowed 3 until 2026-11-20, audit; the trie root has depth 0)
                 if (lexicon.depth(sNode) >= i + MAX_EXTRA_LETTERS) return
                 lexicon.forEachChild(sNode) { c, child ->
-                    if (c == '\'' || c == '’' || c == '&' || c == '-') {
+                    // a full stop too: iOS folds it out of the sort key like the others, so "ie" reaches "i.e." (its
+                    // share of the key "ie" decides, as iOS's does; user 2026-11-21: "ie" became "or")
+                    if (c == '\'' || c == '’' || c == '&' || c == '-' || c == '.') {
                         if (allowApostrophe) {
                             offer(layer, child, sGeometry, sEdits, sPrefix)
                             layer.indexOf(key(sPrefix, child)).takeIf { it >= 0 }?.let { j -> insertAfter(sPrefix, child, layer.geometry(j), layer.edits(j), allowApostrophe = false) }
