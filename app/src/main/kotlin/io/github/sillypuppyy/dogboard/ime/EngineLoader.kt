@@ -40,6 +40,16 @@ object EngineLoader {
                 // the vocabulary index (~7 MB built on the heap) mapped from a file written on the first start, kept
                 // beside the lexicon snapshot (same key: an app update builds it again)
                 val indexFile = File(File(app.noBackupFilesDir, "dogboard-data"), "ngramindex-${snapshotKey(app)}.bin")
+                // a first start: the index built with the app, when it matches this trigram file (as the word data)
+                if (!indexFile.isFile) runCatching {
+                    val sha = pack(app).manifest.files["ngrams"]?.sha256?.take(8)?.takeIf { it.length == 8 } ?: return@runCatching
+                    java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${pack(app).tag}-ngramindex-$sha.dgz"), 64 * 1024).use { s ->
+                        indexFile.parentFile?.mkdirs()
+                        val tmp = File(indexFile.path + ".tmp")
+                        tmp.outputStream().use { s.copyTo(it, 64 * 1024) }
+                        tmp.renameTo(indexFile)
+                    }
+                }
                 val index = indexFile.takeIf { it.isFile }?.let { f ->
                     runCatching { java.io.RandomAccessFile(f, "r").channel.use { c -> c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size()) } }.getOrNull()
                 }

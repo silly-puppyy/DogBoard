@@ -32,6 +32,14 @@ class SnapshotExportTest : FunSpec({
             val bigrams = File(assets, bigPath).bufferedReader().use { Bigrams.parse(it, lexicon) }
             GZIPOutputStream(File(out, "$tag-lexicon-$key.dgz").outputStream().buffered(), 64 * 1024).use { lexicon.writeSnapshot(it) }
             GZIPOutputStream(File(out, "$tag-bigrams-$key.dgz").outputStream().buffered(), 64 * 1024).use { bigrams.writeSnapshot(it) }
+            // the trigram model's vocabulary index (when the private trigram file is in this checkout)
+            val ngPath = field("ngrams", "path")
+            val ngSha = field("ngrams", "sha256")?.take(8)
+            val ngFile = ngPath?.let { File(assets, it) }?.takeIf { it.isFile }
+            if (ngFile != null && ngSha?.length == 8) {
+                val model = java.io.RandomAccessFile(ngFile, "r").channel.use { c -> NgramModel.fromBuffer(c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size()), null) }
+                if (model != null) GZIPOutputStream(File(out, "$tag-ngramindex-$ngSha.dgz").outputStream().buffered(), 64 * 1024).use { model.writeVocabIndex(it) }
+            }
             println("SNAPSHOT $tag $key")
             out.listFiles() shouldNotBe null
         }
