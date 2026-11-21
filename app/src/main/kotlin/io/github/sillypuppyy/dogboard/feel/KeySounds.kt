@@ -106,6 +106,9 @@ object KeySounds {
     private const val COPIES = 4
     private var tracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
     private var mediaTracks: Array<Array<android.media.AudioTrack?>> = emptyArray()
+    // the media-stream copies are made on their first use (previews, Play on silent): Android has few fast-path track slots
+    // (8 per mixer, one its own) and typing needs only the sonification set
+    private var loadedPcm: List<List<ShortArray>> = emptyList()
     private val next = IntArray(Kind.entries.size)
     private var loadedStyle: String? = null
     private var loadedVariation = -1
@@ -174,7 +177,8 @@ object KeySounds {
             }
         }
         tracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_ASSISTANCE_SONIFICATION) }.getOrNull() } }
-        mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(pcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
+        mediaTracks = emptyArray()
+        loadedPcm = pcm
         loadedStyle = style; loadedVariation = variationPercent; variation = amount
         // how many tracks Android actually put on its fast path (a mixer has 8 fast slots, one its own: 2026-11-21)
         fun fast(set: Array<Array<android.media.AudioTrack?>>) = set.sumOf { kind -> kind.count { it?.performanceMode == android.media.AudioTrack.PERFORMANCE_MODE_LOW_LATENCY } }
@@ -186,6 +190,9 @@ object KeySounds {
      * [preview]: on the media stream, heard on silent too (the settings' previews, and Play on silent).
      */
     fun play(kind: Kind, volume: Float, preview: Boolean = false) {
+        if (preview && mediaTracks.isEmpty() && loadedPcm.isNotEmpty()) synchronized(this) {
+            if (mediaTracks.isEmpty()) mediaTracks = Array(Kind.entries.size) { k -> Array(COPIES) { i -> runCatching { track(loadedPcm[k][i], AudioAttributes.USAGE_MEDIA) }.getOrNull() } }
+        }
         val set = (if (preview) mediaTracks else tracks).getOrNull(kind.ordinal) ?: return
         val i = next[kind.ordinal]; next[kind.ordinal] = (i + 1) % COPIES
         val t = set[i] ?: return
