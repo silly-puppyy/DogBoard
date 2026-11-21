@@ -233,6 +233,7 @@ object TypingEngine {
         engine.joinDecoder.unknownWords = charModel
         for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
         engine.autocorrect.knownMisspellings = misspellings
+        for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.beamWidth = beam
         userWords?.takeIf { it.exists() }?.forEachLine { line ->
             if (line.isNotBlank()) {
                 val w = line.trim()
@@ -284,6 +285,7 @@ object TypingEngine {
         engine.joinDecoder.unknownWords = charModel
         for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.knownMisspellings = misspellings
         engine.autocorrect.knownMisspellings = misspellings
+        for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.beamWidth = beam
     }
 
     @Volatile
@@ -623,6 +625,29 @@ object TypingEngine {
      * real phone typos: fixed 47.9 -> 49.3 %, correct words broken 0.6 -> 0.4 %, RealTypoEvalTest).
      * Runs the model: call it off the main thread.
      */
+    /** The beam the decoders use now (full, or [SLOW_BEAM] on a slow phone). */
+    @Volatile var beam: Int = FULL_BEAM
+        private set
+    private var slowDecodes = 0
+    private var fastDecodes = 0
+
+    /**
+     * iOS bounds each touch's search by time (>= 30 expansions, then up to 90 within 10 ms); ours keeps a fixed beam, so
+     * a slow phone fell behind (Galaxy A10 word ends 52-149 ms; an emulator on 2 threads: decodes p90 120 ms). From
+     * each keystroke's decode time: 3 slow decodes in a row narrow the beam, 20 fast ones widen it again.
+     */
+    fun adaptBeam(decodeMs: Long) {
+        val engine = loaded ?: return
+        if (decodeMs >= SLOW_DECODE_MS) { slowDecodes++; fastDecodes = 0 } else if (decodeMs <= FAST_DECODE_MS) { fastDecodes++; slowDecodes = 0 }
+        val next = when {
+            beam == FULL_BEAM && slowDecodes >= 3 -> SLOW_BEAM
+            beam == SLOW_BEAM && fastDecodes >= 20 -> FULL_BEAM
+            else -> return
+        }
+        beam = next; slowDecodes = 0; fastDecodes = 0
+        for (d in listOf(engine.decoder, engine.retroDecoder, engine.joinDecoder)) d.beamWidth = next
+    }
+
     fun candidates(word: CurrentWord, previous: String?, maxResults: Int = 8, previous2: String? = null, textBefore: String? = null): List<Candidate> {
         val engine = loaded ?: return emptyList()
         val taps = word.tapsOrNull() ?: return emptyList()
@@ -1429,3 +1454,8 @@ internal fun keepsPopupLetters(typed: String, candidate: String): Boolean {
     }
     return true
 }
+
+private const val FULL_BEAM = 100
+private const val SLOW_BEAM = 30
+private const val SLOW_DECODE_MS = 30L
+private const val FAST_DECODE_MS = 8L

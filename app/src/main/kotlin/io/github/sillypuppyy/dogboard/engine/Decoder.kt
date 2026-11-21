@@ -782,9 +782,16 @@ class Decoder(
     private var iGeometry = DoubleArray(0)
     private var iEdits = IntArray(0)
 
+    /**
+     * States kept per layer: [Config.beamWidth], lowered on slow phones while decodes take too long (TypingEngine.
+     * adaptBeam; iOS: at least 30 node expansions per touch, up to 90 within 10 ms, ios-decomp notes). 100 -> 30 cost
+     * 0.3 points of fixed typos on the main set, 0.2 on the ITE dev set (2026-11-21).
+     */
+    @Volatile var beamWidth: Int = config.beamWidth
+
     private fun prune(layer: LayerMap, w: Double, prefixes: List<Prefix?>) {
         val n = layer.size
-        val beam = config.beamWidth
+        val beam = beamWidth
         if (n <= beam) return
         if (pKeys.size < n) {
             val c = maxOf(n, pKeys.size * 2)
@@ -831,7 +838,7 @@ class Decoder(
     /** The prune cut-off of [layer] as it stands (the beam's lowest score), or -inf below a full beam. */
     private fun beamCut(layer: LayerMap, w: Double, prefixes: List<Prefix?>): Double {
         val n = layer.size
-        val beam = config.beamWidth
+        val beam = beamWidth
         if (n < beam) return Double.NEGATIVE_INFINITY
         if (pWork.size < n) pWork = DoubleArray(maxOf(n, pWork.size * 2))
         var i = 0

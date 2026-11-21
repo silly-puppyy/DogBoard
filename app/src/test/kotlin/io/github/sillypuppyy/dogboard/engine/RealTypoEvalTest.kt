@@ -72,7 +72,7 @@ class RealTypoEvalTest : FunSpec({
         val misspellings = File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
         val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) } else null
         val decoders = ThreadLocal.withInitial {
-            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0"), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
+            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0", beamWidth = System.getenv("DOGBOARD_BEAM")?.toInt() ?: 100), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
                 .also { it.unknownWords = charModel; if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") it.knownMisspellings = misspellings }
         }
 
