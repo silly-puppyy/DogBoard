@@ -160,7 +160,7 @@ class Decoder(
          * Most words one run of taps may be split into. iOS has no fixed limit (its beam decides);
          * three keeps the search small and covers what people run together.
          */
-        const val MAX_WORDS = 3
+        const val MAX_WORDS = 4
 
         private const val LAYER_POOL = 64
         /** Completions this far (ln) below the best reading are not built (odds below 1e-13). */
