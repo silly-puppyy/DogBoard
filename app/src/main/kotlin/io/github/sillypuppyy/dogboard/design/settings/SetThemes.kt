@@ -3,6 +3,7 @@ package io.github.sillypuppyy.dogboard.design.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -267,6 +268,11 @@ fun SetThemes(state: SetThemesState) {
                 }
             }
 
+            // user 2026-11-22: "add a hold to preview [hint] before the themes listing"
+            Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Symbol("info", 18.sp, SetColors.onSurfaceVariant)
+                DText("Press and hold a theme to try it", style = setText(14f, color = SetColors.onSurfaceVariant))
+            }
             // :77-113 the sections of theme tiles
             for (sec in ThemeChoice.SECTIONS) {
                 if (sec.id == "everyday" && filter == "all") UserPackSections(state, primary) { newIn = it }
@@ -387,13 +393,8 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SetColors.screen) {
         // above the keyboard while trying the theme (the field and the buttons were under it)
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            val w = 320f; val h = tileH(w)
-            Box(Modifier.align(Alignment.CenterHorizontally).size(w.dp, h.dp).clip(RoundedCornerShape(16.dp))) {
-                Preview(id, t.mode == "dark", seed, w, h, w / 375f, null)
-                if (t.mode == "pair") Box(Modifier.size(w.dp, h.dp).clip(GenericShape { s, _ -> moveTo(s.width, 0f); lineTo(s.width, s.height); lineTo(0f, s.height); close() })) {
-                    Preview(id, true, seed, w, h, w / 375f, null)
-                }
-            }
+            // no picture of the keyboard: the real one opens below in this theme (user 2026-11-22: "putting the image twice is
+            // useless, just make it a card + the height needed for title and explanation")
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 DText(t.name, style = setText(24f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                 DText(t.sub, style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
@@ -408,9 +409,12 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
             }
             // the test drive: type here and the keyboard shows this theme
             var tryText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+            val focus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            // the keyboard opens at once, in this theme
+            androidx.compose.runtime.LaunchedEffect(id) { kotlinx.coroutines.delay(250); runCatching { focus.requestFocus() } }
             androidx.compose.foundation.text.BasicTextField(
                 tryText, { tryText = it },
-                Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(26.dp)).background(SetColors.surfaceContainerHighest).padding(horizontal = 20.dp, vertical = 15.dp),
+                Modifier.fillMaxWidth().focusRequester(focus).heightIn(min = 52.dp).clip(RoundedCornerShape(26.dp)).background(SetColors.surfaceContainerHighest).padding(horizontal = 20.dp, vertical = 15.dp),
                 textStyle = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start),
                 decorationBox = { inner -> Box { if (tryText.isEmpty()) DText("Type here to try it", style = setText(16f, color = SetColors.onSurfaceVariant)); inner() } },
             )
