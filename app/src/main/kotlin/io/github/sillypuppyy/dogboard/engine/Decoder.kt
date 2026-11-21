@@ -727,6 +727,13 @@ class Decoder(
                 for (j in 0 until layer.size) {
                     val sNode = layer.node(j); val sGeometry = layer.geometry(j); val sEdits = layer.edits(j); val sPrefix = layer.prefix(j)
                     if (!lexicon.isWord(sNode) || (prefixes[sPrefix]?.count ?: 0) >= MAX_WORDS - 1) continue
+                    // a language score is a log probability (<= 0), so the restart's score is at most its geometry plus
+                    // the prefix's: when that can't beat the current cut, its lookup is skipped (same choice, fewer
+                    // trigram reads: they were most of a decode on Android, simpleperf 2026-11-21)
+                    if (count == MAX_RESTARTS) {
+                        val pre = prefixes[sPrefix]
+                        if (sGeometry + w * (if (pre != null) pre.languageModel else 0.0) <= topScore[count - 1]) continue
+                    }
                     val sc = sGeometry + w * restartLanguageModel(sPrefix, sNode)
                     if (count == MAX_RESTARTS && sc <= topScore[count - 1]) continue
                     var at = if (count < MAX_RESTARTS) count++ else count - 1
