@@ -28,6 +28,19 @@ class NeuralRetroUiTest {
         kb.close()
     }
 
+    /** The user's "Shouldn't this also show on the emulator" became "Shoulder this ..." on the phone (2026-11-21). */
+    @Test fun shouldntKept() {
+        for (typed in listOf("shouldnt this also show on the emulator x", "shouldnt this be faster x")) {
+            val area = kb.open()
+            kb.waitForEngine()
+            kb.type(area, typed)
+            android.os.SystemClock.sleep(1500)
+            val got = kb.text()
+            android.util.Log.i("DogBoardTest", "neural retro: '$typed' -> '$got'")
+            assertTrue("'$typed' -> '$got'", got.startsWith("Shouldn't"))
+        }
+    }
+
     @Test fun correctNotKept() {
         for (typed in listOf("try not tonpause x", "i will not tonpause x", "try not to pause x")) {
             val area = kb.open()
