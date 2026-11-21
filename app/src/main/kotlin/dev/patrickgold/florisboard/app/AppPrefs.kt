@@ -451,6 +451,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard: the key sound: "system" (Android's own click, the default) or one of DogBoard's own
         // (feel/KeySounds: tick, drop, glass, thock, classic; user 2026-11-21: 3-5 options)
         val audioStyle = string(key = "input_feedback__audio_style", default = "system")
+        // DogBoard: DogBoard's key sounds also on silent (the media stream; user 2026-11-21), off by default
+        val audioBypassSilent = boolean(key = "input_feedback__audio_bypass_silent", default = false)
         // DogBoard: the phone's key click by default (user, 2026-11-14: the soft tap felt weak and flat)
         val hapticStyle = enum(
             key = "input_feedback__haptic_style",

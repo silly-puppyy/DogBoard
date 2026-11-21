@@ -65,8 +65,12 @@ object KeySounds {
 
     private const val SR = 44100
     private var pool: SoundPool? = null
+    // the settings' previews play on the media stream: key sounds follow the ringer (silent on silent, as Gboard's
+    // and an iPhone's), so a phone on vibrate previewed nothing (user 2026-11-21: "I can't hear anything")
+    private var previewPool: SoundPool? = null
     private var loadedStyle: String? = null
     private val ids = IntArray(Kind.entries.size)
+    private val previewIds = IntArray(Kind.entries.size)
     private val rng = java.util.Random(11)
 
     /** 16-bit mono PCM of [v], peak at 0.4 of full scale (iOS's clicks peak near -8 dBFS). */
@@ -103,6 +107,9 @@ object KeySounds {
         val p = pool ?: SoundPool.Builder().setMaxStreams(4).setAudioAttributes(
             AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
         ).build().also { pool = it }
+        val pp = previewPool ?: SoundPool.Builder().setMaxStreams(2).setAudioAttributes(
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build(),
+        ).build().also { previewPool = it }
         val dir = File(context.cacheDir, "keysounds").apply { mkdirs() }
         for (k in Kind.entries) {
             val voice = when (k) { Kind.KEY -> st.key; Kind.DELETE -> st.delete; Kind.MODIFIER -> st.modifier; Kind.SPACE -> st.space }
@@ -110,14 +117,19 @@ object KeySounds {
             wav(f, render(voice, k.ordinal.toLong()))
             if (ids[k.ordinal] != 0) p.unload(ids[k.ordinal])
             ids[k.ordinal] = p.load(f.path, 1)
+            if (previewIds[k.ordinal] != 0) pp.unload(previewIds[k.ordinal])
+            previewIds[k.ordinal] = pp.load(f.path, 1)
         }
         loadedStyle = style
     }
 
-    /** Plays [kind] in the loaded style at [volume] (0..1), varied by +-6 % per press so typing doesn't sound mechanical. */
-    fun play(kind: Kind, volume: Float) {
-        val p = pool ?: return
-        val id = ids[kind.ordinal].takeIf { it != 0 } ?: return
+    /**
+     * Plays [kind] in the loaded style at [volume] (0..1), varied by +-6 % per press so typing doesn't sound mechanical;
+     * [preview]: on the media stream, heard on silent too (the settings' previews, and Play on silent).
+     */
+    fun play(kind: Kind, volume: Float, preview: Boolean = false) {
+        val p = (if (preview) previewPool else pool) ?: return
+        val id = (if (preview) previewIds else ids)[kind.ordinal].takeIf { it != 0 } ?: return
         val v = (volume * (1f + (rng.nextFloat() - 0.5f) * 0.12f)).coerceIn(0f, 1f)
         p.play(id, v, v, 1, 0, 1f)
     }

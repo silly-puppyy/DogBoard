@@ -179,7 +179,7 @@ private class AndroidInteractionController(
                     io.github.sillypuppyy.dogboard.feel.KeyFeedbackClass.OTHER -> io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.MODIFIER
                     else -> io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY
                 }
-                io.github.sillypuppyy.dogboard.feel.KeySounds.play(soundKind, volume.toFloat())
+                io.github.sillypuppyy.dogboard.feel.KeySounds.play(soundKind, volume.toFloat(), preview = prefs.inputFeedback.audioBypassSilent.get())
                 return
             }
             audioManager.playSoundEffect(effect, volume.toFloat())

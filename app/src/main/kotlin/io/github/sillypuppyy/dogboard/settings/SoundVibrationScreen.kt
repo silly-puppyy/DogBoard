@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,6 +22,7 @@ import io.github.sillypuppyy.dogboard.design.settings.SetGroup
 import io.github.sillypuppyy.dogboard.design.settings.SetSliderRow
 import io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow
 import io.github.sillypuppyy.dogboard.design.settings.Segmented
+import io.github.sillypuppyy.dogboard.design.settings.SetMenu
 import io.github.sillypuppyy.dogboard.design.settings.TitleSub
 import io.github.sillypuppyy.dogboard.feel.HapticStyle
 import kotlinx.coroutines.launch
@@ -39,6 +42,7 @@ fun SoundVibrationScreen() {
     val sound by fb.audioEnabled.collectAsState()
     val volume by fb.audioVolume.collectAsState()
     val soundStyle by fb.audioStyle.collectAsState()
+    val bypassSilent by fb.audioBypassSilent.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val hPress by fb.hapticFeatKeyPress.collectAsState()
     val hLong by fb.hapticFeatKeyLongPress.collectAsState()
@@ -72,24 +76,37 @@ fun SoundVibrationScreen() {
             SetGroup("Sound") {
                 SetSwitchRow("sv:sound", "Sound", "A click on each key.", sound) { v -> scope.launch { fb.audioEnabled.set(v) } }
                 if (sound) {
-                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TitleSub("Key sound", "Your phone’s own click, or one of DogBoard’s: short tones for keys, lower ones for delete, two tones for shift. Picking one plays it.")
-                        val ids = listOf("system") + io.github.sillypuppyy.dogboard.feel.KeySounds.styleIds
-                        Segmented("sv:soundstyle", listOf("Phone", "Tick", "Drop", "Glass", "Thock", "Classic"), ids.indexOf(soundStyle).coerceAtLeast(0)) { i ->
-                            scope.launch {
-                                fb.audioStyle.set(ids[i])
-                                if (ids[i] != "system") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                                    io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(context, ids[i])
-                                    // a short preview: three keys, a delete, a shift (SoundPool loads asynchronously)
-                                    kotlinx.coroutines.delay(150)
-                                    val v = volume / 100f
-                                    for (k in listOf(io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY, io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY,
-                                        io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY, io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.DELETE,
-                                        io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.MODIFIER)) { io.github.sillypuppyy.dogboard.feel.KeySounds.play(k, v); kotlinx.coroutines.delay(180) }
-                                }
-                            }
+                    // a dropdown: six sounds were cramped as a segmented row (user 2026-11-21)
+                    val names = listOf(
+                        "system" to "Phone" to "Your phone’s own key click.",
+                        "tick" to "Tick" to "Short and bright, closest to an iPhone.",
+                        "drop" to "Drop" to "Rounder and lower.",
+                        "glass" to "Glass" to "Bright and clear.",
+                        "thock" to "Thock" to "Deep and woody.",
+                        "classic" to "Classic" to "A crisp, slightly noisy click.",
+                    )
+                    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+                    val current = names.firstOrNull { it.first.first == soundStyle } ?: names.first()
+                    fun preview(id: String) = scope.launch {
+                        fb.audioStyle.set(id)
+                        if (id != "system") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                            io.github.sillypuppyy.dogboard.feel.KeySounds.prepare(context, id)
+                            // a short preview: three keys, a delete, a shift (SoundPool loads asynchronously)
+                            kotlinx.coroutines.delay(150)
+                            val v = volume / 100f
+                            for (k in listOf(io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY, io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY,
+                                io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.KEY, io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.DELETE,
+                                io.github.sillypuppyy.dogboard.feel.KeySounds.Kind.MODIFIER)) { io.github.sillypuppyy.dogboard.feel.KeySounds.play(k, v, preview = true); kotlinx.coroutines.delay(180) }
                         }
                     }
+                    androidx.compose.foundation.layout.Box {
+                        Column(Modifier.fillMaxWidth().background(SetColors.row).clickable { open = true }.padding(16.dp)) {
+                            TitleSub("Key sound", "${current.first.second}: ${current.second} Picking one plays it, even on silent.")
+                        }
+                        SetMenu(open, { open = false }, names.map { (idName, sub) -> "${idName.second}, ${sub.lowercase().trimEnd('.')}" to { preview(idName.first) } })
+                    }
+                    // Android's own click always follows silent mode; DogBoard's sounds can play on the media stream
+                    if (soundStyle != "system") SetSwitchRow("sv:bypass", "Play on silent", "Key sounds even when your phone is on silent or vibrate, at the media volume.", bypassSilent) { v -> scope.launch { fb.audioBypassSilent.set(v) } }
                 }
                 SetSliderRow(
                     "sv:volume", "Volume", "How loud the key click is.",
