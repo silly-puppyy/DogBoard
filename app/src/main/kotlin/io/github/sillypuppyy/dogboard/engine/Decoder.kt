@@ -290,6 +290,44 @@ class Decoder(
     }
 
     /** Long -> Int map without boxing ([LayerMap]'s layout), for restart's per-(prefix, node) cache. */
+    /** Long keys to Double values, open addressing (no boxing); [get] gives NaN for a missing key. */
+    private class LongDoubleMap {
+        var keys = LongArray(64)
+        var values = DoubleArray(64)
+        var table = IntArray(LayerMap.tableSizeFor(64)) // entry index + 1, 0 = empty
+        var size = 0
+
+        fun get(k: Long): Double {
+            val mask = table.size - 1
+            var h = LayerMap.mix(k) and mask
+            while (true) {
+                val e = table[h]
+                if (e == 0) return Double.NaN
+                if (keys[e - 1] == k) return values[e - 1]
+                h = (h + 1) and mask
+            }
+        }
+
+        fun clear() {
+            java.util.Arrays.fill(table, 0)
+            size = 0
+        }
+
+        fun put(k: Long, v: Double) {
+            if (size == keys.size) { keys = keys.copyOf(size * 2); values = values.copyOf(size * 2) }
+            keys[size] = k; values[size] = v; size++
+            if (size * 2 > table.size) table = IntArray(table.size * 2).also { t ->
+                val mask = t.size - 1
+                for (i in 0 until size) { var h = LayerMap.mix(keys[i]) and mask; while (t[h] != 0) h = (h + 1) and mask; t[h] = i + 1 }
+            } else {
+                val mask = table.size - 1
+                var h = LayerMap.mix(k) and mask
+                while (table[h] != 0) h = (h + 1) and mask
+                table[h] = size
+            }
+        }
+    }
+
     private class LongIntMap {
         var keys = LongArray(64)
         var values = IntArray(64)
@@ -381,6 +419,8 @@ class Decoder(
         val lexiconVersion: Int,
         /** restart's result per (prefix, node) key: the text is built once per new word pair (reused from the last search, cleared). */
         val restartIds: LongIntMap = LongIntMap(),
+        /** restartLanguageModel's scores for this search (a word end's restart, kept across keystrokes). */
+        val restartLm: LongDoubleMap = LongDoubleMap(),
     ) {
         val taps = ArrayList<Tap>()
         val info = ArrayList<TapInfo>()
@@ -398,6 +438,7 @@ class Decoder(
             if (m == 0) { // a new word: no state refers to an earlier word any more
                 while (prefixes.size > 1) prefixes.removeAt(prefixes.size - 1)
                 restartIds.clear()
+                restartLm.clear()
             }
         }
     }
@@ -495,7 +536,8 @@ class Decoder(
             sr.lexiconVersion != lexicon.version
         ) {
             sr?.let { old -> old.raw.forEach(::recycleLayer); old.interior.forEach(::recycleLayer) }
-            sr = Search(keys, params, previous, previous2, personal, context, lexicon.version, sr?.restartIds?.also { it.clear() } ?: LongIntMap()).also { search = it }
+            sr = Search(keys, params, previous, previous2, personal, context, lexicon.version, sr?.restartIds?.also { it.clear() } ?: LongIntMap(),
+                sr?.restartLm?.also { it.clear() } ?: LongDoubleMap()).also { search = it }
         }
         var m = 0
         while (m < minOf(n, sr.taps.size) && sr.taps[m] == taps[m]) m++
@@ -563,9 +605,20 @@ class Decoder(
         }
         fun restart(sPrefix: Int, sNode: Int): Int = sr.restartIds.getOrPut(key(sPrefix, sNode)) { newRestart(sPrefix, sNode) }
         /** The language score a restart of [sPrefix] with the word at [sNode] has, without making its prefix. */
+        // cached for the search: recomputed on every keystroke it was 60 % of a decode on Android (each trigram lookup is
+        // a chain of memory-mapped reads; simpleperf, emulator, 2026-11-21), invisible on the JVM
         fun restartLanguageModel(sPrefix: Int, sNode: Int): Double {
-            sr.restartIds.get(key(sPrefix, sNode)).takeIf { it >= 0 }?.let { id -> prefixes[id]?.let { return it.languageModel } }
-            return (prefixes[sPrefix]?.languageModel ?: 0.0) + lm(sNode, context(sPrefix), context2(sPrefix))
+            // primitives only (a nullable Int or Double here boxed on every call)
+            val k = key(sPrefix, sNode)
+            val cached = sr.restartLm.get(k)
+            if (!cached.isNaN()) return cached
+            val id = sr.restartIds.get(k)
+            val made = if (id >= 0) prefixes[id] else null
+            val from = prefixes[sPrefix]
+            val v = if (made != null) made.languageModel
+                else (if (from != null) from.languageModel else 0.0) + lm(sNode, context(sPrefix), context2(sPrefix))
+            sr.restartLm.put(k, v)
+            return v
         }
 
         /** The score prune ranks a state by. */

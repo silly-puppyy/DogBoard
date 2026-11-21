@@ -43,10 +43,30 @@ class NgramModel private constructor(
 
     fun word(id: Int): String = vocab.word(id)
 
+    /**
+     * Every [SAMPLE]th pair word and triple key on the heap (~0.55 MB): a search narrows to one block of [SAMPLE] there
+     * and reads the mapped file only inside it (~6 reads instead of up to 22). On Android every mapped read is a bounds
+     * check and a native call, and these searches were most of a keystroke's decode (simpleperf on the emulator,
+     * 2026-11-21); a per-context row cache was tried and kept re-copying rows (many contexts per keystroke).
+     */
+    private val biSample: IntArray by lazy { IntArray((biWords.limit() + SAMPLE - 1) / SAMPLE) { biWords[it * SAMPLE] } }
+    private val triSample: LongArray by lazy { LongArray((triKeys.limit() + SAMPLE - 1) / SAMPLE) { triKeys[it * SAMPLE] } }
+
     /** Index of the pair ([a], [b]), or -1. */
     private fun pairIndex(a: Int, b: Int): Int {
         if (a < 0 || a + 1 >= biOffsets.limit()) return -1
         var lo = biOffsets[a]; var hi = biOffsets[a + 1] - 1
+        if (hi - lo > 2 * SAMPLE) {
+            // the samples wholly inside this word's (sorted) run: the last one <= b bounds the block
+            val sample = biSample
+            val first = (lo + SAMPLE - 1) / SAMPLE; val last = hi / SAMPLE
+            var sl = first; var sh = last; var j = first - 1
+            while (sl <= sh) { val m = (sl + sh) ushr 1; if (sample[m] <= b) { j = m; sl = m + 1 } else sh = m - 1 }
+            if (j >= first) {
+                if (sample[j] == b) return j * SAMPLE
+                lo = j * SAMPLE + 1; hi = minOf(hi, (j + 1) * SAMPLE - 1)
+            } else hi = minOf(hi, first * SAMPLE - 1)
+        }
         while (lo <= hi) {
             val mid = (lo + hi) ushr 1
             val v = biWords[mid]
@@ -57,7 +77,15 @@ class NgramModel private constructor(
 
     /** Index of [key] in the sorted triple keys, or -(insertion point) - 1. */
     private fun triSearch(key: Long): Int {
-        var lo = 0; var hi = triKeys.limit() - 1
+        val n = triKeys.limit()
+        if (n == 0) return -1
+        // the last sample <= key bounds the block ([triSample])
+        val sample = triSample
+        var sl = 0; var sh = sample.size - 1; var j = -1
+        while (sl <= sh) { val m = (sl + sh) ushr 1; if (sample[m] <= key) { j = m; sl = m + 1 } else sh = m - 1 }
+        if (j < 0) return -1 // before every key: insertion point 0
+        if (sample[j] == key) return j * SAMPLE
+        var lo = j * SAMPLE + 1; var hi = minOf(n, (j + 1) * SAMPLE) - 1
         while (lo <= hi) {
             val mid = (lo + hi) ushr 1
             val v = triKeys[mid]
@@ -194,6 +222,9 @@ class NgramModel private constructor(
         private val LN10 = ln(10.0)
 
         private fun tri(a: Int, b: Int, c: Int): Long = (a.toLong() shl 42) or (b.toLong() shl 21) or c.toLong()
+
+        /** One heap entry per this many pair words / triple keys ([biSample], [triSample]). */
+        private const val SAMPLE = 64
 
         /** Reads [writeBinary]'s layout from a stream (copies it into memory); null if it isn't one. */
         fun readBinary(input: java.io.InputStream): NgramModel? =
