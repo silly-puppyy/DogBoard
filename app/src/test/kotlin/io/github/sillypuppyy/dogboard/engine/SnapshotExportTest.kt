@@ -58,6 +58,12 @@ class SnapshotExportTest : FunSpec({
             val bigrams = File(dir, "$lang.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
             GZIPOutputStream(File(dir, "$lang-lexicon.dgz").outputStream().buffered(), 64 * 1024).use { lexicon.writeSnapshot(it) }
             GZIPOutputStream(File(dir, "$lang-bigrams.dgz").outputStream().buffered(), 64 * 1024).use { bigrams.writeSnapshot(it) }
+            // the trigram vocabulary's index (snapshot_ngramindex): built on the phone it cost Russian's 442k-word
+            // vocabulary ~60 MB of heap (emulator 103 -> 165 MB, 2026-11-22)
+            File(dir, "$lang.ngrams.bin").takeIf { it.isFile }?.let { f ->
+                val model = java.io.RandomAccessFile(f, "r").channel.use { c -> NgramModel.fromBuffer(c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size()), null) }
+                if (model != null) GZIPOutputStream(File(dir, "$lang-ngramindex.dgz").outputStream().buffered(), 64 * 1024).use { model.writeVocabIndex(it) }
+            }
         } finally {
             Lexicon.distinctLetters = emptySet()
         }

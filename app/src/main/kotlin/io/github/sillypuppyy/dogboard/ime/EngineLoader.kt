@@ -77,6 +77,15 @@ object EngineLoader {
                 // beside the lexicon snapshot (same key: an app update builds it again)
                 val indexFile = File(dataDir(app, p), "ngramindex-${snapshotKey(app)}.bin")
                 // a first start: the index built with the app, when it matches this trigram file (as the word data)
+                // a downloaded pack brings its own (snapshot_ngramindex)
+                if (!indexFile.isFile && !p.bundled) runCatching {
+                    p.open("snapshot_ngramindex")?.let { java.util.zip.GZIPInputStream(it, 64 * 1024) }?.use { s ->
+                        indexFile.parentFile?.mkdirs()
+                        val tmp = File(indexFile.path + ".tmp")
+                        tmp.outputStream().use { s.copyTo(it, 64 * 1024) }
+                        tmp.renameTo(indexFile)
+                    }
+                }
                 if (!indexFile.isFile && p.bundled) runCatching {
                     val sha = pack(app).manifest.files["ngrams"]?.sha256?.take(8)?.takeIf { it.length == 8 } ?: return@runCatching
                     java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${pack(app).tag}-ngramindex-$sha.dgz"), 64 * 1024).use { s ->
