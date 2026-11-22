@@ -1366,7 +1366,8 @@ object TypingEngine {
      */
     private fun keepsOneLetterWord(typed: String, candidate: String, engine: Loaded): Boolean {
         if (typed.length != 1 || !engine.lexicon.contains(typed)) return true
-        return candidate.length != 1 || candidate.equals(typed, ignoreCase = true)
+        // its accent twin is the same word ("a" -> "à": iOS compares by sort key); the twin margin still applies
+        return candidate.length != 1 || candidate.equals(typed, ignoreCase = true) || isAccentTwin(candidate, typed)
     }
 
     /**
