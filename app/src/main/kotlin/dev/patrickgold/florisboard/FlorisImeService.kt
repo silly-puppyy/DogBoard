@@ -332,7 +332,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                 val tag = subtypeManager.activeSubtype.primaryLocale.languageTag()
                 // the language's layout (its default unless the one in use types that language): before the switch,
                 // so the keys and the pack's own-key letters (ñ, å ä ö) match
-                io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get())?.let { prefs.keyboard.layoutId.set(it) }
+                io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get(), prefs.keyboard.layoutByLanguage.get())?.let { prefs.keyboard.layoutId.set(it) }
                 if (io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag))
                     imeController.updateState { refreshSuggestions() }
             }

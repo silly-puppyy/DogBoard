@@ -534,6 +534,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__layout_id",
             default = "qwerty-en",
         )
+        /** DogBoard: each language's chosen layout ("en=dvorak-en,cs=qwertz-cs"; LanguageLayouts): the globe key
+         *  brings a language back with its own layout (one global layout showed QWERTZ for every language). */
+        val layoutByLanguage = string(
+            key = "keyboard__layout_by_language",
+            default = "",
+        )
         /** Letters on the keys always in capitals (else they follow shift). */
         val capsLabels = boolean(
             key = "keyboard__caps_labels",

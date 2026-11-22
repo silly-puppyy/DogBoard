@@ -9,6 +9,7 @@ import dev.patrickgold.florisboard.app.FlorisPreferenceModel
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
 import dev.patrickgold.florisboard.subtypeManager
+import io.github.sillypuppyy.dogboard.ime.LanguageLayouts
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import io.github.sillypuppyy.dogboard.design.settings.LayoutElements
 import io.github.sillypuppyy.dogboard.design.settings.SetLayout
@@ -55,6 +56,8 @@ fun LayoutScreen() {
     val scope = rememberCoroutineScope()
     val subtypeManager by LocalContext.current.subtypeManager()
     val subtypes by subtypeManager.subtypesFlow.collectAsState()
+    val active by subtypeManager.activeSubtypeFlow.collectAsState()
+    val memory by prefs.keyboard.layoutByLanguage.collectAsState()
     // read the stored values through their flows so the page follows every change
     prefs.keyboard.numberRow.collectAsState().value
     prefs.keyboard.numberRowLongPress.collectAsState().value
@@ -72,7 +75,14 @@ fun LayoutScreen() {
         onBack = { navController.popBackStack() },
         layoutId = prefs.keyboard.layoutId.collectAsState().value,
         languages = subtypes.map { it.primaryLocale.language }.ifEmpty { listOf("en") },
-        onLayoutId = { id -> scope.launch { prefs.keyboard.layoutId.set(id) } },
+        onLayoutId = { id, lang ->
+            scope.launch {
+                prefs.keyboard.layoutByLanguage.set(LanguageLayouts.remember(prefs.keyboard.layoutByLanguage.get(), lang, id))
+                // the live keyboard changes when the layout is for the language in use
+                if (active.primaryLocale.language == lang) prefs.keyboard.layoutId.set(id)
+            }
+        },
+        layoutOf = { lang -> LanguageLayouts.layoutOf(lang, memory) },
         heightPercent = prefs.keyboard.heightPercent.collectAsState().value,
         onHeightPercent = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },
     ))

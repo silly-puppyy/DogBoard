@@ -19,10 +19,26 @@ object LanguageLayouts {
         return loaded in (languagesOf[layoutId] ?: setOf(layoutId.substringAfterLast('-')))
     }
 
-    /** The layout to use for [tag] ("es-ES") when [current] is in use: [current] if it types that language, else the default. */
-    fun forLanguage(tag: String, current: String): String? {
+    /** [memory] ("en=dvorak-en,cs=qwertz-cs") as language -> layout id. */
+    fun chosen(memory: String): Map<String, String> =
+        memory.split(',').mapNotNull { e -> e.split('=').takeIf { it.size == 2 && it[0].isNotEmpty() }?.let { it[0] to it[1] } }.toMap()
+
+    /** [memory] with [layoutId] as [lang]'s layout. */
+    fun remember(memory: String, lang: String, layoutId: String): String =
+        (chosen(memory) + (lang to layoutId)).entries.joinToString(",") { "${it.key}=${it.value}" }
+
+    /** [lang]'s layout: the one chosen for it, else its default (null: a language without layouts). */
+    fun layoutOf(lang: String, memory: String): String? =
+        chosen(memory)[lang]?.takeIf { lang in languagesOf[it].orEmpty() } ?: default[lang]
+
+    /**
+     * The layout to switch to for [tag] ("es-ES") when [current] is in use: the language's chosen layout, else [current]
+     * if it types that language, else the default; null when [current] is already it.
+     */
+    fun forLanguage(tag: String, current: String, memory: String = ""): String? {
         val lang = tag.substringBefore('-').lowercase()
-        if (lang in languagesOf[current].orEmpty()) return null
-        return default[lang]
+        val want = chosen(memory)[lang]?.takeIf { lang in languagesOf[it].orEmpty() }
+            ?: current.takeIf { lang in languagesOf[it].orEmpty() } ?: default[lang]
+        return want?.takeIf { it != current }
     }
 }

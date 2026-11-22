@@ -18,11 +18,13 @@ import io.github.sillypuppyy.dogboard.design.settings.LangRow
 import io.github.sillypuppyy.dogboard.design.settings.SetLanguages
 import io.github.sillypuppyy.dogboard.ime.LanguagePack
 import io.github.sillypuppyy.dogboard.ime.GeneratedLayouts
+import io.github.sillypuppyy.dogboard.ime.LanguageLayouts
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** The letter layouts' names (tools/layouts/gen_layouts.py; SetLayout's cards). */
-private val LAYOUT_NAMES = GeneratedLayouts.all.associate { it.id to it.label }
+private fun layoutLabel(id: String, lang: String): String =
+    (GeneratedLayouts.all.firstOrNull { it.id == id && it.language == lang } ?: GeneratedLayouts.all.firstOrNull { it.id == id })?.label ?: "QWERTY"
 
 /** The languages with layouts but no pack (GeneratedLayouts), added by their bare code ("el"). */
 private fun layoutOnly(packs: List<LanguagePack>, added: Set<String>): List<LangPack> {
@@ -44,6 +46,7 @@ fun LanguagesScreen() {
     val subtypes by subtypeManager.subtypesFlow.collectAsState()
     val active by subtypeManager.activeSubtypeFlow.collectAsState()
     val layoutId by prefs.keyboard.layoutId.collectAsState()
+    val memory by prefs.keyboard.layoutByLanguage.collectAsState()
     // the language packs, built in and downloaded: usable when they bring a dictionary
     val packs by produceState(emptyList<LanguagePack>()) {
         value = withContext(Dispatchers.IO) { LanguagePack.all(context) }
@@ -56,7 +59,9 @@ fun LanguagesScreen() {
             // the pack's own name (English (US)) where there is a pack, else the locale's
             s.id, packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName(), s.primaryLocale.displayName(s.primaryLocale).takeIf { !tag.startsWith("en") },
             // DogBoard's layouts are chosen on the Layout page; swipe typing reads QWERTY English (FeelSettings.swipeLayout)
-            LAYOUT_NAMES[layoutId] ?: "QWERTY", layoutId == "qwerty-en" && tag.startsWith("en"),
+            // each language's own layout (one global layout showed QWERTZ on every row)
+            layoutLabel(LanguageLayouts.layoutOf(s.primaryLocale.language, memory) ?: layoutId, s.primaryLocale.language),
+            (LanguageLayouts.layoutOf(s.primaryLocale.language, memory) ?: layoutId) == "qwerty-en" && tag.startsWith("en"),
             s.id == active.id || list.size == 1,
         )
     }

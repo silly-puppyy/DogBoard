@@ -79,7 +79,10 @@ class SetLayoutState(
     val subtitle: String = "English (US), QWERTY",
     /** The letter layout (gen_layouts.py ids); null hides the choice (previews). */
     val layoutId: String? = null,
-    val onLayoutId: (String) -> Unit = {},
+    /** A card picked: its layout id and language (the layout becomes that language's; live if it is the active one). */
+    val onLayoutId: (String, String) -> Unit = { _, _ -> },
+    /** Each language's chosen layout (LanguageLayouts.layoutOf): the ticked card per language. */
+    val layoutOf: (String) -> String? = { null },
     /** The user's languages (codes, "cs"): the Letters group offers their layouts (the full list is 1469). */
     val languages: List<String> = listOf("en"),
     /** Keyboard height in percent (moved here from the home page, settings tree v3); null hides it. */
@@ -188,7 +191,7 @@ fun SetLayout(state: SetLayoutState) {
                             if (langs.size > 1) DText(ofLang[0].language, style = setText(13f, 500, color = SetColors.onSurfaceVariant))
                             ofLang.chunked(2).forEach { pair ->
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    pair.forEach { l -> LayoutCard(l, l.id == id && l.code == chosen?.code, Modifier.weight(1f)) { state.onLayoutId(l.id) } }
+                                    pair.forEach { l -> LayoutCard(l, l.id == (state.layoutOf(l.code) ?: id), Modifier.weight(1f)) { state.onLayoutId(l.id, l.code) } }
                                     if (pair.size == 1) Box(Modifier.weight(1f))
                                 }
                             }
