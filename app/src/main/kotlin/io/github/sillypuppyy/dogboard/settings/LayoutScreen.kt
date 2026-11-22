@@ -1,11 +1,14 @@
 package io.github.sillypuppyy.dogboard.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import dev.patrickgold.florisboard.app.FlorisPreferenceModel
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
+import dev.patrickgold.florisboard.subtypeManager
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import io.github.sillypuppyy.dogboard.design.settings.LayoutElements
 import io.github.sillypuppyy.dogboard.design.settings.SetLayout
@@ -50,6 +53,8 @@ fun LayoutScreen() {
     io.github.sillypuppyy.dogboard.design.MaterialYouTheme.Remember() // previews in the default look
     val navController = LocalNavController.current
     val scope = rememberCoroutineScope()
+    val subtypeManager by LocalContext.current.subtypeManager()
+    val subtypes by subtypeManager.subtypesFlow.collectAsState()
     // read the stored values through their flows so the page follows every change
     prefs.keyboard.numberRow.collectAsState().value
     prefs.keyboard.numberRowLongPress.collectAsState().value
@@ -66,6 +71,7 @@ fun LayoutScreen() {
         onChange = { e -> scope.launch { LayoutPrefs.write(prefs, e) } },
         onBack = { navController.popBackStack() },
         layoutId = prefs.keyboard.layoutId.collectAsState().value,
+        languages = subtypes.map { it.primaryLocale.language }.ifEmpty { listOf("en") },
         onLayoutId = { id -> scope.launch { prefs.keyboard.layoutId.set(id) } },
         heightPercent = prefs.keyboard.heightPercent.collectAsState().value,
         onHeightPercent = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },

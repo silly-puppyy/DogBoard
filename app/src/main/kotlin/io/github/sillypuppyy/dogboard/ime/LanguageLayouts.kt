@@ -10,19 +10,19 @@ object LanguageLayouts {
     /** Each language's default layout (GeneratedLayouts: tools/layouts/gen_layouts.py). */
     val default: Map<String, String> = GeneratedLayouts.all.filter { it.default }.associate { it.language to it.id }
 
-    /** The language each layout types. */
-    private val languageOf: Map<String, String> = GeneratedLayouts.all.associate { it.id to it.language }
+    /** The languages each layout types (one keyboard file serves every language with the same letters and long-press). */
+    private val languagesOf: Map<String, Set<String>> = GeneratedLayouts.all.groupBy({ it.id }, { it.language }).mapValues { it.value.toSet() }
 
     /** Whether [layoutId] types the language of the word engine's loaded pack (English when none is loaded yet). */
     fun matchesLoaded(layoutId: String): Boolean {
         val loaded = (EngineLoader.pack?.tag ?: LanguagePack.DEFAULT_TAG).substringBefore('-').lowercase()
-        return (languageOf[layoutId] ?: layoutId.substringAfterLast('-')) == loaded
+        return loaded in (languagesOf[layoutId] ?: setOf(layoutId.substringAfterLast('-')))
     }
 
     /** The layout to use for [tag] ("es-ES") when [current] is in use: [current] if it types that language, else the default. */
     fun forLanguage(tag: String, current: String): String? {
         val lang = tag.substringBefore('-').lowercase()
-        if (languageOf[current] == lang) return null
+        if (lang in languagesOf[current].orEmpty()) return null
         return default[lang]
     }
 }

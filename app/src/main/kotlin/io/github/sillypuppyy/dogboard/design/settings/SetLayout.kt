@@ -80,6 +80,8 @@ class SetLayoutState(
     /** The letter layout (gen_layouts.py ids); null hides the choice (previews). */
     val layoutId: String? = null,
     val onLayoutId: (String) -> Unit = {},
+    /** The user's languages (codes, "cs"): the Letters group offers their layouts (the full list is 1469). */
+    val languages: List<String> = listOf("en"),
     /** Keyboard height in percent (moved here from the home page, settings tree v3); null hides it. */
     val heightPercent: Int? = null,
     val onHeightPercent: (Int) -> Unit = {},
@@ -175,13 +177,23 @@ fun SetLayout(state: SetLayoutState) {
             state.layoutId?.let { id ->
                 SetGroup("Letters") {
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        LETTER_LAYOUTS.chunked(2).forEach { pair ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                pair.forEach { l -> LayoutCard(l, l.id == id, Modifier.weight(1f)) { state.onLayoutId(l.id) } }
-                                if (pair.size == 1) Box(Modifier.weight(1f))
+                        // the user's languages' layouts, a heading per language when there are several (the chosen
+                        // layout's language first, so it shows even if that language was removed since)
+                        // (a keyboard file shared by several languages: the entry of one of the user's)
+                        val chosen = LETTER_LAYOUTS.firstOrNull { it.id == id && it.code in state.languages } ?: LETTER_LAYOUTS.firstOrNull { it.id == id }
+                        val langs = (listOfNotNull(chosen?.code) + state.languages).distinct()
+                        langs.forEach { code ->
+                            val ofLang = LETTER_LAYOUTS.filter { it.code == code }
+                            if (ofLang.isEmpty()) return@forEach
+                            if (langs.size > 1) DText(ofLang[0].language, style = setText(13f, 500, color = SetColors.onSurfaceVariant))
+                            ofLang.chunked(2).forEach { pair ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    pair.forEach { l -> LayoutCard(l, l.id == id && l.code == chosen?.code, Modifier.weight(1f)) { state.onLayoutId(l.id) } }
+                                    if (pair.size == 1) Box(Modifier.weight(1f))
+                                }
                             }
                         }
-                        LETTER_LAYOUTS.firstOrNull { it.id == id }?.note?.let { note ->
+                        chosen?.note?.let { note ->
                             DText(note, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8)
                         }
                     }
@@ -318,13 +330,16 @@ private fun BottomRowCard(selected: Boolean, label: String, keys: List<Mk>, onPi
 
 
 /** A letter layout the Layout page offers: its rows as drawn on the keys (GeneratedLayouts, tools/layouts/gen_layouts.py). */
-private class LetterLayout(val id: String, val name: String, val language: String, val rows: List<String>, val note: String? = null)
+private class LetterLayout(val id: String, val name: String, val language: String, val rows: List<String>, val note: String? = null, val code: String = "")
 
 private const val TAPS_ONLY = "Swipe typing reads QWERTY only for now, so this layout types by taps; autocorrect and suggestions work as usual."
 private const val ENGLISH_ONLY = "Suggestions and autocorrect are English-only for now, so they’re off with this layout; swipe typing too."
+private const val NO_DICTIONARY = "No dictionary for this language yet: it types, but suggestions, autocorrect and swipe typing are off."
 
 private val LETTER_LAYOUTS = GeneratedLayouts.all.map { l ->
-    LetterLayout(l.id, l.name, l.languageName, l.rows, when (l.note) { "taps" -> TAPS_ONLY; "english" -> ENGLISH_ONLY; else -> null })
+    LetterLayout(l.id, l.name, l.languageName, l.rows, when (l.note) {
+        "taps" -> TAPS_ONLY; "english" -> ENGLISH_ONLY; "nodict" -> NO_DICTIONARY; else -> null
+    }, l.language)
 }
 
 /** A layout's card: its letter rows as a small keyboard, its name and language; the chosen one outlined and ticked. */

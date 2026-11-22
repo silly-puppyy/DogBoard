@@ -16,6 +16,8 @@ Run from the repository root:
     python3 tools/layouts/gen_layouts.py
 """
 import json
+import re
+import unicodedata
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -448,6 +450,161 @@ def build(lay: Layout) -> str:
     return "\n".join(out)
 
 
+IOS_DATA = Path("../notes/design/data/layouts/ios")
+# CLDR's English names of languages and territories (Unicode licence; keyboard-data/cldr, fetched by auto_pack.py)
+CLDR_EN = Path("/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/cldr/main/en.xml")
+# languages with a word pack in the app (the others type without suggestions until they get one)
+PACKS = {"en", "es", "fr", "fi", "ru"}
+NAMED = {"qwerty": "QWERTY", "qwertz": "QWERTZ", "azerty": "AZERTY", "dvorak": "Dvorak", "colemak": "Colemak", "pc": "PC",
+         "two": "2"}
+# Gboard's registry still uses the old ISO codes for some languages; CLDR names the current ones
+OLD_CODES = {"iw": "he", "in": "id", "ji": "yi", "jw": "jv", "mo": "ro"}
+
+
+def cldr_names() -> tuple[dict[str, str], set[str]]:
+    text = CLDR_EN.read_text(encoding="utf-8")
+    langs = dict(re.findall(r'<language type="([a-zA-Z_]+)">([^<]+)</language>', text))
+    territories = {w.lower() for t in re.findall(r'<territory type="[A-Z0-9]+">([^<]+)</territory>', text) for w in t.split()}
+    return langs, territories
+
+
+def plain_rows(rows) -> list[list[str]] | None:
+    """The letter rows of a layout whose keys are all plain characters (no vowel signs, no named iOS keys), else None."""
+    keys = [k for r in rows or [] for k in (r or []) if isinstance(k, str)]
+    if not keys or any(k.startswith("<") for k in keys) or any(unicodedata.category(c) in ("Mn", "Mc") for k in keys for c in k):
+        return None
+    out = [[k for k in r if isinstance(k, str) and len(k) == 1 and k.isalpha() and not ("\ufb50" <= k <= "\ufeff")]
+           for r in rows if r]
+    out = [r for r in out if r]
+    if len(out) != 3:  # four letter rows (Pashto, Amharic): later, row 4 needs its own build
+        return None
+    letters = [c for r in out for c in r]
+    # a letter twice (extraction leftovers: Hebrew ו, Estonian õ), a row wider than 12 keys (Bulgarian BDS) or letters
+    # beyond the BMP (Hanifi Rohingya: key ids are one UTF-16 unit): skipped, AllLayoutsTest failed them (2026-11-22)
+    if len(set(letters)) != len(letters) or max(len(r) for r in out) > 12 or any(ord(c) > 0xFFFF for c in letters):
+        SKIPPED.append("".join(out[0]))
+        return None
+    return out
+
+
+def layout_name(variant: str, language: str, territories: set[str], rows: list[list[str]], default: str | None, code: str = "") -> str:
+    """'qwertz' -> QWERTZ; 'armenian_armenia_phonetic' -> Phonetic (language and country dropped); 'arabic_two' -> the
+    language's first layout's name + 2. Nothing left: the language's first layout's name (an iPhone variant then reads
+    "ЙЦУКЕН (iPhone)"), or for that first layout the first six letters where the script has capitals (ЙЦУКЕН, as
+    layouts are named), else Standard."""
+    drop = {w.lower() for w in language.split()} | territories | {"iphone", code}
+    words = [NAMED.get(w, w.capitalize()) for w in re.split(r"[_\-\s]+", variant.lower()) if w and w not in drop]
+    if words == ["2"] and default:
+        return f"{default} 2"
+    if words:
+        return " ".join(words)
+    if default:
+        return default
+    first = "".join(rows[0][:6])
+    named_by_letters = all(unicodedata.name(c, "").split()[0] in ("LATIN", "CYRILLIC") and c.upper() != c for c in first)
+    return first.upper() if named_by_letters else "Standard"
+
+
+def long_press(lp: dict[str, str]) -> dict[str, str]:
+    """Gboard's long-press lists ("ё,е́") as key alternatives, capitals too where a letter has one capital."""
+    out = {}
+    for k, v in (lp or {}).items():
+        alts = [a for a in v.split(",") if a]
+        if not alts:
+            continue
+        out[k] = " ".join(alts)
+        if len(k.upper()) == 1 and k.upper() != k and all(len(a.upper()) == len(a) for a in alts):
+            out[k.upper()] = " ".join(a.upper() for a in alts)
+    return out
+
+
+def all_layouts() -> list[Layout]:
+    """Every plain three-row layout of every language Gboard covers (one per distinct keyboard: a grid shared by many
+    languages is one file), and iOS's where its letters differ from all of Gboard's for that language, named
+    '... (iPhone)' (user 2026-11-22). Languages LAYOUTS defines by hand keep those; their other variants are added."""
+    langs, territories = cldr_names()
+    g_langs = json.loads((GBOARD_DATA / "languages.json").read_text(encoding="utf-8"))
+    g_lays = json.loads((GBOARD_DATA / "layouts.json").read_text(encoding="utf-8"))
+    i_modes = json.loads((IOS_DATA / "input_modes.json").read_text(encoding="utf-8"))
+    i_lays = json.loads((IOS_DATA / "layouts.json").read_text(encoding="utf-8"))
+    # one tag per language: the bare code if Gboard has it, else the first
+    # one tag per language: the bare code ("el"), else its first regular region ("el-GR"; Gboard's X regions are
+    # private variants: "el-XT" had lost Greek its layout)
+    tags: dict[str, str] = {}
+    for tag in sorted(g_langs, key=lambda t: (len(t.split("-")) > 1, any(p[:1] == "X" for p in t.split("-")[1:]), t)):
+        code = tag.split("-")[0].lower()
+        tags.setdefault(OLD_CODES.get(code, code), tag)
+    letters_only = lambda rows: [[c for c in r if c.isalpha()] for r in rows]
+    have = {}  # language -> letter grids it already has (letters only: punctuation keys don't make a new layout)
+    first_name: dict[str, str] = {}  # language -> its first layout's name
+    named: dict[tuple[str, str], list[list[str]]] = {}  # (language, name) -> that layout's rows
+    for lay in LAYOUTS:
+        named[(lay.locale, lay.layout)] = lay.rows
+        have.setdefault(lay.locale, []).append(letters_only(lay.rows))
+        first_name.setdefault(lay.locale, lay.layout)
+    files: dict[str, str] = {}  # keyboard content -> file id
+    out: list[Layout] = []
+    ids = {lay.id for lay in LAYOUTS}
+
+    def add(base: str, language: str, name: str, rows: list[list[str]], accents: dict[str, str], hint: str):
+        if letters_only(rows) in have.get(base, []):
+            return
+        have.setdefault(base, []).append(letters_only(rows))
+        # a second layout of the same name: its own letters in brackets ("QWERTY (ñ)"), or "basic" when it only lacks some
+        other = named.get((base, name))
+        if other is not None:
+            extra = sorted({c for r in rows for c in r if c.isalpha()} - {c for r in other for c in r})
+            name = f"{name} ({' '.join(extra)})" if extra else f"{name} (basic)"
+            n, stem = 2, name
+            while (base, name) in named:
+                name = f"{stem} {n}"; n += 1
+        named.setdefault((base, name), rows)
+        first_name.setdefault(base, name)
+        key = json.dumps([rows, accents], ensure_ascii=False, sort_keys=True)
+        fid = files.get(key)
+        if fid is None:
+            fid = re.sub(r"[^a-z0-9]+", "-", hint.lower()).strip("-")[:32] or "layout"
+            fid = f"{fid}-{base}"
+            n = 2
+            while fid in ids:
+                fid = f"{fid.rsplit('-', 1)[0]}-{base}{n}"; n += 1
+            ids.add(fid)
+            files[key] = fid
+        lay = Layout(fid, base, f"{language} ({name})", name, base.upper()[:3], rows, accents=accents,
+                     note="taps" if base in PACKS else "nodict")
+        if base == "ka":
+            lay = no_capitals(lay)
+        out.append(lay)
+
+    for base, tag in sorted(tags.items()):
+        language = langs.get(base)
+        if not language:
+            continue
+        d = g_langs[tag]
+        variants = sorted(d["variants"], key=lambda v: v["variant"] != d["default_variant"])
+        g_lp = {}
+        for v in variants:
+            L = g_lays.get(v["layout_id"])
+            rows = plain_rows(L.get("rows")) if L else None
+            if rows is None:
+                continue
+            lp = long_press(L.get("longpress"))
+            g_lp = g_lp or lp
+            add(base, language, layout_name(v["variant"], language, territories, rows, first_name.get(base), base), rows, lp, v["variant"])
+        for itag, m in i_modes.items():
+            if OLD_CODES.get(itag.split("-")[0].lower(), itag.split("-")[0].lower()) != base:
+                continue
+            for n in m.get("layouts", []):
+                rows = plain_rows(i_lays.get(n, {}).get("rows"))
+                if rows is None:
+                    continue
+                rows = [[c.lower() if len(c.lower()) == 1 else c for c in r] for r in rows]
+                # an iPhone layout named like Gboard's: "(iPhone)" tells them apart (Gboard's name alone when it has none)
+                name = layout_name(n, language, territories, rows, first_name.get(base), base)
+                add(base, language, name + " (iPhone)" if base in first_name else name, rows, g_lp, n + "-iphone")
+    return out
+
+
 # the language names the Layout page shows under a card (English, as the rest of Settings)
 LANGUAGE_NAMES = {"en": "English", "de": "German", "fr": "French", "es": "Spanish", "fi": "Finnish", "ru": "Russian",
                   "cs": "Czech", "ka": "Georgian", "ar": "Arabic"}
@@ -461,9 +618,10 @@ def kotlin_list() -> str:
         return "null" if t is None else '"' + t.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$") + '"'
     seen = set()
     lines = []
-    for lay in LAYOUTS:
+    names = {**cldr_names()[0], **LANGUAGE_NAMES}
+    for lay in LAYOUTS + GENERATED:
         rows = ", ".join(q("".join(r)) for r in lay.rows)
-        lines.append(f"        LayoutInfo({q(lay.id)}, {q(lay.locale)}, {q(LANGUAGE_NAMES[lay.locale])}, {q(lay.layout)}, "
+        lines.append(f"        LayoutInfo({q(lay.id)}, {q(lay.locale)}, {q(names[lay.locale])}, {q(lay.layout)}, "
                      f"{q(lay.label or lay.layout)}, listOf({rows}), default = {str(lay.locale not in seen).lower()}, note = {q(lay.note)}),")
         seen.add(lay.locale)
     return "\n".join([
@@ -477,18 +635,27 @@ def kotlin_list() -> str:
         ")",
         "",
         "object GeneratedLayouts {",
-        "    val all: List<LayoutInfo> = listOf(",
-        *lines,
-        "    )",
+        # in parts: one listOf of 1469 entries is over the JVM's 64 KB method size
+        f"    val all: List<LayoutInfo> = {' + '.join(f'part{i}()' for i in range(0, len(lines), 150))}",
+        *[part for i in range(0, len(lines), 150) for part in
+          ["", f"    private fun part{i}() = listOf(", *lines[i:i + 150], "    )"]],
         "}",
         "",
     ])
 
 
+GENERATED: list[Layout] = []
+SKIPPED: list[str] = []
+
 if __name__ == "__main__":
+    GENERATED = all_layouts()
     KOTLIN_OUT.write_text(kotlin_list(), encoding="utf-8")
-    print(f"wrote {KOTLIN_OUT}")
-    for lay in LAYOUTS:
+    print(f"wrote {KOTLIN_OUT}; skipped {len(SKIPPED)} layouts with a repeated letter, a row over 12 or non-BMP letters")
+    written = set()
+    for lay in LAYOUTS + GENERATED:
+        if lay.id in written:
+            continue
+        written.add(lay.id)
         out = OUT_DIR / f"{lay.id}.xml"
         out.write_text(build(lay), encoding="utf-8")
         print(f"wrote {out}")
