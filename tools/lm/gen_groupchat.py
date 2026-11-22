@@ -89,7 +89,8 @@ with open(out, 'a', encoding='utf-8') as f, torch.no_grad():
             for line in g.split('\n')[:-1]:  # the last line may be cut off
                 m = LINE.match(line.strip())
                 if not m or m.group(1) not in NAMES: break  # left the chat format (a new heading, prose): stop
-                kept.append(m.group(2).strip().replace('\t', ' '))
-            for msg in kept: f.write(f'{i}\t{msg}\n')
+                kept.append((m.group(1), m.group(2).strip().replace('\t', ' ')))
+            # KEEP_NAMES=1: the speaker's name as a second column (filter_gender_ru.py checks first-person agreement)
+            for name, msg in kept: f.write(f'{i}\t{name}\t{msg}\n' if os.environ.get('KEEP_NAMES') == '1' else f'{i}\t{msg}\n')
         f.flush()
         if (b // BATCH) % 20 == 0: print(f'{b + len(idx)} prompts, {n_tok / (time.time() - t0):.0f} tok/s', flush=True)
