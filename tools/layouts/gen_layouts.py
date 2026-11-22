@@ -457,6 +457,12 @@ CLDR_EN = Path("/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-dat
 PACKS = {"en", "es", "fr", "fi", "ru"}
 NAMED = {"qwerty": "QWERTY", "qwertz": "QWERTZ", "azerty": "AZERTY", "dvorak": "Dvorak", "colemak": "Colemak", "pc": "PC",
          "two": "2"}
+# scripts whose keyboards compose syllables (a consonant + vowel key types a vowel sign; Hangul jamo): typed as plain
+# keys they'd write wrong text, so they wait for their own pass (iOS's Tamil grid has no vowel-sign keys: it composes)
+COMPOSED = {"DEVANAGARI", "BENGALI", "GURMUKHI", "GUJARATI", "ORIYA", "TAMIL", "TELUGU", "KANNADA", "MALAYALAM",
+            "SINHALA", "HANGUL", "MYANMAR", "KHMER", "TIBETAN", "LAO", "THAI", "CJK", "BOPOMOFO", "HIRAGANA", "KATAKANA"}
+# languages written in Latin and another script (Serbian Cyrillic / Latin...): their Latin layouts are real ones
+DIGRAPHIC = {"sr", "bs", "uz", "az", "ku", "ms", "tk", "kk"}
 # Gboard's registry still uses the old ISO codes for some languages; CLDR names the current ones
 OLD_CODES = {"iw": "he", "in": "id", "ji": "yi", "jw": "jv", "mo": "ro"}
 
@@ -476,6 +482,8 @@ def plain_rows(rows) -> list[list[str]] | None:
     out = [[k for k in r if isinstance(k, str) and len(k) == 1 and k.isalpha() and not ("\ufb50" <= k <= "\ufeff")]
            for r in rows if r]
     out = [r for r in out if r]
+    if script_of(out) in COMPOSED:
+        return None
     if len(out) != 3:  # four letter rows (Pashto, Amharic): later, row 4 needs its own build
         return None
     letters = [c for r in out for c in r]
@@ -503,6 +511,17 @@ def layout_name(variant: str, language: str, territories: set[str], rows: list[l
     first = "".join(rows[0][:6])
     named_by_letters = all(unicodedata.name(c, "").split()[0] in ("LATIN", "CYRILLIC") and c.upper() != c for c in first)
     return first.upper() if named_by_letters else "Standard"
+
+
+def script_of(rows) -> str | None:
+    """The script most of a layout's letters are in (LATIN, DEVANAGARI...), vowel-sign layouts included."""
+    count: dict[str, int] = {}
+    for r in rows or []:
+        for k in r or []:
+            if isinstance(k, str) and k[:1].isalpha():
+                w = unicodedata.name(k[0], "?").split()[0]
+                count[w] = count.get(w, 0) + 1
+    return max(count, key=count.get) if count else None
 
 
 def long_press(lp: dict[str, str]) -> dict[str, str]:
@@ -592,21 +611,33 @@ def all_layouts() -> list[Layout]:
             continue
         d = g_langs[tag]
         variants = sorted(d["variants"], key=lambda v: v["variant"] != d["default_variant"])
+        # the language's script, from its own named layouts (not the generic QWERTY family): a non-Latin language's
+        # Latin layouts are transliteration keyboards on Gboard and iOS (Hindi QWERTY types Devanagari there); without
+        # transliteration they'd type Latin, so they are left out
+        own = {script_of(g_lays.get(v["layout_id"], {}).get("rows")) for v in d["variants"] if v["variant"] not in NAMED}
+        own.discard(None)
+        latin_ok = base in DIGRAPHIC or not own or "LATIN" in own
         g_lp = {}
         for v in variants:
             L = g_lays.get(v["layout_id"])
             rows = plain_rows(L.get("rows")) if L else None
             if rows is None:
                 continue
+            if not latin_ok and script_of(rows) == "LATIN":
+                continue
             lp = long_press(L.get("longpress"))
             g_lp = g_lp or lp
             add(base, language, layout_name(v["variant"], language, territories, rows, first_name.get(base), base), rows, lp, v["variant"])
         for itag, m in i_modes.items():
-            if OLD_CODES.get(itag.split("-")[0].lower(), itag.split("-")[0].lower()) != base:
+            # iOS tags use underscores (he_IL): split on both, or every region-tagged iOS language was missed
+            icode = re.split(r"[-_]", itag)[0].lower()
+            if OLD_CODES.get(icode, icode) != base:
                 continue
             for n in m.get("layouts", []):
                 rows = plain_rows(i_lays.get(n, {}).get("rows"))
                 if rows is None:
+                    continue
+                if not latin_ok and script_of(rows) == "LATIN":
                     continue
                 rows = [[c.lower() if len(c.lower()) == 1 else c for c in r] for r in rows]
                 # an iPhone layout named like Gboard's: "(iPhone)" tells them apart (Gboard's name alone when it has none)
