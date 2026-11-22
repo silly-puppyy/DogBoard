@@ -64,9 +64,14 @@ object EngineLoader {
         java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${p.tag}-$name-$key.dgz"), 64 * 1024)
     }.getOrNull()
 
-    /** The key of this install's cached data files (an update makes new ones). */
-    private fun snapshotKey(app: Context): String =
-        app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" }
+    /**
+     * The key of this install's cached data files (an update makes new ones); a downloaded pack's also carries its
+     * snapshots' hashes, so a pack updated without an app update is unpacked again (it kept the old dictionary).
+     */
+    private fun snapshotKey(app: Context, p: LanguagePack): String =
+        app.packageManager.getPackageInfo(app.packageName, 0).let { "${it.longVersionCode}-${it.lastUpdateTime}" } +
+            if (p.bundled) "" else "-" + listOf("snapshot_lexicon", "snapshot_bigrams", "snapshot_ngramindex")
+                .joinToString("") { p.manifest.files[it]?.sha256?.take(6).orEmpty() }
 
     private fun loadNgrams(app: Context): io.github.sillypuppyy.dogboard.engine.NgramModel? = runCatching {
         val p = pack(app)
@@ -75,7 +80,7 @@ object EngineLoader {
                 val t0 = android.os.SystemClock.uptimeMillis()
                 // the vocabulary index (~7 MB built on the heap) mapped from a file written on the first start, kept
                 // beside the lexicon snapshot (same key: an app update builds it again)
-                val indexFile = File(dataDir(app, p), "ngramindex-${snapshotKey(app)}.bin")
+                val indexFile = File(dataDir(app, p), "ngramindex-${snapshotKey(app, p)}.bin")
                 // a first start: the index built with the app, when it matches this trigram file (as the word data)
                 // a downloaded pack brings its own (snapshot_ngramindex)
                 if (!indexFile.isFile && !p.bundled) runCatching {
@@ -227,7 +232,7 @@ object EngineLoader {
             openMisspellings = { optional("misspellings").bufferedReader() },
             // parsed word data, rebuilt when the app (and so its assets) changes
             snapshotDir = dataDir(app, p),
-            snapshotKey = snapshotKey(app),
+            snapshotKey = snapshotKey(app, p),
             openShipped = { name -> shippedSnapshot(app, p, name) },
             rules = rules,
         )
