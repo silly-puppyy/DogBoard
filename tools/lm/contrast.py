@@ -6,9 +6,11 @@ clitic tokens), so this changes the training signal instead.
 From the TRAINING text (the held-out lines stay for eval_tok_ab.py), every sentence with a confusable word gives a
 pair: the sentence as written and the same sentence with a rival form (cats / cat's / cats' from the plural table,
 its / it's, your / you're, there / their / they're, whose / who's, lets / let's, were / we're / where). Loss: the
-usual next-token loss on the real sentence (so the model keeps its predictions) plus LAMBDA x a hinge that wants the
-real word, through the next word's first piece, at least MARGIN nats above the rival's. Logged to wandb
-(dogboard-llm, llm-en-<run>).
+usual next-token loss on 256-token windows of the packed training stream, exactly as train.py samples it, plus
+LAMBDA x a hinge that wants the real word, through the next word's first piece, at least MARGIN nats above the
+rival's. Logged to wandb (dogboard-llm, llm-en-<run>).
+First version (2026-11-22) took its next-token loss from the short pair sentences themselves (~2k tokens a step,
+always from position 0) with Adam beta2 0.999: even the control (LAMBDA 0) went from 1.53 to 1.95 bits/char.
 Usage: contrast.py INIT_CKPT RUN [STEPS]   (T0 tokenizer: pilot-caps)"""
 import os, re, sys, math, time, random, torch, sentencepiece as spm
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +20,7 @@ import caps, track
 
 INIT, RUN = sys.argv[1], sys.argv[2]
 STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 1500
-BATCH, LR, MARGIN, LAMBDA = 64, float(os.environ.get('LR', '2e-4')), math.log(4), float(os.environ.get('LAMBDA', '0.5'))
+BATCH, LM_BATCH, LR, MARGIN, LAMBDA = 64, 64, float(os.environ.get('LR', '5e-5')), math.log(4), float(os.environ.get('LAMBDA', '0.5'))
 CK = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/lm/ckpt'
 TEXT = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/lm-text/pilot/train.txt'
 PLURALS = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/agid/en-plurals.tsv'
@@ -60,12 +62,18 @@ def examples():
 def encode(t): return caps.encode(sp, t)
 
 
+starts = caps.word_starts(sp)
+boundary = torch.tensor([i for i in range(sp.vocab_size()) if starts[i]] + [2], device='cuda')
+
+
 def seq_and_span(ctx, w, nxt):
+    """The context and the word, and the word's span: scored from the LEFT context as a whole word (its pieces, then
+    a word boundary), as eval_tok_ab.py does: with the next word the pairs were too easy (right at step 50)."""
     sep = ' ' if ctx else ''
     base = [1] + (encode(ctx) if ctx else [])
-    full = [1] + encode(ctx + sep + w + ' ' + nxt)
-    word_end = len([1] + encode(ctx + sep + w))
-    return full[:256], len(base), min(word_end + 1, 256)  # through the next word's first piece
+    full = [1] + encode(ctx + sep + w)
+    cut = max(0, len(full) - 255)  # a long context loses its oldest tokens
+    return full[cut:], max(1, len(base) - cut), len(full) - cut
 
 
 def logp_spans(seqs, spans):
@@ -74,13 +82,29 @@ def logp_spans(seqs, spans):
     with torch.autocast('cuda', dtype=torch.bfloat16):
         out = torch.log_softmax(net(ids).float(), -1)
     tok = out[:, :-1].gather(-1, ids[:, 1:, None])[..., 0]
-    span = torch.stack([tok[i, a - 1:b - 1].sum() for i, (a, b) in enumerate(spans)])
+    # the word's pieces, then the chance that a new word (or the end) comes next
+    span = torch.stack([tok[i, a - 1:b - 1].sum() + torch.logsumexp(out[i, b - 1, boundary], 0) for i, (a, b) in enumerate(spans)])
     mask = torch.zeros_like(tok)
     for i, q in enumerate(seqs): mask[i, :len(q) - 1] = 1
     return span, -(tok * mask).sum() / mask.sum()
 
 
-opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=0.01)
+import numpy as np
+stream = np.memmap(os.path.join(s['tokdir'], 'train.bin'), dtype=np.uint16, mode='r')
+rng = np.random.default_rng(7)
+
+
+def lm_batch():
+    """LM_BATCH windows of 257 tokens of the packed stream (train.py's sampling)."""
+    i = rng.integers(0, len(stream) - 258, LM_BATCH)
+    x = torch.from_numpy(np.stack([stream[j:j + 257].astype(np.int64) for j in i])).cuda()
+    return x[:, :-1], x[:, 1:]
+
+
+decay = [p for n, p in net.named_parameters() if p.dim() >= 2]
+no_decay = [p for n, p in net.named_parameters() if p.dim() < 2]
+opt = torch.optim.AdamW([{'params': decay, 'weight_decay': 0.1}, {'params': no_decay, 'weight_decay': 0.0}],
+                        lr=LR, betas=(0.9, 0.95))
 wb = track.start('llm', 'en', RUN, data='pilot', config=dict(init=INIT, steps=STEPS, batch=BATCH, lr=LR, margin=MARGIN,
                  lam=LAMBDA), tags=('contrast',))
 gen = examples(); t0 = time.time()
@@ -92,9 +116,17 @@ for step in range(1, STEPS + 1):
         q, a, b = seq_and_span(ctx, rv, nxt); bad.append(q); bs.append((a, b))
     lr = LR * min(1.0, step / 100)
     for g in opt.param_groups: g['lr'] = lr
-    lg, lm = logp_spans(good, gs)
-    lb, _ = logp_spans(bad, bs)
-    hinge = torch.relu(MARGIN - (lg - lb)).mean()
+    x, y = lm_batch()
+    with torch.autocast('cuda', dtype=torch.bfloat16):
+        lm = torch.nn.functional.cross_entropy(net(x).float().reshape(-1, net.emb.weight.shape[0]), y.reshape(-1))
+    if LAMBDA > 0:
+        lg, _ = logp_spans(good, gs)
+        lb, _ = logp_spans(bad, bs)
+        hinge = torch.relu(MARGIN - (lg - lb)).mean()
+    else:
+        with torch.no_grad():
+            lg, _ = logp_spans(good, gs); lb, _ = logp_spans(bad, bs)
+        hinge = torch.relu(MARGIN - (lg - lb)).mean()
     loss = lm + LAMBDA * hinge
     opt.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0); opt.step()
     if step % 50 == 0:
