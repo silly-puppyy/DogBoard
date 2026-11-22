@@ -40,7 +40,13 @@ def main():
     ap.add_argument("--min-count", type=int, default=100)
     ap.add_argument("--min-context", type=int, default=5, help="drop contexts seen fewer times")
     ap.add_argument("--binary", default="", help="also write the app's binary form (CharModel.read)")
+    ap.add_argument("--alphabet", default="", help="the language's letters after folding (e.g. Russian а-я without "
+                    "й ё): binary format DGC2 with 6-bit letter codes; default a-z (DGC1)")
     args = ap.parse_args()
+    global WORD, ALPHABET
+    if args.alphabet:
+        ALPHABET = args.alphabet
+        WORD = re.compile("^[" + re.escape(ALPHABET) + "][" + re.escape(ALPHABET) + "']*$")
 
     lexicon = set()
     with open(args.lexicon, encoding="utf-8") as f:
@@ -121,29 +127,44 @@ def main():
         write_binary(args.binary, math.log(unknown_tokens / total), lam_out, probs)
 
 
+ALPHABET = ""  # set by --alphabet
+
+
 # the app's keys (CharModel.kt): letters a-z = 1..26, apostrophe 27, word start 28, end 29;
 # context letters 5 bits each, most recent lowest; length in bits 20..22; next letter in 23..27
 # (31 for a context's own back-off entry)
+# DGC2 (--alphabet): letter i of the alphabet = i + 1, then apostrophe, word start, end; 6 bits a code, the
+# length at bit 24, the next letter at bit 27 (63 for a context's own back-off entry)
 def code(ch):
+    if ALPHABET:
+        n = len(ALPHABET)
+        return ALPHABET.index(ch) + 1 if ch in ALPHABET else {"'": n + 1, "^": n + 2, "$": n + 3}[ch]
     if "a" <= ch <= "z":
         return ord(ch) - ord("a") + 1
     return {"'": 27, "^": 28, "$": 29}[ch]
 
 
-def ctx_bits(ctx):
+def ctx_bits(ctx, bits):
     v = 0
     for k, ch in enumerate(reversed(ctx)):
-        v |= code(ch) << (5 * k)
+        v |= code(ch) << (bits * k)
     return v
 
 
 def write_binary(path, unknown, lam_out, probs):
     import struct
-    entries = [(ctx_bits(c) | (len(c) << 20) | (31 << 23), math.log(1 - lam)) for c, lam in lam_out.items()]
-    entries += [(ctx_bits(c) | (len(c) << 20) | (code(ch) << 23), math.log(pr)) for (c, ch), pr in probs.items()]
+    bits = 6 if ALPHABET else 5
+    lb, nb, marker = 4 * bits, 4 * bits + 3, (1 << bits) - 1
+    entries = [(ctx_bits(c, bits) | (len(c) << lb) | (marker << nb), math.log(1 - lam)) for c, lam in lam_out.items()]
+    entries += [(ctx_bits(c, bits) | (len(c) << lb) | (code(ch) << nb), math.log(pr)) for (c, ch), pr in probs.items()]
     entries.sort()
     with open(path, "wb") as f:
-        f.write(b"DGC1")
+        if ALPHABET:
+            f.write(b"DGC2")
+            f.write(struct.pack(">i", len(ALPHABET)))
+            f.write(ALPHABET.encode("utf-16-be"))
+        else:
+            f.write(b"DGC1")
         f.write(struct.pack(">di", unknown, len(entries)))
         f.write(struct.pack(f">{len(entries)}q", *[k for k, _ in entries]))
         f.write(struct.pack(f">{len(entries)}f", *[v for _, v in entries]))
