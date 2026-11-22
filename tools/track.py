@@ -53,7 +53,9 @@ def start(family, lang, version, layout="", data="", config=None, resume=True, t
             project=PROJECTS[family], name=name, id=name, resume="allow" if resume else None,
             dir=WANDB_DIR, group=f"{lang}-{layout}" if layout else lang,
             tags=[family, lang] + ([layout] if layout else []) + list(tags),
-            config=dict(family=family, lang=lang, layout=layout, data=data, version=version, **(config or {})),
+            # the run's own config wins over the shared fields (train.py passes its data too: a TypeError
+            # here dropped tracking for the whole run, 2026-11-22)
+            config={**dict(family=family, lang=lang, layout=layout, data=data, version=version), **(config or {})},
         )
     except Exception as e:  # no login, offline, ...: keep training
         print(f"track: wandb unavailable ({type(e).__name__}: {e}), not tracking", flush=True)
