@@ -155,6 +155,9 @@ class TouchKeyboard(
                     // dropped ü ö ä from the decoder's keys
                     val text = java.text.Normalizer.normalize((key.attrs.output as K3String).toText(), java.text.Normalizer.Form.NFC)
                     if (text.length == 1 && text[0].isLetter()) put(text[0].lowercaseChar(), target)
+                    // an apostrophe key among the letters (French AZERTY, next to n): a tap on it is an apostrophe, not
+                    // the nearest letter ("l'ecole" became "l'envolée", 2026-11-22)
+                    else if (text == "'" || text == "’") put('\'', target)
                 }
             }
             // the space bar too, as ' ': iOS reads a touch near it as a possible space between words
