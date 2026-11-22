@@ -534,16 +534,18 @@ object KbSpec {
             field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK())
             else -> listOf(mode(firstMode, 1.24f), fnK(), space(5.0133f), retK())
         }
-        fun symRow3(m: String) = listOf(mode(m, 1.5f), sym(".", 1.4f), sym(",", 1.4f), sym("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), bksp())
+        // the first page has the layout's own . , ? (Arabic ، ؟), the second the Latin ones, as iOS
+        fun symRow3(m: String, native: Boolean) = listOf(mode(m, 1.5f)) +
+            listOf(".", ",", "?").map { if (native) sym(it, 1.4f) else ch(it, 1.4f) } + listOf(ch("!", 1.4f), ch("'", 1.4f), bksp())
         val spec: List<List<K>> = when (plane) {
             // Gboard's ?123 / =\< pages (Settings > Layout > Symbols: Android-style; photographed 2026-11-17)
             "symbol-1" -> if (P.symbols == "android") listOf("1234567890".map { sym(it.toString()) }, "@#\$_&-+()/".map { ch(it.toString()) },
                 listOf(mode("=\\<", 1.5f)) + "*\"':;!?".map { sym(it.toString()) } + listOf(bksp()), bottom)
-            else listOf("1234567890".map { sym(it.toString()) }, "-/:;()$&@\"".map { sym(it.toString()) }, symRow3("#+="), bottom)
+            else listOf("1234567890".map { sym(it.toString()) }, "-/:;()$&@\"".map { sym(it.toString()) }, symRow3("#+=", true), bottom)
             "symbol-2" -> if (P.symbols == "android") listOf(listOf("~", "`", "|", "•", "√", "π", "÷", "×", "§", "Δ").map { ch(it) },
                 listOf("£", "¢", "€", "¥", "^", "°", "=", "{", "}", "\\").map { ch(it) },
                 listOf(mode("?123", 1.5f)) + listOf("%", "©", "®", "™", "✓", "[", "]").map { ch(it) } + listOf(bksp()), bottom)
-            else listOf("[]{}#%^*+=".map { ch(it.toString()) }, listOf("_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•").map { ch(it) }, symRow3("123"), bottom)
+            else listOf("[]{}#%^*+=".map { ch(it.toString()) }, listOf("_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•").map { ch(it) }, symRow3("123", false), bottom)
             "numeric" -> {
                 fun f(l: String, w: Float) = K(l, "fnchar", w, label = l)
                 listOf(

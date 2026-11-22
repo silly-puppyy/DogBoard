@@ -167,6 +167,9 @@
         <key id="apos-wide-alt0" output="’" />
         <key id="apos-wide-alt1" output="‘" />
         <key id="apos-wide-alt2" output="`" />
+        <key id="comma-wide-latin" output="," width="1.4" />
+        <key id="question-wide-latin" output="?" width="1.4" longPressKeyIds="question-wide-latin-alt0" longPressDefaultKeyId="question-wide-latin-alt0" />
+        <key id="question-wide-latin-alt0" output="¿" />
 
         <!-- Letters -->
         <key id="U0636" output="ض" width="0.8333" />
@@ -258,7 +261,7 @@
         <layer id="symbol-2">
             <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
             <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
-            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide-latin question-wide-latin bang-wide apos-wide bksp" />
             <row keys="to-base fn-key space enter" />
         </layer>
 

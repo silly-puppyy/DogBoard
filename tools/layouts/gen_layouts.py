@@ -368,6 +368,8 @@ def build(lay: Layout) -> str:
         *[line for key_id, (out, alts) in SYMBOLS.items() for line in key_with_alts(key_id, *lay.symbols.get(key_id, (out, alts)))],
         *[line for key_id, (out, alts) in WIDE_PUNCT.items()
           for line in key_with_alts(key_id, *lay.symbols.get(key_id, (out, alts)), PUNCT_WIDE)],
+        *[line for key_id, (out, alts) in WIDE_PUNCT.items() if key_id in lay.symbols
+          for line in key_with_alts(key_id + "-latin", out, alts, PUNCT_WIDE)],
         "",
         "<!-- Letters -->",
         *letter_keys(lay),
@@ -390,6 +392,8 @@ def build(lay: Layout) -> str:
     ]
 
     wide = " ".join(WIDE_PUNCT)
+    # iOS's second symbol page has the Latin . , ? where the first has the language's own (Arabic ، ؟): Latin copies
+    wide2 = " ".join(k + "-latin" if k in lay.symbols else k for k in WIDE_PUNCT)
     above = range(len(lay.rows) - 1)
     base_rows = [row_keys(lay, i, False) for i in above] + [row3(lay, "base-to-shift", False)]
     shift_rows = [row_keys(lay, i, True) for i in above] + [row3(lay, "shift-to-base", True)]
@@ -399,7 +403,7 @@ def build(lay: Layout) -> str:
         ("symbol-1", [" ".join(SYMBOL_1[0]), " ".join(SYMBOL_1[1]),
                       f"to-symbol-2 {wide} bksp", bottom_row("to-base")]),
         ("symbol-2", [" ".join(SYMBOL_2[0]), " ".join(SYMBOL_2[1]),
-                      f"to-symbol-1-row3 {wide} bksp", bottom_row("to-base")]),
+                      f"to-symbol-1-row3 {wide2} bksp", bottom_row("to-base")]),
         # the Android-style pages; the touch layout swaps them in for symbol-1 / symbol-2 when chosen
         ("symbol-1-android", [" ".join(SYMBOL_1_ANDROID[0]), " ".join(SYMBOL_1_ANDROID[1]),
                               "to-symbol-2-android " + " ".join(SYMBOL_1_ANDROID[2]) + " bksp", bottom_row("to-base")]),
