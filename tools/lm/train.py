@@ -21,7 +21,9 @@ ACCUM = int(os.environ.get('ACCUM', '1'))  # micro-batches per step (deeper shap
 LR, WARMUP, EVAL, CKPT, T = 1.5e-3, 500, 500, 1000, 256
 # fine-tuning: LR / WARMUP overrides, INIT = a checkpoint whose weights start the run (not its optimiser)
 LR = float(os.environ.get('LR', LR)); WARMUP = int(os.environ.get('WARMUP', WARMUP))
-torch.manual_seed(0); torch.backends.cuda.matmul.allow_tf32 = True
+# SEED: the run's seed (weights and batch order): a second seed of the same run shows the noise between runs
+SEED = int(os.environ.get('SEED', '0'))
+torch.manual_seed(SEED); torch.backends.cuda.matmul.allow_tf32 = True
 
 c = SHAPES[shape]
 # DATA=v2: several sources (tok_prep_v2.py); each batch row picks a source with probability
@@ -98,7 +100,7 @@ import track
 # same project as before; older runs (v2, v3, v4ft) kept their plain names
 wandb = track.start('llm', os.environ.get('LM_LANG', 'en'), run, data=DATA,
            config=dict(shape=shape, steps=STEPS, batch=BATCH, lr=LR, window=T, aug=AUG, accum=ACCUM, data=DATA, caps=CAPS, params=sum(p.numel() for p in model.parameters()), **c.__dict__))
-gen = np.random.default_rng(step + 1); t0 = time.time()
+gen = np.random.default_rng(step + 1 + 1_000_003 * SEED); t0 = time.time()
 model.train()
 while step < STEPS:
     for gr in opt.param_groups: gr['lr'] = lr_at(step)
