@@ -23,6 +23,8 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     private var aKey = CharArray(capacity)
     private var aFirst = IntArray(capacity)
     private var aNext = IntArray(capacity)
+    private var nextBase = 0
+    private var lastChild = LongArray(0)
     private var aParent = IntArray(capacity)
     private var aDepth = ShortArray(capacity)
     private var aLogP = FloatArray(capacity)
@@ -82,7 +84,10 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
 
     // hot fields (read for every search state): heap arrays by node
     private fun gKey(n: Int): Char = aKey[n]
-    private fun gNext(n: Int): Int = aNext[n]
+    // below [nextBase] (a snapshot written breadth-first) a node's next sibling is the next node unless it is the
+    // last child (a bit in [lastChild]): no int a node (Russian 8.6 MB); above it [aNext] at index n - nextBase
+    private fun gNext(n: Int): Int =
+        if (n >= nextBase) aNext[n - nextBase] else if ((lastChild[n ushr 6] ushr n) and 1L != 0L) NONE else n + 1
     private fun gDepth(n: Int): Short = aDepth[n]
     private fun gFirst(n: Int): Int = aFirst[n]
     private fun gLogP(n: Int): Float = aLogP[n]
@@ -382,20 +387,31 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         d.writeInt(SNAPSHOT_MAGIC); d.writeInt(n); d.writeInt(wordCount)
         // the node fields little-endian (the byte order of phones and PCs): the app reads them in place from the
         // mapped file, and big-endian views cost a byte swap per read (decoder 1.06 -> 1.51 ms a keystroke)
+        // nodes breadth-first, each node's children side by side in their sibling order (the loader then drops the
+        // next-sibling field); children still come after their parent
+        val order = IntArray(n); var tail = 0
+        val roots = (0 until n).filter { gParent(it) == NONE }
+        for (r in roots) order[tail++] = r
+        var head = 0
+        while (head < tail) { var k = gFirst(order[head++]); while (k != NONE) { order[tail++] = k; k = gNext(k) } }
+        check(tail == n) { "unreachable nodes: ${n - tail}" }
+        val newId = IntArray(n).also { for (i in 0 until n) it[order[i]] = i }
+        fun re(v: Int) = if (v == NONE) NONE else newId[v]
         val nb = java.nio.ByteBuffer.allocate(n * 32 + wordCount * 4).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        for (i in 0 until n) nb.putChar(gKey(i))
-        for (g in listOf(::gFirst, ::gNext, ::gParent, ::gBest, ::gWordId)) for (i in 0 until n) nb.putInt(g(i))
-        for (i in 0 until n) nb.putShort(gDepth(i))
-        for (g in listOf(::gLogP, ::gMass)) for (i in 0 until n) nb.putFloat(g(i))
-        for (i in 0 until wordCount) nb.putInt(gWordNode(i))
+        for (i in 0 until n) nb.putChar(gKey(order[i]))
+        for (g in listOf(::gFirst, ::gNext, ::gParent, ::gBest)) for (i in 0 until n) nb.putInt(re(g(order[i])))
+        for (i in 0 until n) nb.putInt(gWordId(order[i]))
+        for (i in 0 until n) nb.putShort(gDepth(order[i]))
+        for (g in listOf(::gLogP, ::gMass)) for (i in 0 until n) nb.putFloat(g(order[i]))
+        for (i in 0 until wordCount) nb.putInt(re(gWordNode(i)))
         d.write(nb.array(), 0, nb.position())
         val surfaces = allSurfaces()
         d.writeInt(surfaces.size)
-        for ((node, form) in surfaces) { d.writeInt(node); d.writeUTF(form) }
+        for ((node, form) in surfaces) { d.writeInt(re(node)); d.writeUTF(form) }
         val allCasings = allCasings()
         d.writeInt(allCasings.size)
         for ((node, forms) in allCasings) {
-            d.writeInt(node); d.writeInt(forms.size)
+            d.writeInt(re(node)); d.writeInt(forms.size)
             for ((form, lp) in forms) { d.writeUTF(form); d.writeFloat(lp) }
         }
         d.flush()
@@ -422,10 +438,10 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         aLogP[n] = Float.NaN
         aMass[n - base] = 0f
         if (parentNode != NONE) {
-            aNext[n] = gFirst(parentNode)
+            aNext[n - nextBase] = gFirst(parentNode)
             sFirst(parentNode, n)
         } else {
-            aNext[n] = NONE
+            aNext[n - nextBase] = NONE
         }
         return n
     }
@@ -434,7 +450,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
 
     /** The hot fields' arrays to [cap] nodes (and the cold ones too while nothing is mapped). */
     private fun resize(cap: Int) {
-        aKey = aKey.copyOf(cap); aFirst = aFirst.copyOf(cap); aNext = aNext.copyOf(cap)
+        aKey = aKey.copyOf(cap); aFirst = aFirst.copyOf(cap); aNext = aNext.copyOf(cap - nextBase)
         aDepth = aDepth.copyOf(cap); aLogP = aLogP.copyOf(cap); aBest = aBest.copyOf(cap); aWordId = aWordId.copyOf(cap)
         if (base == 0) { aParent = aParent.copyOf(cap); aMass = aMass.copyOf(cap) }
     }
@@ -483,11 +499,20 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
             fields.duplicate().order(java.nio.ByteOrder.LITTLE_ENDIAN).let { f ->
                 f.position(mm.key); f.asCharBuffer().get(lex.aKey, 0, n)
                 f.position(mm.first); f.asIntBuffer().get(lex.aFirst, 0, n)
-                f.position(mm.next); f.asIntBuffer().get(lex.aNext, 0, n)
                 f.position(mm.best); f.asIntBuffer().get(lex.aBest, 0, n)
                 f.position(mm.wordId); f.asIntBuffer().get(lex.aWordId, 0, n)
                 f.position(mm.depth); f.asShortBuffer().get(lex.aDepth, 0, n)
                 f.position(mm.logP); f.asFloatBuffer().get(lex.aLogP, 0, n)
+            }
+            // siblings side by side (written breadth-first): one bit a node; an older snapshot keeps the int array
+            val contiguous = (0 until n).all { k -> fields.getInt(mm.next + 4 * k).let { it == NONE || it == k + 1 } }
+            if (contiguous) {
+                lex.lastChild = LongArray((n + 63) / 64)
+                for (k in 0 until n) if (fields.getInt(mm.next + 4 * k) == NONE) lex.lastChild[k ushr 6] = lex.lastChild[k ushr 6] or (1L shl k)
+                lex.nextBase = n
+                lex.aNext = IntArray(1024)
+            } else {
+                fields.duplicate().order(java.nio.ByteOrder.LITTLE_ENDIAN).let { f -> f.position(mm.next); f.asIntBuffer().get(lex.aNext, 0, n) }
             }
             lex.aParent = IntArray(1024); lex.aMass = FloatArray(1024) // the learned words' cold fields
             lex.aWordNode = IntArray(256) // learned words' nodes only (sized for every word it held 4 MB in Russian)
