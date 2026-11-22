@@ -21,7 +21,7 @@ exists (re-run after a failure; delete a file to redo its step):
 
 Usage: auto_pack.py LANG [--through STEP] [--n 2000]     packs land in keyboard-data/packs-work/<lang>/
 LANGS holds what can't be derived (corpus names, Tatoeba code, layout choice); everything else is computed."""
-import argparse, glob, gzip, hashlib, json, math, os, re, subprocess, sys, tarfile, time, unicodedata, urllib.request
+import argparse, glob, gzip, hashlib, json, shutil, math, os, re, subprocess, sys, tarfile, time, unicodedata, urllib.request, zlib
 from collections import Counter
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -86,6 +86,22 @@ class Pack:
         self.dir = f'{DATA}/packs-work/{lang}' + os.environ.get('PACK_SUFFIX', '')
         os.makedirs(self.dir, exist_ok=True)
         self.p = lambda name: os.path.join(self.dir, name)
+        # CORPUS_FRACTION=0.25: a learning-curve point (is there enough text?): seeded from the full build in
+        # packs-work/<lang>: the same held-out text and test sets, a fixed share of its training text and corpora
+        # (by a hash of each line, so 25 % is inside 50 %)
+        frac = float(os.environ.get('CORPUS_FRACTION', '1'))
+        if frac < 1:
+            full = f'{DATA}/packs-work/{lang}'
+            keep = lambda line: zlib.crc32(line.encode('utf-8')) % 10000 < frac * 10000
+            for name in os.listdir(full):
+                src, dst = os.path.join(full, name), self.p(name)
+                if os.path.exists(dst): continue
+                if name == f'{lang}.heldout.txt' or (name.startswith(f'{lang}-') and name.endswith('.tsv')):
+                    shutil.copyfile(src, dst)
+                elif name == 'train.txt' or name.startswith('clean-'):
+                    with open(src, encoding='utf-8') as f, open(dst + '.tmp', 'w', encoding='utf-8') as o:
+                        o.writelines(l for l in f if keep(l))
+                    os.rename(dst + '.tmp', dst)
 
     # 1
     def corpora(self):
