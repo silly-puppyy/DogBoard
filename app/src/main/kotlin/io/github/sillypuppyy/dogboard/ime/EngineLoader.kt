@@ -28,7 +28,7 @@ object EngineLoader {
         val app = context.applicationContext
         val current = pack
         if (current != null && (current.tag.equals(tag, true) || current.tag.equals(tag.substringBefore('-'), true))) return false
-        val next = LanguagePack.find(app, tag)?.takeIf(::hasWords) ?: return false
+        val next = LanguagePack.find(app, tag)?.takeIf { it.hasWords } ?: return false
         if (next.tag == current?.tag) return false
         android.util.Log.i("DogBoardPerf", "language: ${current?.tag} -> ${next.tag}")
         TypingEngine.unload()
@@ -43,7 +43,7 @@ object EngineLoader {
     @Synchronized
     fun prefer(context: Context, tag: String) {
         if (pack != null || TypingEngine.isReady) return
-        LanguagePack.find(context.applicationContext, tag)?.takeIf(::hasWords)?.let { pack = it }
+        LanguagePack.find(context.applicationContext, tag)?.takeIf { it.hasWords }?.let { pack = it }
     }
 
     /** Where a pack's parsed word data lives: English where it always has (no re-parse on update), others by tag. */
@@ -63,12 +63,6 @@ object EngineLoader {
         if (key.length != 16) return null
         java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${p.tag}-$name-$key.dgz"), 64 * 1024)
     }.getOrNull()
-
-    /**
-     * Whether [p] has its words: the word list, or (a downloaded pack) only its snapshot: the text lists are read only
-     * when there is no snapshot, so a pack can leave them out (Spanish: 13 MB less to download and store).
-     */
-    private fun hasWords(p: LanguagePack): Boolean = p.has("lexicon") || (!p.bundled && p.has("snapshot_lexicon"))
 
     /**
      * The key of this install's cached data files (an update makes new ones); a downloaded pack's also carries its

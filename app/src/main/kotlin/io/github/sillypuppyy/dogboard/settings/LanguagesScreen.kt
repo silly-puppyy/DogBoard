@@ -54,7 +54,7 @@ fun LanguagesScreen() {
     val added = list.map { it.primaryLocale.languageTag() }.toSet()
     SetLanguages(
         rows,
-        packs.map { p -> LangPack(p.tag, p.manifest.name, p.has("lexicon"), p.tag in added) },
+        packs.map { p -> LangPack(p.tag, p.manifest.name, p.hasWords, p.tag in added) },
         onUse = { id -> subtypeManager.switchToSubtypeById(id) },
         onLayout = { navController.navigate(Routes.Settings.Layout) },
         onRemove = { id -> subtypes.firstOrNull { it.id == id }?.let { subtypeManager.removeSubtype(it) } },

@@ -94,6 +94,12 @@ class LanguagePack private constructor(val manifest: PackManifest, private val a
 
     fun has(component: String): Boolean = path(component) != null
 
+    /**
+     * Whether the pack has its words: the word list, or (a downloaded pack) only its snapshot: the text lists are read
+     * only when there is no snapshot, so a pack can leave them out (Spanish: 13 MB less to download and store).
+     */
+    val hasWords: Boolean get() = has("lexicon") || (!bundled && has("snapshot_lexicon"))
+
     companion object {
         const val FORMAT = 1
         private val json = Json { ignoreUnknownKeys = true }
