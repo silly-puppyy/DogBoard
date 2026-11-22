@@ -16,13 +16,26 @@ if os.environ.get('QUANT4') == '1':  # the ceiling model (Qwen3-8B) only fits th
     from transformers import BitsAndBytesConfig
     model = AutoModelForCausalLM.from_pretrained(model_id, device_map='cuda', quantization_config=BitsAndBytesConfig(
         load_in_4bit=True, bnb_4bit_quant_type='nf4', bnb_4bit_compute_dtype=torch.bfloat16)).eval()
+elif os.environ.get('QUANT8') == '1':  # 7B specialists (Viking-7B) in 8 bit: 4 bit cost next-word accuracy (2026-11-15)
+    from transformers import BitsAndBytesConfig
+    model = AutoModelForCausalLM.from_pretrained(model_id, device_map='cuda', quantization_config=BitsAndBytesConfig(load_in_8bit=True)).eval()
 else:
     model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).cuda().eval()
 WORD = re.compile(r"[^\W\d_][^\W\d_'’]*")
 vocab = tok.convert_ids_to_tokens(list(range(len(tok))))
 # a token starts a new word if it decodes with a leading space and a letter after it
-starts = torch.tensor([bool(re.match(r"^ [^\W\d_]", tok.convert_tokens_to_string([t]))) for t in vocab], device='cuda')
-letter_cont = torch.tensor([bool(re.match(r"^[^\W\d_'’]+$", tok.convert_tokens_to_string([t]))) for t in vocab], device='cuda')
+# a token starts a word if it decodes with a leading space and a letter (byte-level BPE: Qwen), or if it is a
+# SentencePiece piece marked '▁' whose text starts with a letter: those tokenizers drop the space when one token is
+# decoded (EuroLLM, Salamandra: no token counted as a word start, so the top "words" were </s> and <unk>; 2026-11-22)
+def _start(t):
+    s = tok.convert_tokens_to_string([t])
+    if t.startswith('▁'): return bool(re.match(r"^\s*[^\W\d_]", s))
+    return bool(re.match(r"^ [^\W\d_]", s))
+def _cont(t):
+    if t.startswith('▁') or t.startswith('Ġ'): return False
+    return bool(re.match(r"^[^\W\d_'’]+$", tok.convert_tokens_to_string([t])))
+starts = torch.tensor([_start(t) for t in vocab], device='cuda')
+letter_cont = torch.tensor([_cont(t) for t in vocab], device='cuda')
 # the output layer can be padded past the tokenizer (Qwen3: 151,936 vs 151,669): padding never starts a word
 pad = model.get_output_embeddings().weight.shape[0] - len(vocab)
 if pad > 0:
