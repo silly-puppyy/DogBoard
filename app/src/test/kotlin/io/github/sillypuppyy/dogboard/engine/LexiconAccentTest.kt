@@ -34,4 +34,11 @@ class LexiconAccentTest : FunSpec({
         keepsPopupLetters("desarroñlo", "desarrollo", setOf('ñ', 'l', 'o')) shouldBe true
         keepsPopupLetters("café", "cafe", setOf('ñ')) shouldBe false // é still from a popup
     }
+
+    test("German ß and ss reach the same word (ß is a long-press; people type ss)") {
+        val lexicon = Lexicon.of(mapOf("Straße" to 100L, "Strasse" to 5L, "dass" to 50L))
+        lexicon.find("strasse") shouldBe lexicon.find("straße")
+        lexicon.contains("Straße") shouldBe true
+        lexicon.contains("strasse") shouldBe true
+    }
 })
