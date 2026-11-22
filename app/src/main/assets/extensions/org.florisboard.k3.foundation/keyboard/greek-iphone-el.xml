@@ -79,7 +79,8 @@
         <key id="s-slash" output="/" longPressKeyIds="s-slash-alt0" longPressDefaultKeyId="s-slash-alt0" />
         <key id="s-slash-alt0" output="\u{005C}" />
         <key id="s-colon" output=":" />
-        <key id="s-semicolon" output=";" />
+        <key id="s-semicolon" output="·" longPressKeyIds="s-semicolon-alt0" longPressDefaultKeyId="s-semicolon-alt0" />
+        <key id="s-semicolon-alt0" output=";" />
         <key id="s-lparen" output="(" />
         <key id="s-rparen" output=")" />
         <key id="s-dollar" output="$" longPressKeyIds="s-dollar-alt0 s-dollar-alt1 s-dollar-alt2 s-dollar-alt3 s-dollar-alt4" longPressDefaultKeyId="s-dollar-alt0" />
@@ -126,8 +127,9 @@
         <key id="s-apos-alt2" output="`" />
         <key id="s-excl" output="!" longPressKeyIds="s-excl-alt0" longPressDefaultKeyId="s-excl-alt0" />
         <key id="s-excl-alt0" output="¡" />
-        <key id="s-question" output="?" longPressKeyIds="s-question-alt0" longPressDefaultKeyId="s-question-alt0" />
-        <key id="s-question-alt0" output="¿" />
+        <key id="s-question" output=";" longPressKeyIds="s-question-alt0 s-question-alt1" longPressDefaultKeyId="s-question-alt0" />
+        <key id="s-question-alt0" output="?" />
+        <key id="s-question-alt1" output="¿" />
         <key id="s-backtick" output="`" />
         <key id="s-sqrt" output="√" />
         <key id="s-pi" output="π" />
@@ -144,8 +146,9 @@
         <key id="period-wide" output="." width="1.4" longPressKeyIds="period-wide-alt0" longPressDefaultKeyId="period-wide-alt0" />
         <key id="period-wide-alt0" output="…" />
         <key id="comma-wide" output="," width="1.4" />
-        <key id="question-wide" output="?" width="1.4" longPressKeyIds="question-wide-alt0" longPressDefaultKeyId="question-wide-alt0" />
-        <key id="question-wide-alt0" output="¿" />
+        <key id="question-wide" output=";" width="1.4" longPressKeyIds="question-wide-alt0 question-wide-alt1" longPressDefaultKeyId="question-wide-alt0" />
+        <key id="question-wide-alt0" output="?" />
+        <key id="question-wide-alt1" output="¿" />
         <key id="bang-wide" output="!" width="1.4" longPressKeyIds="bang-wide-alt0" longPressDefaultKeyId="bang-wide-alt0" />
         <key id="bang-wide-alt0" output="¡" />
         <key id="apos-wide" output="'" width="1.4" longPressKeyIds="apos-wide-alt0 apos-wide-alt1 apos-wide-alt2" longPressDefaultKeyId="apos-wide-alt0" />

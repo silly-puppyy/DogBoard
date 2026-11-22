@@ -109,6 +109,9 @@ class Layout:
     label: str | None = None
     # what the Layout page says under it: "taps" (swipe reads QWERTY only), "english" (no pack: English engine off)
     note: str | None = "taps"
+    # the language's own digits and punctuation on the symbol and bottom-row keys (native_punct: Arabic ، ؛ ؟ ١٢٣),
+    # key id -> (output, long-press alternatives); empty for languages that use the Latin ones
+    symbols: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
 ENGLISH = Layout("qwerty-en", "en", "English (QWERTY)", "QWERTY", "EN",
@@ -344,12 +347,12 @@ def build(lay: Layout) -> str:
         f'<key id="space" output="\\u{{0020}}" width="{SPACE}" />',
         f'<key id="space-email" output="\\u{{0020}}" width="{SPACE_EMAIL}" />',
         f'<key id="to-symbol-1-classic" layerId="symbol-1" width="1.5" />',
-        '<key id="comma-classic" output="," width="1" />',
+        *key_with_alts("comma-classic", *lay.symbols.get("comma-classic", (",", "")), "1"),
         '<key id="at-classic" output="@" width="1" />',
         '<key id="slash-classic" output="/" width="1" />',
         '<key id="fn-key-classic" gap="true" width="1" />',
         '<key id="space-classic" output="\\u{0020}" width="4" />',
-        '<key id="period-classic" output="." width="1" />',
+        *key_with_alts("period-classic", *lay.symbols.get("period-classic", (".", "")), "1"),
         '<key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />',
         f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
         f'<key id="period-email" output="." width="{EMAIL_KEY}" />',
@@ -362,9 +365,9 @@ def build(lay: Layout) -> str:
         f'<key id="fn-key" gap="true" width="{FN}" />',
         "",
         "<!-- Digits and extra symbols -->",
-        *[line for key_id, (out, alts) in SYMBOLS.items() for line in key_with_alts(key_id, out, alts)],
+        *[line for key_id, (out, alts) in SYMBOLS.items() for line in key_with_alts(key_id, *lay.symbols.get(key_id, (out, alts)))],
         *[line for key_id, (out, alts) in WIDE_PUNCT.items()
-          for line in key_with_alts(key_id, out, alts, PUNCT_WIDE)],
+          for line in key_with_alts(key_id, *lay.symbols.get(key_id, (out, alts)), PUNCT_WIDE)],
         "",
         "<!-- Letters -->",
         *letter_keys(lay),
@@ -530,6 +533,48 @@ def script_of(rows) -> str | None:
                 w = unicodedata.name(k[0], "?").split()[0]
                 count[w] = count.get(w, 0) + 1
     return max(count, key=count.get) if count else None
+
+
+# what each punctuation role may be (iOS's page is read by position: Armenian's semicolon slot holds @, Gurmukhi
+# pages put । where the period is): a value outside its role's set is not used
+PUNCT_ROLES = {"semicolon": {"؛", "·"}, "comma": {"،", "՝"}, "question": {"؟", ";", "՞"}, "period": {"۔", "։"}}
+
+
+def native_punct(lang: str) -> tuple[str | None, dict[str, tuple[str, str]]]:
+    """The language's digits and punctuation as iOS's first number page has them (notes/design/data/layouts/ios,
+    verified 2026-11-22: Arabic ١٢٣ ، ؛ ؟, Persian / Urdu / Pashto ۱۲۳, Urdu's full stop ۔, Uyghur 123 with ، ؛ ؟,
+    Hebrew Latin), where they differ from the Latin ones: the native form on the key, the Latin one on long-press."""
+    modes = json.loads((IOS_DATA / "input_modes.json").read_text(encoding="utf-8"))
+    lays = json.loads((IOS_DATA / "layouts.json").read_text(encoding="utf-8"))
+    for tag, m in modes.items():
+        if re.split(r"[-_]", tag)[0].lower() != lang:
+            continue
+        name = m.get("default") or (m.get("layouts") or [None])[0]
+        planes = lays.get(name, {}).get("planes", {})
+        page = next((pl[0]["rows"] for n, pl in planes.items() if n.endswith("Numbers-And-Punctuation") and pl), None)
+        if not page or len(page) < 3 or len(page[0]) != 10 or len(page[1]) < 4 or len(page[2]) < 3:
+            return None, {}
+        out: dict[str, tuple[str, str]] = {}
+        western = "1234567890"
+        # Arabic-Indic digits only (another script's digits belong to its own layouts: Adlam, Gurmukhi)
+        if "".join(page[0]) != western and all(unicodedata.name(c, "").startswith(("ARABIC-INDIC", "EXTENDED ARABIC-INDIC")) for c in page[0]):
+            for d, native in zip(western, page[0]):
+                alts = (d + " " + SYMBOLS[f"s-{d}"][1]).strip()
+                out[f"s-{d}"] = (native, alts)
+        period, comma, question = page[2][0], page[2][1], page[2][2]
+        semicolon = page[1][3]
+        if semicolon in PUNCT_ROLES["semicolon"]:
+            out["s-semicolon"] = (semicolon, ";")
+        if comma in PUNCT_ROLES["comma"]:
+            out["comma-classic"] = out["comma-wide"] = (comma, ",")
+        if question in PUNCT_ROLES["question"]:
+            out["s-question"] = out["question-wide"] = (question, "? ¿")
+        if period in PUNCT_ROLES["period"]:
+            out["period-classic"] = out["period-wide"] = (period, ". …")
+        # the script of the iOS layout this page belongs to: only layouts in that script take it (Uzbek's iOS default is
+        # Arabic-script; its Cyrillic and Latin layouts keep the Latin marks)
+        return script_of(lays.get(name, {}).get("rows")), out
+    return None, {}
 
 
 def long_press(lp: dict[str, str]) -> dict[str, str]:
@@ -698,6 +743,11 @@ SKIPPED: list[str] = []
 
 if __name__ == "__main__":
     GENERATED = all_layouts()
+    punct: dict[str, dict] = {}
+    for lay in LAYOUTS + GENERATED:
+        page_script, marks = punct.setdefault(lay.locale, native_punct(lay.locale))
+        if not lay.symbols and page_script == script_of(lay.rows) != "LATIN":
+            lay.symbols = marks
     KOTLIN_OUT.write_text(kotlin_list(), encoding="utf-8")
     print(f"wrote {KOTLIN_OUT}; skipped {len(SKIPPED)} layouts with a repeated letter, a row over 12 or non-BMP letters")
     written = set()

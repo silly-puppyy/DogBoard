@@ -41,12 +41,15 @@
         <key id="space" output="\u{0020}" width="5.0133" />
         <key id="space-email" output="\u{0020}" width="2.5133" />
         <key id="to-symbol-1-classic" layerId="symbol-1" width="1.5" />
-        <key id="comma-classic" output="," width="1" />
+        <key id="comma-classic" output="՝" width="1" longPressKeyIds="comma-classic-alt0" longPressDefaultKeyId="comma-classic-alt0" />
+        <key id="comma-classic-alt0" output="," />
         <key id="at-classic" output="@" width="1" />
         <key id="slash-classic" output="/" width="1" />
         <key id="fn-key-classic" gap="true" width="1" />
         <key id="space-classic" output="\u{0020}" width="4" />
-        <key id="period-classic" output="." width="1" />
+        <key id="period-classic" output="։" width="1" longPressKeyIds="period-classic-alt0 period-classic-alt1" longPressDefaultKeyId="period-classic-alt0" />
+        <key id="period-classic-alt0" output="." />
+        <key id="period-classic-alt1" output="…" />
         <key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />
         <key id="at-email" output="@" width="1.25" />
         <key id="period-email" output="." width="1.25" />
@@ -126,8 +129,9 @@
         <key id="s-apos-alt2" output="`" />
         <key id="s-excl" output="!" longPressKeyIds="s-excl-alt0" longPressDefaultKeyId="s-excl-alt0" />
         <key id="s-excl-alt0" output="¡" />
-        <key id="s-question" output="?" longPressKeyIds="s-question-alt0" longPressDefaultKeyId="s-question-alt0" />
-        <key id="s-question-alt0" output="¿" />
+        <key id="s-question" output="՞" longPressKeyIds="s-question-alt0 s-question-alt1" longPressDefaultKeyId="s-question-alt0" />
+        <key id="s-question-alt0" output="?" />
+        <key id="s-question-alt1" output="¿" />
         <key id="s-backtick" output="`" />
         <key id="s-sqrt" output="√" />
         <key id="s-pi" output="π" />
@@ -141,11 +145,14 @@
         <key id="s-reg" output="®" />
         <key id="s-tm" output="™" />
         <key id="s-check" output="✓" />
-        <key id="period-wide" output="." width="1.4" longPressKeyIds="period-wide-alt0" longPressDefaultKeyId="period-wide-alt0" />
-        <key id="period-wide-alt0" output="…" />
-        <key id="comma-wide" output="," width="1.4" />
-        <key id="question-wide" output="?" width="1.4" longPressKeyIds="question-wide-alt0" longPressDefaultKeyId="question-wide-alt0" />
-        <key id="question-wide-alt0" output="¿" />
+        <key id="period-wide" output="։" width="1.4" longPressKeyIds="period-wide-alt0 period-wide-alt1" longPressDefaultKeyId="period-wide-alt0" />
+        <key id="period-wide-alt0" output="." />
+        <key id="period-wide-alt1" output="…" />
+        <key id="comma-wide" output="՝" width="1.4" longPressKeyIds="comma-wide-alt0" longPressDefaultKeyId="comma-wide-alt0" />
+        <key id="comma-wide-alt0" output="," />
+        <key id="question-wide" output="՞" width="1.4" longPressKeyIds="question-wide-alt0 question-wide-alt1" longPressDefaultKeyId="question-wide-alt0" />
+        <key id="question-wide-alt0" output="?" />
+        <key id="question-wide-alt1" output="¿" />
         <key id="bang-wide" output="!" width="1.4" longPressKeyIds="bang-wide-alt0" longPressDefaultKeyId="bang-wide-alt0" />
         <key id="bang-wide-alt0" output="¡" />
         <key id="apos-wide" output="'" width="1.4" longPressKeyIds="apos-wide-alt0 apos-wide-alt1 apos-wide-alt2" longPressDefaultKeyId="apos-wide-alt0" />
