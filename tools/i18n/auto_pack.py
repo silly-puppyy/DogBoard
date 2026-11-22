@@ -10,7 +10,7 @@ exists (re-run after a failure; delete a file to redo its step):
   2 text       held-out lines (ids ending in 0: test sets only) and the training text (leipzig_sentences.py)
   3 lexicon    wordfreq + corpus (build_lexicon_hunspell.py without Hunspell; corpus counts alone where wordfreq has no
                list, e.g. Georgian)
-  4 ngrams     KenLM trigram -> arpa_to_dogboard.py --rank entropy --keep-twins (accent twins' entries kept)
+  4 ngrams     KenLM trigram -> arpa_to_dogboard.py --rank entropy --keep-twins (accent twins' entries kept) -> DGN3
   5 bigrams    Tatoeba sentences (CC BY 2.0 FR) -> bigrams_from_tatoeba.py; skipped when Tatoeba has too few
   6 charlm     letter model on the corpus words the lexicon lacks, alphabet from the lexicon (build_charlm.py)
   7 rules      rules.json: letter rows from the layout data (Gboard registry / iOS), distinct letters (letters with
@@ -166,8 +166,11 @@ class Pack:
         arpa = self.p(f'{self.lang}.arpa')
         if not os.path.exists(arpa):
             sh(f'taskset -c {CPU} nice {KENLM} -o 3 -S 3G -T {self.dir} --prune 0 0 1 < {self.p("train.txt")} > {arpa} 2> {self.p("lmplz.log")}')
-        sh(['taskset', '-c', CPU, 'nice', sys.executable, '-I', f'{REPO}/tools/data/arpa_to_dogboard.py', arpa, out,
+        dgn2 = self.p(f'{self.lang}.ngrams.dgn2.bin')
+        sh(['taskset', '-c', CPU, 'nice', sys.executable, '-I', f'{REPO}/tools/data/arpa_to_dogboard.py', arpa, dgn2,
             '--lexicon', self.p(f'{self.lang}.lexicon.tsv'), '--rank', 'entropy', '--keep-twins', '500000'])
+        # the shipped file in the version-3 layout: the same model, 28 % smaller (tools/data/dgn3.py)
+        sh(['taskset', '-c', CPU, 'nice', sys.executable, f'{REPO}/tools/data/dgn3.py', 'convert', dgn2, out])
 
     # 5
     def bigrams(self):
