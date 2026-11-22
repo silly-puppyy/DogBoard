@@ -34,15 +34,23 @@ def next_words(ids, k=3, first=8, max_pieces=5):
     logits = model(torch.tensor([ids], device='cuda')).logits[0, -1].float()
     p = torch.softmax(logits, -1)
     p_start = torch.where(starts, p, torch.zeros_like(p))
+    # the candidates' greedy completions grow together, one batched forward pass per piece: ~6 passes a position
+    # instead of up to 41 single ones, which left the GPU ~99 % idle (2026-11-22). A finished row keeps feeding a
+    # repeat of its last piece so the batch stays rectangular; that piece is never added to its word. Same choices.
+    firsts = torch.topk(p_start, first).indices.tolist()
+    words = [[t] for t in firsts]; feed = [[t] for t in firsts]
+    probs = [float(p[t]) for t in firsts]; done = [False] * len(firsts)
+    for _ in range(max_pieces):
+        if all(done): break
+        q = torch.softmax(model(torch.tensor([ids + f for f in feed], device='cuda')).logits[:, -1].float(), -1)
+        js = q.argmax(-1).tolist()
+        for r, j in enumerate(js):
+            if not done[r]:
+                if bool(letter_cont[j]): words[r].append(j); probs[r] *= float(q[r, j])
+                else: done[r] = True  # the word ends here
+            feed[r].append(words[r][-1] if done[r] else j)
     cand = {}
-    for t in torch.topk(p_start, first).indices.tolist():
-        seq, prob = [t], float(p[t])
-        for _ in range(max_pieces):
-            l2 = model(torch.tensor([ids + seq], device='cuda')).logits[0, -1].float()
-            q = torch.softmax(l2, -1)
-            j = int(q.argmax())
-            if not bool(letter_cont[j]): break  # the word ends here
-            seq.append(j); prob *= float(q[j])
+    for seq, prob in zip(words, probs):
         w = tok.decode(seq).strip()
         cand[w] = cand.get(w, 0.0) + prob
     return [w for w, _ in sorted(cand.items(), key=lambda x: -x[1])[:k]]
