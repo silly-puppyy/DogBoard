@@ -331,6 +331,10 @@ private val LETTER_LAYOUTS = listOf(
     LetterLayout("qwerty-es", "QWERTY", "Spanish", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm"), TAPS_ONLY),
     LetterLayout("qwerty-fi", "QWERTY", "Finnish", listOf("qwertyuiopå", "asdfghjklöä", "zxcvbnm"), TAPS_ONLY),
     LetterLayout("jcuken-ru", "ЙЦУКЕН", "Russian", listOf("йцукенгшщзх", "фывапролджэ", "ячсмитьбю"), TAPS_ONLY),
+    // 2026-11-22 auto-built packs (tools/i18n/auto_pack.py); rows as gen_layouts.py writes them
+    LetterLayout("qwertz-cs", "QWERTZ", "Czech", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), TAPS_ONLY),
+    LetterLayout("standard-ka", "ქართული", "Georgian", listOf("ღჯუკენგშწზხც", "ფძვთაპროლდჟ", "ჭჩყსმიტქბჰ"), TAPS_ONLY),
+    LetterLayout("arabic-ar", "عربي", "Arabic", listOf("ضصثقفغعهخحجد", "شسيبلاتنمكطذ", "ئءؤرىةوزظ"), TAPS_ONLY),
 )
 
 /** A layout's card: its letter rows as a small keyboard, its name and language; the chosen one outlined and ticked. */

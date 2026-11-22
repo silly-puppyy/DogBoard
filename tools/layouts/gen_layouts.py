@@ -125,6 +125,27 @@ def floris_layout(id: str, locale: str, name: str, layout: str, indicator: str, 
     return Layout(id, locale, name, layout, indicator, rows, uppers=uppers)
 
 
+GBOARD_DATA = Path("../notes/design/data/layouts/gboard")
+
+
+def gboard_layout(id: str, locale: str, name: str, layout: str, indicator: str, tag: str, variant: str) -> Layout:
+    """A layout from Gboard's registry as extracted (notes/design/data/layouts/gboard, derived JSON, no Google files): its
+    letter rows; a key that types two letters (Arabic's ﻻ presentation form) is left out (typed as its two letters)."""
+    langs = json.loads((GBOARD_DATA / "languages.json").read_text(encoding="utf-8"))
+    lays = json.loads((GBOARD_DATA / "layouts.json").read_text(encoding="utf-8"))
+    v = next(v for v in langs[tag]["variants"] if v["variant"] == variant)
+    rows = [[k for k in r if isinstance(k, str) and len(k) == 1 and k.isalpha() and not ("\ufb50" <= k <= "\ufeff")]
+            for r in lays[v["layout_id"]]["rows"]]
+    return Layout(id, locale, name, layout, indicator, [r for r in rows if r])
+
+
+def no_capitals(lay: Layout) -> Layout:
+    """Shift types the same letters: Georgian writes no sentence capitals (Mtavruli, what str.upper gives, is an
+    all-caps style iOS offers only on long-press), so the shift layer must not turn ა into Ა."""
+    lay.uppers = {c: c for r in lay.rows for c in r}
+    return lay
+
+
 # English variants Gboard offers (user 2026-11-19: "a good interface for picking a keyboard layout"). Dvorak as
 # Gboard draws it on phones (FlorisBoard's dvorak.json lacks q and z); Colemak from FlorisBoard's data
 DVORAK = Layout("dvorak-en", "en", "English (Dvorak)", "Dvorak", "EN",
@@ -140,6 +161,12 @@ LAYOUTS = [
     floris_layout("qwerty-es", "es", "Español (QWERTY)", "QWERTY", "ES", "spanish"),
     floris_layout("qwerty-fi", "fi", "Suomi (QWERTY)", "QWERTY", "FI", "swedish_finnish"),
     floris_layout("jcuken-ru", "ru", "Русский (ЙЦУКЕН)", "ЙЦУКЕН", "RU", "jcuken_russian"),
+    # 2026-11-22 auto-built packs (tools/i18n/auto_pack.py): Czech QWERTZ (Gboard's = FlorisBoard's), the standard
+    # Georgian layout (all 33 letters on one plane; Gboard's default = FlorisBoard's), Arabic from Gboard (FlorisBoard's
+    # lacks ئ)
+    floris_layout("qwertz-cs", "cs", "Čeština (QWERTZ)", "QWERTZ", "CS", "qwertz"),
+    no_capitals(floris_layout("standard-ka", "ka", "ქართული", "ქართული", "KA", "georgian_standard")),
+    gboard_layout("arabic-ar", "ar", "العربية", "عربي", "AR", "ar", "arabic"),
 ]
 
 SYMBOL_1 = [

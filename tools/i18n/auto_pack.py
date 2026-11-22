@@ -1,0 +1,302 @@
+#!/usr/bin/env python3
+"""Bootstraps a NEW language's pack from its code, end to end, into packs-work/<lang> (never the app's assets; the
+spec-driven tools/i18n/build_pack.py stays the tool for shipped packs and their hand-tuned files). Builds a DogBoard
+language pack from a language code (user 2026-11-22: "a script that just gets a
+language and computes a language pack, e.g. Czech, Arabic or Georgian"). The steps the es / fr / fi / ru packs were
+built with by hand (notes/design/i18n-pipeline.md "Tools to add a language"), in order, each skipped when its output
+exists (re-run after a failure; delete a file to redo its step):
+
+  1 corpora    Leipzig sentence corpora (CC BY), downloaded and unpacked (LANGS[lang]["leipzig"])
+  2 text       held-out lines (ids ending in 0: test sets only) and the training text (leipzig_sentences.py)
+  3 lexicon    wordfreq + corpus (build_lexicon_hunspell.py without Hunspell; corpus counts alone where wordfreq has no
+               list, e.g. Georgian)
+  4 ngrams     KenLM trigram -> arpa_to_dogboard.py --rank entropy --keep-twins (accent twins' entries kept)
+  5 bigrams    Tatoeba sentences (CC BY 2.0 FR) -> bigrams_from_tatoeba.py; skipped when Tatoeba has too few
+  6 charlm     letter model on the corpus words the lexicon lacks, alphabet from the lexicon (build_charlm.py)
+  7 rules      rules.json: letter rows from the layout data (Gboard registry / iOS), distinct letters (letters with
+               a key of their own that fold to another), compounds, sentence ends
+  8 tests      typo / accent / control sets from held-out sentences on the layout (make_es_sets.py: typo simulator)
+  9 snapshots  the app's snapshots (SnapshotExportTest) and manifest.json (sizes, SHA-256, sources)
+ 10 eval       RealTypoEvalTest on the sets -> report.md (fixed / wrong / broken)
+
+Usage: auto_pack.py LANG [--through STEP] [--n 2000]     packs land in keyboard-data/packs-work/<lang>/
+LANGS holds what can't be derived (corpus names, Tatoeba code, layout choice); everything else is computed."""
+import argparse, glob, gzip, hashlib, json, math, os, re, subprocess, sys, tarfile, time, unicodedata, urllib.request
+from collections import Counter
+
+REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+DATA = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data'
+KENLM = f'{DATA}/kenlm/build/bin/lmplz'
+WORDFREQ = f'{DATA}/wordfreq/whl/wordfreq/data'
+WF_PY = '/tmp/claude-1000/-home-syn-Documents-Code-AI-keyboard/eb2fb8fd-7646-4213-845e-8d73c47f6e37/scratchpad/wfvenv/bin/python'
+PREDBENCH = '/home/syn/.claude/jobs/eb2fb8fd/tmp/predbench'
+LAYOUTS = os.path.join(REPO, '..', 'notes', 'design', 'data', 'layouts')
+TATOEBA = os.path.join(REPO, '..', 'data', 'tatoeba')
+CPU = os.environ.get('PACK_CPUS', '3-6')
+LEIPZIG_URL = 'https://downloads.wortschatz-leipzig.de/corpora/{}.tar.gz'
+TATOEBA_URL = 'https://downloads.tatoeba.org/exports/per_language/{0}/{0}_sentences.tsv.bz2'
+
+# what can't be derived: Leipzig corpus names (probed 2026-11-22), Tatoeba's ISO 639-3 code, the layout (Gboard
+# variant or iOS layout name), the script, and whether words compound (Finnish, German)
+LANGS = {
+    'fi': dict(name='Finnish', leipzig=['fin_news_2022_1M', 'fin_newscrawl_2016_1M', 'fin_wikipedia_2021_1M'], tatoeba='fin',
+               layout=('gboard', 'nordic'), script='Latn', compounds=True),
+    'cs': dict(name='Czech', leipzig=['ces_news_2024_1M', 'ces_news_2022_1M', 'ces_wikipedia_2021_1M'], tatoeba='ces',
+               layout=('gboard', 'qwertz'), script='Latn', compounds=False),
+    'ka': dict(name='Georgian', leipzig=['kat-ge_web_2019_1M'], tatoeba='kat',
+               # the standard Georgian layout (Gboard's default, FlorisBoard's georgian_standard): all 33 letters on
+               # the base plane; iOS's phonetic one puts 7 letters (ჭ ღ თ შ ჟ ძ ჩ) on Shift, which the rows can't hold
+               layout=('gboard', 'georgian_georgia'), script='Geor', compounds=False),
+    'ar': dict(name='Arabic', leipzig=['ara_news_2022_1M', 'ara_wikipedia_2021_1M'], tatoeba='ara',
+               layout=('gboard', 'arabic'), script='Arab', compounds=False, rtl=True),
+}
+CLDR_URL = 'https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/{}.xml'
+
+
+def letters_of(lang):
+    """The language's letters (CLDR's main exemplar characters, Unicode licence) in both cases, plus basic Latin for
+    names and brands: a corpus sentence with any other letter is mis-encoded or another language ("tøeba" for
+    "třeba" in Leipzig's Czech news, 2026-11-22)."""
+    path = f'{DATA}/cldr/main/{lang}.xml'
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True); urllib.request.urlretrieve(CLDR_URL.format(lang), path)
+    m = re.search(r'<exemplarCharacters>\[([^\]]*)\]', open(path, encoding='utf-8').read())
+    chars = {c for c in re.sub(r'\{[^}]*\}', '', m.group(1)) if c.isalpha() or unicodedata.category(c) == 'Mn'}
+    return chars | {c.upper() for c in chars} | set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+
+
+STEPS = ['corpora', 'text', 'lexicon', 'ngrams', 'bigrams', 'charlm', 'rules', 'tests', 'snapshots', 'eval']
+
+
+def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)
+
+
+def sh(cmd, **kw):
+    log('$', cmd if isinstance(cmd, str) else ' '.join(cmd))
+    subprocess.run(cmd, shell=isinstance(cmd, str), check=True, **kw)
+
+
+def fold(c):
+    return unicodedata.normalize('NFD', c)[0]
+
+
+class Pack:
+    def __init__(self, lang, n):
+        self.lang, self.cfg, self.n = lang, LANGS[lang], n
+        self.dir = f'{DATA}/packs-work/{lang}' + os.environ.get('PACK_SUFFIX', '')
+        os.makedirs(self.dir, exist_ok=True)
+        self.p = lambda name: os.path.join(self.dir, name)
+
+    # 1
+    def corpora(self):
+        files = []
+        for name in self.cfg['leipzig']:
+            d = f'{DATA}/leipzig/{name}'
+            hit = glob.glob(f'{d}/*-sentences.txt')
+            if not hit:
+                tgz = f'{DATA}/leipzig/{name}.tar.gz'
+                if not os.path.exists(tgz):
+                    log('download', name); urllib.request.urlretrieve(LEIPZIG_URL.format(name), tgz)
+                with tarfile.open(tgz) as t: t.extractall(f'{DATA}/leipzig', filter='data')
+                hit = glob.glob(f'{d}/*-sentences.txt')
+            files += hit
+        assert files, 'no corpus'
+        # sentences with letters foreign to the language dropped (mis-encoding, other languages), into the pack dir
+        ok = letters_of(self.lang); cleaned = []
+        for f in files:
+            out = self.p('clean-' + os.path.basename(f))
+            if not os.path.exists(out):
+                kept = dropped = 0
+                with open(f, encoding='utf-8', errors='replace') as src, open(out + '.tmp', 'w', encoding='utf-8') as dst:
+                    for line in src:
+                        text = line.rstrip('\n').split('\t')[-1]
+                        if all(c in ok for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
+                        else: dropped += 1
+                os.rename(out + '.tmp', out)
+                log(f'{os.path.basename(f)}: kept {kept:,}, dropped {dropped:,} ({100 * dropped / max(1, kept + dropped):.1f} %) with foreign letters')
+            cleaned.append(out)
+        self.corpus_files = cleaned
+        return cleaned
+
+    # 2
+    def text(self):
+        if os.path.exists(self.p('train.txt')): return
+        with open(self.p('train.txt'), 'w', encoding='utf-8') as out:
+            subprocess.run([sys.executable, '-I', f'{REPO}/tools/data/leipzig_sentences.py', '--heldout', self.p(f'{self.lang}.heldout.txt')]
+                           + self.corpus_files, stdout=out, check=True)
+        log('training text', sum(1 for _ in open(self.p('train.txt'), encoding='utf-8')), 'lines')
+
+    # 3
+    def lexicon(self):
+        out = self.p(f'{self.lang}.lexicon.tsv')
+        if os.path.exists(out): return
+        wf = f'{WORDFREQ}/large_{self.lang}.msgpack.gz'
+        if not os.path.exists(wf): wf = f'{WORDFREQ}/small_{self.lang}.msgpack.gz'
+        args = ['--wordfreq', wf] if os.path.exists(wf) else ['--min-corpus', '3']
+        src = (f'wordfreq 3.1.1 (CC BY-SA 4.0) attested in ' if os.path.exists(wf) else 'counts of ') + \
+              f'Leipzig {self.cfg["name"]} corpora (CC BY 4.0)'
+        cmd = ['taskset', '-c', CPU, 'nice', WF_PY if os.path.exists(WF_PY) else sys.executable, '-I',
+               f'{REPO}/tools/data/build_lexicon_hunspell.py', '--lang', self.lang] + args
+        for f in self.corpus_files: cmd += ['--corpus', f]
+        sh(cmd + ['--out', out, '--review', self.p(f'{self.lang}.review.tsv'), '--source', src])
+
+    # 4
+    def ngrams(self):
+        out = self.p(f'{self.lang}.ngrams.bin')
+        if os.path.exists(out): return
+        arpa = self.p(f'{self.lang}.arpa')
+        if not os.path.exists(arpa):
+            sh(f'taskset -c {CPU} nice {KENLM} -o 3 -S 3G -T {self.dir} --prune 0 0 1 < {self.p("train.txt")} > {arpa} 2> {self.p("lmplz.log")}')
+        sh(['taskset', '-c', CPU, 'nice', sys.executable, '-I', f'{REPO}/tools/data/arpa_to_dogboard.py', arpa, out,
+            '--lexicon', self.p(f'{self.lang}.lexicon.tsv'), '--rank', 'entropy', '--keep-twins', '500000'])
+
+    # 5
+    def bigrams(self):
+        out = self.p(f'{self.lang}.bigrams.tsv')
+        if os.path.exists(out): return
+        code = self.cfg['tatoeba']; os.makedirs(TATOEBA, exist_ok=True)
+        tsv = f'{TATOEBA}/{code}_sentences.tsv'
+        if not os.path.exists(tsv):
+            try:
+                urllib.request.urlretrieve(TATOEBA_URL.format(code), tsv + '.bz2'); sh(['bunzip2', '-f', tsv + '.bz2'])
+            except Exception as e:
+                log('no Tatoeba for', code, e)
+        if os.path.exists(tsv) and sum(1 for _ in open(tsv, encoding='utf-8')) >= 2000:
+            sh([sys.executable, '-I', f'{REPO}/tools/data/bigrams_from_tatoeba.py', tsv, '--lexicon',
+                self.p(f'{self.lang}.lexicon.tsv'), '--out', out, '--lang', self.lang])
+        else:
+            # too little Tatoeba: word pairs from the corpus training text instead (same format)
+            lex = {l.split('\t')[0].lower() for l in open(self.p(f'{self.lang}.lexicon.tsv'), encoding='utf-8') if not l.startswith('#')}
+            pairs = Counter(); W = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
+            for i, line in enumerate(open(self.p('train.txt'), encoding='utf-8')):
+                if i >= 400000: break
+                ws = ['<s>'] + [w.lower() for w in W.findall(line)]
+                for a, b in zip(ws, ws[1:]):
+                    if (a == '<s>' or a in lex) and b in lex: pairs[(a, b)] += 1
+            with open(out, 'w', encoding='utf-8') as o:
+                o.write('#dogboard-bigrams 1\n')
+                for (a, b), c in pairs.most_common(200000):
+                    if c >= 2: o.write(f'{a}\t{b}\t{c}\n')
+            log('bigrams from the corpus (Tatoeba too small)')
+
+    # 6
+    def charlm(self):
+        out = self.p(f'{self.lang}.charlm.bin')
+        if os.path.exists(out): return
+        lexf = self.p(f'{self.lang}.lexicon.tsv')
+        words = [l.split('\t')[0].lower() for l in open(lexf, encoding='utf-8') if not l.startswith('#')][:50000]
+        alphabet = ''.join(sorted({fold(c) for w in words for c in w if c.isalpha()}, key=lambda c: -sum(w.count(c) for w in words[:5000])))
+        alphabet = ''.join(c for c in alphabet if c.isalpha())[:60]
+        uni = self.p(f'{self.lang}.unigrams.tsv')
+        if not os.path.exists(uni):
+            cnt = Counter(); W = re.compile(r"[^\W\d_]+")
+            for line in open(self.p('train.txt'), encoding='utf-8'): cnt.update(w.lower() for w in W.findall(line))
+            with open(uni, 'w', encoding='utf-8') as o:
+                for w, c in cnt.most_common(): o.write(f'{w}\t{c}\n')
+        latin_az = set(alphabet) <= set('abcdefghijklmnopqrstuvwxyz')
+        sh([sys.executable, '-I', f'{REPO}/tools/data/build_charlm.py', uni, lexf, self.p(f'{self.lang}.charlm.tsv'),
+            '--min-count', '5', '--binary', out] + ([] if latin_az else ['--alphabet', alphabet]))
+
+    # 7
+    def rules(self):
+        out = self.p('rules.json')
+        if os.path.exists(out): return
+        src, name = self.cfg['layout']
+        rows = None
+        if src == 'gboard':
+            langs = json.load(open(f'{LAYOUTS}/gboard/languages.json')); lays = json.load(open(f'{LAYOUTS}/gboard/layouts.json'))
+            v = next(v for v in langs[self.lang]['variants'] if v['variant'] == name)
+            rows = lays[v['layout_id']]['rows']
+        else:
+            rows = json.load(open(f'{LAYOUTS}/ios/layouts.json'))[name]['rows']
+        letters = [''.join(k for k in r if isinstance(k, str) and len(k) == 1 and k.isalpha()) for r in rows]
+        letters = [r for r in letters if len(r) >= 5][:3]
+        # a key that types two letters (Arabic ﻻ = ل + ا, a presentation form) can't be one decoder key: typed as two
+        letters = [''.join(c for c in r if not ('\ufb50' <= c <= '\ufeff')) for r in letters]
+        # a letter with its own key that folds to another letter of the layout (å ä ö in Finnish) stays distinct;
+        # letters typed by long-press (Czech č ř ž on qwertz) fold, as accents do
+        on_keys = set(''.join(letters))
+        distinct = ''.join(sorted(c for c in on_keys if fold(c) != c and fold(c) in on_keys))
+        w = max(len(r) for r in letters)
+        rules = {'sentence_end': '.!?' + ('؟' if self.cfg.get('rtl') else ''), 'compounds': self.cfg.get('compounds', False),
+                 'letter_rows': {'rows': letters, 'offsets': [round((w - len(r)) / 2 * 2) / 2 for r in letters]},
+                 'distinct_letters': distinct}
+        json.dump(rules, open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+        log('rows', letters, 'distinct', distinct or '-')
+
+    # 8
+    def tests(self):
+        if glob.glob(self.p(f'{self.lang}-typos.tsv')): return
+        rows = json.load(open(self.p('rules.json')))['letter_rows']['rows']
+        env = dict(os.environ, SIM_ROWS=','.join(rows), SIM_PREFIX=self.lang)
+        sh([sys.executable, f'{PREDBENCH}/make_es_sets.py', self.p(f'{self.lang}.heldout.txt'), self.p(f'{self.lang}.lexicon.tsv'),
+            f'{PREDBENCH}/typo_model7.json', self.dir, str(self.n)], env=env, cwd=PREDBENCH)
+
+    # 9
+    def snapshots(self):
+        if not os.path.exists(self.p(f'{self.lang}-lexicon.dgz')):
+            env = dict(os.environ, DOGBOARD_TEST_HEAP='3g', DOGBOARD_EXPORT_PACK_DIR=self.dir, DOGBOARD_EXPORT_PACK_LANG=self.lang,
+                       ANDROID_USER_HOME=os.path.expanduser('~/.config/.android'))
+            sh(['taskset', '-c', '10-15', 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
+                '--tests', 'io.github.sillypuppyy.dogboard.engine.SnapshotExportTest', '--rerun', '-q'], env=env, cwd=REPO)
+        files = {'lexicon': f'{self.lang}.lexicon.tsv', 'bigrams': f'{self.lang}.bigrams.tsv', 'ngrams': f'{self.lang}.ngrams.bin',
+                 'charlm': f'{self.lang}.charlm.bin', 'rules': 'rules.json', 'snapshot_lexicon': f'{self.lang}-lexicon.dgz',
+                 'snapshot_bigrams': f'{self.lang}-bigrams.dgz', 'snapshot_ngramindex': f'{self.lang}-ngramindex.dgz'}
+        man = {'format': 1, 'tag': self.lang, 'name': self.cfg['name'], 'script': self.cfg['script'], 'version': time.strftime('%Y.%m.%d'),
+               'files': {}, 'sources': [
+                   {'name': f'Leipzig Corpora Collection, {self.cfg["name"]}', 'licence': 'CC BY 4.0', 'for': ['lexicon', 'ngrams', 'charlm']},
+                   {'name': 'wordfreq 3.1.1', 'licence': 'CC BY-SA 4.0', 'for': ['lexicon']},
+                   {'name': 'Tatoeba', 'licence': 'CC BY 2.0 FR', 'for': ['bigrams']}]}
+        for k, f in files.items():
+            path = self.p(f)
+            if os.path.exists(path):
+                man['files'][k] = {'path': f, 'size': os.path.getsize(path), 'sha256': hashlib.sha256(open(path, 'rb').read()).hexdigest()}
+        json.dump(man, open(self.p('manifest.json'), 'w'), ensure_ascii=False, indent=1)
+        log('manifest', list(man['files']))
+
+    # 10
+    def eval(self):
+        rows = json.load(open(self.p('rules.json')))
+        report = [f'# {self.cfg["name"]} pack ({self.lang}), built by tools/i18n/auto_pack.py {time.strftime("%Y-%m-%d %H:%M")}', '',
+                  f'Letter rows: {" / ".join(rows["letter_rows"]["rows"])}; distinct letters: {rows["distinct_letters"] or "none"}', '',
+                  '| set | cases | fixed | left | wrong | broken |', '|---|---|---|---|---|---|']
+        for s in ('typos', 'accents-clear', 'accents-twin', 'controls'):
+            f = self.p(f'{self.lang}-{s}.tsv')
+            if not os.path.exists(f) or os.path.getsize(f) == 0: continue
+            env = dict(os.environ, DOGBOARD_TEST_HEAP='3g', DOGBOARD_PACK_DIR=self.dir, DOGBOARD_PACK_LANG=self.lang,
+                       DOGBOARD_ROWS=','.join(rows['letter_rows']['rows']), DOGBOARD_SPACE_KEY='1', DOGBOARD_APP_PATH='1',
+                       DOGBOARD_CHARLM='1', DOGBOARD_MISSPELLINGS='1', DOGBOARD_REAL_TYPOS=f, DOGBOARD_REAL_TYPOS_N=str(self.n),
+                       DOGBOARD_NGRAMS=self.p(f'{self.lang}.ngrams.bin'), DOGBOARD_EVAL_THREADS='5',
+                       DOGBOARD_COMPOUNDS='1' if self.cfg.get('compounds') else '0',
+                       ANDROID_USER_HOME=os.path.expanduser('~/.config/.android'))
+            # only the eval (other probe tests switch on with the same variables: NgramFileProbeTest is English-only)
+            r = subprocess.run(['taskset', '-c', '10-15', 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
+                                '--tests', 'io.github.sillypuppyy.dogboard.engine.RealTypoEvalTest', '--rerun', '-i'],
+                               env=env, cwd=REPO, capture_output=True, text=True)
+            m = re.search(r'(\d+) typos: fixed ([\d.]+|NaN)%, left ([\d.]+|NaN)%, wrong word ([\d.]+|NaN)% \| (\d+) broken ([\d.]+|NaN)%', r.stdout)
+            if m:
+                report.append(f'| {s} | {m.group(1) if m.group(1) != "0" else m.group(5)} | {m.group(2)} | {m.group(3)} | {m.group(4)} | {m.group(6)} |')
+                log(s, m.group(0))
+            else:
+                report.append(f'| {s} | eval failed | | | | |'); log(s, 'eval failed', r.stdout[-500:])
+        sizes = {k: v['size'] for k, v in json.load(open(self.p('manifest.json')))['files'].items()}
+        report += ['', 'Download size without the text lists: %.1f MB' % (sum(v for k, v in sizes.items() if k not in ('lexicon', 'bigrams')) / 1e6)]
+        open(self.p('report.md'), 'w').write('\n'.join(report) + '\n')
+        print('\n'.join(report))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('lang', choices=sorted(LANGS))
+    ap.add_argument('--through', default='eval', choices=STEPS)
+    ap.add_argument('--n', type=int, default=2000)
+    a = ap.parse_args()
+    pack = Pack(a.lang, a.n)
+    for step in STEPS:
+        if step != 'corpora' and not hasattr(pack, 'corpus_files'): pack.corpora()
+        log('==', step); getattr(pack, step)()
+        if step == a.through: break
+
+
+if __name__ == '__main__':
+    main()

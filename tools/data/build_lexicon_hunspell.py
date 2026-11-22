@@ -94,7 +94,7 @@ def main():
     ap.add_argument("--hunspell", default="", help="path without .dic/.aff; none: words from wordfreq + the corpus")
     ap.add_argument("--min-corpus", type=int, default=3, help="without Hunspell: corpus uses a wordfreq word needs")
     ap.add_argument("--min-zipf", type=float, default=1.0, help="without Hunspell: wordfreq Zipf a word needs")
-    ap.add_argument("--wordfreq", required=True)
+    ap.add_argument("--wordfreq", default="", help="wordfreq list; none (Georgian: no list): frequencies from the corpus")
     ap.add_argument("--corpus", action="append", default=[])
     ap.add_argument("--out", required=True)
     ap.add_argument("--review")
@@ -104,8 +104,16 @@ def main():
     ap.add_argument("--min-elided", type=int, default=3, help="corpus uses an elided form needs")
     args = ap.parse_args()
 
-    zipf = load_wordfreq(args.wordfreq)
     casing = casing_counts(args.corpus)
+    if args.wordfreq:
+        zipf = load_wordfreq(args.wordfreq)
+    else:
+        # no wordfreq list for the language: the corpus's own counts on the same scale (Zipf = log10 per billion
+        # words), words used at least --min-corpus times (2026-11-22: language packs built from a language code)
+        import math
+        counts = {w: sum(c.values()) for w, c in casing.items()}
+        total = sum(counts.values()) or 1
+        zipf = {w: math.log10(n / total * 1e9) for w, n in counts.items() if n >= args.min_corpus}
     if args.hunspell:
         sink = Sink()
         expand(args.hunspell + ".dic", args.hunspell + ".aff", sink)
