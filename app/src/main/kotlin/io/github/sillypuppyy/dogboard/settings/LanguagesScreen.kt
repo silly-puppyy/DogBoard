@@ -60,8 +60,8 @@ fun LanguagesScreen() {
         onRemove = { id -> subtypes.firstOrNull { it.id == id }?.let { subtypeManager.removeSubtype(it) } },
         onAdd = { tag ->
             // the first language added beside the default keeps the default as a language of its own too
-            if (subtypes.isEmpty()) subtypeManager.addSubtype(Subtype.DEFAULT)
-            subtypeManager.addSubtype(Subtype(0, FlorisLocale.fromTag(tag), emptyList()))
+            val new = Subtype(0, FlorisLocale.fromTag(tag), emptyList())
+            if (subtypes.isEmpty()) subtypeManager.addSubtypes(Subtype.DEFAULT, new) else subtypeManager.addSubtypes(new)
         },
         onBack = { navController.popBackStack() },
     )

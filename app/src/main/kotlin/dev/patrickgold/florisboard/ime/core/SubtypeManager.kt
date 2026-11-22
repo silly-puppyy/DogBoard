@@ -94,6 +94,18 @@ class SubtypeManager(context: Context) {
      * @return True if the subtype was added, false otherwise. A return value of false indicates
      *  that the subtype already exists.
      */
+    /**
+     * DogBoard: adds several in one write, each with its own id. Two [addSubtype] calls in a row read the list before
+     * the first write landed and took the same millisecond id: adding a language beside the default kept only the
+     * new one (2026-11-22).
+     */
+    fun addSubtypes(vararg toAdd: Subtype) {
+        var list = subtypes
+        var id = System.currentTimeMillis()
+        for (s in toAdd) if (list.none { it.equalsExcludingId(s) }) list = list + s.copy(id = id++)
+        persistNewSubtypeList(list)
+    }
+
     fun addSubtype(subtype: Subtype): Boolean {
         val subtypeToAdd = subtype.copy(id = System.currentTimeMillis())
         val subtypeList = subtypes
