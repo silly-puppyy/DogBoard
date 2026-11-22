@@ -25,6 +25,8 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     private var aNext = IntArray(capacity)
     private var nextBase = 0
     private var lastChild = LongArray(0)
+    private var levelStart = IntArray(0)
+    private var blockLevel = ByteArray(0)
     private var aParent = IntArray(capacity)
     private var aDepth = ShortArray(capacity)
     private var aLogP = FloatArray(capacity)
@@ -88,7 +90,15 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     // last child (a bit in [lastChild]): no int a node (Russian 8.6 MB); above it [aNext] at index n - nextBase
     private fun gNext(n: Int): Int =
         if (n >= nextBase) aNext[n - nextBase] else if ((lastChild[n ushr 6] ushr n) and 1L != 0L) NONE else n + 1
-    private fun gDepth(n: Int): Short = aDepth[n]
+    // below [nextBase] depth rises with the node (breadth-first): the level at the start of n's block of 4096
+    // nodes, then forward to the last level starting at or before n (no short a node: Russian 4.3 MB; a binary
+    // search over the levels cost the decoder 8 %); above it [aDepth] at index n - nextBase
+    private fun gDepth(n: Int): Short {
+        if (n >= nextBase) return aDepth[n - nextBase]
+        var d = blockLevel[n ushr 12].toInt()
+        while (d + 1 < levelStart.size && levelStart[d + 1] <= n) d++
+        return d.toShort()
+    }
     private fun gFirst(n: Int): Int = aFirst[n]
     private fun gLogP(n: Int): Float = aLogP[n]
     private fun gBest(n: Int): Int = aBest[n]
@@ -432,7 +442,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         aKey[n] = c
         aFirst[n] = NONE
         aParent[n - base] = parentNode // cold fields of a new node: after the mapped ones
-        aDepth[n] = if (parentNode == NONE) 0 else (gDepth(parentNode) + 1).toShort()
+        aDepth[n - nextBase] = if (parentNode == NONE) 0 else (gDepth(parentNode) + 1).toShort()
         aWordId[n] = NONE
         aBest[n] = NONE
         aLogP[n] = Float.NaN
@@ -451,7 +461,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     /** The hot fields' arrays to [cap] nodes (and the cold ones too while nothing is mapped). */
     private fun resize(cap: Int) {
         aKey = aKey.copyOf(cap); aFirst = aFirst.copyOf(cap); aNext = aNext.copyOf(cap - nextBase)
-        aDepth = aDepth.copyOf(cap); aLogP = aLogP.copyOf(cap); aBest = aBest.copyOf(cap); aWordId = aWordId.copyOf(cap)
+        aDepth = aDepth.copyOf(cap - nextBase); aLogP = aLogP.copyOf(cap); aBest = aBest.copyOf(cap); aWordId = aWordId.copyOf(cap)
         if (base == 0) { aParent = aParent.copyOf(cap); aMass = aMass.copyOf(cap) }
     }
 
@@ -501,18 +511,25 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
                 f.position(mm.first); f.asIntBuffer().get(lex.aFirst, 0, n)
                 f.position(mm.best); f.asIntBuffer().get(lex.aBest, 0, n)
                 f.position(mm.wordId); f.asIntBuffer().get(lex.aWordId, 0, n)
-                f.position(mm.depth); f.asShortBuffer().get(lex.aDepth, 0, n)
                 f.position(mm.logP); f.asFloatBuffer().get(lex.aLogP, 0, n)
             }
             // siblings side by side (written breadth-first): one bit a node; an older snapshot keeps the int array
             val contiguous = (0 until n).all { k -> fields.getInt(mm.next + 4 * k).let { it == NONE || it == k + 1 } }
-            if (contiguous) {
+            // depth never falls in that order: a table of where each level starts replaces the field
+            val depthOf = { k: Int -> fields.getShort(mm.depth + 2 * k).toInt() }
+            if (contiguous && (1 until n).all { depthOf(it) >= depthOf(it - 1) } && depthOf(0) == 0 && depthOf(n - 1) <= Byte.MAX_VALUE) {
+                lex.levelStart = IntArray(depthOf(n - 1) + 1).also { ls -> for (k in n - 1 downTo 0) ls[depthOf(k)] = k }
+                lex.blockLevel = ByteArray((n ushr 12) + 1) { b -> depthOf(b shl 12).toByte() }
+                lex.aDepth = ShortArray(1024)
                 lex.lastChild = LongArray((n + 63) / 64)
                 for (k in 0 until n) if (fields.getInt(mm.next + 4 * k) == NONE) lex.lastChild[k ushr 6] = lex.lastChild[k ushr 6] or (1L shl k)
                 lex.nextBase = n
                 lex.aNext = IntArray(1024)
             } else {
-                fields.duplicate().order(java.nio.ByteOrder.LITTLE_ENDIAN).let { f -> f.position(mm.next); f.asIntBuffer().get(lex.aNext, 0, n) }
+                fields.duplicate().order(java.nio.ByteOrder.LITTLE_ENDIAN).let { f ->
+                    f.position(mm.next); f.asIntBuffer().get(lex.aNext, 0, n)
+                    f.position(mm.depth); f.asShortBuffer().get(lex.aDepth, 0, n)
+                }
             }
             lex.aParent = IntArray(1024); lex.aMass = FloatArray(1024) // the learned words' cold fields
             lex.aWordNode = IntArray(256) // learned words' nodes only (sized for every word it held 4 MB in Russian)
