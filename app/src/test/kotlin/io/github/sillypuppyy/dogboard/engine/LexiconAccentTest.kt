@@ -29,5 +29,9 @@ class LexiconAccentTest : FunSpec({
         keepsPopupLetters("cafe", "café") shouldBe true // plain letters typed: the accent may be added
         keepsPopupLetters("don’t", "don't") shouldBe true // a curly apostrophe is not a popup letter
         keepsPopupLetters("thw", "the") shouldBe true
+        // a letter with its own key (Spanish ñ) is a tap like any other: a slip onto it may be corrected
+        keepsPopupLetters("desarroñlo", "desarrollo") shouldBe false
+        keepsPopupLetters("desarroñlo", "desarrollo", setOf('ñ', 'l', 'o')) shouldBe true
+        keepsPopupLetters("café", "cafe", setOf('ñ')) shouldBe false // é still from a popup
     }
 })

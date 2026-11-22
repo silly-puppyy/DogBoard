@@ -922,7 +922,7 @@ object TypingEngine {
             val prevCandidates = (previousCandidates?.filter { !it.isCompletion && !extendsTyped(it.word) }?.take(4) ?: d.decode(
                 prevTaps, personalOffsets.apply(previous.keys), previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
-            )).filter { it.words == 1 && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word) }
+            )).filter { it.words == 1 && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word, previous.keys.keys) }
                 .let { respectingContactNames(previous.text, it) }
             val curReadings = currentCandidates?.filter { !it.isCompletion && it.words == 1 }
             val pairs = if (neuralPairs != null && currentCandidates != null) retroPairs(prevCandidates, currentCandidates) else emptyList()
@@ -1012,7 +1012,7 @@ object TypingEngine {
         if (candidates.isEmpty()) return null
         val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates))
             .filter {
-                keepsPopupLetters(word.text, it.word) && keepsOneLetterWord(word.text, it.word, engine) &&
+                keepsPopupLetters(word.text, it.word, word.keys.keys) && keepsOneLetterWord(word.text, it.word, engine) &&
                     keepsAmpersands(word.text, it.word) && noDoubleApostrophe(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
                     !isCommonLearnedTypo(word.text, it.word, rules.learnedTypoOverrides) && !isInvalidUserEntry(word.text, it.word)
             }
@@ -1464,12 +1464,13 @@ internal fun keepsAmpersands(typed: String, candidate: String): Boolean =
 
 /**
  * iOS FilterPopupVariantMismatch: a letter typed from a long-press popup stays in a correction, at
- * the same place ("café" typed with é is not corrected to "cafe"). The letter keys are plain a-z,
- * so an accented letter in [typed] came from a popup.
+ * the same place ("café" typed with é is not corrected to "cafe"). An accented letter in [typed] came from a popup
+ * unless the keyboard has a key of its own for it ([ownKeys]: the word's letter targets): a slip onto Spanish ñ
+ * ("desarroñlo") is a typo like any other (it was kept: no correction without ñ there passed, 2026-11-23).
  */
-internal fun keepsPopupLetters(typed: String, candidate: String): Boolean {
+internal fun keepsPopupLetters(typed: String, candidate: String, ownKeys: Set<Char> = emptySet()): Boolean {
     for ((i, c) in typed.withIndex()) {
-        if (Lexicon.fold(c) == c.lowercaseChar()) continue
+        if (Lexicon.fold(c) == c.lowercaseChar() || c.lowercaseChar() in ownKeys) continue
         if (candidate.getOrNull(i)?.lowercaseChar() != c.lowercaseChar()) return false
     }
     return true

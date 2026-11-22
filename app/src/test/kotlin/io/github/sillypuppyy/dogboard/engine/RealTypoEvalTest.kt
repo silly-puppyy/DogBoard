@@ -66,10 +66,20 @@ class RealTypoEvalTest : FunSpec({
             if (forms.size < 2 || forms.all { it.first.equals(forms[0].first, ignoreCase = true) }) return id
             return twinScorer.spellingContext(w) ?: id
         }
-        val keys = if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f, letterRows) else QwertyGeometry.letterKeys(375f, 216f, letterRows)
+        // DOGBOARD_TOUCH_LAYOUT=keyboard/qwerty-es.xml: the targets the app's touch model gives (TouchModel.letterTargets,
+        // as PointerTracker passes them to the decoder) instead of QwertyGeometry: the device's path for a layout
+        val touchTargets = System.getenv("DOGBOARD_TOUCH_LAYOUT")?.let { path ->
+            val compiled = dev.patrickgold.florisboard.ime.keyboard3.compileLayout(path) as org.k3lp.model.K3CompileResult.Success
+            val keyboard = kotlinx.coroutines.coroutineScope {
+                dev.patrickgold.florisboard.ime.keyboard3.touch.computeTouchModel(compiled.model, dev.patrickgold.florisboard.ime.keyboard3.touch.TouchModelOptions.Default)
+            }.selectKeyboard(deviceWidthMm = 70)
+            keyboard.letterTargets(dev.patrickgold.florisboard.ime.keyboard3.ImeLayerIds.Base, 375f, 216f, (System.getenv("DOGBOARD_TOUCH_INTERVAL") ?: "0.3").toDouble())
+        }
+        if (touchTargets != null) println("TOUCHLAYOUT targets: ${touchTargets.first.keys.sorted().joinToString("")}")
+        val keys = touchTargets?.first ?: if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f, letterRows) else QwertyGeometry.letterKeys(375f, 216f, letterRows)
         // an accented letter is tapped on its base key (long press), as the keyboard types it
         fun keyOf(c: Char) = keys[c] ?: keys.getValue(java.text.Normalizer.normalize(c.toString(), java.text.Normalizer.Form.NFD)[0])
-        val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
+        val params = touchTargets?.second ?: GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
         // DOGBOARD_LEVEL=GENTLE|STANDARD|STRONG (default STANDARD), DOGBOARD_LANGUAGE_POWER overrides its power
         val base = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD").level
