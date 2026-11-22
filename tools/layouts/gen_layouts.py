@@ -461,6 +461,9 @@ NAMED = {"qwerty": "QWERTY", "qwertz": "QWERTZ", "azerty": "AZERTY", "dvorak": "
 # keys they'd write wrong text, so they wait for their own pass (iOS's Tamil grid has no vowel-sign keys: it composes)
 COMPOSED = {"DEVANAGARI", "BENGALI", "GURMUKHI", "GUJARATI", "ORIYA", "TAMIL", "TELUGU", "KANNADA", "MALAYALAM",
             "SINHALA", "HANGUL", "MYANMAR", "KHMER", "TIBETAN", "LAO", "THAI", "CJK", "BOPOMOFO", "HIRAGANA", "KATAKANA"}
+# languages typed through an input method that converts to characters (Pinyin, Zhuyin, kana, Hangul): every
+# keyboard of theirs needs that conversion, so none is ported yet
+INPUT_METHOD_LANGUAGES = {"zh", "ja", "ko", "yue", "wuu", "nan", "hak", "gan", "cmn"}
 # languages written in Latin and another script (Serbian Cyrillic / Latin...): their Latin layouts are real ones
 DIGRAPHIC = {"sr", "bs", "uz", "az", "ku", "ms", "tk", "kk"}
 # Gboard's registry still uses the old ISO codes for some languages; CLDR names the current ones
@@ -607,7 +610,7 @@ def all_layouts() -> list[Layout]:
 
     for base, tag in sorted(tags.items()):
         language = langs.get(base)
-        if not language:
+        if not language or base in INPUT_METHOD_LANGUAGES:
             continue
         d = g_langs[tag]
         variants = sorted(d["variants"], key=lambda v: v["variant"] != d["default_variant"])
