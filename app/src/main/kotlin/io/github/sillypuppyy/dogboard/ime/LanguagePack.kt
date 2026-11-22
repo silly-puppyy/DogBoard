@@ -41,12 +41,44 @@ data class PackSource(
     val url: String = "",
 )
 
-class LanguagePack private constructor(val manifest: PackManifest, private val assets: AssetManager) {
+/**
+ * A language's files: built into the app ([assets], paths under assets/) or downloaded ([dir], paths relative to the
+ * pack's folder, files/packs/<tag>/). Read through [open] and [map] so the engine doesn't care which.
+ */
+class LanguagePack private constructor(val manifest: PackManifest, private val assets: AssetManager?, private val dir: java.io.File? = null) {
     val tag: String get() = manifest.tag
 
-    /** The asset path of [component], or null when the pack has none (or the file is missing or the wrong size). */
+    /** Whether the app ships this pack (its snapshots and index can come with the app). */
+    val bundled: Boolean get() = dir == null
+
+    /** [component]'s file as a stream, or null when the pack has none. */
+    fun open(component: String): java.io.InputStream? {
+        val p = path(component) ?: return null
+        return if (dir != null) java.io.File(dir, p).inputStream() else assets!!.open(p)
+    }
+
+    /** [component]'s file memory-mapped (stored uncompressed in the app, or a downloaded file), or null. */
+    fun map(component: String): java.nio.ByteBuffer? {
+        val p = path(component) ?: return null
+        if (dir != null) return java.io.RandomAccessFile(java.io.File(dir, p), "r").channel.use { c ->
+            c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size())
+        }
+        return assets!!.openFd(p).use { fd ->
+            java.io.FileInputStream(fd.fileDescriptor).channel.use { ch ->
+                ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length)
+            }
+        }
+    }
+
+    /** The path of [component] (asset path, or relative to the pack's folder), or null when the pack has none (or the file is missing or the wrong size). */
     fun path(component: String): String? {
         val f = manifest.files[component] ?: return null
+        if (dir != null) {
+            val file = java.io.File(dir, f.path)
+            if (!file.isFile || (f.size >= 0 && file.length() != f.size)) return null
+            return f.path
+        }
+        val assets = assets!!
         if (f.size < 0) return f.path
         // stored (uncompressed, memory-mapped) files have a descriptor with their length; compressed text
         // files don't, and counting them would inflate them: for those, only that they exist
@@ -72,7 +104,35 @@ class LanguagePack private constructor(val manifest: PackManifest, private val a
             if (m.format > FORMAT) null else LanguagePack(m, assets)
         }.onFailure { android.util.Log.w("DogBoardPack", "no pack $tag: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
-        /** The language bundled with the app, used until the keyboard picks packs by language (i18n step 5). */
+        /** A downloaded pack in [dir] (its manifest.json and files), or null. */
+        fun openDir(dir: java.io.File): LanguagePack? = runCatching {
+            val m = java.io.File(dir, "manifest.json").readText().let { json.decodeFromString<PackManifest>(it) }
+            if (m.format > FORMAT) null else LanguagePack(m, null, dir)
+        }.getOrNull()
+
+        /**
+         * The pack for a keyboard language ([tag] such as "es-ES"): a downloaded one first (files/packs/), then one
+         * built into the app; the exact tag, then the language alone ("es"). Null when there is none.
+         */
+        fun find(context: android.content.Context, tag: String): LanguagePack? {
+            val candidates = listOf(tag, tag.substringBefore('-')).distinct()
+            for (t in candidates) {
+                openDir(java.io.File(context.filesDir, "packs/$t"))?.let { return it }
+                if (runCatching { context.assets.list("dogboard/packs/$t")?.contains("manifest.json") == true }.getOrDefault(false))
+                    open(context.assets, t)?.let { return it }
+            }
+            return null
+        }
+
+        /** Every pack: built into the app and downloaded (a downloaded one replaces a built-in one of the same tag), by tag. */
+        fun all(context: android.content.Context): List<LanguagePack> {
+            val byTag = LinkedHashMap<String, LanguagePack>()
+            (context.assets.list("dogboard/packs") ?: emptyArray()).sorted().forEach { t -> open(context.assets, t)?.let { byTag[it.tag] = it } }
+            java.io.File(context.filesDir, "packs").listFiles()?.sortedBy { it.name }?.forEach { d -> openDir(d)?.let { byTag[it.tag] = it } }
+            return byTag.values.sortedBy { it.tag }
+        }
+
+        /** The language bundled with the app, used when the keyboard's language has no pack. */
         const val DEFAULT_TAG = "en-US"
     }
 }

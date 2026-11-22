@@ -1405,6 +1405,9 @@ object TypingEngine {
     internal fun lexiconForTest(): Lexicon? = loaded?.lexicon
     internal fun autocorrectForTest(): Autocorrect? = loaded?.autocorrect
 
+    /** Drops the loaded language (its words, models and the user's data read with them), to load another. */
+    fun unload() = unloadForTest()
+
     internal fun unloadForTest() {
         loaded = null
         charModel = null

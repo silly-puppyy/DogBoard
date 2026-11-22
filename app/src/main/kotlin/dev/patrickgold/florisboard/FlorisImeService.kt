@@ -302,6 +302,7 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
+                io.github.sillypuppyy.dogboard.ime.EngineLoader.prefer(this@FlorisImeService, subtypeManager.activeSubtype.primaryLocale.languageTag())
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService)
             }
             // DogBoard: the names of the apps on the phone are words too (iOS does this)
@@ -315,6 +316,22 @@ class FlorisImeService : LifecycleInputMethodService() {
                     if (on) io.github.sillypuppyy.dogboard.contacts.ContactCards.read(this@FlorisImeService) else emptyMap()
                 io.github.sillypuppyy.dogboard.engine.TypingEngine.setContactNames(names)
                 imeController.updateState { refreshSuggestions() }
+            }
+        }
+
+        // DogBoard: the keyboard's language picks the word engine's language pack (when one exists for it; English stays
+        // otherwise). The first value waits for the first load above, then a change unloads and loads the other pack
+        var languageJob: kotlinx.coroutines.Job? = null
+        subtypeManager.activeSubtypeFlow.collectIn(lifecycleScope) { _ ->
+            // one job, the latest: early values (the default before the saved languages load) woke with the real one
+            // and the stale one won (es -> en-US); the language is read when the job runs, not when it was queued
+            languageJob?.cancel()
+            languageJob = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                // the saved language often arrives while the first load (which saw the default) is still running
+                while (!io.github.sillypuppyy.dogboard.engine.TypingEngine.isReady) kotlinx.coroutines.delay(200)
+                val tag = subtypeManager.activeSubtype.primaryLocale.languageTag()
+                if (io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag))
+                    imeController.updateState { refreshSuggestions() }
             }
         }
 

@@ -35,11 +35,9 @@ fun LanguagesScreen() {
     val subtypes by subtypeManager.subtypesFlow.collectAsState()
     val active by subtypeManager.activeSubtypeFlow.collectAsState()
     val layoutId by prefs.keyboard.layoutId.collectAsState()
-    // the bundled language packs: usable when they bring a dictionary
+    // the language packs, built in and downloaded: usable when they bring a dictionary
     val packs by produceState(emptyList<LanguagePack>()) {
-        value = withContext(Dispatchers.IO) {
-            (context.assets.list("dogboard/packs") ?: emptyArray()).sorted().mapNotNull { LanguagePack.open(context.assets, it) }
-        }
+        value = withContext(Dispatchers.IO) { LanguagePack.all(context) }
     }
     // no language set: the keyboard types in the default one (was a pink warning)
     val list = subtypes.ifEmpty { listOf(Subtype.DEFAULT) }

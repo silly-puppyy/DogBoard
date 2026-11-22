@@ -44,4 +44,22 @@ class SnapshotExportTest : FunSpec({
             out.listFiles() shouldNotBe null
         }
     }
+
+    // DOGBOARD_EXPORT_PACK_DIR=<dir> DOGBOARD_EXPORT_PACK_LANG=es: a downloadable pack's snapshots (<lang>.lexicon.tsv,
+    // <lang>.bigrams.tsv, rules.json in <dir>) as <dir>/<lang>-lexicon.dgz and <lang>-bigrams.dgz, built with the pack's
+    // own-key letters (rules letter_rows) as the phone builds the trie
+    test("export a pack's snapshots").config(enabled = System.getenv("DOGBOARD_EXPORT_PACK_DIR") != null) {
+        val dir = File(System.getenv("DOGBOARD_EXPORT_PACK_DIR"))
+        val lang = System.getenv("DOGBOARD_EXPORT_PACK_LANG") ?: dir.name
+        val rules = File(dir, "rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules()
+        Lexicon.distinctLetters = rules.letterRows.rows.joinToString("").filter { it !in 'a'..'z' }.toSet()
+        try {
+            val lexicon = File(dir, "$lang.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
+            val bigrams = File(dir, "$lang.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
+            GZIPOutputStream(File(dir, "$lang-lexicon.dgz").outputStream().buffered(), 64 * 1024).use { lexicon.writeSnapshot(it) }
+            GZIPOutputStream(File(dir, "$lang-bigrams.dgz").outputStream().buffered(), 64 * 1024).use { bigrams.writeSnapshot(it) }
+        } finally {
+            Lexicon.distinctLetters = emptySet()
+        }
+    }
 })
