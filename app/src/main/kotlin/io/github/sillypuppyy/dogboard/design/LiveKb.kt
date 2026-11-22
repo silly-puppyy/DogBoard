@@ -14,6 +14,17 @@ import org.k3lp.lib.text.K3String
  * field variants such as base-email).
  */
 object LiveKb {
+    /** The symbol keys whose output the layout changes (Arabic ١ ، ؛ ؟: gen_layouts.py native_punct), as Latin -> native. */
+    private val SYMBOL_IDS = ("1234567890".associate { "s-$it" to it.toString() } +
+        mapOf("s-semicolon" to ";", "s-question" to "?", "comma-classic" to ",", "period-classic" to "."))
+
+    fun symbols(model: org.k3lp.model.K3Model): Map<String, String> = buildMap<String, String> {
+        for ((id, latin) in SYMBOL_IDS) {
+            val out = (model.keys.byKeyId[org.k3lp.model.key.K3KeyId(id)]?.output as? K3String)?.toText() ?: continue
+            if (out != latin) put(latin, out)
+        }
+    }
+
     /**
      * The layout's letter rows (three, or four: Pashto, Armenian) as the touch layout defines them (keys, widths, gaps, shift and
      * delete), for [KbProps.letterRows]: what is drawn is what is hit, for every layout. Rows narrower

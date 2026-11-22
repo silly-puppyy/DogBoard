@@ -103,6 +103,9 @@ data class KbProps(
      * drawn is what is hit); null = English QWERTY ([KbSpec.ENGLISH_ROWS]).
      */
     val letterRows: List<List<KbLetterKey>>? = null,
+    /** The layout's own marks on the symbol pages and the bottom row ([LiveKb.symbols]: Arabic "1" -> "١", "," -> "،"):
+     *  drawn as the touch layout types them. */
+    val symbolLabels: Map<String, String> = emptyMap(),
     /** Kb:432-436, 569-573 layout elements (Settings › Layout). numRow: off / on / hints (digits on long-press of the top row); null = Kb's default by key style (on if [numberRow]). */
     val numRow: String? = null,
     /** Kb:430: another Dalmatian coat (0 = the theme's own seed). */
@@ -504,6 +507,8 @@ object KbSpec {
         // Kb:453-503 layouts
         val upper = shift != "off" || P.caseMode == "caps" // Kb:606
         fun ch(c: String, w: Float = 1f) = K(c, "char", w, label = c)
+        // a symbol-page key drawn as the layout types it (the number row keeps its digits: shared numrow keys)
+        fun sym(c: String, w: Float = 1f) = (P.symbolLabels[c] ?: c).let { K(it, "char", w, label = it) }
         fun letters(s: String) = s.map { c -> c.toString() }.map { c -> K(c, "char", 1f, label = if (upper) up(c) else c, base = c) }
         val letterRows = P.letterRows ?: ENGLISH_ROWS
         // the top letter row's letters, in order: the number row's digits as hints on long-press
@@ -522,19 +527,19 @@ object KbSpec {
         val firstMode = if (plane == "base") (if (kstyle == "android") "?123" else "123") else "ABC"
         val bottom = when {
             // Kb:620-622: comma slot (@ for email, / for URLs), 1.5 · 1 · 1 · 4 · 1 · 1.5
-            kstyle == "android" -> listOf(mode(firstMode, 1.5f), ch(when (field) { "email" -> "@"; "url" -> "/"; else -> "," }, 1f), fnK(1f), space(4f), ch(".", 1f), retK(1.5f))
+            kstyle == "android" -> listOf(mode(firstMode, 1.5f), when (field) { "email" -> ch("@", 1f); "url" -> ch("/", 1f); else -> sym(",", 1f) }, fnK(1f), space(4f), sym(".", 1f), retK(1.5f))
             // iOS's bottom row keeps iOS's widths (user 2026-11-17)
             field == "email" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK())
             // a space bar in URL fields too (address bars take searches; Gboard keeps one), .com etc. on a long press of .
             field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK())
             else -> listOf(mode(firstMode, 1.24f), fnK(), space(5.0133f), retK())
         }
-        fun symRow3(m: String) = listOf(mode(m, 1.5f), ch(".", 1.4f), ch(",", 1.4f), ch("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), bksp())
+        fun symRow3(m: String) = listOf(mode(m, 1.5f), sym(".", 1.4f), sym(",", 1.4f), sym("?", 1.4f), ch("!", 1.4f), ch("'", 1.4f), bksp())
         val spec: List<List<K>> = when (plane) {
             // Gboard's ?123 / =\< pages (Settings > Layout > Symbols: Android-style; photographed 2026-11-17)
-            "symbol-1" -> if (P.symbols == "android") listOf("1234567890".map { ch(it.toString()) }, "@#\$_&-+()/".map { ch(it.toString()) },
-                listOf(mode("=\\<", 1.5f)) + "*\"':;!?".map { ch(it.toString()) } + listOf(bksp()), bottom)
-            else listOf("1234567890".map { ch(it.toString()) }, "-/:;()$&@\"".map { ch(it.toString()) }, symRow3("#+="), bottom)
+            "symbol-1" -> if (P.symbols == "android") listOf("1234567890".map { sym(it.toString()) }, "@#\$_&-+()/".map { ch(it.toString()) },
+                listOf(mode("=\\<", 1.5f)) + "*\"':;!?".map { sym(it.toString()) } + listOf(bksp()), bottom)
+            else listOf("1234567890".map { sym(it.toString()) }, "-/:;()$&@\"".map { sym(it.toString()) }, symRow3("#+="), bottom)
             "symbol-2" -> if (P.symbols == "android") listOf(listOf("~", "`", "|", "•", "√", "π", "÷", "×", "§", "Δ").map { ch(it) },
                 listOf("£", "¢", "€", "¥", "^", "°", "=", "{", "}", "\\").map { ch(it) },
                 listOf(mode("?123", 1.5f)) + listOf("%", "©", "®", "™", "✓", "[", "]").map { ch(it) } + listOf(bksp()), bottom)
