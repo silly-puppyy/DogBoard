@@ -13,6 +13,7 @@ pair keys (a<<32|b) with ln probs and back-offs, triple keys (a<<42|b<<21|c) wit
 import argparse
 import heapq
 import math
+import unicodedata
 import struct
 import sys
 
@@ -32,6 +33,9 @@ def main():
                          "English file was built with), or the largest relative-entropy loss if dropped (Stolcke: "
                          "P(context) x P(w|context) x (ln P(w|context) - its back-off estimate); keeps common pairs of "
                          "common contexts instead of one-off contexts' certain followers: French 'avons mangé' was cut)")
+    ap.add_argument("--keep-twins", type=int, default=0, metavar="N",
+                    help="also keep up to N pairs and N triples (beyond the limits) that reverse an accent twin's order "
+                         "(\"avons mangé\" over \"mange\": the unigram favours the other spelling, the context this one)")
     ap.add_argument("--legacy", action="store_true", help="the earlier float layout (DGN1); the app reads only DGN2")
     args = ap.parse_args()
     lex = {l.split("\t")[0].lower() for l in open(args.lexicon, encoding="utf-8") if not l.startswith("#")}
@@ -40,6 +44,16 @@ def main():
     vocab, uni_p, uni_b, ids = [], [], [], {}
     pairs, triples = [], []
     section = 0
+    # accent twins (same letters without marks): each word's best other spelling's unigram; pair probabilities of
+    # words with twins, kept while streaming for the triples' back-off estimates
+    twins, twin_best, twin_pairs = {}, {}, {}
+    kept_pairs, kept_triples = {}, {}
+
+    def strip(w):
+        return "".join(ch for ch in unicodedata.normalize("NFD", w) if unicodedata.category(ch) != "Mn")
+
+    def pair_est(b, w):
+        return twin_pairs.get((b, w), uni_b[b] + uni_p[w])
     with open(args.arpa, encoding="utf-8", errors="replace") as f:
         for raw in f:
             line = raw.strip()
@@ -60,7 +74,22 @@ def main():
             # keep only the most probable entries while streaming (min-heaps of the limits' size),
             # so a multi-GB ARPA converts in bounded memory
             elif section == 2:
+                if args.keep_twins and not twins:
+                    groups = {}
+                    for i, w in enumerate(vocab):
+                        groups.setdefault(strip(w), []).append(i)
+                    for g in groups.values():
+                        if len(g) > 1:
+                            for i in g:
+                                twins[i] = [j for j in g if j != i]
+                                twin_best[i] = max(uni_p[j] for j in twins[i])
+                    print(f"words with an accent twin: {len(twins)}", file=sys.stderr, flush=True)
                 a, b = ids.get(words[0]), ids.get(words[1])
+                if a is not None and b in twins:
+                    twin_pairs[(a, b)] = p
+                    # the context reverses the unigram order: kept whatever its rank
+                    if uni_p[b] < twin_best[b] and p > uni_b[a] + twin_best[b] and len(kept_pairs) < args.keep_twins:
+                        kept_pairs[(a << 32) | b] = (0.0, (a << 32) | b, bo, p)
                 if a is not None and b is not None:
                     r = p if args.rank == "conditional" else math.exp(uni_p[a] + p) * (p - (uni_b[a] + uni_p[b]))
                     e = (r, (a << 32) | b, bo, p)
@@ -68,6 +97,11 @@ def main():
                     elif r > pairs[0][0]: heapq.heapreplace(pairs, e)
             elif section == 3:
                 a, b, c = ids.get(words[0]), ids.get(words[1]), ids.get(words[2])
+                if a is not None and b is not None and c in twins and len(kept_triples) < args.keep_twins:
+                    est_t = max(pair_est(b, t) for t in twins[c])
+                    if pair_est(b, c) <= est_t < p:
+                        k = (a << 42) | (b << 21) | c
+                        kept_triples[k] = (0.0, k, p)
                 if a is not None and b is not None and c is not None:
                     # the context's probability approximated by its words' unigrams (the pairs' own are not at hand while
                     # streaming), the back-off estimate by the word's unigram
@@ -76,6 +110,13 @@ def main():
                     if len(triples) < args.max_triples: heapq.heappush(triples, e)
                     elif r > triples[0][0]: heapq.heapreplace(triples, e)
     print(f"kept vocab {len(vocab)}, top pairs {len(pairs)}, top triples {len(triples)}", file=sys.stderr)
+    if args.keep_twins:
+        have_p = {e[1] for e in pairs}; have_t = {e[1] for e in triples}
+        add_p = [e for k, e in kept_pairs.items() if k not in have_p]
+        add_t = [e for k, e in kept_triples.items() if k not in have_t]
+        print(f"twin-reversing pairs {len(kept_pairs)} ({len(add_p)} beyond the limit), triples {len(kept_triples)} "
+              f"({len(add_t)} beyond)", file=sys.stderr)
+        pairs += add_p; triples += add_t
     pairs = sorted(((k, p, bo) for _, k, bo, p in pairs), key=lambda e: e[0])
     triples = sorted(((k, p) for _, k, p in triples), key=lambda e: e[0])
     if not args.legacy:
