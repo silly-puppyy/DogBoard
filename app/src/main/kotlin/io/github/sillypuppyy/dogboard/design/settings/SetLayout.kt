@@ -1,5 +1,6 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
+import io.github.sillypuppyy.dogboard.ime.GeneratedLayouts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -316,26 +317,15 @@ private fun BottomRowCard(selected: Boolean, label: String, keys: List<Mk>, onPi
 }
 
 
-/** A letter layout the Layout page offers: its rows as drawn on the keys (tools/layouts/gen_layouts.py). */
+/** A letter layout the Layout page offers: its rows as drawn on the keys (GeneratedLayouts, tools/layouts/gen_layouts.py). */
 private class LetterLayout(val id: String, val name: String, val language: String, val rows: List<String>, val note: String? = null)
 
 private const val TAPS_ONLY = "Swipe typing reads QWERTY only for now, so this layout types by taps; autocorrect and suggestions work as usual."
 private const val ENGLISH_ONLY = "Suggestions and autocorrect are English-only for now, so they’re off with this layout; swipe typing too."
 
-private val LETTER_LAYOUTS = listOf(
-    LetterLayout("qwerty-en", "QWERTY", "English", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm")),
-    LetterLayout("dvorak-en", "Dvorak", "English", listOf("',.pyfgcrl", "aoeuidhtns", "qjkxbmwvz"), TAPS_ONLY),
-    LetterLayout("colemak-en", "Colemak", "English", listOf("qwfpgjluy;", "arstdhneio", "zxcvbkm"), TAPS_ONLY),
-    LetterLayout("qwertz-de", "QWERTZ", "German", listOf("qwertzuiopü", "asdfghjklöä", "yxcvbnmß"), ENGLISH_ONLY),
-    LetterLayout("azerty-fr", "AZERTY", "French", listOf("azertyuiop", "qsdfghjklm", "wxcvbn'"), ENGLISH_ONLY),
-    LetterLayout("qwerty-es", "QWERTY", "Spanish", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm"), TAPS_ONLY),
-    LetterLayout("qwerty-fi", "QWERTY", "Finnish", listOf("qwertyuiopå", "asdfghjklöä", "zxcvbnm"), TAPS_ONLY),
-    LetterLayout("jcuken-ru", "ЙЦУКЕН", "Russian", listOf("йцукенгшщзх", "фывапролджэ", "ячсмитьбю"), TAPS_ONLY),
-    // 2026-11-22 auto-built packs (tools/i18n/auto_pack.py); rows as gen_layouts.py writes them
-    LetterLayout("qwertz-cs", "QWERTZ", "Czech", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), TAPS_ONLY),
-    LetterLayout("standard-ka", "ქართული", "Georgian", listOf("ღჯუკენგშწზხც", "ფძვთაპროლდჟ", "ჭჩყსმიტქბჰ"), TAPS_ONLY),
-    LetterLayout("arabic-ar", "عربي", "Arabic", listOf("ضصثقفغعهخحجد", "شسيبلاتنمكطذ", "ئءؤرىةوزظ"), TAPS_ONLY),
-)
+private val LETTER_LAYOUTS = GeneratedLayouts.all.map { l ->
+    LetterLayout(l.id, l.name, l.languageName, l.rows, when (l.note) { "taps" -> TAPS_ONLY; "english" -> ENGLISH_ONLY; else -> null })
+}
 
 /** A layout's card: its letter rows as a small keyboard, its name and language; the chosen one outlined and ticked. */
 @Composable

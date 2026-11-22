@@ -17,11 +17,12 @@ import io.github.sillypuppyy.dogboard.design.settings.LangPack
 import io.github.sillypuppyy.dogboard.design.settings.LangRow
 import io.github.sillypuppyy.dogboard.design.settings.SetLanguages
 import io.github.sillypuppyy.dogboard.ime.LanguagePack
+import io.github.sillypuppyy.dogboard.ime.GeneratedLayouts
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** The letter layouts' names (tools/layouts/gen_layouts.py ids; SetLayout's cards). */
-private val LAYOUT_NAMES = mapOf("qwerty-en" to "QWERTY", "dvorak-en" to "Dvorak", "colemak-en" to "Colemak", "qwertz-de" to "QWERTZ", "azerty-fr" to "AZERTY", "qwerty-es" to "QWERTY (ñ)", "qwerty-fi" to "QWERTY (å ä ö)", "jcuken-ru" to "ЙЦУКЕН", "qwertz-cs" to "QWERTZ", "standard-ka" to "ქართული", "arabic-ar" to "عربي")
+/** The letter layouts' names (tools/layouts/gen_layouts.py; SetLayout's cards). */
+private val LAYOUT_NAMES = GeneratedLayouts.all.associate { it.id to it.label }
 
 /** Settings › Languages, live (DogBoard's page in place of FlorisBoard's subtypes page; user 2026-11-19). */
 @Composable
