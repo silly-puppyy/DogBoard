@@ -41,11 +41,11 @@ def encode_folded(ids, cap, syms):
     out, k = [], -1
     for t in ids:
         if starts[t]:
-            if 0 <= k < len(syms) and syms[k]: out.append(sym_ids[syms[k]])
+            if 0 <= k < len(syms): out.extend(sym_ids[x] for x in syms[k])
             k += 1
             if k < len(cap) and cap[k]: out.append(caps.CAP)
         out.append(t)
-    if 0 <= k < len(syms) and syms[k]: out.append(sym_ids[syms[k]])
+    if 0 <= k < len(syms): out.extend(sym_ids[x] for x in syms[k])
     return out
 
 

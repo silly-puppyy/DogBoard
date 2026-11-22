@@ -10,11 +10,28 @@ The sp16k tokenizer split them into fragments shared with everything else ("cat'
               (Penn style: "won't" = wo <n't>, "can't" = ca <n't>; the text is the pieces joined, so it is exact).
   T2 (possessive): as T1, but 's and s' are one <poss> token, written ' after a word ending in s, else 's ("cats'",
               "cat's"; "James's" comes back as "James'": the one lossy case, rare).
+  T3 (plural):  T2 plus <pl>: a noun's main plural (tools/data/build_plurals.py, AGID; never an add-s rule) is its
+              singular + <pl>: "cats" = cat <pl>, "skies" = sky <pl>, "children's" = child <pl> <poss>. Nouns with
+              no table entry (fish, sheep, news) stay whole words.
 Only ASCII and ’ apostrophes; a word that is all clitic ("'s") is left alone."""
 import re
 
 SYMBOLS = {'T1': ["<'s>", "<s'>", "<n't>", "<'re>", "<'ve>", "<'ll>", "<'d>", "<'m>"],
-           'T2': ["<poss>", "<n't>", "<'re>", "<'ve>", "<'ll>", "<'d>", "<'m>"]}
+           'T2': ["<poss>", "<n't>", "<'re>", "<'ve>", "<'ll>", "<'d>", "<'m>"],
+           'T3': ["<poss>", "<n't>", "<'re>", "<'ve>", "<'ll>", "<'d>", "<'m>", "<pl>"]}
+PLURALS = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/agid/en-plurals.tsv'
+_plural_of, _singular_of = {}, {}
+
+
+def _load_plurals():
+    """singular -> main plural and back, from the table (main plural = the first form)."""
+    if _plural_of: return
+    for line in open(PLURALS, encoding='utf-8'):
+        if line.startswith('#'): continue
+        f = line.rstrip('\n').split('\t')
+        _plural_of[f[0]] = f[1]
+    for sg, pl in _plural_of.items():
+        _singular_of.setdefault(pl, sg)  # "data" <- datum; a plural two nouns share keeps the first
 FIRST_ID = 5  # after <pad> <s> </s> <unk> <cap>: user-defined symbols take ids in order
 _CLITIC = re.compile(r"^(.*?[a-z0-9])(n't|'s|'re|'ve|'ll|'d|'m|')$")
 
@@ -24,6 +41,17 @@ def symbols(variant):
 
 
 def split(word, variant):
+    """(stem, symbols) for one lowercased word: its clitic and, in T3, a plural, in writing order."""
+    stem, sym = _split_clitic(word, variant)
+    syms = [sym] if sym else []
+    if variant == 'T3':
+        _load_plurals()
+        sg = _singular_of.get(stem)
+        if sg is not None: stem, syms = sg, ['<pl>'] + syms
+    return stem, syms
+
+
+def _split_clitic(word, variant):
     """(stem, clitic symbol or None) for one lowercased word."""
     w = word.replace('’', "'")
     m = _CLITIC.match(w)
@@ -40,7 +68,7 @@ def split(word, variant):
 
 
 def fold(text, variant):
-    """(text with clitics cut off, per-word symbol or None) for a caps-folded line."""
+    """(text with clitics cut off, per-word list of symbols) for a caps-folded line."""
     words, syms = [], []
     for w in text.split():
         s, c = split(w, variant)
@@ -48,20 +76,13 @@ def fold(text, variant):
     return ' '.join(words), syms
 
 
-def with_clitics(ids, syms, sp, sym_ids, starts):
-    """Insert each word's clitic id after its last piece (before the next word's first piece)."""
-    out, k = [], -1
-    for t in ids:
-        if starts[t]:
-            if 0 <= k < len(syms) and syms[k]: out.append(sym_ids[syms[k]])
-            k += 1
-        out.append(t)
-    if 0 <= k < len(syms) and syms[k]: out.append(sym_ids[syms[k]])
-    return out
-
-
-def render(word, sym):
-    """The text of a word and its clitic (T2's <poss>: ' after a word ending in s, else 's)."""
-    if sym == '<poss>': return word + ("'" if word.endswith('s') else "'s")
-    if sym == "<s'>": return word + "'"
-    return word + sym[1:-1]
+def render(word, syms):
+    """The text of a word and its symbols in order (<pl>: the table's main plural; <poss>: ' after a word ending in
+    s, else 's)."""
+    if isinstance(syms, str): syms = [syms]
+    for sym in syms or []:
+        if sym == '<pl>': _load_plurals(); word = _plural_of[word]
+        elif sym == '<poss>': word += "'" if word.endswith('s') else "'s"
+        elif sym == "<s'>": word += "'"
+        else: word += sym[1:-1]
+    return word
