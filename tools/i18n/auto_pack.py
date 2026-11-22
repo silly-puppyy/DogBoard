@@ -228,7 +228,7 @@ class Pack:
     def tests(self):
         if glob.glob(self.p(f'{self.lang}-typos.tsv')): return
         rows = json.load(open(self.p('rules.json')))['letter_rows']['rows']
-        env = dict(os.environ, SIM_ROWS=','.join(rows), SIM_PREFIX=self.lang)
+        env = dict(os.environ, SIM_ROWS=','.join(rows), SIM_PREFIX=self.lang, SIM_LETTERS=''.join(c for c in letters_of(self.lang) if c.islower() or not c.isupper()))
         sh([sys.executable, f'{PREDBENCH}/make_es_sets.py', self.p(f'{self.lang}.heldout.txt'), self.p(f'{self.lang}.lexicon.tsv'),
             f'{PREDBENCH}/typo_model7.json', self.dir, str(self.n)], env=env, cwd=PREDBENCH)
 

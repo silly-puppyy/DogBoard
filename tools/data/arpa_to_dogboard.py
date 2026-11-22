@@ -47,6 +47,7 @@ def main():
     # accent twins (same letters without marks): each word's best other spelling's unigram; pair probabilities of
     # words with twins, kept while streaming for the triples' back-off estimates
     twins, twin_best, twin_pairs = {}, {}, {}
+    twins_built = False
     kept_pairs, kept_triples = {}, {}
 
     def strip(w):
@@ -74,7 +75,8 @@ def main():
             # keep only the most probable entries while streaming (min-heaps of the limits' size),
             # so a multi-GB ARPA converts in bounded memory
             elif section == 2:
-                if args.keep_twins and not twins:
+                if args.keep_twins and not twins_built:  # once (a language with no twins, Georgian, rebuilt it per line)
+                    twins_built = True
                     groups = {}
                     for i, w in enumerate(vocab):
                         groups.setdefault(strip(w), []).append(i)
