@@ -208,6 +208,7 @@
         <key id="L" output="L" />
         <key id="i" output="i" longPressKeyIds="i-alt0" longPressDefaultKeyId="i-alt0" />
         <key id="i-alt0" output="ı" />
+        <key id="U0130" output="İ" />
         <key id="z" output="z" />
         <key id="Z" output="Z" />
         <key id="x" output="x" />
@@ -262,7 +263,7 @@
 
         <layer id="shift">
             <row keys="Q W E R T Y U I O P" />
-            <row keys="A S D F G H J K L I" />
+            <row keys="A S D F G H J K L U0130" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
@@ -304,7 +305,7 @@
 
         <layer id="shift-email">
             <row keys="Q W E R T Y U I O P" />
-            <row keys="A S D F G H J K L I" />
+            <row keys="A S D F G H J K L U0130" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
@@ -318,7 +319,7 @@
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P" />
-            <row keys="A S D F G H J K L I" />
+            <row keys="A S D F G H J K L U0130" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
@@ -332,7 +333,7 @@
 
         <layer id="shift-classic">
             <row keys="Q W E R T Y U I O P" />
-            <row keys="A S D F G H J K L I" />
+            <row keys="A S D F G H J K L U0130" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
@@ -346,7 +347,7 @@
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Y U I O P" />
-            <row keys="A S D F G H J K L I" />
+            <row keys="A S D F G H J K L U0130" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
@@ -360,7 +361,7 @@
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Y U I O P" />
-            <row keys="A S D F G H J K L I" />
+            <row keys="A S D F G H J K L U0130" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>

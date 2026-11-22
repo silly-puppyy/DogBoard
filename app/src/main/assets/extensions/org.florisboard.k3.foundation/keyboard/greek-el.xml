@@ -155,7 +155,6 @@
 
         <!-- Letters -->
         <key id="u03c2" output="ς" />
-        <key id="U03a3" output="Σ" />
         <key id="u03b5" output="ε" longPressKeyIds="u03b5-alt0" longPressDefaultKeyId="u03b5-alt0" />
         <key id="u03b5-alt0" output="έ" />
         <key id="U0395" output="Ε" longPressKeyIds="U0395-alt0" longPressDefaultKeyId="U0395-alt0" />
@@ -187,6 +186,7 @@
         <key id="U0391" output="Α" longPressKeyIds="U0391-alt0" longPressDefaultKeyId="U0391-alt0" />
         <key id="U0391-alt0" output="Ά" />
         <key id="u03c3" output="σ" />
+        <key id="U03a3" output="Σ" />
         <key id="u03b4" output="δ" />
         <key id="U0394" output="Δ" />
         <key id="u03c6" output="φ" />
@@ -258,7 +258,7 @@
         </layer>
 
         <layer id="shift">
-            <row keys="gap1-greek-el U03a3 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
+            <row keys="gap1-greek-el u03c2 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
             <row keys="gap2-greek-el U0391 U03a3 U0394 U03a6 U0393 U0397 U039e U039a U039b gap2-greek-el" />
             <row keys="shift-to-base U0396 U03a7 U03a8 U03a9 U0392 U039d U039c bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
@@ -300,7 +300,7 @@
         </layer>
 
         <layer id="shift-email">
-            <row keys="gap1-greek-el U03a3 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
+            <row keys="gap1-greek-el u03c2 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
             <row keys="gap2-greek-el U0391 U03a3 U0394 U03a6 U0393 U0397 U039e U039a U039b gap2-greek-el" />
             <row keys="shift-to-base U0396 U03a7 U03a8 U03a9 U0392 U039d U039c bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
@@ -314,7 +314,7 @@
         </layer>
 
         <layer id="shift-url">
-            <row keys="gap1-greek-el U03a3 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
+            <row keys="gap1-greek-el u03c2 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
             <row keys="gap2-greek-el U0391 U03a3 U0394 U03a6 U0393 U0397 U039e U039a U039b gap2-greek-el" />
             <row keys="shift-to-base U0396 U03a7 U03a8 U03a9 U0392 U039d U039c bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
@@ -328,7 +328,7 @@
         </layer>
 
         <layer id="shift-classic">
-            <row keys="gap1-greek-el U03a3 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
+            <row keys="gap1-greek-el u03c2 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
             <row keys="gap2-greek-el U0391 U03a3 U0394 U03a6 U0393 U0397 U039e U039a U039b gap2-greek-el" />
             <row keys="shift-to-base U0396 U03a7 U03a8 U03a9 U0392 U039d U039c bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -342,7 +342,7 @@
         </layer>
 
         <layer id="shift-classic-email">
-            <row keys="gap1-greek-el U03a3 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
+            <row keys="gap1-greek-el u03c2 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
             <row keys="gap2-greek-el U0391 U03a3 U0394 U03a6 U0393 U0397 U039e U039a U039b gap2-greek-el" />
             <row keys="shift-to-base U0396 U03a7 U03a8 U03a9 U0392 U039d U039c bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -356,7 +356,7 @@
         </layer>
 
         <layer id="shift-classic-url">
-            <row keys="gap1-greek-el U03a3 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
+            <row keys="gap1-greek-el u03c2 U0395 U03a1 U03a4 U03a5 U0398 U0399 U039f U03a0 gap1-greek-el" />
             <row keys="gap2-greek-el U0391 U03a3 U0394 U03a6 U0393 U0397 U039e U039a U039b gap2-greek-el" />
             <row keys="shift-to-base U0396 U03a7 U03a8 U03a9 U0392 U039d U039c bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />

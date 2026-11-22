@@ -217,6 +217,7 @@
         <key id="i" output="i" width="0.8333" longPressKeyIds="i-alt0 i-alt1" longPressDefaultKeyId="i-alt0" />
         <key id="i-alt0" output="ı" />
         <key id="i-alt1" output="î" />
+        <key id="U0130" output="İ" width="0.8333" />
         <key id="z" output="z" width="0.8333" />
         <key id="Z" output="Z" width="0.8333" />
         <key id="x" output="x" width="0.8333" />
@@ -281,7 +282,7 @@
 
         <layer id="shift">
             <row keys="Q W E R T Y U I O P U011e U00dc" />
-            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e I gap2-turkish-q-kiu" />
+            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e U0130 gap2-turkish-q-kiu" />
             <row keys="shift-to-base-narrow-turkish-q-kiu Z X C V B N M U00d6 U00c7 bksp-narrow-turkish-q-kiu" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
@@ -323,7 +324,7 @@
 
         <layer id="shift-email">
             <row keys="Q W E R T Y U I O P U011e U00dc" />
-            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e I gap2-turkish-q-kiu" />
+            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e U0130 gap2-turkish-q-kiu" />
             <row keys="shift-to-base-narrow-turkish-q-kiu Z X C V B N M U00d6 U00c7 bksp-narrow-turkish-q-kiu" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
@@ -337,7 +338,7 @@
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P U011e U00dc" />
-            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e I gap2-turkish-q-kiu" />
+            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e U0130 gap2-turkish-q-kiu" />
             <row keys="shift-to-base-narrow-turkish-q-kiu Z X C V B N M U00d6 U00c7 bksp-narrow-turkish-q-kiu" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
@@ -351,7 +352,7 @@
 
         <layer id="shift-classic">
             <row keys="Q W E R T Y U I O P U011e U00dc" />
-            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e I gap2-turkish-q-kiu" />
+            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e U0130 gap2-turkish-q-kiu" />
             <row keys="shift-to-base-narrow-turkish-q-kiu Z X C V B N M U00d6 U00c7 bksp-narrow-turkish-q-kiu" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
@@ -365,7 +366,7 @@
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Y U I O P U011e U00dc" />
-            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e I gap2-turkish-q-kiu" />
+            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e U0130 gap2-turkish-q-kiu" />
             <row keys="shift-to-base-narrow-turkish-q-kiu Z X C V B N M U00d6 U00c7 bksp-narrow-turkish-q-kiu" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
@@ -379,7 +380,7 @@
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Y U I O P U011e U00dc" />
-            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e I gap2-turkish-q-kiu" />
+            <row keys="gap2-turkish-q-kiu A S D F G H J K L U015e U0130 gap2-turkish-q-kiu" />
             <row keys="shift-to-base-narrow-turkish-q-kiu Z X C V B N M U00d6 U00c7 bksp-narrow-turkish-q-kiu" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>

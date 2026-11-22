@@ -189,13 +189,7 @@
         <key id="i-alt3" output="í" />
         <key id="i-alt4" output="į" />
         <key id="i-alt5" output="ī" />
-        <key id="I" output="I" width="0.8333" longPressKeyIds="I-alt0 I-alt1 I-alt2 I-alt3 I-alt4 I-alt5" longPressDefaultKeyId="I-alt0" />
-        <key id="I-alt0" output="Î" />
-        <key id="I-alt1" output="Ï" />
-        <key id="I-alt2" output="Ì" />
-        <key id="I-alt3" output="Í" />
-        <key id="I-alt4" output="Į" />
-        <key id="I-alt5" output="Ī" />
+        <key id="U0130" output="İ" width="0.8333" />
         <key id="o" output="o" width="0.8333" longPressKeyIds="o-alt0 o-alt1 o-alt2 o-alt3 o-alt4 o-alt5 o-alt6" longPressDefaultKeyId="o-alt0" />
         <key id="o-alt0" output="ô" />
         <key id="o-alt1" output="œ" />
@@ -246,6 +240,13 @@
         <key id="l" output="l" width="0.8333" />
         <key id="L" output="L" width="0.8333" />
         <key id="u0131" output="ı" width="0.8333" />
+        <key id="I" output="I" width="0.8333" longPressKeyIds="I-alt0 I-alt1 I-alt2 I-alt3 I-alt4 I-alt5" longPressDefaultKeyId="I-alt0" />
+        <key id="I-alt0" output="Î" />
+        <key id="I-alt1" output="Ï" />
+        <key id="I-alt2" output="Ì" />
+        <key id="I-alt3" output="Í" />
+        <key id="I-alt4" output="Į" />
+        <key id="I-alt5" output="Ī" />
         <key id="u0259" output="ə" width="0.8333" />
         <key id="U018f" output="Ə" width="0.8333" />
         <key id="z" output="z" width="0.8333" longPressKeyIds="z-alt0" longPressDefaultKeyId="z-alt0" />
@@ -317,7 +318,7 @@
         </layer>
 
         <layer id="shift">
-            <row keys="Q U00dc E R T Y U I O P U00d6 U011e" />
+            <row keys="Q U00dc E R T Y U U0130 O P U00d6 U011e" />
             <row keys="gap2-querty-az A S D F G H J K L I U018f gap2-querty-az" />
             <row keys="shift-to-base-narrow-querty-az Z X C V B N M U00c7 U015e bksp-narrow-querty-az" />
             <row keys="to-symbol-1 fn-key space enter" />
@@ -359,7 +360,7 @@
         </layer>
 
         <layer id="shift-email">
-            <row keys="Q U00dc E R T Y U I O P U00d6 U011e" />
+            <row keys="Q U00dc E R T Y U U0130 O P U00d6 U011e" />
             <row keys="gap2-querty-az A S D F G H J K L I U018f gap2-querty-az" />
             <row keys="shift-to-base-narrow-querty-az Z X C V B N M U00c7 U015e bksp-narrow-querty-az" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
@@ -373,7 +374,7 @@
         </layer>
 
         <layer id="shift-url">
-            <row keys="Q U00dc E R T Y U I O P U00d6 U011e" />
+            <row keys="Q U00dc E R T Y U U0130 O P U00d6 U011e" />
             <row keys="gap2-querty-az A S D F G H J K L I U018f gap2-querty-az" />
             <row keys="shift-to-base-narrow-querty-az Z X C V B N M U00c7 U015e bksp-narrow-querty-az" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
@@ -387,7 +388,7 @@
         </layer>
 
         <layer id="shift-classic">
-            <row keys="Q U00dc E R T Y U I O P U00d6 U011e" />
+            <row keys="Q U00dc E R T Y U U0130 O P U00d6 U011e" />
             <row keys="gap2-querty-az A S D F G H J K L I U018f gap2-querty-az" />
             <row keys="shift-to-base-narrow-querty-az Z X C V B N M U00c7 U015e bksp-narrow-querty-az" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -401,7 +402,7 @@
         </layer>
 
         <layer id="shift-classic-email">
-            <row keys="Q U00dc E R T Y U I O P U00d6 U011e" />
+            <row keys="Q U00dc E R T Y U U0130 O P U00d6 U011e" />
             <row keys="gap2-querty-az A S D F G H J K L I U018f gap2-querty-az" />
             <row keys="shift-to-base-narrow-querty-az Z X C V B N M U00c7 U015e bksp-narrow-querty-az" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -415,7 +416,7 @@
         </layer>
 
         <layer id="shift-classic-url">
-            <row keys="Q U00dc E R T Y U I O P U00d6 U011e" />
+            <row keys="Q U00dc E R T Y U U0130 O P U00d6 U011e" />
             <row keys="gap2-querty-az A S D F G H J K L I U018f gap2-querty-az" />
             <row keys="shift-to-base-narrow-querty-az Z X C V B N M U00c7 U015e bksp-narrow-querty-az" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />

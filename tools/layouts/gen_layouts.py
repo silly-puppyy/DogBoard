@@ -574,6 +574,16 @@ def all_layouts() -> list[Layout]:
                      note="taps" if base in PACKS else "nodict")
         if base == "ka":
             lay = no_capitals(lay)
+        # Turkic dotted / dotless i (Turkish, Azerbaijani, Kirmanjki...): i -> İ, ı -> I (str.upper gave I for both)
+        letters = {c for r in rows for c in r}
+        if "ı" in letters and "i" in letters:
+            lay.uppers.setdefault("i", "İ")
+            lay.uppers.setdefault("ı", "I")
+        # a letter with no capital of its own (Greek final ς: its capital Σ is σ's) stays itself on shift, or the
+        # shifted layer showed Σ twice
+        for c in (c for r in rows for c in r):
+            if len(c.upper()) == 1 and c.upper() != c and c.upper().lower() != c:
+                lay.uppers.setdefault(c, c)
         out.append(lay)
 
     for base, tag in sorted(tags.items()):

@@ -176,8 +176,7 @@
         <key id="U-alt0" output="Ü" />
         <key id="i" output="i" width="0.909" longPressKeyIds="i-alt0" longPressDefaultKeyId="i-alt0" />
         <key id="i-alt0" output="ı" />
-        <key id="I" output="I" width="0.909" longPressKeyIds="I-alt0" longPressDefaultKeyId="I-alt0" />
-        <key id="I-alt0" output="I" />
+        <key id="U0130" output="İ" width="0.909" />
         <key id="o" output="o" width="0.909" longPressKeyIds="o-alt0" longPressDefaultKeyId="o-alt0" />
         <key id="o-alt0" output="ö" />
         <key id="O" output="O" width="0.909" longPressKeyIds="O-alt0" longPressDefaultKeyId="O-alt0" />
@@ -209,6 +208,8 @@
         <key id="l" output="l" width="0.909" />
         <key id="L" output="L" width="0.909" />
         <key id="u0131" output="ı" width="0.909" />
+        <key id="I" output="I" width="0.909" longPressKeyIds="I-alt0" longPressDefaultKeyId="I-alt0" />
+        <key id="I-alt0" output="I" />
         <key id="z" output="z" width="0.8888" />
         <key id="Z" output="Z" width="0.8888" />
         <key id="x" output="x" width="0.8888" />
@@ -270,7 +271,7 @@
         </layer>
 
         <layer id="shift">
-            <row keys="Q U018f E R T Y U I O P U011e" />
+            <row keys="Q U018f E R T Y U U0130 O P U011e" />
             <row keys="gap2-talysh-tly A S D F G H J K L I gap2-talysh-tly" />
             <row keys="shift-to-base-narrow-talysh-tly Z X C V B N M U00c7 U015e bksp-narrow-talysh-tly" />
             <row keys="to-symbol-1 fn-key space enter" />
@@ -312,7 +313,7 @@
         </layer>
 
         <layer id="shift-email">
-            <row keys="Q U018f E R T Y U I O P U011e" />
+            <row keys="Q U018f E R T Y U U0130 O P U011e" />
             <row keys="gap2-talysh-tly A S D F G H J K L I gap2-talysh-tly" />
             <row keys="shift-to-base-narrow-talysh-tly Z X C V B N M U00c7 U015e bksp-narrow-talysh-tly" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
@@ -326,7 +327,7 @@
         </layer>
 
         <layer id="shift-url">
-            <row keys="Q U018f E R T Y U I O P U011e" />
+            <row keys="Q U018f E R T Y U U0130 O P U011e" />
             <row keys="gap2-talysh-tly A S D F G H J K L I gap2-talysh-tly" />
             <row keys="shift-to-base-narrow-talysh-tly Z X C V B N M U00c7 U015e bksp-narrow-talysh-tly" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
@@ -340,7 +341,7 @@
         </layer>
 
         <layer id="shift-classic">
-            <row keys="Q U018f E R T Y U I O P U011e" />
+            <row keys="Q U018f E R T Y U U0130 O P U011e" />
             <row keys="gap2-talysh-tly A S D F G H J K L I gap2-talysh-tly" />
             <row keys="shift-to-base-narrow-talysh-tly Z X C V B N M U00c7 U015e bksp-narrow-talysh-tly" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -354,7 +355,7 @@
         </layer>
 
         <layer id="shift-classic-email">
-            <row keys="Q U018f E R T Y U I O P U011e" />
+            <row keys="Q U018f E R T Y U U0130 O P U011e" />
             <row keys="gap2-talysh-tly A S D F G H J K L I gap2-talysh-tly" />
             <row keys="shift-to-base-narrow-talysh-tly Z X C V B N M U00c7 U015e bksp-narrow-talysh-tly" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -368,7 +369,7 @@
         </layer>
 
         <layer id="shift-classic-url">
-            <row keys="Q U018f E R T Y U I O P U011e" />
+            <row keys="Q U018f E R T Y U U0130 O P U011e" />
             <row keys="gap2-talysh-tly A S D F G H J K L I gap2-talysh-tly" />
             <row keys="shift-to-base-narrow-talysh-tly Z X C V B N M U00c7 U015e bksp-narrow-talysh-tly" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
