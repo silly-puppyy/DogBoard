@@ -341,7 +341,19 @@ class NgramModel private constructor(
  * own probability.
  */
 class NgramScorer(private val model: NgramModel, private val lexicon: Lexicon, private val sentenceStart: Int) : Decoder.ContextScorer {
-    private val lexToModel = IntArray(lexicon.size) { id -> lexicon.word(lexicon.nodeOfWord(id))?.let { model.idOf(it.lowercase()) } ?: -1 }
+    // lexicon word id -> the model's id of its spelling. Built from the model's side: asking the lexicon for all its
+    // words' text filled its word cache for good (Russian, 1.4M words: 97 MB of heap, 2026-11-22). Each model word is
+    // found in the trie (no text made); a word several model spellings reach (accent twins: "esta", "está") takes its
+    // representative spelling, as before.
+    private val lexToModel = IntArray(lexicon.size) { -1 }.also { table ->
+        val shared = BooleanArray(lexicon.size)
+        for (m in 0 until model.vocabSize) {
+            val id = lexicon.idOf(model.word(m))
+            if (id < 0 || id >= table.size) continue
+            if (table[id] == -1 && !shared[id]) table[id] = m else shared[id] = true
+        }
+        for (id in table.indices) if (shared[id]) table[id] = lexicon.word(lexicon.nodeOfWord(id))?.let { model.idOf(it.lowercase()) } ?: -1
+    }
     private val start = model.idOf(NgramModel.START)
 
     /**
