@@ -15,7 +15,7 @@ import org.k3lp.lib.text.K3String
  */
 object LiveKb {
     /**
-     * The layout's three letter rows as the touch layout defines them (keys, widths, gaps, shift and
+     * The layout's letter rows (three, or four: Pashto, Armenian) as the touch layout defines them (keys, widths, gaps, shift and
      * delete), for [KbProps.letterRows]: what is drawn is what is hit, for every layout. Rows narrower
      * than the widest are centred, as the touch layout centres them. Null when the layout has no
      * letter planes or a key the drawing doesn't know (the English rows are drawn then).
@@ -25,7 +25,8 @@ object LiveKb {
         val base = layers[dev.patrickgold.florisboard.ime.keyboard3.ImeLayerIds.Base]?.rows ?: return null
         val shift = layers[dev.patrickgold.florisboard.ime.keyboard3.ImeLayerIds.Shift]?.rows
         if (base.size < 4) return null
-        val rows = base.take(3).mapIndexed { i, row ->
+        // every row of the base layer but the bottom one (take(3) dropped a fourth letter row: drawn 5 dp off)
+        val rows = base.dropLast(1).mapIndexed { i, row ->
             row.mapIndexed { j, id ->
                 val key = model.keys.byKeyId[id] ?: return null
                 val w = key.width.toFloat()

@@ -596,8 +596,9 @@ object KbSpec {
         val units = spec[0].sumOf { it.w.toDouble() }.toFloat()
         val u = kbW / units
         val rowH = keyAreaH / spec.size
-        // with the number row, Gboard's row heights (Geometry.rowWeights); else equal rows
-        val weights = io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(spec.size, numRow == "on" && plane == "base" && !landscape && spec.size > 4)
+        // with the number row, Gboard's row heights (Geometry.rowWeights); else equal rows. The number row is there when
+        // there are more rows than letter rows + the bottom row (spec.size > 4 took Pashto's four letter rows for one)
+        val weights = io.github.sillypuppyy.dogboard.feel.Geometry.rowWeights(spec.size, numRow == "on" && plane == "base" && !landscape && spec.size > letterRows.size + 1)
         val rowHs = weights.map { it / weights.sum() * keyAreaH }
         val rowTops = rowHs.runningFold(0f) { acc, h -> acc + h }.dropLast(1)
 

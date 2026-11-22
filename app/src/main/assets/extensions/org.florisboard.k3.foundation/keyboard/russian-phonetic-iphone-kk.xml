@@ -158,58 +158,40 @@
         <key id="U042f" output="Я" width="0.909" />
         <key id="u0448" output="ш" width="0.909" />
         <key id="U0428" output="Ш" width="0.909" />
-        <key id="u0435" output="е" width="0.909" longPressKeyIds="u0435-alt0" longPressDefaultKeyId="u0435-alt0" />
-        <key id="u0435-alt0" output="ё" />
-        <key id="U0415" output="Е" width="0.909" longPressKeyIds="U0415-alt0" longPressDefaultKeyId="U0415-alt0" />
-        <key id="U0415-alt0" output="Ё" />
+        <key id="u0435" output="е" width="0.909" />
+        <key id="U0415" output="Е" width="0.909" />
         <key id="u0440" output="р" width="0.909" />
         <key id="U0420" output="Р" width="0.909" />
         <key id="u0442" output="т" width="0.909" />
         <key id="U0422" output="Т" width="0.909" />
-        <key id="u044b" output="ы" width="0.909" longPressKeyIds="u044b-alt0" longPressDefaultKeyId="u044b-alt0" />
-        <key id="u044b-alt0" output="і" />
-        <key id="U042b" output="Ы" width="0.909" longPressKeyIds="U042b-alt0" longPressDefaultKeyId="U042b-alt0" />
-        <key id="U042b-alt0" output="І" />
-        <key id="u0443" output="у" width="0.909" longPressKeyIds="u0443-alt0 u0443-alt1" longPressDefaultKeyId="u0443-alt0" />
-        <key id="u0443-alt0" output="ү" />
-        <key id="u0443-alt1" output="ұ" />
-        <key id="U0423" output="У" width="0.909" longPressKeyIds="U0423-alt0 U0423-alt1" longPressDefaultKeyId="U0423-alt0" />
-        <key id="U0423-alt0" output="Ү" />
-        <key id="U0423-alt1" output="Ұ" />
+        <key id="u044b" output="ы" width="0.909" />
+        <key id="U042b" output="Ы" width="0.909" />
+        <key id="u0443" output="у" width="0.909" />
+        <key id="U0423" output="У" width="0.909" />
         <key id="u0438" output="и" width="0.909" />
         <key id="U0418" output="И" width="0.909" />
-        <key id="u043e" output="о" width="0.909" longPressKeyIds="u043e-alt0" longPressDefaultKeyId="u043e-alt0" />
-        <key id="u043e-alt0" output="ө" />
-        <key id="U041e" output="О" width="0.909" longPressKeyIds="U041e-alt0" longPressDefaultKeyId="U041e-alt0" />
-        <key id="U041e-alt0" output="Ө" />
+        <key id="u043e" output="о" width="0.909" />
+        <key id="U041e" output="О" width="0.909" />
         <key id="u043f" output="п" width="0.909" />
         <key id="U041f" output="П" width="0.909" />
-        <key id="u044d" output="э" width="0.909" longPressKeyIds="u044d-alt0" longPressDefaultKeyId="u044d-alt0" />
-        <key id="u044d-alt0" output="һ" />
-        <key id="U042d" output="Э" width="0.909" longPressKeyIds="U042d-alt0" longPressDefaultKeyId="U042d-alt0" />
-        <key id="U042d-alt0" output="Һ" />
-        <key id="u0430" output="а" width="0.909" longPressKeyIds="u0430-alt0" longPressDefaultKeyId="u0430-alt0" />
-        <key id="u0430-alt0" output="ә" />
-        <key id="U0410" output="А" width="0.909" longPressKeyIds="U0410-alt0" longPressDefaultKeyId="U0410-alt0" />
-        <key id="U0410-alt0" output="Ә" />
+        <key id="u044d" output="э" width="0.909" />
+        <key id="U042d" output="Э" width="0.909" />
+        <key id="u0430" output="а" width="0.909" />
+        <key id="U0410" output="А" width="0.909" />
         <key id="u0441" output="с" width="0.909" />
         <key id="U0421" output="С" width="0.909" />
         <key id="u0434" output="д" width="0.909" />
         <key id="U0414" output="Д" width="0.909" />
         <key id="u0444" output="ф" width="0.909" />
         <key id="U0424" output="Ф" width="0.909" />
-        <key id="u0433" output="г" width="0.909" longPressKeyIds="u0433-alt0" longPressDefaultKeyId="u0433-alt0" />
-        <key id="u0433-alt0" output="ғ" />
-        <key id="U0413" output="Г" width="0.909" longPressKeyIds="U0413-alt0" longPressDefaultKeyId="U0413-alt0" />
-        <key id="U0413-alt0" output="Ғ" />
+        <key id="u0433" output="г" width="0.909" />
+        <key id="U0413" output="Г" width="0.909" />
         <key id="u0447" output="ч" width="0.909" />
         <key id="U0427" output="Ч" width="0.909" />
         <key id="u0439" output="й" width="0.909" />
         <key id="U0419" output="Й" width="0.909" />
-        <key id="u043a" output="к" width="0.909" longPressKeyIds="u043a-alt0" longPressDefaultKeyId="u043a-alt0" />
-        <key id="u043a-alt0" output="қ" />
-        <key id="U041a" output="К" width="0.909" longPressKeyIds="U041a-alt0" longPressDefaultKeyId="U041a-alt0" />
-        <key id="U041a-alt0" output="Қ" />
+        <key id="u043a" output="к" width="0.909" />
+        <key id="U041a" output="К" width="0.909" />
         <key id="u043b" output="л" width="0.909" />
         <key id="U041b" output="Л" width="0.909" />
         <key id="u0436" output="ж" width="0.909" />
@@ -218,26 +200,20 @@
         <key id="U0429" output="Щ" width="0.909" />
         <key id="u0437" output="з" width="0.8888" />
         <key id="U0417" output="З" width="0.8888" />
-        <key id="u0445" output="х" width="0.8888" longPressKeyIds="u0445-alt0" longPressDefaultKeyId="u0445-alt0" />
-        <key id="u0445-alt0" output="һ" />
-        <key id="U0425" output="Х" width="0.8888" longPressKeyIds="U0425-alt0" longPressDefaultKeyId="U0425-alt0" />
-        <key id="U0425-alt0" output="Һ" />
+        <key id="u0445" output="х" width="0.8888" />
+        <key id="U0425" output="Х" width="0.8888" />
         <key id="u0446" output="ц" width="0.8888" />
         <key id="U0426" output="Ц" width="0.8888" />
         <key id="u0432" output="в" width="0.8888" />
         <key id="U0412" output="В" width="0.8888" />
         <key id="u0431" output="б" width="0.8888" />
         <key id="U0411" output="Б" width="0.8888" />
-        <key id="u043d" output="н" width="0.8888" longPressKeyIds="u043d-alt0" longPressDefaultKeyId="u043d-alt0" />
-        <key id="u043d-alt0" output="ң" />
-        <key id="U041d" output="Н" width="0.8888" longPressKeyIds="U041d-alt0" longPressDefaultKeyId="U041d-alt0" />
-        <key id="U041d-alt0" output="Ң" />
+        <key id="u043d" output="н" width="0.8888" />
+        <key id="U041d" output="Н" width="0.8888" />
         <key id="u043c" output="м" width="0.8888" />
         <key id="U041c" output="М" width="0.8888" />
-        <key id="u044c" output="ь" width="0.8888" longPressKeyIds="u044c-alt0" longPressDefaultKeyId="u044c-alt0" />
-        <key id="u044c-alt0" output="ъ" />
-        <key id="U042c" output="Ь" width="0.8888" longPressKeyIds="U042c-alt0" longPressDefaultKeyId="U042c-alt0" />
-        <key id="U042c-alt0" output="Ъ" />
+        <key id="u044c" output="ь" width="0.8888" />
+        <key id="U042c" output="Ь" width="0.8888" />
         <key id="u044e" output="ю" width="0.8888" />
         <key id="U042e" output="Ю" width="0.8888" />
         <key id="base-to-shift-narrow-russian-phonetic-iphone-kk" layerId="shift" width="1.0004" />

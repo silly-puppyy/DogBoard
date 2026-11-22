@@ -233,15 +233,15 @@ def letter_keys(lay: Layout) -> list[str]:
                 continue
             seen.add(key_id(case_c))
             w3 = row3_letter_width(lay)
-            only_row3 = w3 is not None and c in lay.rows[2] and c not in lay.rows[0] and c not in lay.rows[1]
+            only_row3 = w3 is not None and c in lay.rows[-1] and all(c not in r for r in lay.rows[:-1])
             width = (f"{w3:.4f}".rstrip("0").rstrip(".") if only_row3 else letter_width(lay))
             lines += key_with_alts(key_id(case_c), case_c, lay.accents.get(case_c, ""), width)
     return lines
 
 
 def letter_width(lay: Layout) -> str | None:
-    """Letter key width when the widest of the first two rows has more than ten keys, else None (1 unit)."""
-    n = max(len(lay.rows[0]), len(lay.rows[1]))
+    """Letter key width when the widest row above the shift row has more than ten keys, else None (1 unit)."""
+    n = max(len(r) for r in lay.rows[:-1])
     # rounded down: a row a hair over 10 units loses its last key in the touch layout (ü ö ä did)
     return None if n <= 10 else f"{int(10 / n * 10000) / 10000:.4f}".rstrip("0").rstrip(".")
 
@@ -252,17 +252,18 @@ MIN_SHIFT = 1.0  # the narrowest shift / delete beside a long third row (0.5 cut
 def row3_letter_width(lay: Layout) -> float | None:
     """Third-row letters narrower than the others when shift and delete would get under [MIN_SHIFT], else None."""
     w = float(letter_width(lay) or 1)
-    n = len(lay.rows[2])
+    n = len(lay.rows[-1])
     if (10 - n * w) / 2 >= MIN_SHIFT - 0.01:
         return None
     return int((10 - 2 * MIN_SHIFT) / n * 10000) / 10000
 
 
 def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
-    """Row 3: shift, a gap, the letters, a gap, delete; narrower shift / delete when the letters need it."""
-    letters = " ".join(key_id(upper(c, lay) if shifted else c) for c in lay.rows[2])
+    """The last letter row (row 3, or 4 for Pashto / Amharic): shift, a gap, the letters, a gap, delete; narrower shift /
+    delete when the letters need it."""
+    letters = " ".join(key_id(upper(c, lay) if shifted else c) for c in lay.rows[-1])
     w = float(letter_width(lay) or 1)
-    rest = 10 - len(lay.rows[2]) * w - 2 * float(SHIFT)
+    rest = 10 - len(lay.rows[-1]) * w - 2 * float(SHIFT)
     if rest < 0.01 and rest > -0.01:
         return f"{shift_id} {letters} bksp"
     if rest >= 0:
@@ -271,7 +272,7 @@ def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
 
 
 def row_keys(lay: Layout, i: int, shifted: bool) -> str:
-    """Rows 1 and 2: the letters, centred with half-gaps when the row is shorter than the widest."""
+    """The rows above the shift row: the letters, centred with half-gaps when the row is shorter than the widest."""
     w = float(letter_width(lay) or 1)
     keys = " ".join(key_id(upper(c, lay) if shifted else c) for c in lay.rows[i])
     side = (10 - len(lay.rows[i]) * w) / 2
@@ -281,23 +282,23 @@ def row_keys(lay: Layout, i: int, shifted: bool) -> str:
 
 
 def layout_gaps(lay: Layout) -> list[str]:
-    """The per-layout gap and narrow shift / delete keys rows 1-3 use."""
+    """The per-layout gap and narrow shift / delete keys the letter rows use."""
     if lay is ENGLISH:
         return []
     w = float(letter_width(lay) or 1)
     fmt = lambda x: f"{int(x * 10000) / 10000:.4f}".rstrip("0").rstrip(".")
     out = []
-    for i in (0, 1):
+    for i in range(len(lay.rows) - 1):
         side = (10 - len(lay.rows[i]) * w) / 2
         if side >= 0.01:
             out.append(f'<key id="gap{i + 1}-{lay.id}" gap="true" width="{fmt(side)}" />')
-    rest = 10 - len(lay.rows[2]) * w - 2 * float(SHIFT)
+    rest = 10 - len(lay.rows[-1]) * w - 2 * float(SHIFT)
     if 0.01 <= rest:
         out.append(f'<key id="gap3-{lay.id}" gap="true" width="{fmt(rest / 2)}" />')
     elif rest > -0.01:
         pass
     else:
-        side = fmt((10 - len(lay.rows[2]) * (row3_letter_width(lay) or w)) / 2)
+        side = fmt((10 - len(lay.rows[-1]) * (row3_letter_width(lay) or w)) / 2)
         out += [f'<key id="base-to-shift-narrow-{lay.id}" layerId="shift" width="{side}" />',
                 f'<key id="shift-to-base-narrow-{lay.id}" layerId="base" width="{side}" />',
                 f'<key id="bksp-narrow-{lay.id}" output="@k3:action/backspace" width="{side}" />']
@@ -386,8 +387,9 @@ def build(lay: Layout) -> str:
     ]
 
     wide = " ".join(WIDE_PUNCT)
-    base_rows = [row_keys(lay, 0, False), row_keys(lay, 1, False), row3(lay, "base-to-shift", False)]
-    shift_rows = [row_keys(lay, 0, True), row_keys(lay, 1, True), row3(lay, "shift-to-base", True)]
+    above = range(len(lay.rows) - 1)
+    base_rows = [row_keys(lay, i, False) for i in above] + [row3(lay, "base-to-shift", False)]
+    shift_rows = [row_keys(lay, i, True) for i in above] + [row3(lay, "shift-to-base", True)]
     layers = [
         ("base", base_rows + [bottom_row("to-symbol-1")]),
         ("shift", shift_rows + [bottom_row("to-symbol-1")]),
@@ -474,6 +476,8 @@ def cldr_names() -> tuple[dict[str, str], set[str]]:
     text = CLDR_EN.read_text(encoding="utf-8")
     langs = dict(re.findall(r'<language type="([a-zA-Z_]+)">([^<]+)</language>', text))
     territories = {w.lower() for t in re.findall(r'<territory type="[A-Z0-9]+">([^<]+)</territory>', text) for w in t.split()}
+    # and their codes ("urdu_in": India)
+    territories |= {c.lower() for c in re.findall(r'<territory type="([A-Z]{2})">', text)}
     return langs, territories
 
 
@@ -487,7 +491,7 @@ def plain_rows(rows) -> list[list[str]] | None:
     out = [r for r in out if r]
     if script_of(out) in COMPOSED:
         return None
-    if len(out) != 3:  # four letter rows (Pashto, Amharic): later, row 4 needs its own build
+    if len(out) not in (3, 4):  # four letter rows: Pashto, Amharic, Tigrinya (the last carries shift and delete)
         return None
     letters = [c for r in out for c in r]
     # a letter twice (extraction leftovers: Hebrew ו, Estonian õ), a row wider than 12 keys (Bulgarian BDS) or letters
@@ -498,7 +502,8 @@ def plain_rows(rows) -> list[list[str]] | None:
     return out
 
 
-def layout_name(variant: str, language: str, territories: set[str], rows: list[list[str]], default: str | None, code: str = "") -> str:
+def layout_name(variant: str, language: str, territories: set[str], rows: list[list[str]], default: str | None, code: str = "",
+                iphone: bool = False) -> str:
     """'qwertz' -> QWERTZ; 'armenian_armenia_phonetic' -> Phonetic (language and country dropped); 'arabic_two' -> the
     language's first layout's name + 2. Nothing left: the language's first layout's name (an iPhone variant then reads
     "ЙЦУКЕН (iPhone)"), or for that first layout the first six letters where the script has capitals (ЙЦУКЕН, as
@@ -509,7 +514,7 @@ def layout_name(variant: str, language: str, territories: set[str], rows: list[l
         return f"{default} 2"
     if words:
         return " ".join(words)
-    if default:
+    if default and iphone:
         return default
     first = "".join(rows[0][:6])
     named_by_letters = all(unicodedata.name(c, "").split()[0] in ("LATIN", "CYRILLIC") and c.upper() != c for c in first)
@@ -644,7 +649,7 @@ def all_layouts() -> list[Layout]:
                     continue
                 rows = [[c.lower() if len(c.lower()) == 1 else c for c in r] for r in rows]
                 # an iPhone layout named like Gboard's: "(iPhone)" tells them apart (Gboard's name alone when it has none)
-                name = layout_name(n, language, territories, rows, first_name.get(base), base)
+                name = layout_name(n, language, territories, rows, first_name.get(base), base, iphone=True)
                 add(base, language, name + " (iPhone)" if base in first_name else name, rows, g_lp, n + "-iphone")
     return out
 

@@ -33,7 +33,7 @@ class DrawnEqualsTouchTest : FunSpec({
         val (targets, _) = keyboard.letterTargets(ImeLayerIds.Base, w, h, 0.3)
         val r = KbSpec.render(KbProps(width = w, keyH = h, only = "live", letterRows = rows))
         val off = buildList {
-            r.rows.take(3).forEachIndexed { ri, row ->
+            r.rows.take(rows.size).forEachIndexed { ri, row ->
                 for (k in row.keys) {
                     if (k.gap || k.kind != "char" || !k.base[0].isLetter()) continue
                     val t = targets[k.base.lowercase()[0]] ?: run { add("${k.base}: no touch target"); continue }
