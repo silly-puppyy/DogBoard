@@ -41,6 +41,9 @@ TATOEBA_URL = 'https://downloads.tatoeba.org/exports/per_language/{0}/{0}_senten
 LANGS = {
     'fi': dict(name='Finnish', leipzig=['fin_news_2022_1M', 'fin_newscrawl_2016_1M', 'fin_wikipedia_2021_1M'], tatoeba='fin',
                layout=('gboard', 'nordic'), script='Latn', compounds=True),
+    # a hand-built pack exists (packs-work/es): this one checks the pipeline against it (PACK_SUFFIX=-auto), as Finnish
+    'es': dict(name='Spanish', leipzig=['spa_news_2024_1M', 'spa_web_2016_1M', 'spa_wikipedia_2021_1M'], tatoeba='spa',
+               layout=('gboard', 'spanish'), gboard_tag='es-ES', script='Latn', compounds=False),
     'cs': dict(name='Czech', leipzig=['ces_news_2024_1M', 'ces_news_2022_1M', 'ces_wikipedia_2021_1M'], tatoeba='ces',
                layout=('gboard', 'qwertz'), script='Latn', compounds=False),
     'ka': dict(name='Georgian', leipzig=['kat-ge_web_2019_1M'], tatoeba='kat',
@@ -221,7 +224,7 @@ class Pack:
         rows = None
         if src == 'gboard':
             langs = json.load(open(f'{LAYOUTS}/gboard/languages.json')); lays = json.load(open(f'{LAYOUTS}/gboard/layouts.json'))
-            v = next(v for v in langs[self.lang]['variants'] if v['variant'] == name)
+            v = next(v for v in langs[self.cfg.get('gboard_tag', self.lang)]['variants'] if v['variant'] == name)
             rows = lays[v['layout_id']]['rows']
         else:
             rows = json.load(open(f'{LAYOUTS}/ios/layouts.json'))[name]['rows']
