@@ -23,10 +23,11 @@ class CorrectionTraceDeviceTest {
         io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(context)
         val keys = QwertyGeometry.keysWithSpace(375f, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-        for ((before, typed) in CASES) {
+        // taps 180 ms apart (brisk) and 400 ms (slow): iOS's edit costs grow with the time between taps
+        for (gap in listOf(180L, 400L)) for ((before, typed) in CASES) {
             val word = CurrentWord()
             for ((i, c) in typed.withIndex()) {
-                val k = keys.getValue(c.lowercaseChar()); word.addLetter(c, Tap(k.centerX, k.centerY, 200L * i), keys, params)
+                val k = keys.getValue(c.lowercaseChar()); word.addLetter(c, Tap(k.centerX, k.centerY, gap * i), keys, params)
             }
             val prev = before.split(' ').lastOrNull { it.isNotEmpty() }
             val decoded = TypingEngine.candidates(word, prev)
@@ -35,12 +36,14 @@ class CorrectionTraceDeviceTest {
                 list?.take(4)?.joinToString(" | ") { "%s %.2f%s".format(it.word, it.score, if (it.isTypedString) " (typed)" else "") } ?: "none"
             val fromDecoded = TypingEngine.correction(word, decoded, commit = true)
             val fromRefined = refined?.let { TypingEngine.correction(word, it, commit = true) }
-            android.util.Log.i("DogBoardTest", "CORRECTIONTRACE '$before' $typed: decoder -> $fromDecoded [${show(decoded)}]; " +
+            android.util.Log.i("DogBoardTest", "CORRECTIONTRACE ${gap}ms '$before' $typed: decoder -> $fromDecoded [${show(decoded)}]; " +
                 "neural -> $fromRefined [${show(refined)}]")
         }
     }
 
     private companion object {
-        val CASES = listOf("" to "closin", "i was " to "closin", "" to "workin", "" to "somethi", "" to "telvision", "" to "amng")
+        // capitalised as the keyboard does at a sentence start, and lowercase as mid-sentence
+        val CASES = listOf("" to "closin", "" to "Closin", "i was " to "closin", "" to "workin", "" to "somethi", "" to "telvision",
+            "" to "Telvision", "" to "amng")
     }
 }
