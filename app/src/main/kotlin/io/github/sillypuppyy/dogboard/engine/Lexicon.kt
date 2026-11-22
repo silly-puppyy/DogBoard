@@ -117,12 +117,14 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     /**
      * Nodes stored in more than one casing ("google" and "Google"): each casing with its own
      * ln P; the node's [logProb] is their total and [surface] the most likely casing. Changed after loading here;
-     * the loaded ones packed by [pack] into [castNodes] (sorted) / [castStart] / [castWords] / [castLp].
+     * the loaded ones packed by [pack] into [castNodes] (sorted) / [castStart] / [castLp], the forms' text in
+     * [castChars] from [castCharStart] (one char array: a String a form cost Russian ~9 MB).
      */
     private val casings = HashMap<Int, List<Pair<String, Float>>>()
     private var castNodes = IntArray(0)
     private var castStart = IntArray(1)
-    private var castWords = arrayOf<String>()
+    private var castChars = CharArray(0)
+    private var castCharStart = IntArray(1)
     private var castLp = FloatArray(0)
 
     // which nodes have an entry in [surface] / [casings]: most don't, and a map lookup boxes the
@@ -211,7 +213,10 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     private fun casingsOf(node: Int): List<Pair<String, Float>>? {
         casings[node]?.let { return it }
         val i = java.util.Arrays.binarySearch(castNodes, node)
-        return if (i < 0) null else List(castStart[i + 1] - castStart[i]) { k -> castWords[castStart[i] + k] to castLp[castStart[i] + k] }
+        return if (i < 0) null else List(castStart[i + 1] - castStart[i]) { k ->
+            val f = castStart[i] + k
+            String(castChars, castCharStart[f], castCharStart[f + 1] - castCharStart[f]) to castLp[f]
+        }
     }
 
     /** Moves the loaded surface forms and casings from the maps into compact arrays (the maps then hold later changes). */
@@ -227,10 +232,15 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         val cn = casings.keys.sorted()
         castNodes = cn.toIntArray()
         castStart = IntArray(cn.size + 1)
-        val words = ArrayList<String>(); val lps = ArrayList<Float>()
-        for ((i, n) in cn.withIndex()) { castStart[i] = words.size; for ((w, l) in casings[n]!!) { words.add(w); lps.add(l) } }
-        castStart[cn.size] = words.size
-        castWords = words.toTypedArray(); castLp = lps.toFloatArray()
+        val cb = StringBuilder(); val starts = ArrayList<Int>(); val lps = ArrayList<Float>()
+        for ((i, n) in cn.withIndex()) {
+            castStart[i] = lps.size
+            for ((w, l) in casings[n]!!) { starts.add(cb.length); cb.append(w); lps.add(l) }
+        }
+        castStart[cn.size] = lps.size
+        starts.add(cb.length)
+        castCharStart = starts.toIntArray(); castLp = lps.toFloatArray()
+        castChars = CharArray(cb.length).also { cb.toString().toCharArray(it, 0, 0, cb.length) }
         casings.clear()
     }
 
@@ -480,6 +490,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
                 f.position(mm.logP); f.asFloatBuffer().get(lex.aLogP, 0, n)
             }
             lex.aParent = IntArray(1024); lex.aMass = FloatArray(1024) // the learned words' cold fields
+            lex.aWordNode = IntArray(256) // learned words' nodes only (sized for every word it held 4 MB in Russian)
             lex.mb = fields
             lex.oParent = mm.parent; lex.oMass = mm.mass; lex.oWordNode = mm.wordNode
             lex.base = n

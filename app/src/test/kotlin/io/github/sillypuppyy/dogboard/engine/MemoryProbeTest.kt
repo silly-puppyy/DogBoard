@@ -21,6 +21,9 @@ class MemoryProbeTest : FunSpec({
         java.util.zip.GZIPInputStream(snap.inputStream()).use { i -> unpacked.outputStream().use { i.copyTo(it) } }
         val lexicon = java.io.RandomAccessFile(unpacked, "r").channel.use { c -> Lexicon.readSnapshot(c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size())) }!!
         val m1 = used()
+        // DOGBOARD_PROBE_HISTO=1: the heap's biggest classes right after the lexicon (jcmd)
+        if (System.getenv("DOGBOARD_PROBE_HISTO") == "1") ProcessBuilder("jcmd", ProcessHandle.current().pid().toString(), "GC.class_histogram")
+            .redirectErrorStream(true).start().inputStream.bufferedReader().readLines().take(16).forEach { println("PROBE-HISTO $it") }
         val bigrams = File(dir, "$lang.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
         val m2 = used()
         val ngFile = File(dir, "$lang.ngrams.bin")
