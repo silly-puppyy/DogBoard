@@ -86,6 +86,10 @@ WEB_NAME_RE = re.compile(r"^[A-Za-z]+$")
 # hyphenated words (--hyphenated, count_hyphenated.py): from this Zipf in the counted text, in their usual casing
 # (iOS's en_US lexicon has ~1000: brother-in-law, check-in, T-shirt; SCOWL's lists have none)
 MIN_ZIPF_HYPHENATED = 3.0
+# an inflected form of a hyphenated word that is in (fine-tune -> fine-tuned, fine-tuning; follow-up -> follow-ups) from
+# this lower Zipf: the forms are rarer than the base (fine-tuning 2.85 missed 3.0); one written closed too (re-used /
+# reused) stays out, as re-open did (it "corrected" reopen at a general 2.5, d6e4dd4)
+MIN_ZIPF_HYPHENATED_FORM = 2.0
 HYPHENATED_RE = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ]+(-[A-Za-zÀ-ÖØ-öø-ÿ]+){1,3}$")
 
 
@@ -498,12 +502,20 @@ def main():
                 if HYPHENATED_RE.match(w):
                     by_key[w.lower()][w] = int(n)
         n_hyph = 0
+        zipf_of = {k: math.log10(sum(fs.values()) / args.hyphenated_words * 1e9) for k, fs in by_key.items()}
+        bases = {k for k, z in zipf_of.items() if z >= args.min_zipf_hyphenated}
+
+        def inflects(key):
+            """key is an -s / -es / -ed / -d / -ing form of a hyphenated word that is in."""
+            head, _, last = key.rpartition("-")
+            stems = {last[:-1], last[:-2], last[:-2] + "e", last[:-3], last[:-3] + "e", last[:-3] + "y", last[:-2] + "y"}
+            return any(f"{head}-{st}" in bases for st in stems if st) and last.endswith(("s", "ed", "d", "ing"))
         for key, fs in by_key.items():
             if key in forms or key in misspelled or key.replace("-", "") in misspelled:
                 continue
             tot = sum(fs.values())
-            z = math.log10(tot / args.hyphenated_words * 1e9)
-            if z < args.min_zipf_hyphenated:
+            z = zipf_of[key]
+            if z < args.min_zipf_hyphenated and not (z >= MIN_ZIPF_HYPHENATED_FORM and inflects(key) and key.replace("-", "") not in forms):
                 continue
             best = max(fs, key=fs.get)
             # all capitals is a heading's casing, not the word's (WELL-KNOWN): take the next form
