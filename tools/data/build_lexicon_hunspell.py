@@ -34,6 +34,14 @@ FLOOR_ZIPF = 0.5
 MIN_ZIPF_EXTRA = 3.0
 # ... and capitalised names from this one, when the corpus capitalises them
 MIN_ZIPF_NAME = 2.5
+# a one-letter word: the vowels English / Spanish / Italian use, or any letter used at least once per 1000 words
+# (Zipf 6): the Czech prepositions v s z k (4.7 % of Czech text was "unknown" without them), Russian в с к у о я,
+# Polish w z; tokenizer leftovers ("m", "c") stay below 5.5
+ONE_LETTER_ZIPF = 6.0
+
+
+def one_letter_word(w, z):
+    return w in ("a", "i", "o", "y", "e", "u") or z >= ONE_LETTER_ZIPF
 # share of mid-sentence uses that must be capitalised to call a word a name
 NAME_SHARE = 0.8
 # corpus uses needed before its casing is trusted
@@ -126,7 +134,7 @@ def main():
         top = sorted(zipf, key=lambda k: -zipf[k])[:20000]
         wf_letters = "".join(sorted({c for w in top for c in w if c.isalpha()}))
         for w, z in zipf.items():
-            if z < args.min_zipf or not WORD.fullmatch(w) or len(w) < 2 and w not in ("a", "i", "o", "y", "e", "u"): continue
+            if z < args.min_zipf or not WORD.fullmatch(w) or len(w) < 2 and not one_letter_word(w, z): continue
             uses = casing.get(w)
             # frequent words count even when edited text rarely has them: spoken forms ("oo", "ok", "kaheksan")
             if z < MIN_ZIPF_EXTRA and (not uses or sum(uses.values()) < args.min_corpus): continue
@@ -147,7 +155,7 @@ def main():
     skipped = Counter()
     for w, z in zipf.items():
         # single letters from wordfreq are tokenizer leftovers ("C", "m"); the language's real ones are in Hunspell
-        if w in hun_lower or not WORD.fullmatch(w) or len(w) < 2:
+        if w in hun_lower or not WORD.fullmatch(w) or len(w) < 2 and not one_letter_word(w, z):
             continue
         if z < MIN_ZIPF_NAME:
             continue
