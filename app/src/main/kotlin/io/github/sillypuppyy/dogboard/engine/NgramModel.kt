@@ -14,6 +14,11 @@ import kotlin.math.ln
  * triple probabilities and pair back-offs are 8-bit codes into 256-value codebooks (quantile bins);
  * pairs are grouped by their first word ([biOffsets]) with the second words sorted inside; triples
  * are sorted keys (a << 42 | b << 21 | c), so ids must be below 2^21.
+ *
+ * Version 3 ("DGN3", tools/data/dgn3.py, 2026-11-22): the same model, every probability the same, 28 % smaller: word
+ * ids as 3 bytes, triples grouped under their pair (a triple stores only its third word), placeholder pairs for triple
+ * contexts whose own pair was pruned ([V3]). The DGN2 fields shared by both layouts (offsets, codes, codebooks) are
+ * used as they are; [v3] holds the rest.
  */
 class NgramModel private constructor(
     private val vocab: Vocab,
@@ -28,12 +33,13 @@ class NgramModel private constructor(
     private val triKeys: java.nio.LongBuffer,
     private val triP: java.nio.ByteBuffer,
     private val triPBook: FloatArray,
+    private val v3: V3? = null,
 ) {
     // The large tables are buffers, so the shipped file can be memory-mapped: nothing is copied
     // onto the heap and loading is near-instant ([fromBuffer]).
     val size: Int get() = vocab.size
-    val pairCount: Int get() = biWords.limit()
-    val tripleCount: Int get() = triKeys.limit()
+    val pairCount: Int get() = v3?.pairs ?: biWords.limit()
+    val tripleCount: Int get() = v3?.triples ?: triKeys.limit()
 
     /** The model's id for [word] (lowercase), or -1. */
     fun idOf(word: String): Int = vocab.idOf(word)
@@ -104,6 +110,19 @@ class NgramModel private constructor(
 
     /** [logProb] for a [w] in the model, unboxed (the decoder asks per state: a boxed Double each was garbage). */
     fun logProbOf(a: Int, b: Int, w: Int): Double {
+        val v = v3
+        if (v != null) {
+            if (a >= 0 && b >= 0) {
+                val p = v.pairIndex(a, b, biOffsets)
+                if (p < 0) return bigram(b, w)
+                val t = v.tripleIn(p, w)
+                if (t >= 0) return triPBook[triP.get(t).toInt() and 0xff].toDouble()
+                val bo = if (v.isPlaceholder(p)) 0.0 else biBBook[biB.get(p).toInt() and 0xff].toDouble()
+                return bo + bigram(b, w)
+            }
+            if (b >= 0) return bigram(b, w)
+            return uniLogP[w].toDouble()
+        }
         if (a >= 0 && b >= 0) {
             val t = triSearch(tri(a, b, w))
             if (t >= 0) return triPBook[triP.get(t).toInt() and 0xff].toDouble()
@@ -116,6 +135,12 @@ class NgramModel private constructor(
     }
 
     private fun bigram(b: Int, w: Int): Double {
+        val v = v3
+        if (v != null) {
+            val p = v.pairIndex(b, w, biOffsets)
+            if (p >= 0 && !v.isPlaceholder(p)) return biPBook[biP.get(p).toInt() and 0xff].toDouble()
+            return uniBackoff[b].toDouble() + uniLogP[w]
+        }
         val p = pairIndex(b, w)
         if (p >= 0) return biPBook[biP.get(p).toInt() and 0xff].toDouble()
         return uniBackoff[b].toDouble() + uniLogP[w]
@@ -124,6 +149,7 @@ class NgramModel private constructor(
     /** The [n] most likely next words after [a] [b] by the trigram and bigram entries, most likely first. */
     fun followers(a: Int, b: Int, n: Int): List<Pair<Int, Double>> {
         if (n <= 0) return emptyList()
+        v3?.let { return followersV3(it, a, b, n) }
         // Called after every word on the way to the bar, holding the engine lock, and a common word
         // has tens of thousands of followers ("the", "to"): one pass, no per-word lookups or boxing,
         // only the best n kept. The trigram entries for "a b" and the bigram entries for "b" are both
@@ -148,6 +174,110 @@ class NgramModel private constructor(
             }
         }
         return top.sorted()
+    }
+
+    /** [followers] on the version-3 tables: the pair's triple group, then b's real pairs (not its placeholders). */
+    private fun followersV3(v: V3, a: Int, b: Int, n: Int): List<Pair<Int, Double>> {
+        val top = TopN(n)
+        var t = 0; var tEnd = 0
+        var bo = 0.0
+        if (a >= 0 && b >= 0) {
+            val p = v.pairIndex(a, b, biOffsets)
+            if (p >= 0) {
+                val (s, e) = v.tripleRange(p)
+                t = s; tEnd = e
+                for (i in s until e) top.offer(v.tripleWord(i), triPBook[triP.get(i).toInt() and 0xff].toDouble())
+                if (!v.isPlaceholder(p)) bo = biBBook[biB.get(p).toInt() and 0xff].toDouble()
+            }
+        }
+        if (b >= 0 && b + 1 < biOffsets.limit()) {
+            for (i in biOffsets[b] until biOffsets[b + 1]) {
+                if (v.isPlaceholder(i)) continue
+                val w = v.pairWord(i)
+                while (t < tEnd && v.tripleWord(t) < w) t++
+                if (t < tEnd && v.tripleWord(t) == w) continue
+                top.offer(w, bo + biPBook[biP.get(i).toInt() and 0xff])
+            }
+        }
+        return top.sorted()
+    }
+
+    /**
+     * The version-3 tables (see the class comment): pair second words and triple third words as big-endian u24 (read
+     * as one short + one byte: on Android each mapped read is a native call), the placeholder bits, and on the heap
+     * the per-pair triple counts (one byte each; 255 = see [escapes]) with prefix sums every 64 pairs, so a pair's
+     * triple group costs no mapped reads to find; a word sample every [SAMPLE] pairs as DGN2's [biSample].
+     */
+    internal class V3(
+        val pairs: Int,
+        val triples: Int,
+        private val pairWords: java.nio.ByteBuffer,
+        private val placeholders: java.nio.ByteBuffer,
+        private val counts: ByteArray,
+        private val escapePairs: IntArray,
+        private val escapeCounts: IntArray,
+        private val blocks: IntArray,
+        private val tripleWords: java.nio.ByteBuffer,
+    ) {
+        private val sample: IntArray by lazy { IntArray((pairs + SAMPLE - 1) / SAMPLE) { pairWord(it * SAMPLE) } }
+
+        fun pairWord(i: Int): Int = u24(pairWords, i)
+        fun tripleWord(i: Int): Int = u24(tripleWords, i)
+        fun isPlaceholder(i: Int): Boolean = (placeholders.get(i ushr 3).toInt() shr (i and 7)) and 1 != 0
+
+        private fun count(i: Int): Int {
+            val c = counts[i].toInt() and 0xff
+            return if (c != 255) c else escapeCounts[java.util.Arrays.binarySearch(escapePairs, i)]
+        }
+
+        /** The triple group of pair [p]: [start, end). */
+        fun tripleRange(p: Int): Pair<Int, Int> {
+            val s = tripleStart(p)
+            return s to s + count(p)
+        }
+
+        private fun tripleStart(p: Int): Int {
+            var s = blocks[p ushr 6]
+            for (i in (p and 63.inv()) until p) s += count(i)
+            return s
+        }
+
+        /** Index of the triple (pair [p], [w]), or -1. */
+        fun tripleIn(p: Int, w: Int): Int {
+            val n = count(p)
+            if (n == 0) return -1
+            var lo = tripleStart(p); var hi = lo + n - 1
+            while (lo <= hi) {
+                val mid = (lo + hi) ushr 1
+                val v = tripleWord(mid)
+                if (v < w) lo = mid + 1 else if (v > w) hi = mid - 1 else return mid
+            }
+            return -1
+        }
+
+        /** Index of the pair ([a], [b]) (a placeholder too), or -1; as DGN2's pairIndex. */
+        fun pairIndex(a: Int, b: Int, offsets: java.nio.IntBuffer): Int {
+            if (a < 0 || a + 1 >= offsets.limit()) return -1
+            var lo = offsets[a]; var hi = offsets[a + 1] - 1
+            if (hi - lo > 2 * SAMPLE) {
+                val first = (lo + SAMPLE - 1) / SAMPLE; val last = hi / SAMPLE
+                var sl = first; var sh = last; var j = first - 1
+                while (sl <= sh) { val m = (sl + sh) ushr 1; if (sample[m] <= b) { j = m; sl = m + 1 } else sh = m - 1 }
+                if (j >= first) {
+                    if (sample[j] == b) return j * SAMPLE
+                    lo = j * SAMPLE + 1; hi = minOf(hi, (j + 1) * SAMPLE - 1)
+                } else hi = minOf(hi, first * SAMPLE - 1)
+            }
+            while (lo <= hi) {
+                val mid = (lo + hi) ushr 1
+                val v = pairWord(mid)
+                if (v < b) lo = mid + 1 else if (v > b) hi = mid - 1 else return mid
+            }
+            return -1
+        }
+
+        private fun u24(buf: java.nio.ByteBuffer, i: Int): Int =
+            ((buf.getShort(3 * i).toInt() and 0xffff) shl 8) or (buf.get(3 * i + 2).toInt() and 0xff)
     }
 
     /** The [n] highest-scoring (word, score) pairs offered, without keeping the rest. */
@@ -178,6 +308,17 @@ class NgramModel private constructor(
 
     /** [followers] the slow, obvious way (every follower through [logProb], full sort): tests compare. */
     internal fun followersReference(a: Int, b: Int, n: Int): List<Pair<Int, Double>> {
+        v3?.let { v ->
+            val scores = HashMap<Int, Double>()
+            if (b >= 0 && b + 1 < biOffsets.limit()) for (i in biOffsets[b] until biOffsets[b + 1]) {
+                if (!v.isPlaceholder(i)) scores[v.pairWord(i)] = logProbOf(a, b, v.pairWord(i))
+            }
+            if (a >= 0 && b >= 0) v.pairIndex(a, b, biOffsets).takeIf { it >= 0 }?.let { p ->
+                val (s, e) = v.tripleRange(p)
+                for (i in s until e) scores[v.tripleWord(i)] = triPBook[triP.get(i).toInt() and 0xff].toDouble()
+            }
+            return scores.entries.sortedByDescending { it.value }.take(n).map { it.key to it.value }
+        }
         val scores = HashMap<Int, Double>()
         if (b >= 0 && b + 1 < biOffsets.limit()) {
             for (i in biOffsets[b] until biOffsets[b + 1]) scores[biWords[i]] = logProb(a, b, biWords[i]) ?: Double.NEGATIVE_INFINITY
@@ -195,6 +336,7 @@ class NgramModel private constructor(
 
     /** The compact binary form ([readBinary]); the converter writes the same layout. */
     fun writeBinary(out: java.io.OutputStream) {
+        check(v3 == null) { "writeBinary writes DGN2; a DGN3 file is made by tools/data/dgn3.py" }
         val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
         d.writeInt(MAGIC); d.writeInt(vocab.size); d.writeInt(pairCount); d.writeInt(tripleCount)
         for (i in 0 until vocab.size) { val b = vocab.word(i).toByteArray(); d.writeShort(b.size); d.write(b) }
@@ -218,6 +360,7 @@ class NgramModel private constructor(
     companion object {
         const val START = "<s>"
         private const val MAGIC = 0x44474e32 // "DGN2"
+        private const val MAGIC3 = 0x44474e33 // "DGN3"
         private const val MASK21 = (1L shl 21) - 1
         private val LN10 = ln(10.0)
 
@@ -236,7 +379,8 @@ class NgramModel private constructor(
          */
         fun fromBuffer(buf: java.nio.ByteBuffer, index: java.nio.ByteBuffer? = null): NgramModel? = runCatching {
             val b = buf.duplicate().order(java.nio.ByteOrder.BIG_ENDIAN)
-            if (b.int != MAGIC) return null
+            val magic = b.int
+            if (magic != MAGIC && magic != MAGIC3) return null
             val nv = b.int; val nb = b.int; val nt = b.int
             // the words stay in the buffer (a mapped file: off the heap), found through a hash table of ids: read
             // from [index] (written by writeVocabIndex) when it fits, else built here
@@ -258,6 +402,26 @@ class NgramModel private constructor(
             fun book() = FloatArray(256) { b.float }
             val up = floats(nv); val ub = floats(nv)
             val pb = book(); val bb = book()
+            if (magic == MAGIC3) {
+                val off = ints(nv + 1)
+                val pairWords = bytes(3 * nb)
+                val bp = bytes(nb); val bbo = bytes(nb)
+                val ph = bytes((nb + 7) / 8)
+                val counts = ByteArray(nb).also { b.get(it) }
+                val ne = b.int
+                val ep = IntArray(ne); val ec = IntArray(ne)
+                for (i in 0 until ne) { ep[i] = b.int; ec[i] = b.int }
+                val blocks = IntArray((nb + 63) / 64 + 1) { b.int }
+                while (b.position() % 4 != 0) b.get()
+                val tb = book()
+                val tripleWords = bytes(3 * nt)
+                val tp = bytes(nt)
+                val empty = java.nio.ByteBuffer.allocate(0)
+                return@runCatching NgramModel(
+                    vocab!!, up, ub, off, empty.asIntBuffer(), bp, bbo, pb, bb, empty.asLongBuffer(), tp, tb,
+                    V3(nb, nt, pairWords, ph, counts, ep, ec, blocks, tripleWords),
+                )
+            }
             val off = ints(nv + 1); val bw = ints(nb)
             val bp = bytes(nb); val bbo = bytes(nb)
             val tb = book()
