@@ -24,6 +24,14 @@ import kotlinx.coroutines.withContext
 /** The letter layouts' names (tools/layouts/gen_layouts.py; SetLayout's cards). */
 private val LAYOUT_NAMES = GeneratedLayouts.all.associate { it.id to it.label }
 
+/** The languages with layouts but no pack (GeneratedLayouts), added by their bare code ("el"). */
+private fun layoutOnly(packs: List<LanguagePack>, added: Set<String>): List<LangPack> {
+    val withPack = packs.filter { it.hasWords }.map { it.tag.substringBefore('-') }.toSet()
+    val addedCodes = added.map { it.substringBefore('-') }.toSet()
+    return GeneratedLayouts.all.distinctBy { it.language }.filter { it.language !in withPack }.sortedBy { it.languageName }
+        .map { LangPack(it.language, it.languageName, usable = true, added = it.language in addedCodes, dictionary = false) }
+}
+
 /** Settings › Languages, live (DogBoard's page in place of FlorisBoard's subtypes page; user 2026-11-19). */
 @Composable
 fun LanguagesScreen() {
@@ -55,7 +63,7 @@ fun LanguagesScreen() {
     val added = list.map { it.primaryLocale.languageTag() }.toSet()
     SetLanguages(
         rows,
-        packs.map { p -> LangPack(p.tag, p.manifest.name, p.hasWords, p.tag in added) },
+        packs.map { p -> LangPack(p.tag, p.manifest.name, p.hasWords, p.tag in added) } + layoutOnly(packs, added),
         onUse = { id -> subtypeManager.switchToSubtypeById(id) },
         onLayout = { navController.navigate(Routes.Settings.Layout) },
         onRemove = { id -> subtypes.firstOrNull { it.id == id }?.let { subtypeManager.removeSubtype(it) } },

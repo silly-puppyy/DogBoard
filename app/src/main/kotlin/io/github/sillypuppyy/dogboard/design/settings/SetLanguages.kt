@@ -38,8 +38,11 @@ private val START = TextAlign.Start
 /** A keyboard language: its name (in its own language too), layout, whether swipe typing reads it, in use. */
 data class LangRow(val id: Long, val name: String, val native: String?, val layout: String, val swipe: Boolean, val active: Boolean)
 
-/** A language pack that can be added: [usable] when it has a dictionary (the others arrive in the language pass). */
-data class LangPack(val tag: String, val name: String, val usable: Boolean, val added: Boolean)
+/**
+ * A language that can be added: [usable] when it has a dictionary or layouts; [dictionary] false for a language with
+ * layouts only (tools/layouts/gen_layouts.py ports every Gboard / iOS layout; it types without suggestions).
+ */
+data class LangPack(val tag: String, val name: String, val usable: Boolean, val added: Boolean, val dictionary: Boolean = true)
 
 /**
  * Settings › Languages, in DogBoard's style (user 2026-11-19, replacing FlorisBoard's subtypes page and its pink
@@ -80,7 +83,7 @@ fun SetLanguages(
                     }
                 }
             }
-            DText("A language brings its dictionary for autocorrect and suggestions, its punctuation and its layouts. English is built in; more languages come in a later update.",
+            DText("A language brings its dictionary for autocorrect and suggestions, its punctuation and its layouts. Languages without a dictionary yet type with their layouts, without suggestions.",
                 Modifier.padding(horizontal = 20.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START, lineHeight = (13 * 1.4f).sp), maxLines = 8)
         }
         StatusBarBand()
@@ -132,8 +135,13 @@ private fun AddLanguageSheet(packs: List<LangPack>, onDismiss: () -> Unit, onPic
             DText("Add a language", Modifier.padding(start = 8.dp), style = setText(22f))
             androidx.compose.material3.OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth(), singleLine = true,
                 placeholder = { androidx.compose.material3.Text("Search languages") }, leadingIcon = { Symbol("search", 22.sp, SetColors.onSurfaceVariant) })
-            val shown = packs.filter { q.isBlank() || it.name.contains(q.trim(), ignoreCase = true) || it.tag.contains(q.trim(), ignoreCase = true) }
+            // the languages with a dictionary; a search finds the 300 with layouts only too (rare ones below common ones)
+            val shown = if (q.isBlank()) packs.filter { it.dictionary }
+                else packs.filter { it.name.contains(q.trim(), ignoreCase = true) || it.tag.equals(q.trim(), ignoreCase = true) }.take(40)
             SetRows {
+                if (q.isBlank()) Box(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp)) {
+                    DText("Search to find more: 300 more languages have layouts, without a dictionary yet.", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START))
+                }
                 if (shown.isEmpty()) Box(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp)) {
                     DText("No language matches “$q” yet.", style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = START))
                 }
@@ -146,7 +154,7 @@ private fun AddLanguageSheet(packs: List<LangPack>, onDismiss: () -> Unit, onPic
                     ) {
                         Column(Modifier.weight(1f).then(if (p.usable) Modifier else Modifier.alpha(0.5f)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             DText(p.name, style = setText(16f).copy(textAlign = START))
-                            DText(if (p.added) "Added" else if (p.usable) "Dictionary, punctuation, layouts" else "Coming in a later update",
+                            DText(if (p.added) "Added" else if (!p.dictionary) "Layouts only, no dictionary yet" else if (p.usable) "Dictionary, punctuation, layouts" else "Coming in a later update",
                                 style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START))
                         }
                         if (p.added) Symbol("check", 20.sp, SetColors.primary)
