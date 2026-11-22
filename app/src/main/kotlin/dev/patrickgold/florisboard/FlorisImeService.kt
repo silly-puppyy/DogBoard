@@ -330,6 +330,9 @@ class FlorisImeService : LifecycleInputMethodService() {
                 // the saved language often arrives while the first load (which saw the default) is still running
                 while (!io.github.sillypuppyy.dogboard.engine.TypingEngine.isReady) kotlinx.coroutines.delay(200)
                 val tag = subtypeManager.activeSubtype.primaryLocale.languageTag()
+                // the language's layout (its default unless the one in use types that language): before the switch,
+                // so the keys and the pack's own-key letters (ñ, å ä ö) match
+                io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get())?.let { prefs.keyboard.layoutId.set(it) }
                 if (io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag))
                     imeController.updateState { refreshSuggestions() }
             }

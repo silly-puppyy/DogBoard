@@ -328,6 +328,9 @@ private val LETTER_LAYOUTS = listOf(
     LetterLayout("colemak-en", "Colemak", "English", listOf("qwfpgjluy;", "arstdhneio", "zxcvbkm"), TAPS_ONLY),
     LetterLayout("qwertz-de", "QWERTZ", "German", listOf("qwertzuiopü", "asdfghjklöä", "yxcvbnmß"), ENGLISH_ONLY),
     LetterLayout("azerty-fr", "AZERTY", "French", listOf("azertyuiop", "qsdfghjklm", "wxcvbn'"), ENGLISH_ONLY),
+    LetterLayout("qwerty-es", "QWERTY", "Spanish", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm"), TAPS_ONLY),
+    LetterLayout("qwerty-fi", "QWERTY", "Finnish", listOf("qwertyuiopå", "asdfghjklöä", "zxcvbnm"), TAPS_ONLY),
+    LetterLayout("jcuken-ru", "ЙЦУКЕН", "Russian", listOf("йцукенгшщзх", "фывапролджэ", "ячсмитьбю"), TAPS_ONLY),
 )
 
 /** A layout's card: its letter rows as a small keyboard, its name and language; the chosen one outlined and ticked. */

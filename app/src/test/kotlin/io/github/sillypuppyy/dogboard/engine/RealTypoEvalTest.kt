@@ -32,9 +32,13 @@ class RealTypoEvalTest : FunSpec({
         val letterRows = System.getenv("DOGBOARD_ROWS")?.split(',')?.let { rs ->
             LetterRows(rs, rs.mapIndexed { i, r -> if (i == 2) 1.28f + 0.2133f else (10 - r.length) / 2f })
         } ?: LetterRows()
-        // the layout's own letters beyond a-z stay distinct in the trie (ñ, å ä ö); DOGBOARD_FOLD_ALL=1 folds them as before
-        Lexicon.distinctLetters = if (System.getenv("DOGBOARD_FOLD_ALL") == "1") emptySet()
-            else letterRows.rows.joinToString("").filter { it !in 'a'..'z' }.toSet()
+        // the language's letters of their own: the pack's rules.json distinct_letters (å ä ö), else none;
+        // DOGBOARD_DISTINCT=<letters> overrides, DOGBOARD_FOLD_ALL=1 folds everything
+        Lexicon.distinctLetters = when {
+            System.getenv("DOGBOARD_FOLD_ALL") == "1" -> emptySet()
+            System.getenv("DOGBOARD_DISTINCT") != null -> System.getenv("DOGBOARD_DISTINCT")!!.toSet()
+            else -> File("${packDir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()).distinctLetters.toSet() } ?: emptySet()
+        }
         if (appPath) {
             TypingEngine.unloadForTest()
             TypingEngine.load(

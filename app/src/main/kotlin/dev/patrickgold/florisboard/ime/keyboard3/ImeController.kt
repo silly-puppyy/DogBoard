@@ -1370,7 +1370,8 @@ class ImeController(
         }
 
         /** DogBoard: the word engine's language matches the layout (English only until the i18n pass). */
-        private fun englishLayout(): Boolean = prefs.keyboard.layoutId.get().endsWith("-en")
+        // the layout types the loaded language (was: English layouts only; a Spanish pack with its ñ layout is on too)
+        private fun englishLayout(): Boolean = io.github.sillypuppyy.dogboard.ime.LanguageLayouts.matchesLoaded(prefs.keyboard.layoutId.get())
 
         /** DogBoard: the layout's language tag (from the model, as composition uses it). */
         private var languageTag = ""

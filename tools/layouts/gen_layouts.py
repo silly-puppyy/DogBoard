@@ -136,6 +136,10 @@ LAYOUTS = [
     floris_layout("colemak-en", "en", "English (Colemak)", "Colemak", "EN", "colemak"),
     floris_layout("qwertz-de", "de", "Deutsch (QWERTZ)", "QWERTZ", "DE", "german"),
     floris_layout("azerty-fr", "fr", "Français (AZERTY)", "AZERTY", "FR", "azerty"),
+    # 2026-11-22 languages pass: the layouts iOS defaults these languages to (notes/design/data/layouts)
+    floris_layout("qwerty-es", "es", "Español (QWERTY)", "QWERTY", "ES", "spanish"),
+    floris_layout("qwerty-fi", "fi", "Suomi (QWERTY)", "QWERTY", "FI", "swedish_finnish"),
+    floris_layout("jcuken-ru", "ru", "Русский (ЙЦУКЕН)", "ЙЦУКЕН", "RU", "jcuken_russian"),
 ]
 
 SYMBOL_1 = [

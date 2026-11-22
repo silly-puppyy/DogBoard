@@ -196,9 +196,9 @@ object EngineLoader {
         fun optional(component: String) = (p.open(component) ?: java.io.ByteArrayInputStream(ByteArray(0)))
         val rules = runCatching { p.open("rules")?.bufferedReader()?.use { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(it.readText()) } }.getOrNull()
             ?: io.github.sillypuppyy.dogboard.engine.LanguageRules()
-        // letters with their own key on the language's layout (ñ, å ä ö, й) stay distinct in the trie: set before the
-        // lexicon is built (English: none)
-        io.github.sillypuppyy.dogboard.engine.Lexicon.distinctLetters = rules.letterRows.rows.joinToString("").filter { it !in 'a'..'z' }.toSet()
+        // the language's letters of their own (å ä ö, й; rules distinct_letters) stay distinct in the trie: set before
+        // the lexicon is built (English and Spanish: none)
+        io.github.sillypuppyy.dogboard.engine.Lexicon.distinctLetters = rules.distinctLetters.toSet()
         TypingEngine.load(
             openLexicon = { asset("lexicon").bufferedReader() },
             openBigrams = { asset("bigrams").bufferedReader() },

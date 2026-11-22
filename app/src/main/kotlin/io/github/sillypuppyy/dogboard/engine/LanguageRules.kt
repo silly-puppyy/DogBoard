@@ -63,6 +63,12 @@ data class LanguageRules(
     @SerialName("letter_rows") val letterRows: LetterRows = LetterRows(),
     /** A compounding language (Finnish, German): a typed exact join of dictionary words is kept (Autocorrect.keepCompounds). */
     @SerialName("compounds") val compounds: Boolean = false,
+    /**
+     * Letters that are letters of their own, not accented forms (Lexicon.distinctLetters): Finnish "åäö" (real typos:
+     * 39.8 -> 54.6 % fixed kept distinct), Russian "й". Not Spanish ñ: typed as n it is restored like an accent (97.4 %
+     * vs 0.6 % kept distinct, 2026-11-22). Empty: every accented letter folds to its base.
+     */
+    @SerialName("distinct_letters") val distinctLetters: String = "",
 ) {
     /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
     val closingQuotes: String

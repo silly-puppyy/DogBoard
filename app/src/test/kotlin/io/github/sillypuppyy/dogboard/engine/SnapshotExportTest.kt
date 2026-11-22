@@ -52,7 +52,7 @@ class SnapshotExportTest : FunSpec({
         val dir = File(System.getenv("DOGBOARD_EXPORT_PACK_DIR"))
         val lang = System.getenv("DOGBOARD_EXPORT_PACK_LANG") ?: dir.name
         val rules = File(dir, "rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules()
-        Lexicon.distinctLetters = rules.letterRows.rows.joinToString("").filter { it !in 'a'..'z' }.toSet()
+        Lexicon.distinctLetters = rules.distinctLetters.toSet()
         try {
             val lexicon = File(dir, "$lang.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
             val bigrams = File(dir, "$lang.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
