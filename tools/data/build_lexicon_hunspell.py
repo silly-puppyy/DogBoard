@@ -18,6 +18,7 @@ Casing: Hunspell's form; for words from wordfreq, the form the corpus mostly wri
 Corpus files: one sentence per line; Leipzig "id<TAB>sentence" lines are read too.
 """
 import argparse
+import math
 import os
 import re
 import sys
@@ -104,6 +105,7 @@ def main():
     ap.add_argument("--lang", required=True)
     ap.add_argument("--hunspell", default="", help="path without .dic/.aff; none: words from wordfreq + the corpus")
     ap.add_argument("--min-corpus", type=int, default=3, help="without Hunspell: corpus uses a wordfreq word needs")
+    ap.add_argument("--min-corpus-form", type=int, default=0, help="without Hunspell: also every corpus form used this often (0 = off)")
     ap.add_argument("--min-zipf", type=float, default=1.0, help="without Hunspell: wordfreq Zipf a word needs")
     ap.add_argument("--wordfreq", default="", help="wordfreq list; none (Georgian: no list): frequencies from the corpus")
     ap.add_argument("--corpus", action="append", default=[])
@@ -121,7 +123,6 @@ def main():
     else:
         # no wordfreq list for the language: the corpus's own counts on the same scale (Zipf = log10 per billion
         # words), words used at least --min-corpus times (2026-11-22: language packs built from a language code)
-        import math
         counts = {w: sum(c.values()) for w, c in casing.items()}
         total = sum(counts.values()) or 1
         zipf = {w: math.log10(n / total * 1e9) for w, n in counts.items() if n >= args.min_corpus}
@@ -138,6 +139,17 @@ def main():
         # that edited text uses too (Leipzig: Wikipedia, news), minus the typo-like ones (a word one edit away 1000x
         # more frequent); written in the corpus's usual casing
         forms = []
+        # every form the corpus attests at least --min-corpus-form times joins wordfreq's (at its corpus Zipf, same
+        # per-billion scale): agglutinative languages have far more forms than wordfreq's lists hold (Turkish: 62,627
+        # words, 11 % of its text unknown, 2026-11-23); the typo filter below applies to them too
+        if args.min_corpus_form:
+            counts = {w: sum(c.values()) for w, c in casing.items()}
+            total = sum(counts.values()) or 1
+            added = 0
+            for w, n in counts.items():
+                if w not in zipf and n >= args.min_corpus_form:
+                    zipf[w] = math.log10(n / total * 1e9); added += 1
+            print(f"corpus forms added to the candidates: {added}", file=sys.stderr)
         top = sorted(zipf, key=lambda k: -zipf[k])[:20000]
         wf_letters = "".join(sorted({c for w in top for c in w if c.isalpha()}))
         for w, z in zipf.items():

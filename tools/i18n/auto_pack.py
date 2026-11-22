@@ -44,6 +44,19 @@ LANGS = {
     # a hand-built pack exists (packs-work/es): this one checks the pipeline against it (PACK_SUFFIX=-auto), as Finnish
     'es': dict(name='Spanish', leipzig=['spa_news_2024_1M', 'spa_web_2016_1M', 'spa_wikipedia_2021_1M'], tatoeba='spa',
                layout=('gboard', 'spanish'), gboard_tag='es-ES', script='Latn', compounds=False),
+    # 2026-11-23 language families (user: "perfecting a few languages across families to see what issues arise"):
+    # German (capitalised nouns, ß, umlauts by long-press on Gboard's QWERTZ, compounds), Turkish (i / İ, ı / I;
+    # agglutination), Polish (ą ę ł ż ... by long-press), Greek (final ς, tonos), Hebrew (final letters, RTL)
+    'de': dict(name='German', leipzig=['deu_news_2024_1M', 'deu_news_2023_1M', 'deu_wikipedia_2021_1M'], tatoeba='deu',
+               layout=('gboard', 'qwertz'), gboard_tag='de-DE', script='Latn', compounds=True),
+    'tr': dict(name='Turkish', leipzig=['tur_news_2024_1M', 'tur_news_2022_1M', 'tur_wikipedia_2021_1M'], tatoeba='tur',
+               layout=('gboard', 'qwerty'), gboard_tag='tr-TR', script='Latn', compounds=False),
+    'pl': dict(name='Polish', leipzig=['pol_news_2024_1M', 'pol_news_2022_1M', 'pol_wikipedia_2021_1M'], tatoeba='pol',
+               layout=('gboard', 'qwerty'), gboard_tag='pl-PL', script='Latn', compounds=False),
+    'el': dict(name='Greek', leipzig=['ell_news_2024_1M', 'ell_news_2022_1M', 'ell_wikipedia_2021_1M'], tatoeba='ell',
+               layout=('gboard', 'greek'), gboard_tag='el-GR', script='Grek', compounds=False),
+    'he': dict(name='Hebrew', leipzig=['heb_news_2020_1M', 'heb_wikipedia_2021_1M'], tatoeba='heb',
+               layout=('ios', 'Hebrew'), script='Hebr', compounds=False, rtl=True),
     'cs': dict(name='Czech', leipzig=['ces_news_2024_1M', 'ces_news_2022_1M', 'ces_wikipedia_2021_1M'], tatoeba='ces',
                layout=('gboard', 'qwertz'), script='Latn', compounds=False),
     'ka': dict(name='Georgian', leipzig=['kat-ge_web_2019_1M'], tatoeba='kat',
@@ -152,6 +165,10 @@ class Pack:
         wf = f'{WORDFREQ}/large_{self.lang}.msgpack.gz'
         if not os.path.exists(wf): wf = f'{WORDFREQ}/small_{self.lang}.msgpack.gz'
         args = ['--wordfreq', wf] if os.path.exists(wf) else ['--min-corpus', '3']
+        # every corpus form used 3 times joins (MIN_CORPUS_FORM overrides, 0 = off): measured on each language's original
+        # sets (2026-11-23): Turkish 63k -> 322k words, unknown text 11.2 -> 3.1 %, wrong 8.8 -> 8.5; Greek 46k -> 283k,
+        # unknown 24 -> 1.5 %, wrong 17.1 -> 13.2; German wrong 6.7 -> 6.3; correct words broken unchanged in all three
+        args += ['--min-corpus-form', os.environ.get('MIN_CORPUS_FORM', '3')]
         src = (f'wordfreq 3.1.1 (CC BY-SA 4.0) attested in ' if os.path.exists(wf) else 'counts of ') + \
               f'Leipzig {self.cfg["name"]} corpora (CC BY 4.0)'
         cmd = ['taskset', '-c', CPU, 'nice', WF_PY if os.path.exists(WF_PY) else sys.executable, '-I',
