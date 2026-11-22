@@ -255,7 +255,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         val stemOk = specialEdit || endOmission || (previousCorrection != null && t.equals(previousCorrection, ignoreCase = true)) ||
             typed.length >= minStem
         if (!stemOk) return null
-        val (second, s) = cased.getOrNull(1) ?: return t
+        // the runner-up: never the typed non-word (iOS doesn't rank one, spec 2.6, as for the margin above): it held
+        // back "closin" -> "closing" and "carryin" -> "carrying" (Gboard fixes them; omitted-letter bench 2026-11-22)
+        val (second, s) = cased.drop(1).firstOrNull { nonWordMargin || !it.first.isTypedString } ?: return t
         if (s.equals(t, ignoreCase = true) || s.startsWith(t, ignoreCase = true)) return t
         return if (level.dominanceRatio * exp(second.score) < exp(top.score)) t else null
     }

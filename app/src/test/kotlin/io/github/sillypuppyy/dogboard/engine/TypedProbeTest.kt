@@ -30,7 +30,9 @@ class TypedProbeTest : FunSpec({
         )
         System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
             ?.let { TypingEngine.attachNgrams(it) }
-        File("$dir$lang.charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
+        // the letter model as the app has it (DOGBOARD_CHARLM=0: without, to see what it changes)
+        if (System.getenv("DOGBOARD_CHARLM") != "0")
+            File("$dir$lang.charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         // DOGBOARD_PROBE_FORMS=word: what the lexicon and the n-gram model hold for a word's spellings
         System.getenv("DOGBOARD_PROBE_FORMS")?.let { w ->
             val lex = TypingEngine.lexiconForTest()!!
