@@ -1,0 +1,226 @@
+{
+ "names": [
+  "Léa",
+  "Hugo",
+  "Chloé",
+  "Lucas",
+  "Emma",
+  "Théo",
+  "Manon",
+  "Nathan",
+  "Camille",
+  "Louis",
+  "Inès",
+  "Tom",
+  "Sarah",
+  "Jules",
+  "Lina",
+  "Maxime",
+  "Zoé",
+  "Enzo",
+  "Clara",
+  "Antoine",
+  "Jade",
+  "Noah",
+  "Alice",
+  "Paul"
+ ],
+ "group_head": "Discussion de groupe entre amis (sujet : {topic})",
+ "dm_head": "Messages entre {a} et {b} (sujet : {topic})",
+ "group": [
+  [
+   "le dîner",
+   [
+    "on mange où ce soir",
+    "jsp tout me va",
+    "pas encore une pizza svp"
+   ]
+  ],
+  [
+   "un retard",
+   [
+    "jsuis en route dsl",
+    "tu arrives dans combien",
+    "genre 10 min y a trop de bouchons"
+   ]
+  ],
+  [
+   "le match d hier",
+   [
+    "vous avez vu la fin",
+    "c était ouf",
+    "j ai hurlé mdr"
+   ]
+  ],
+  [
+   "le week-end",
+   [
+    "on fait toujours le truc samedi ?",
+    "ouii à quelle heure",
+    "tôt ? 9h ?"
+   ]
+  ],
+  [
+   "les devoirs",
+   [
+    "qqn a fait le devoir de maths",
+    "mdr non",
+    "c est pour demain nn ?"
+   ]
+  ],
+  [
+   "une nouvelle série",
+   [
+    "bon j ai commencé",
+    "et alors",
+    "l épisode 2 est trop bien"
+   ]
+  ],
+  [
+   "un déménagement",
+   [
+    "besoin d aide pour déménager samedi",
+    "y a combien de cartons",
+    "beaucoup trop"
+   ]
+  ],
+  [
+   "un cadeau",
+   [
+    "on lui offre quoi",
+    "une plante ?",
+    "elle a tué la dernière 😭"
+   ]
+  ],
+  [
+   "le boulot",
+   [
+    "la réunion est décalée à 15h",
+    "ok ça marche",
+    "qqn peut m envoyer le doc"
+   ]
+  ],
+  [
+   "la salle de sport",
+   [
+    "salle ce soir ?",
+    "j ai encore mal aux jambes",
+    "bras alors"
+   ]
+  ],
+  [
+   "un concert",
+   [
+    "les places sortent à 10h",
+    "mettez des alarmes",
+    "qui a la meilleure connexion lol"
+   ]
+  ],
+  [
+   "un repas de famille",
+   [
+    "maman dit qu on mange à 19h",
+    "j apporte quelque chose ?",
+    "un dessert peut être"
+   ]
+  ]
+ ],
+ "dm": [
+  [
+   "venir chercher quelqu un",
+   [
+    "je viens te chercher à quelle heure",
+    "vers 17h30 ?",
+    "ok envoie moi un message quand t arrives"
+   ]
+  ],
+  [
+   "le dîner",
+   [
+    "tu rentres manger ce soir ?",
+    "oui vers 20h sûrement",
+    "je prends un truc en route ?"
+   ]
+  ],
+  [
+   "déplacer un rendez-vous",
+   [
+    "on peut décaler l appel à jeudi",
+    "oui à quelle heure",
+    "10h ?"
+   ]
+  ],
+  [
+   "les courses",
+   [
+    "t es près du supermarché",
+    "je viens de sortir t as besoin de qqch ?",
+    "du lait et du pain stp"
+   ]
+  ],
+  [
+   "le médecin",
+   [
+    "alors le médecin ça a donné quoi",
+    "ça va je dois y retourner la semaine pro",
+    "tu veux que je t emmène"
+   ]
+  ],
+  [
+   "samedi",
+   [
+    "tu fais quoi samedi",
+    "rien encore pourquoi",
+    "brunch ?"
+   ]
+  ],
+  [
+   "un colis",
+   [
+    "mon colis est arrivé ?",
+    "oui il est devant la porte",
+    "merci !!"
+   ]
+  ],
+  [
+   "les enfants",
+   [
+    "tu peux récupérer les enfants à l école",
+    "ils sortent à quelle heure",
+    "16h30"
+   ]
+  ],
+  [
+   "un anniversaire",
+   [
+    "joyeux anniversaire !! passe une super journée",
+    "ohh merci",
+    "un verre ce soir ?"
+   ]
+  ],
+  [
+   "prendre des nouvelles",
+   [
+    "ça va mieux ?",
+    "oui un peu",
+    "cool appelle moi plus tard si tu veux"
+   ]
+  ],
+  [
+   "un voyage",
+   [
+    "ton vol est à quelle heure",
+    "6h du mat ugh",
+    "je mets un réveil et je t emmène"
+   ]
+  ],
+  [
+   "se retrouver",
+   [
+    "t es où",
+    "devant l entrée",
+    "j arrive"
+   ]
+  ]
+ ]
+}

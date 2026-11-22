@@ -1,0 +1,226 @@
+{
+ "names": [
+  "Lucía",
+  "Pablo",
+  "Marta",
+  "Javi",
+  "Sara",
+  "Dani",
+  "Laura",
+  "Álex",
+  "Carmen",
+  "Hugo",
+  "Irene",
+  "Diego",
+  "Paula",
+  "Sergio",
+  "Nerea",
+  "Raúl",
+  "Elena",
+  "Adri",
+  "Claudia",
+  "Mario",
+  "Noa",
+  "Iván",
+  "Julia",
+  "Rubén"
+ ],
+ "group_head": "Chat de grupo ({n} amigos, sobre {topic})",
+ "dm_head": "Mensajes entre {a} y {b} ({topic})",
+ "group": [
+  [
+   "planes para cenar",
+   [
+    "dónde cenamos hoy",
+    "me da igual la verdad",
+    "pizza otra vez no porfa"
+   ]
+  ],
+  [
+   "llegar tarde",
+   [
+    "voy de camino perdón",
+    "cuánto tardas",
+    "unos 10 min hay un atasco horrible"
+   ]
+  ],
+  [
+   "el partido de ayer",
+   [
+    "visteis el final",
+    "no me lo creo todavía",
+    "yo grité tanto"
+   ]
+  ],
+  [
+   "viaje del finde",
+   [
+    "seguimos con lo del sábado?",
+    "sii a qué hora",
+    "prontito? a las 9?"
+   ]
+  ],
+  [
+   "los deberes",
+   [
+    "alguien ha hecho lo de lengua",
+    "jajaja no",
+    "es para mañana no?"
+   ]
+  ],
+  [
+   "una serie nueva",
+   [
+    "vale ya la empecé",
+    "y qué tal",
+    "el capítulo 2 es buenísimo"
+   ]
+  ],
+  [
+   "una mudanza",
+   [
+    "necesito ayuda para la mudanza el sábado",
+    "cuántas cajas son",
+    "demasiadas la verdad"
+   ]
+  ],
+  [
+   "un regalo de cumple",
+   [
+    "qué le regalamos",
+    "una planta?",
+    "se le murió la última 😭"
+   ]
+  ],
+  [
+   "el trabajo",
+   [
+    "la reunión es a las 3 al final",
+    "uf vale",
+    "alguien me pasa el documento"
+   ]
+  ],
+  [
+   "el gimnasio",
+   [
+    "gym luego?",
+    "tengo las piernas muertas del martes",
+    "pues hoy brazos"
+   ]
+  ],
+  [
+   "un concierto",
+   [
+    "las entradas salen a las 10",
+    "poned alarmas",
+    "quién tiene el wifi más rápido jaja"
+   ]
+  ],
+  [
+   "comida familiar",
+   [
+    "mamá dice que comemos a las 2",
+    "llevo algo?",
+    "postre mejor"
+   ]
+  ]
+ ],
+ "dm": [
+  [
+   "recoger a alguien",
+   [
+    "a qué hora te recojo",
+    "sobre las 5 y media?",
+    "vale escríbeme cuando llegues"
+   ]
+  ],
+  [
+   "la cena",
+   [
+    "vienes a cenar?",
+    "sí sobre las 9 seguramente",
+    "compro algo de camino?"
+   ]
+  ],
+  [
+   "cambiar una cita",
+   [
+    "podemos pasar la llamada al jueves",
+    "claro a qué hora",
+    "a las 10?"
+   ]
+  ],
+  [
+   "recados",
+   [
+    "estás cerca del súper",
+    "acabo de salir necesitas algo?",
+    "leche y pan porfa"
+   ]
+  ],
+  [
+   "el médico",
+   [
+    "qué tal el médico",
+    "bien tengo que volver la semana que viene",
+    "quieres que te lleve"
+   ]
+  ],
+  [
+   "planes del sábado",
+   [
+    "qué haces el sábado",
+    "nada aún por?",
+    "vermut?"
+   ]
+  ],
+  [
+   "un paquete",
+   [
+    "ha llegado mi paquete",
+    "sí está en la puerta",
+    "gracias!!"
+   ]
+  ],
+  [
+   "los niños",
+   [
+    "puedes recoger a los niños del cole",
+    "a qué hora salen",
+    "a las 5"
+   ]
+  ],
+  [
+   "un cumpleaños",
+   [
+    "felicidades!! que pases un día genial",
+    "ay muchas gracias",
+    "unas cañas esta noche?"
+   ]
+  ],
+  [
+   "saber cómo está",
+   [
+    "qué tal te encuentras",
+    "mejor hoy",
+    "me alegro llámame luego si quieres"
+   ]
+  ],
+  [
+   "un viaje",
+   [
+    "a qué hora sale tu vuelo",
+    "a las 6 de la mañana uff",
+    "pongo alarma y te llevo"
+   ]
+  ],
+  [
+   "quedar",
+   [
+    "dónde estás",
+    "en la entrada",
+    "voy"
+   ]
+  ]
+ ]
+}

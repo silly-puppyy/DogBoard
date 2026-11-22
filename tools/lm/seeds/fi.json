@@ -1,0 +1,226 @@
+{
+ "names": [
+  "Aino",
+  "Eetu",
+  "Emma",
+  "Leevi",
+  "Ella",
+  "Onni",
+  "Sofia",
+  "Elias",
+  "Aada",
+  "Veeti",
+  "Iida",
+  "Niilo",
+  "Venla",
+  "Eino",
+  "Lotta",
+  "Aleksi",
+  "Siiri",
+  "Joona",
+  "Helmi",
+  "Oskari",
+  "Pihla",
+  "Aapo",
+  "Saara",
+  "Matias"
+ ],
+ "group_head": "Ryhmächatti ({n} kaveria, aiheena {topic})",
+ "dm_head": "Tekstiviestejä: {a} ja {b} ({topic})",
+ "group": [
+  [
+   "illallinen",
+   [
+    "missä syödään tänään",
+    "ihan sama mulle",
+    "ei taas pizzaa pliis"
+   ]
+  ],
+  [
+   "myöhästyminen",
+   [
+    "oon tulossa sori",
+    "kauanko menee",
+    "joku 10 min ruuhka on ihan hirvee"
+   ]
+  ],
+  [
+   "eilinen peli",
+   [
+    "näittekö lopun",
+    "en vieläkään usko",
+    "mä huusin niin paljon"
+   ]
+  ],
+  [
+   "viikonloppu",
+   [
+    "onks lauantai vielä voimassa",
+    "joo mihin aikaan",
+    "aikasin? yheksältä?"
+   ]
+  ],
+  [
+   "läksyt",
+   [
+    "onks kukaan tehny matikan läksyjä",
+    "hah ei",
+    "eiks ne oo huomiseks"
+   ]
+  ],
+  [
+   "uusi sarja",
+   [
+    "no nii aloitin sen",
+    "ja?",
+    "toka jakso on tosi hyvä"
+   ]
+  ],
+  [
+   "muutto",
+   [
+    "tarviin apua muuttoon lauantaina",
+    "montako laatikkoo",
+    "liikaa rehellisesti"
+   ]
+  ],
+  [
+   "lahja",
+   [
+    "mitä me ostetaan sille",
+    "joku kasvi?",
+    "se tappo edellisen 😭"
+   ]
+  ],
+  [
+   "työt",
+   [
+    "palaveri siirty kolmeen",
+    "okei",
+    "voisko joku laittaa sen dokumentin"
+   ]
+  ],
+  [
+   "sali",
+   [
+    "salille myöhemmin?",
+    "jalat on vieläkin jumissa tiistaista",
+    "käsipäivä sit"
+   ]
+  ],
+  [
+   "keikka",
+   [
+    "liput tulee myyntiin kymmeneltä",
+    "laittakaa herätykset",
+    "kellä on nopein netti lol"
+   ]
+  ],
+  [
+   "sukulaisten illallinen",
+   [
+    "äiti sano et syödään kuudelta",
+    "tuonko jotain",
+    "jälkkärin vaikka"
+   ]
+  ]
+ ],
+ "dm": [
+  [
+   "jonkun hakeminen",
+   [
+    "mihin aikaan mä haen sut",
+    "joskus puol kuus?",
+    "okei laita viesti ku oot perillä"
+   ]
+  ],
+  [
+   "ruoka",
+   [
+    "ootko kotona syömässä",
+    "joo seiskalta varmaan",
+    "haenko jotain matkalla"
+   ]
+  ],
+  [
+   "palaverin siirto",
+   [
+    "voidaanko siirtää puhelu torstaille",
+    "joo mihin aikaan",
+    "kymmeneltä?"
+   ]
+  ],
+  [
+   "kauppa",
+   [
+    "ootko lähellä kauppaa",
+    "just lähin tarviitko jotain",
+    "maitoo ja leipää kiitos"
+   ]
+  ],
+  [
+   "lääkäri",
+   [
+    "miten lääkärissä meni",
+    "ihan ok pitää mennä uudestaan ens viikolla",
+    "viedäänkö sut"
+   ]
+  ],
+  [
+   "lauantai",
+   [
+    "mitä teet lauantaina",
+    "en vielä mitään miks",
+    "brunssille?"
+   ]
+  ],
+  [
+   "paketti",
+   [
+    "tuliks mun paketti",
+    "joo se on oven edessä",
+    "kiitos!!"
+   ]
+  ],
+  [
+   "lapset",
+   [
+    "voitko hakee lapset koulusta",
+    "mihin aikaan ne pääsee",
+    "kolmelta"
+   ]
+  ],
+  [
+   "synttärit",
+   [
+    "hyvää synttäriä!! ihanaa päivää",
+    "voi kiitos",
+    "kaljalle illalla?"
+   ]
+  ],
+  [
+   "kuulumiset",
+   [
+    "miten sä voit",
+    "paremmin tänään",
+    "hyvä soita myöhemmin jos haluut"
+   ]
+  ],
+  [
+   "matka",
+   [
+    "mihin aikaan sun lento lähtee",
+    "kuudelta aamulla huoh",
+    "laitan herätyksen ja vien sut"
+   ]
+  ],
+  [
+   "tapaaminen",
+   [
+    "missä sä oot",
+    "sisäänkäynnin luona",
+    "tuun"
+   ]
+  ]
+ ]
+}

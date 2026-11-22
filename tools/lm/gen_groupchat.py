@@ -3,7 +3,9 @@ data): the base model sees a short made-up group chat (2-4 people with random fi
 everyday topic, 3 seed lines written here) and writes the next messages. Kept: the generated lines
 of the form "Name: message", the name stripped. Every example is invented: no real messages.
 Resumable: appends; the first column is the prompt index.
-Usage: gen_groupchat.py MODEL_ID n_prompts out.tsv [batch]"""
+Usage: gen_groupchat.py MODEL_ID n_prompts out.tsv [batch]
+SEEDS=seeds/<lang>.json: another language's names, topics, seed lines and headings (texting style of that
+language; 2026-11-22, user: "we can always make our own synthetic data" for languages short of chat text)."""
 import os, re, sys, random, time, torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -50,18 +52,25 @@ DM_TOPICS = [
     ('house stuff', ['did you pay the electric bill', 'not yet, ill do it tonight', 'thanks']),
     ('meeting up', ['where are you', 'by the entrance', 'omw']),
 ]
+HEADS = ('Group chat ({n} friends, about {topic})', 'Text messages between {a} and {b} ({topic})')
+if os.environ.get('SEEDS'):
+    import json
+    _s = json.load(open(os.environ['SEEDS'], encoding='utf-8'))
+    NAMES, TOPICS, DM_TOPICS = _s['names'], [tuple(t) for t in _s['group']], [tuple(t) for t in _s['dm']]
+    HEADS = (_s['group_head'], _s['dm_head'])
 if os.environ.get('STYLE') == 'dm': TOPICS = DM_TOPICS
 tok = AutoTokenizer.from_pretrained(model_id); tok.padding_side = 'left'
 if tok.pad_token is None: tok.pad_token = tok.eos_token
 model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16).cuda().eval()
-LINE = re.compile(r'^([A-Z][a-z]{1,10}): (.{1,300})$')
+LINE = re.compile(r'^([^\W\d_]{2,12}): (.{1,300})$')  # a name of any alphabet
 
 def prompt(i):
     r = random.Random(i)
     topic, seeds = r.choice(TOPICS)
     people = r.sample(NAMES, 2 if os.environ.get('STYLE') == 'dm' else r.randint(2, 4))
     lines = [f'{people[k % len(people)]}: {s}' for k, s in enumerate(seeds)]
-    head = f'Text messages between {people[0]} and {people[1]} ({topic})' if os.environ.get('STYLE') == 'dm' else f'Group chat ({len(people)} friends, about {topic})'
+    head = HEADS[1].format(a=people[0], b=people[1], topic=topic) if os.environ.get('STYLE') == 'dm' \
+        else HEADS[0].format(n=len(people), topic=topic)
     return head + '\n\n' + '\n'.join(lines) + '\n'
 
 done = set()
@@ -79,7 +88,7 @@ with open(out, 'a', encoding='utf-8') as f, torch.no_grad():
             kept = []
             for line in g.split('\n')[:-1]:  # the last line may be cut off
                 m = LINE.match(line.strip())
-                if not m: break  # left the chat format (a new heading, prose): stop
+                if not m or m.group(1) not in NAMES: break  # left the chat format (a new heading, prose): stop
                 kept.append(m.group(2).strip().replace('\t', ' '))
             for msg in kept: f.write(f'{i}\t{msg}\n')
         f.flush()
