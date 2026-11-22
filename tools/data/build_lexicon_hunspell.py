@@ -40,8 +40,11 @@ MIN_ZIPF_NAME = 2.5
 ONE_LETTER_ZIPF = 6.0
 
 
+LATIN_SCRIPT = True  # set in main from the language's frequent words: the vowel list is for Latin-script languages
+
+
 def one_letter_word(w, z):
-    return w in ("a", "i", "o", "y", "e", "u") or z >= ONE_LETTER_ZIPF
+    return (LATIN_SCRIPT and w in ("a", "i", "o", "y", "e", "u")) or z >= ONE_LETTER_ZIPF
 # share of mid-sentence uses that must be capitalised to call a word a name
 NAME_SHARE = 0.8
 # corpus uses needed before its casing is trusted
@@ -122,6 +125,10 @@ def main():
         counts = {w: sum(c.values()) for w, c in casing.items()}
         total = sum(counts.values()) or 1
         zipf = {w: math.log10(n / total * 1e9) for w, n in counts.items() if n >= args.min_corpus}
+    # Arabic, Georgian, Russian: the Latin vowels are not one-letter words there (the Arabic list had "A", "E", "O")
+    global LATIN_SCRIPT
+    top = sorted(zipf, key=lambda k: -zipf[k])[:1000]
+    LATIN_SCRIPT = sum(all(c.isascii() or unicodedata.name(c, "").startswith("LATIN") for c in w if c.isalpha()) for w in top) > len(top) / 2
     if args.hunspell:
         sink = Sink()
         expand(args.hunspell + ".dic", args.hunspell + ".aff", sink)
