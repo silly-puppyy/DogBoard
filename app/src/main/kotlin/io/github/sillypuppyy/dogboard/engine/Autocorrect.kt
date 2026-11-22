@@ -209,7 +209,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             .let(::boostPlainer)
             .let { exactSplitFirst(typed, it) }
         val (top, t) = cased.firstOrNull() ?: return null
-        if (allCapsShield && typed.count { it.isLetter() } in 2..5 && typed.none { it.isLowerCase() } && typed.lowercase() !in knownMisspellings) return null
+        // (a capital needed: Arabic and Georgian letters have no case, so "no lowercase" held for every short word
+        // and none was corrected, 2026-11-22)
+        if (allCapsShield && typed.count { it.isLetter() } in 2..5 && typed.none { it.isLowerCase() } && typed.any { it.isUpperCase() } && typed.lowercase() !in knownMisspellings) return null
         // Rule 3 (spec 4.1): a multi-word top without linguistic support rejects the correction; iOS judges
         // only the top, so the next candidate down doesn't take its place (audit 2026-11-20)
         if (top.words > 1 && top.contextSupport < minContextSupport) return null
