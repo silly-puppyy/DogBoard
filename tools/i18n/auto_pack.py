@@ -273,7 +273,8 @@ class Pack:
             r = subprocess.run(['taskset', '-c', '10-15', 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
                                 '--tests', 'io.github.sillypuppyy.dogboard.engine.RealTypoEvalTest', '--rerun', '-i'],
                                env=env, cwd=REPO, capture_output=True, text=True)
-            m = re.search(r'(\d+) typos: fixed ([\d.]+|NaN)%, left ([\d.]+|NaN)%, wrong word ([\d.]+|NaN)% \| (\d+) broken ([\d.]+|NaN)%', r.stdout)
+            m = re.search(r'(\d+) typos: fixed ([\d.]+|NaN)%, left ([\d.]+|NaN)%, wrong word ([\d.]+|NaN)% \| (\d+) correct words: '
+                          r'kept (?:[\d.]+|NaN)%, broken ([\d.]+|NaN)%', r.stdout)
             if m:
                 report.append(f'| {s} | {m.group(1) if m.group(1) != "0" else m.group(5)} | {m.group(2)} | {m.group(3)} | {m.group(4)} | {m.group(6)} |')
                 log(s, m.group(0))
