@@ -16,22 +16,32 @@ class Bigrams private constructor(
     private val lexicon: Lexicon,
     private val keys: LongArray,
     private val counts: IntArray,
-    private val totals: LongArray,
+    /** Contexts with pairs, sorted, and each one's total count (sparse: one slot per lexicon word cost Russian 11 MB). */
+    private val totalIds: IntArray,
+    private val totalCounts: LongArray,
+    /** Context ids in use: every lexicon word at load, plus the sentence start (the last). */
+    private val contexts: Int,
 ) {
     /** Id of the sentence-start context; word ids are below it. */
-    val sentenceStart: Int = totals.size - 1
+    val sentenceStart: Int = contexts - 1
+
+    /** [previous]'s total count, 0 when it has no pairs. */
+    private fun total(previous: Int): Long {
+        val i = java.util.Arrays.binarySearch(totalIds, previous)
+        return if (i < 0) 0L else totalCounts[i]
+    }
 
     /** Context id for a previous word (lowercase, or [START]); -1 if unknown. */
     fun contextId(previous: String): Int = if (previous == START) sentenceStart else lexicon.idOf(previous)
-        .takeIf { it < totals.size - 1 } ?: -1 // words added later have no pairs
+        .takeIf { it < contexts - 1 } ?: -1 // words added later have no pairs
 
     /**
      * ln P(word | previous), interpolated with the unigram probability so unseen pairs keep a
      * reasonable score. Returns [unigramLogProb] when [previous] is unknown or has no pairs.
      */
     fun logProb(previous: Int, word: Int, unigramLogProb: Double): Double {
-        if (previous < 0 || previous >= totals.size) return unigramLogProb
-        val total = totals[previous]
+        if (previous < 0 || previous >= contexts) return unigramLogProb
+        val total = total(previous)
         if (total == 0L) return unigramLogProb
         val i = keys.binarySearch(key(previous, word))
         val count = if (i >= 0) counts[i] else 0
@@ -67,7 +77,7 @@ class Bigrams private constructor(
      * [prefix] (lowercase); null if there are none.
      */
     fun nextLetterProbs(previous: Int, prefix: String): Map<Char, Double>? {
-        if (previous < 0 || previous >= totals.size) return null
+        if (previous < 0 || previous >= contexts) return null
         var i = keys.binarySearch(key(previous, 0)).let { if (it < 0) -it - 1 else it }
         val letterCounts = HashMap<Char, Long>()
         var total = 0L
@@ -87,10 +97,12 @@ class Bigrams private constructor(
     /** Writes the pairs for [readSnapshot] (see Lexicon.writeSnapshot). */
     fun writeSnapshot(out: java.io.OutputStream) {
         val d = java.io.DataOutputStream(java.io.BufferedOutputStream(out, 1 shl 16))
-        d.writeInt(SNAPSHOT_MAGIC); d.writeInt(keys.size); d.writeInt(totals.size)
+        d.writeInt(SNAPSHOT_MAGIC); d.writeInt(keys.size); d.writeInt(contexts)
         for (k in keys) d.writeLong(k)
         for (c in counts) d.writeInt(c)
-        for (t in totals) d.writeLong(t)
+        // the format keeps one total per context (unchanged), written from the sparse table
+        var j = 0
+        for (id in 0 until contexts) d.writeLong(if (j < totalIds.size && totalIds[j] == id) totalCounts[j++] else 0L)
         d.flush()
     }
 
@@ -107,8 +119,11 @@ class Bigrams private constructor(
             val contexts = b.int
             val keys = LongArray(n).also { b.asLongBuffer().get(it); b.position(b.position() + 8 * n) }
             val counts = IntArray(n).also { b.asIntBuffer().get(it); b.position(b.position() + 4 * n) }
-            val totals = LongArray(contexts).also { b.asLongBuffer().get(it) }
-            Bigrams(lexicon, keys, counts, totals)
+            // read straight into the sparse table (no array of every context first)
+            val view = b.asLongBuffer()
+            val ids = ArrayList<Int>(); val tots = ArrayList<Long>()
+            for (id in 0 until contexts) { val t = view.get(id); if (t != 0L) { ids.add(id); tots.add(t) } }
+            Bigrams(lexicon, keys, counts, ids.toIntArray(), tots.toLongArray(), contexts)
         }.getOrNull()
 
         const val FORMAT_HEADER = "#dogboard-bigrams 1"
@@ -136,11 +151,12 @@ class Bigrams private constructor(
                 totals[previous] += count.toLong()
             }
             entries.sortBy { it.first }
+            val ids = (0 until totals.size).filter { totals[it] != 0L }.toIntArray()
             return Bigrams(
                 lexicon,
                 LongArray(entries.size) { entries[it].first },
                 IntArray(entries.size) { entries[it].second },
-                totals,
+                ids, LongArray(ids.size) { totals[ids[it]] }, totals.size,
             )
         }
     }
