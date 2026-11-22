@@ -86,6 +86,12 @@ class Decoder(
     /** ln P(word | prev2 prev) for lexicon word ids and [Bigrams.contextId]-style context ids (-1: none). */
     fun interface ContextScorer {
         fun logProb(prev2: Int, prev: Int, wordId: Int, unigramLogProb: Double): Double
+
+        /**
+         * One spelling's context score ([form] lowercase), or null when the model lacks it. For accent twins, which share
+         * a trie node ("esta", "está": iOS's sort key folds accents) and so would share the node's one context score.
+         */
+        fun formLogProb(prev2: Int, prev: Int, form: String): Double? = null
     }
 
     data class Config(
@@ -796,9 +802,28 @@ class Decoder(
                 if (!lexicon.hasCasings(sNode)) { // one casing (most words): no list of forms
                     val lf = before + l
                     add(Candidate(words(lexicon.word(sNode)!!), sGeometry + w * lf, sGeometry, lf, sEdits, isCompletion = false, words = count, contextSupport = support))
-                } else for ((form, formLp) in lexicon.forms(sNode)) {
-                    val lf = before + l + (formLp - nodeLp)
-                    add(Candidate(words(form), sGeometry + w * lf, sGeometry, lf, sEdits, isCompletion = false, words = count, contextSupport = support))
+                } else {
+                    val forms = lexicon.forms(sNode)
+                    val ctx = sr.context
+                    // accent twins ("esta" / "está", "articulo" / "artículo"): each spelling its own context score, so the
+                    // sentence decides which (it was the frequency share alone: "representaran" became "representarán"
+                    // everywhere); casings of one spelling still split its score by share. English nodes differ only by
+                    // casing, so English takes the old path.
+                    if (ctx == null || forms.size < 2 || forms.all { it.first.equals(forms[0].first, ignoreCase = true) }) {
+                        for ((form, formLp) in forms) {
+                            val lf = before + l + (formLp - nodeLp)
+                            add(Candidate(words(form), sGeometry + w * lf, sGeometry, lf, sEdits, isCompletion = false, words = count, contextSupport = support))
+                        }
+                    } else {
+                        for ((form, formLp) in forms) {
+                            val key = form.lowercase()
+                            var spellingLp = Double.NEGATIVE_INFINITY // the spelling's share: all its casings
+                            for ((f2, lp2) in forms) if (f2.equals(form, ignoreCase = true)) spellingLp = logAdd(spellingLp, lp2)
+                            val own = ctx.formLogProb(prev2, prev, key)
+                            val lf = before + (if (own != null) own + (formLp - spellingLp) else l + (formLp - nodeLp))
+                            add(Candidate(words(form), sGeometry + w * lf, sGeometry, lf, sEdits, isCompletion = false, words = count, contextSupport = support))
+                        }
+                    }
                 }
                 // a word plus a lone "s" ("puppy s") is more likely the possessive "puppy's", which
                 // the lexicon stores only when frequent: generated here, the missed apostrophe
@@ -962,4 +987,12 @@ class Decoder(
         }
         return a[k]
     }
+}
+
+/** ln(e^a + e^b), safe for -Infinity. */
+internal fun logAdd(a: Double, b: Double): Double = when {
+    a == Double.NEGATIVE_INFINITY -> b
+    b == Double.NEGATIVE_INFINITY -> a
+    a > b -> a + kotlin.math.ln1p(kotlin.math.exp(b - a))
+    else -> b + kotlin.math.ln1p(kotlin.math.exp(a - b))
 }

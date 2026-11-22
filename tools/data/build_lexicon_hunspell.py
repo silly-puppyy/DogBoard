@@ -25,7 +25,7 @@ import unicodedata
 from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_lexicon import edits1, load_wordfreq  # noqa: E402
+from build_lexicon import load_wordfreq  # noqa: E402
 from expand_hunspell import expand  # noqa: E402
 
 # Zipf floor for Hunspell forms wordfreq has never seen (below wordfreq's own floor, about 1.0)
@@ -40,6 +40,20 @@ NAME_SHARE = 0.8
 MIN_CASING_USES = 20
 
 WORD = re.compile(r"[^\W\d_]+(?:['’-][^\W\d_]+)*")
+
+
+def edits1(w, letters):
+    """Words one deletion, transposition, substitution or insertion away from w, over the language's own letters."""
+    splits = [(w[:i], w[i:]) for i in range(len(w) + 1)]
+    for a, b in splits:
+        if b:
+            yield a + b[1:]
+            for c in letters:
+                yield a + c + b[1:]
+        if len(b) > 1:
+            yield a + b[1] + b[0] + b[2:]
+        for c in letters:
+            yield a + c + b
 
 
 def fold(w):
@@ -77,7 +91,9 @@ class Sink:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--lang", required=True)
-    ap.add_argument("--hunspell", required=True, help="path without .dic/.aff")
+    ap.add_argument("--hunspell", default="", help="path without .dic/.aff; none: words from wordfreq + the corpus")
+    ap.add_argument("--min-corpus", type=int, default=3, help="without Hunspell: corpus uses a wordfreq word needs")
+    ap.add_argument("--min-zipf", type=float, default=1.0, help="without Hunspell: wordfreq Zipf a word needs")
     ap.add_argument("--wordfreq", required=True)
     ap.add_argument("--corpus", action="append", default=[])
     ap.add_argument("--out", required=True)
@@ -88,13 +104,30 @@ def main():
     ap.add_argument("--min-elided", type=int, default=3, help="corpus uses an elided form needs")
     args = ap.parse_args()
 
-    sink = Sink()
-    expand(args.hunspell + ".dic", args.hunspell + ".aff", sink)
-    forms = sink.words
-    hun_lower = {f.lower() for f in forms}
-    hun_fold = {fold(f) for f in forms}
     zipf = load_wordfreq(args.wordfreq)
     casing = casing_counts(args.corpus)
+    if args.hunspell:
+        sink = Sink()
+        expand(args.hunspell + ".dic", args.hunspell + ".aff", sink)
+        forms = sink.words
+    else:
+        # no spelling dictionary (Finnish: its morphology lives in Voikko, not Hunspell): the words wordfreq measures
+        # that edited text uses too (Leipzig: Wikipedia, news), minus the typo-like ones (a word one edit away 1000x
+        # more frequent); written in the corpus's usual casing
+        forms = []
+        top = sorted(zipf, key=lambda k: -zipf[k])[:20000]
+        wf_letters = "".join(sorted({c for w in top for c in w if c.isalpha()}))
+        for w, z in zipf.items():
+            if z < args.min_zipf or not WORD.fullmatch(w) or len(w) < 2 and w not in ("a", "i", "o", "y", "e", "u"): continue
+            uses = casing.get(w)
+            # frequent words count even when edited text rarely has them: spoken forms ("oo", "ok", "kaheksan")
+            if z < MIN_ZIPF_EXTRA and (not uses or sum(uses.values()) < args.min_corpus): continue
+            if any(e != w and zipf.get(e, 0) >= z + 3 for e in edits1(w, wf_letters)): continue
+            forms.append(uses.most_common(1)[0][0] if uses and uses.most_common(1)[0][0][0].isupper() and sum(c for f, c in uses.items() if f[0].isupper()) >= NAME_SHARE * sum(uses.values()) else w)
+    hun_lower = {f.lower() for f in forms}
+    hun_fold = {fold(f) for f in forms}
+    # the language's letters (Cyrillic, ä ö, ñ...): the typo filter's edits use them, not English's a-z
+    letters = "".join(sorted({c for f in hun_lower for c in f if c.isalpha()}))
     print(f"{len(forms)} Hunspell forms, {len(zipf)} wordfreq words, {len(casing)} corpus words", file=sys.stderr)
 
     entries = {}  # surface -> zipf
@@ -113,7 +146,7 @@ def main():
         if fold(w) in hun_fold:
             skipped["accent misspelling"] += 1
             continue
-        if any(e != w and zipf.get(e, 0) >= z + 3 for e in edits1(w)):
+        if any(e != w and zipf.get(e, 0) >= z + 3 for e in edits1(w, letters)):
             skipped["typo of a frequent word"] += 1
             continue
         uses = casing.get(w)

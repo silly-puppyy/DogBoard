@@ -26,7 +26,7 @@ START = "<s>"
 OVERUSED_NAMES = {"tom", "mary", "maría"}  # Spanish Tatoeba translates Mary as María
 TOKEN = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)*|[.!?]")
 # other languages: Latin-1 letters too (English keeps the ASCII tokens its shipped file was built with)
-TOKEN_LATIN1 = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)*|[.!?]")
+TOKEN_LATIN1 = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*|[.!?]")  # any script's letters (name kept)
 
 
 def is_eval_sentence(sentence_id: str) -> bool:

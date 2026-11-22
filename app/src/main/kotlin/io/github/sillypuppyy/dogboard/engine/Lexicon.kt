@@ -302,6 +302,11 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     fun find(prefix: CharSequence): Int {
         var node = ROOT
         for (c in prefix) {
+            val lig = ligature(c)
+            if (lig != null) {
+                for (l in lig) { node = child(node, l); if (node == NONE) return NONE }
+                continue
+            }
             node = child(node, fold(c))
             if (node == NONE) return NONE
         }
@@ -333,8 +338,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         version++
         var node = ROOT
         for (c in word) {
-            val lc = fold(c)
-            node = child(node, lc).takeIf { it != NONE } ?: newNode(node, lc)
+            for (lc in ligature(c) ?: fold(c).toString()) node = child(node, lc).takeIf { it != NONE } ?: newNode(node, lc)
         }
         val added = when {
             gWordId(node) == NONE -> {
@@ -392,7 +396,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         sWordId(node, wordCount)
         aWordNode[wordCount++ - baseWords] = node
         sLogP(node, lp.toFloat())
-        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() }) { surface[node] = word; hasSurface.set(node) }
+        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() || ligature(it) != null }) { surface[node] = word; hasSurface.set(node) }
     }
 
     private fun newNode(parentNode: Int, c: Char): Int {
@@ -497,12 +501,37 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         const val NONE = -1
 
         /**
+         * A ligature as the two letters people type for it, or null: the trie holds "cœur" on the path c-o-e-u-r, so
+         * "coeur" reaches it (French: few long-press for œ; the word keeps its spelling as its surface form).
+         */
+        fun ligature(c: Char): String? = when (c) {
+            'œ', 'Œ' -> "oe"
+            'æ', 'Æ' -> "ae"
+            else -> null
+        }
+
+        /**
          * The trie letter for [c]: lowercase without accents, so "café" is typed on the e key
          * and keeps its accent as the stored form (iOS matches accent variants the same way).
          */
+        /**
+         * Letters with their own key on the language's layout (ñ in Spanish, å ä ö in Finnish): kept as they are, not
+         * folded to a base letter, so a tap on that key matches them (folded, a tap on ä was scored against the a key).
+         * Set from the pack's letter rows before its lexicon is built; accented letters typed by a long press (é) fold.
+         */
+        @Volatile var distinctLetters: Set<Char> = emptySet()
+
+        /** [fold] ignoring [distinctLetters]: every letter to its base (the letter model is trained that way). */
+        fun foldPlain(c: Char): Char {
+            val lc = c.lowercaseChar()
+            if (lc.code < 0xC0) return lc
+            return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
+        }
+
         fun fold(c: Char): Char {
             val lc = c.lowercaseChar()
             if (lc.code < 0xC0) return lc
+            if (lc in distinctLetters) return lc
             return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
         }
 
@@ -514,8 +543,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
                 if (word.isEmpty() || count <= 0) continue
                 var node = ROOT
                 for (c in word) {
-                    val lc = fold(c)
-                    node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
+                    for (lc in ligature(c) ?: fold(c).toString()) node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
                 }
                 byNode.getOrPut(node) { ArrayList(1) }.add(word to ln(count / total))
             }

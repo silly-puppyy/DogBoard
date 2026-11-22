@@ -172,6 +172,8 @@ ksp {
 tasks.withType<Test> {
     // DogBoard: DOGBOARD_JFR=<file.jfr> records the test JVM with Java Flight Recorder (allocation profiling)
     System.getenv("DOGBOARD_JFR")?.let { jvmArgs("-XX:StartFlightRecording=filename=$it,settings=profile") }
+    // DOGBOARD_TEST_HEAP=3g: a bigger test heap for large languages' evals (Russian: 1.4M words; the default 512 MB ran out)
+    System.getenv("DOGBOARD_TEST_HEAP")?.let { maxHeapSize = it }
     testLogging {
         events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED, TestLogEvent.SKIPPED)
     }

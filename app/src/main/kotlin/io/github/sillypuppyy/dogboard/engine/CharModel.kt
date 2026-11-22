@@ -20,7 +20,7 @@ class CharModel private constructor(
     /** ln P(word | unknown word), or null if [word] has letters the model doesn't know. */
     fun logProb(word: String): Double? {
         val codes = IntArray(word.length + 1)
-        for ((i, c) in word.withIndex()) codes[i] = code(Lexicon.fold(c)).takeIf { it > 0 } ?: return null
+        for ((i, c) in word.withIndex()) codes[i] = code(Lexicon.foldPlain(c)).takeIf { it > 0 } ?: return null
         codes[word.length] = END
         var total = 0.0
         for (i in codes.indices) {

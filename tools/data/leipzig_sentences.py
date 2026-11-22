@@ -11,7 +11,8 @@ import argparse
 import re
 import sys
 
-WORD = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)*")
+# letters of any script (Latin, Cyrillic, Greek...), digits and underscores excluded
+WORD = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
 SENTENCE_END = re.compile(r"[.!?¿¡\n]+")
 
 

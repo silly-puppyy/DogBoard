@@ -358,6 +358,14 @@ class NgramScorer(private val model: NgramModel, private val lexicon: Lexicon, p
         val a = if (b >= 0) contextToModel(prev2) else -1
         return if (w >= model.vocabSize) unigramLogProb else model.logProbOf(a, b, w)
     }
+
+    override fun formLogProb(prev2: Int, prev: Int, form: String): Double? {
+        val w = model.idOf(form)
+        if (w < 0 || w >= model.vocabSize) return null
+        val b = contextToModel(prev)
+        val a = if (b >= 0) contextToModel(prev2) else -1
+        return model.logProbOf(a, b, w)
+    }
 }
 
 /** The model's words: by id, and an id by word. */

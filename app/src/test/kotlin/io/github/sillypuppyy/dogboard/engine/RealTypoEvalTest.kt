@@ -23,24 +23,37 @@ class RealTypoEvalTest : FunSpec({
         // typed-string veto, no-suggest words, learned typos, ...) with the engine loaded from the app's assets
         // (abbreviations, no-suggest list, misspellings, letter model); the decoders use that engine's lexicon
         val appPath = System.getenv("DOGBOARD_APP_PATH") == "1"
+        // DOGBOARD_PACK_DIR + DOGBOARD_PACK_LANG: another language's files (<dir>/<lang>.lexicon.tsv, ...; a missing
+        // optional file reads as empty), DOGBOARD_ROWS its letter rows ("qwertyuiop,asdfghjklñ,zxcvbnm")
+        val packDir = System.getenv("DOGBOARD_PACK_DIR")?.trimEnd('/')?.plus('/') ?: "src/main/assets/dogboard/"
+        val lang = System.getenv("DOGBOARD_PACK_LANG") ?: "en"
+        fun packFile(name: String) = File("$packDir$lang.$name")
+        fun packReader(name: String) = packFile(name).takeIf { it.isFile }?.bufferedReader() ?: java.io.BufferedReader(java.io.StringReader(""))
+        val letterRows = System.getenv("DOGBOARD_ROWS")?.split(',')?.let { rs ->
+            LetterRows(rs, rs.mapIndexed { i, r -> if (i == 2) 1.28f + 0.2133f else (10 - r.length) / 2f })
+        } ?: LetterRows()
+        // the layout's own letters beyond a-z stay distinct in the trie (ñ, å ä ö); DOGBOARD_FOLD_ALL=1 folds them as before
+        Lexicon.distinctLetters = if (System.getenv("DOGBOARD_FOLD_ALL") == "1") emptySet()
+            else letterRows.rows.joinToString("").filter { it !in 'a'..'z' }.toSet()
         if (appPath) {
             TypingEngine.unloadForTest()
-            val a = "src/main/assets/dogboard/"
             TypingEngine.load(
-                openLexicon = { File(a + "en.lexicon.tsv").bufferedReader() },
-                openAbbreviations = { File(a + "en.abbreviations.txt").bufferedReader() },
-                openNoSuggest = { File(a + "en.nosuggest.txt").bufferedReader() },
-                openMisspellings = { File(a + "en.misspellings.txt").bufferedReader() },
+                openLexicon = { packReader("lexicon.tsv") },
+                openAbbreviations = { packReader("abbreviations.txt") },
+                openNoSuggest = { packReader("nosuggest.txt") },
+                openMisspellings = { packReader("misspellings.txt") },
             )
-            TypingEngine.attachCharModel(File(a + "en.charlm.bin").inputStream().use { CharModel.read(it) })
+            packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         }
-        val lexicon = if (appPath) TypingEngine.lexiconForTest()!! else File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
-        val bigrams = File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
+        val lexicon = if (appPath) TypingEngine.lexiconForTest()!! else packReader("lexicon.tsv").use { Lexicon.parse(it) }
+        val bigrams = packReader("bigrams.tsv").use { Bigrams.parse(it, lexicon) }
         val ngrams = ngramFile!!.inputStream().use { NgramModel.readBinary(it) }!!
         // DOGBOARD_NO_TRIGRAM=1: the decoders score with the word pairs only (ablation; the file still enables the test)
         val noTrigram = System.getenv("DOGBOARD_NO_TRIGRAM") == "1"
         // DOGBOARD_SPACE_KEY=1: the space bar among the keys a tap may have meant (word breaks at a tap)
-        val keys = if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f) else QwertyGeometry.letterKeys(375f, 216f)
+        val keys = if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f, letterRows) else QwertyGeometry.letterKeys(375f, 216f, letterRows)
+        // an accented letter is tapped on its base key (long press), as the keyboard types it
+        fun keyOf(c: Char) = keys[c] ?: keys.getValue(java.text.Normalizer.normalize(c.toString(), java.text.Normalizer.Form.NFD)[0])
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         // DOGBOARD_END_OMISSION_STEM=n: Autocorrect.Level.minStemEndOmission (off by default, as iOS)
         // DOGBOARD_LEVEL=GENTLE|STANDARD|STRONG (default STANDARD), DOGBOARD_LANGUAGE_POWER overrides its power
@@ -58,6 +71,10 @@ class RealTypoEvalTest : FunSpec({
         // DOGBOARD_EXACT_SPLITS=0: Autocorrect.exactSplitsEnabled off (a typed non-word stays ahead of its exact split)
         autocorrect.exactSplitsEnabled = System.getenv("DOGBOARD_EXACT_SPLITS") != "0"
         autocorrect.allCapsShield = System.getenv("DOGBOARD_ALLCAPS_SHIELD") != "0"
+        // DOGBOARD_TWIN_LEAD=<ratio>: Autocorrect.accentTwinLead (1 = no margin for accent twins of typed words)
+        System.getenv("DOGBOARD_TWIN_LEAD")?.toDoubleOrNull()?.let { autocorrect.accentTwinLead = it }
+        // DOGBOARD_COMPOUNDS=1: Autocorrect.keepCompounds (a compounding language: Finnish, German)
+        autocorrect.keepCompounds = System.getenv("DOGBOARD_COMPOUNDS") == "1"
         System.getenv("DOGBOARD_MIN_TARGET")?.let { autocorrect.minTargetLogProb = it.toDouble() }
         neuralScoresTyped = System.getenv("DOGBOARD_NEURAL_TYPED") != "0"
         // DOGBOARD_RULE3=x: Rule 3's bar as a probability ratio (iOS 0.1), "off" = no bar
@@ -69,8 +86,8 @@ class RealTypoEvalTest : FunSpec({
         val endInsertion = (System.getenv("DOGBOARD_END_INSERTION")?.toDoubleOrNull() ?: Decoder.END_INSERTION)
         // DOGBOARD_CHARLM=1: the unknown-word letter model attached, as the app ships (assets en.charlm.bin)
         // DOGBOARD_MISSPELLINGS=1: known misspellings never scored by the letter model (assets en.misspellings.txt)
-        val misspellings = File("src/main/assets/dogboard/en.misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
-        val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) } else null
+        val misspellings = packReader("misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
+        val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) } else null
         val decoders = ThreadLocal.withInitial {
             Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0", beamWidth = System.getenv("DOGBOARD_BEAM")?.toInt() ?: 100), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
                 .also { it.unknownWords = charModel; if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") it.knownMisspellings = misspellings }
@@ -78,7 +95,7 @@ class RealTypoEvalTest : FunSpec({
 
         // DOGBOARD_PROBE_WORDS="befor,hav": top candidates and the decision for those typed words (no context)
         System.getenv("DOGBOARD_PROBE_WORDS")?.split(',')?.forEach { typed ->
-            val taps = typed.map { c -> keys.getValue(c).let { Tap(it.centerX, it.centerY) } }
+            val taps = typed.map { c -> keyOf(c).let { Tap(it.centerX, it.centerY) } }
             val cands = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(Bigrams.START), typed = typed)
             println("PROBE $typed -> ${autocorrect.correction(typed, cands) ?: "(left)"}: " + cands.take(6).joinToString { c ->
                 "%s %.2f (geo %.2f lm %.2f%s%s)".format(c.word, c.score, c.geometry, c.languageModel, if (c.isCompletion) " compl" else "", if (c.isTypedString) " typed" else "")
@@ -171,7 +188,7 @@ class RealTypoEvalTest : FunSpec({
                 // (a hand that lands off the keys the same way, as iOS's touch history models), on top of the noise
                 val hand = handMm?.let { s -> Random(row[0].hashCode().toLong()).let { r -> r.nextGaussian() * s to r.nextGaussian() * s } } ?: (0.0 to 0.0)
                 val taps = typed.map { c ->
-                    val k = keys.getValue(c)
+                    val k = keyOf(c)
                     Tap((k.centerX + (hand.first + tapRng.nextGaussian() * sigma.first) * GaussianTouch.POINTS_PER_MM).toFloat(),
                         (k.centerY + (hand.second + tapRng.nextGaussian() * sigma.second) * GaussianTouch.POINTS_PER_MM).toFloat())
                 }
@@ -193,7 +210,7 @@ class RealTypoEvalTest : FunSpec({
                     val prevCands = decoded.filter { !it.isCompletion && it.words == 1 }.take(4)
                     val committed = prevCands.firstOrNull { it.word.equals(got, ignoreCase = true) }
                     if (committed != null && prevCands.size > 1) {
-                        val nTaps = next.map { c -> keys.getValue(c).let { k -> Tap((k.centerX + tapRng.nextGaussian() * sigma.first * GaussianTouch.POINTS_PER_MM).toFloat(), (k.centerY + tapRng.nextGaussian() * sigma.second * GaussianTouch.POINTS_PER_MM).toFloat()) } }
+                        val nTaps = next.map { c -> keyOf(c).let { k -> Tap((k.centerX + tapRng.nextGaussian() * sigma.first * GaussianTouch.POINTS_PER_MM).toFloat(), (k.centerY + tapRng.nextGaussian() * sigma.second * GaussianTouch.POINTS_PER_MM).toFloat()) } }
                         val cur = d.decode(nTaps, keys, params, maxResults = 4, includeCompletions = false, previous = bigrams.contextId(got.lowercase()), typed = next)
                             .filter { it.words == 1 && !it.isTypedString }.take(2)
                         fun joint(pc: Candidate): Double = cur.maxOfOrNull { c ->

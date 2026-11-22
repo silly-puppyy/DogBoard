@@ -171,6 +171,11 @@ object EngineLoader {
         val files = app.filesDir
         val p = pack(app)
         fun asset(component: String) = p.path(component) ?: error("${p.tag}: no $component")
+        val rules = p.path("rules")?.let { r -> runCatching { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(assets.open(r).bufferedReader().use { it.readText() }) }.getOrNull() }
+            ?: io.github.sillypuppyy.dogboard.engine.LanguageRules()
+        // letters with their own key on the language's layout (ñ, å ä ö, й) stay distinct in the trie: set before the
+        // lexicon is built (English: none)
+        io.github.sillypuppyy.dogboard.engine.Lexicon.distinctLetters = rules.letterRows.rows.joinToString("").filter { it !in 'a'..'z' }.toSet()
         TypingEngine.load(
             openLexicon = { assets.open(asset("lexicon")).bufferedReader() },
             openBigrams = { assets.open(asset("bigrams")).bufferedReader() },
@@ -192,8 +197,7 @@ object EngineLoader {
             snapshotDir = File(app.noBackupFilesDir, "dogboard-data"),
             snapshotKey = snapshotKey(app),
             openShipped = { name -> shippedSnapshot(app, p, name) },
-            rules = p.path("rules")?.let { r -> runCatching { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(assets.open(r).bufferedReader().use { it.readText() }) }.getOrNull() }
-                ?: io.github.sillypuppyy.dogboard.engine.LanguageRules(),
+            rules = rules,
         )
         android.util.Log.i("DogBoardPerf", "engine ready (suggestions on) after ${android.os.SystemClock.uptimeMillis() - t0} ms")
         nativeMark("engine")

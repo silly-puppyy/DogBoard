@@ -41,6 +41,21 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     var nonWordMargin: Boolean = false
 
     /**
+     * The lead an accent twin of a typed WORD needs ("que" -> "qué", "paso" -> "pasó"; both are words), as a ratio;
+     * null = the level's [Level.leadOverTyped]. iOS's filter 20 is skipped for same-sort-key candidates so "dont" can
+     * become "don't"; for a typed word that differs only by accents that let any twin with a hair more context win
+     * (Spanish controls: que -> qué, acabo -> acabó, 2026-11-22). Apostrophes and hyphens keep iOS's rule.
+     */
+    var accentTwinLead: Double? = null
+
+    /**
+     * A compounding language (Finnish, German: rules.json "compounds"): a typed word that is exactly two or more
+     * dictionary words joined ("vakoiluosasto") is a compound, kept as typed, not split ("vakoilu osasto"). Finnish
+     * real typing, 2026-11-22: most correct words broken were such splits.
+     */
+    var keepCompounds: Boolean = false
+
+    /**
      * The pair support an exact split's words need: the second at least 2x likelier after the first than anywhere.
      * At 1x (any pair that goes together) unknown names split ('Renderscript' -> 'render script', 'LiteStep' ->
      * 'lite step'): leave-alone sets 2026-11-20, unknown brands changed 13.2 % (no splits) -> 24.2 %, inner-capital
@@ -200,6 +215,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         if (top.words > 1 && top.contextSupport < minContextSupport) return null
         // Rule 1: the typed word wins.
         if (t == typed) return null
+        if (keepCompounds && top.words > 1 && !top.isCompletion && top.word.replace(" ", "").equals(typed, ignoreCase = true)) return null
         // (only a change of letters: a casing or apostrophe fix of what was typed stays, "gboard" -> "Gboard")
         if (top.words == 1 && minTargetLogProb > Double.NEGATIVE_INFINITY && sortKey(t) != sortKey(typed) &&
             (lexicon.logProb(top.word) ?: lexicon.logProb(top.word.lowercase()) ?: Double.NEGATIVE_INFINITY) < minTargetLogProb) return null
@@ -216,6 +232,11 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             // letter model's for "thankyou" kept real typos within 1.39x (nonWordMargin = the old way, benchmarks)
             if (asTyped != null && (!asTyped.isTypedString || nonWordMargin) && top.score - asTyped.score < ln(level.leadOverTyped))
                 return keptAsTyped(typed, asTyped, case)
+        }
+        // an accent twin of a typed word needs the same lead as any other change of a typed word (see accentTwinLead)
+        if (top.words == 1 && t != typed && isAccentTwin(t, typed) && isWordAsTyped(typed)) {
+            val asTyped = ranked.firstOrNull { it.words == 1 && it.word.equals(typed, ignoreCase = true) }
+            if (asTyped != null && top.score - asTyped.score < ln(accentTwinLead ?: level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)
         }
         // Rule 4: a correction that is not a completion of what was typed is taken as is.
         if (!(t.length >= typed.length && t.startsWith(typed))) return t
@@ -306,9 +327,30 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
 
 }
 
+/** [a] and [b] differ only by accents (and case): "qué" / "que", not "we're" / "were". */
+internal fun isAccentTwin(a: String, b: String): Boolean {
+    if (a.length != b.length || a.equals(b, ignoreCase = true)) return false
+    for (i in a.indices) {
+        val x = a[i].lowercaseChar(); val y = b[i].lowercaseChar()
+        if (x != y && Lexicon.fold(x) != Lexicon.fold(y)) return false
+    }
+    return true
+}
+
 /** The letters only, without case or accents ("We're" and "were" share one): iOS's sort key. */
-internal fun sortKey(word: String): String =
-    Normalizer.normalize(word, Normalizer.Form.NFD).filter { it.isLetterOrDigit() }.lowercase()
+internal fun sortKey(word: String): String {
+    val distinct = Lexicon.distinctLetters
+    if (distinct.isEmpty() || word.none { it.lowercaseChar() in distinct })
+        return Normalizer.normalize(word, Normalizer.Form.NFD).filter { it.isLetterOrDigit() }.lowercase()
+    // a letter with its own key (ñ, ä) is a letter of its own, not an accent: "año" and "ano" differ
+    val sb = StringBuilder(word.length)
+    for (c in word) {
+        val lc = c.lowercaseChar()
+        if (lc in distinct) sb.append(lc)
+        else Normalizer.normalize(lc.toString(), Normalizer.Form.NFD).forEach { if (it.isLetterOrDigit()) sb.append(it) }
+    }
+    return sb.toString()
+}
 
 /**
  * iOS exact-typed-string veto: the typed string (a candidate when

@@ -61,6 +61,8 @@ data class LanguageRules(
     @SerialName("hour_suffixes") val hourSuffixes: List<String> = emptyList(),
     /** The letter keys by row ([LetterRows]); English QWERTY when a pack doesn't set them. */
     @SerialName("letter_rows") val letterRows: LetterRows = LetterRows(),
+    /** A compounding language (Finnish, German): a typed exact join of dictionary words is kept (Autocorrect.keepCompounds). */
+    @SerialName("compounds") val compounds: Boolean = false,
 ) {
     /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
     val closingQuotes: String
