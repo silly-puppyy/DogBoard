@@ -57,6 +57,9 @@ LANGS = {
                layout=('gboard', 'greek'), gboard_tag='el-GR', script='Grek', compounds=False),
     'he': dict(name='Hebrew', leipzig=['heb_news_2020_1M', 'heb_wikipedia_2021_1M'], tatoeba='heb',
                layout=('ios', 'Hebrew'), script='Hebr', compounds=False, rtl=True),
+    # a sparse language: three 300K corpora, no wordfreq list, agglutinative (2026-11-23)
+    'eu': dict(name='Basque', leipzig=['eus_wikipedia_2021_300K', 'eus_wikipedia_2016_300K', 'eus_newscrawl_2012_300K'],
+               tatoeba='eus', layout=('gboard', 'spanish'), gboard_tag='eu-ES', script='Latn', compounds=False),
     'cs': dict(name='Czech', leipzig=['ces_news_2024_1M', 'ces_news_2022_1M', 'ces_wikipedia_2021_1M'], tatoeba='ces',
                layout=('gboard', 'qwertz'), script='Latn', compounds=False),
     'ka': dict(name='Georgian', leipzig=['kat-ge_web_2019_1M'], tatoeba='kat',
@@ -129,8 +132,14 @@ class Pack:
                 tgz = f'{DATA}/leipzig/{name}.tar.gz'
                 if not os.path.exists(tgz):
                     log('download', name); urllib.request.urlretrieve(LEIPZIG_URL.format(name), tgz)
-                with tarfile.open(tgz) as t: t.extractall(f'{DATA}/leipzig', filter='data')
+                # into the corpus's own folder: older archives (fra_mixed_2009, eus_newscrawl_2012) hold their files
+                # without one, and the corpus was silently skipped (2026-11-23)
+                with tarfile.open(tgz) as t:
+                    inner = any(m.name.startswith(name + '/') for m in t.getmembers())
+                    t.extractall(f'{DATA}/leipzig' if inner else d, filter='data')
                 hit = glob.glob(f'{d}/*-sentences.txt')
+            if not hit:
+                log('WARNING: no sentences file in', name)
             files += hit
         assert files, 'no corpus'
         # sentences with letters foreign to the language dropped (mis-encoding, other languages), into the pack dir
