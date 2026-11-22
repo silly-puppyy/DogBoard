@@ -194,14 +194,7 @@
         <key id="i-alt4" output="í" />
         <key id="i-alt5" output="į" />
         <key id="i-alt6" output="ī" />
-        <key id="I" output="I" longPressKeyIds="I-alt0 I-alt1 I-alt2 I-alt3 I-alt4 I-alt5 I-alt6" longPressDefaultKeyId="I-alt0" />
-        <key id="I-alt0" output="I" />
-        <key id="I-alt1" output="Î" />
-        <key id="I-alt2" output="Ï" />
-        <key id="I-alt3" output="Ì" />
-        <key id="I-alt4" output="Í" />
-        <key id="I-alt5" output="Į" />
-        <key id="I-alt6" output="Ī" />
+        <key id="U0130" output="İ" />
         <key id="o" output="o" longPressKeyIds="o-alt0 o-alt1 o-alt2 o-alt3 o-alt4 o-alt5 o-alt6 o-alt7" longPressDefaultKeyId="o-alt0" />
         <key id="o-alt0" output="ö" />
         <key id="o-alt1" output="ô" />
@@ -316,7 +309,7 @@
         </layer>
 
         <layer id="shift">
-            <row keys="Q U018f E R T Y U I O P" />
+            <row keys="Q U018f E R T Y U U0130 O P" />
             <row keys="gap2-azerbaijani-az A S D F G H J K L gap2-azerbaijani-az" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
@@ -358,7 +351,7 @@
         </layer>
 
         <layer id="shift-email">
-            <row keys="Q U018f E R T Y U I O P" />
+            <row keys="Q U018f E R T Y U U0130 O P" />
             <row keys="gap2-azerbaijani-az A S D F G H J K L gap2-azerbaijani-az" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
@@ -372,7 +365,7 @@
         </layer>
 
         <layer id="shift-url">
-            <row keys="Q U018f E R T Y U I O P" />
+            <row keys="Q U018f E R T Y U U0130 O P" />
             <row keys="gap2-azerbaijani-az A S D F G H J K L gap2-azerbaijani-az" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
@@ -386,7 +379,7 @@
         </layer>
 
         <layer id="shift-classic">
-            <row keys="Q U018f E R T Y U I O P" />
+            <row keys="Q U018f E R T Y U U0130 O P" />
             <row keys="gap2-azerbaijani-az A S D F G H J K L gap2-azerbaijani-az" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -400,7 +393,7 @@
         </layer>
 
         <layer id="shift-classic-email">
-            <row keys="Q U018f E R T Y U I O P" />
+            <row keys="Q U018f E R T Y U U0130 O P" />
             <row keys="gap2-azerbaijani-az A S D F G H J K L gap2-azerbaijani-az" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
@@ -414,7 +407,7 @@
         </layer>
 
         <layer id="shift-classic-url">
-            <row keys="Q U018f E R T Y U I O P" />
+            <row keys="Q U018f E R T Y U U0130 O P" />
             <row keys="gap2-azerbaijani-az A S D F G H J K L gap2-azerbaijani-az" />
             <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />

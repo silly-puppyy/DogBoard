@@ -396,6 +396,24 @@ class Decoder(
     }
 
     /** What one tap says: each key's touch likelihood, its nearest keys, and its time terms. */
+    /**
+     * A key whose letter the lexicon folds to another (ñ to n where ñ is not a distinct letter; Greek final ς to σ)
+     * also counts for that trie letter: its likelihood there is the larger of
+     * the two keys'. Before, the trie letter was scored against its own key only, so a tap on ñ read as a far-off "n"
+     * and "año" became "all" (2026-11-23); a tap on Greek ς counts for σ (Lexicon.fold).
+     */
+    private fun withFoldedKeys(likelihood: Map<Char, Double>): Map<Char, Double> {
+        var out: MutableMap<Char, Double>? = null
+        for ((c, v) in likelihood) {
+            val f = Lexicon.fold(c)
+            if (f == c) continue
+            val m = out ?: likelihood.toMutableMap().also { out = it }
+            val cur = m[f]
+            if (cur == null || v > cur) m[f] = v
+        }
+        return out ?: likelihood
+    }
+
     private class TapInfo(
         val likelihood: Map<Char, Double>,
         val nearby: Set<Char>,
@@ -564,6 +582,7 @@ class Decoder(
             } else DEFAULT_INTERVAL_S
             // letters only; the space bar (' ') is scored apart, for a word break at this tap
             val likelihood = keys.filterKeys { it != ' ' }.mapValues { (_, k) -> GaussianTouch.logLikelihood(k, taps[i].x, taps[i].y, params) }
+                .let(::withFoldedKeys)
             sr.info.add(TapInfo(
                 likelihood,
                 likelihood.entries.sortedByDescending { it.value }.take(NEARBY_KEYS).map { it.key }.toSet(),

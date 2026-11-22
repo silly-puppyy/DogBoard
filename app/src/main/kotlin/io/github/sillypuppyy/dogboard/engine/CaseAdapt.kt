@@ -22,6 +22,12 @@ package io.github.sillypuppyy.dogboard.engine
  * Returns null when the candidate is not acceptable for this input (it is filtered out).
  */
 object CaseAdapt {
+    /**
+     * The language's casing rules (EngineLoader sets the pack's locale): Turkish and Azerbaijani capital i is İ and
+     * capital ı is I; the root locale gave "Istanbul" for "istanbul" at a sentence start (2026-11-23).
+     */
+    @Volatile var locale: java.util.Locale = java.util.Locale.ROOT
+
     /** Per-letter input flags. */
     const val SHIFTED = 1
     const val AUTOSHIFTED = 2
@@ -68,7 +74,7 @@ object CaseAdapt {
         when (classify(input, flags, context)) {
             Type.NONE -> candidate
             Type.AUTOSHIFT -> if (casing.keepsLowercaseStart(candidate)) candidate else capitaliseFirst(candidate)
-            Type.AUTOSHIFT_ALL, Type.ALL_CAPS -> candidate.uppercase()
+            Type.AUTOSHIFT_ALL, Type.ALL_CAPS -> candidate.uppercase(locale)
             Type.EXPLICIT_SHIFT -> {
                 val capitalised = candidate.firstOrNull()?.isUpperCase() == true || casing.hasCapitalisedForm(candidate)
                 if (capitalised && candidate.length >= input.length - 1 && sameLetter(candidate.firstOrNull(), input.firstOrNull())) {
@@ -113,6 +119,6 @@ object CaseAdapt {
     fun capitaliseFirst(word: String): String {
         val i = word.indexOfFirst { it.isLetter() }
         if (i < 0) return word
-        return word.substring(0, i) + word[i].uppercase() + word.substring(i + 1)
+        return word.substring(0, i) + word[i].toString().uppercase(locale) + word.substring(i + 1)
     }
 }

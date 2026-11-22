@@ -636,7 +636,8 @@ def all_layouts() -> list[Layout]:
                 name = f"{stem} {n}"; n += 1
         named.setdefault((base, name), rows)
         first_name.setdefault(base, name)
-        key = json.dumps([rows, accents], ensure_ascii=False, sort_keys=True)
+        # Turkish / Azerbaijani casing (Shift+i = İ) is part of a keyboard's identity: a shared QWERTY file can't have it
+        key = json.dumps([rows, accents, base in ("tr", "az")], ensure_ascii=False, sort_keys=True)
         fid = files.get(key)
         if fid is None:
             fid = re.sub(r"[^a-z0-9]+", "-", hint.lower()).strip("-")[:32] or "layout"
@@ -652,7 +653,9 @@ def all_layouts() -> list[Layout]:
             lay = no_capitals(lay)
         # Turkic dotted / dotless i (Turkish, Azerbaijani, Kirmanjki...): i -> İ, ı -> I (str.upper gave I for both)
         letters = {c for r in rows for c in r}
-        if "ı" in letters and "i" in letters:
+        # (Turkish and Azerbaijani always: Gboard's Turkish QWERTY has ı on long-press, so no ı key, and Shift+i
+        # must still be İ, 2026-11-23)
+        if "i" in letters and ("ı" in letters or base in ("tr", "az")):
             lay.uppers.setdefault("i", "İ")
             lay.uppers.setdefault("ı", "I")
         # a letter with no capital of its own (Greek final ς: its capital Σ is σ's) stays itself on shift, or the

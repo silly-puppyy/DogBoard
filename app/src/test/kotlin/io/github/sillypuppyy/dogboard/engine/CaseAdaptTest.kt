@@ -78,4 +78,16 @@ class CaseAdaptTest : FunSpec({
         CaseAdapt.capitaliseFirst("iPhone") shouldBe "IPhone"
         CaseAdapt.capitaliseFirst("'tis") shouldBe "'Tis"
     }
+
+    test("Turkish capitals follow the language (dotted İ), others the root rules") {
+        try {
+            CaseAdapt.locale = java.util.Locale.forLanguageTag("tr")
+            CaseAdapt.capitaliseFirst("istanbul") shouldBe "İstanbul"
+            CaseAdapt.capitaliseFirst("ılık") shouldBe "Ilık"
+            CaseAdapt.locale = java.util.Locale.ROOT
+            CaseAdapt.capitaliseFirst("istanbul") shouldBe "Istanbul"
+        } finally {
+            CaseAdapt.locale = java.util.Locale.ROOT
+        }
+    }
 })

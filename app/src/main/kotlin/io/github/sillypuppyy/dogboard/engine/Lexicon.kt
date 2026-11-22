@@ -575,9 +575,18 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         @Volatile var distinctLetters: Set<Char> = emptySet()
 
         /** [fold] ignoring [distinctLetters]: every letter to its base (the letter model is trained that way). */
+        /**
+         * Greek final ς, written only at a word's end: folded to σ (as an accent), so a word typed with either form
+         * reaches the stored spelling, which keeps its ς (Greek typos wrong 13.2 -> 12.5 %, 2026-11-23). Hebrew's final
+         * letters were tried the same way and measured worse (typos fixed 24.3 -> 22.6 %, wrong 9.5 -> 10.9 %: each has
+         * its own key on iOS's layout), so they stay letters of their own.
+         */
+        private val FINAL_FORMS = mapOf('ς' to 'σ')
+
         fun foldPlain(c: Char): Char {
             val lc = c.lowercaseChar()
             if (lc.code < 0xC0) return lc
+            FINAL_FORMS[lc]?.let { return it }
             return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
         }
 
@@ -585,6 +594,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
             val lc = c.lowercaseChar()
             if (lc.code < 0xC0) return lc
             if (lc in distinctLetters) return lc
+            FINAL_FORMS[lc]?.let { return it }
             return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
         }
 
