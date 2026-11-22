@@ -65,8 +65,17 @@ class Decoder(
         val nodeLp = lexicon.logProb(node)
         val base = context?.logProb(previous2, previous, lexicon.wordId(node), nodeLp)
             ?: bigrams?.logProb(previous, lexicon.wordId(node), nodeLp) ?: nodeLp
-        val formLp = lexicon.forms(node).firstOrNull { it.first == c.word }?.second ?: nodeLp
-        val l = base + (formLp - nodeLp)
+        val forms = lexicon.forms(node)
+        val formLp = forms.firstOrNull { it.first == c.word }?.second ?: nodeLp
+        // an accent twin ("mangé" / "mange"): its own spelling's context score, as in the search (the share alone
+        // kept "il a mange", 2026-11-22); casings of one spelling split it by share
+        val own = context?.takeIf { forms.size > 1 && forms.any { !it.first.equals(c.word, ignoreCase = true) } }
+            ?.formLogProb(previous2, previous, c.word.lowercase())
+        val l = if (own != null) {
+            var spellingLp = Double.NEGATIVE_INFINITY
+            for ((f, lp) in forms) if (f.equals(c.word, ignoreCase = true)) spellingLp = logAdd(spellingLp, lp)
+            own + (formLp - spellingLp)
+        } else base + (formLp - nodeLp)
         return c.copy(score = c.geometry + config.languagePower * l, languageModel = l)
     }
 

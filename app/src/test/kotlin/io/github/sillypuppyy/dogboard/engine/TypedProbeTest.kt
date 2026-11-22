@@ -15,15 +15,34 @@ class TypedProbeTest : FunSpec({
         val keys = QwertyGeometry.keysWithSpace(width, 216f)
         val params = GaussianTouch.params(medianKeyHalfWidth = width / 20.0, typingInterval = 0.15)
         TypingEngine.unloadForTest()
+        // DOGBOARD_PACK_DIR + DOGBOARD_PACK_LANG: another language's pack (as RealTypoEvalTest), its rules' own letters
+        val dir = System.getenv("DOGBOARD_PACK_DIR")?.trimEnd('/')?.plus('/') ?: "src/main/assets/dogboard/"
+        val lang = System.getenv("DOGBOARD_PACK_LANG") ?: "en"
+        fun reader(name: String) = File("$dir$lang.$name").takeIf { it.isFile }?.bufferedReader() ?: java.io.BufferedReader(java.io.StringReader(""))
+        val rules = File("${dir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) }
+        Lexicon.distinctLetters = rules?.distinctLetters?.toSet() ?: emptySet()
         TypingEngine.load(
-            openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() },
-            openBigrams = { File("src/main/assets/dogboard/en.bigrams.tsv").bufferedReader() },
-            openNoSuggest = { File("src/main/assets/dogboard/en.nosuggest.txt").bufferedReader() },
-            openMisspellings = { File("src/main/assets/dogboard/en.misspellings.txt").bufferedReader() },
+            openLexicon = { reader("lexicon.tsv") },
+            openBigrams = { reader("bigrams.tsv") },
+            openNoSuggest = { reader("nosuggest.txt") },
+            openMisspellings = { reader("misspellings.txt") },
+            rules = rules ?: LanguageRules(),
         )
         System.getenv("DOGBOARD_NGRAMS")?.let { File(it) }?.takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
             ?.let { TypingEngine.attachNgrams(it) }
-        File("src/main/assets/dogboard/en.charlm.bin").inputStream().use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
+        File("$dir$lang.charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
+        // DOGBOARD_PROBE_FORMS=word: what the lexicon and the n-gram model hold for a word's spellings
+        System.getenv("DOGBOARD_PROBE_FORMS")?.let { w ->
+            val lex = TypingEngine.lexiconForTest()!!
+            val node = lex.find(w)
+            println("PROBE-FORMS $w node=$node hasCasings=${lex.hasCasings(node)} forms=${lex.forms(node)}")
+            System.getenv("DOGBOARD_NGRAMS")?.let { f -> NgramModel.readBinary(File(f).inputStream())?.let { m ->
+                println("PROBE-FORMS ngram ids: " + lex.forms(node).joinToString { (f2, _) -> "$f2=${m.idOf(f2.lowercase())}" })
+                val nous = m.idOf("nous"); val avons = m.idOf("avons")
+                println("PROBE-FORMS model nous=$nous avons=$avons P(mange|nous avons)=${m.logProbOf(nous, avons, m.idOf("mange"))} P(mangé|nous avons)=${m.logProbOf(nous, avons, m.idOf("mangé"))} P(mangé|-1,avons)=${m.logProbOf(-1, avons, m.idOf("mangé"))}")
+                println("PROBE-FORMS lexicon avons node=${lex.find("avons")} wordId=${lex.wordId(lex.find("avons"))} word=${lex.word(lex.find("avons"))}")
+            } }
+        }
         try {
             // DOGBOARD_PROBE_NOISE=n: n tries per case with taps scattered 1.5 x 2 mm (6.3 dp a mm), outcomes counted
             val tries = System.getenv("DOGBOARD_PROBE_NOISE")?.toIntOrNull()

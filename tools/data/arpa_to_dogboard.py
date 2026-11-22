@@ -27,6 +27,11 @@ def main():
     ap.add_argument("--max-pairs", type=int, default=3_000_000)
     ap.add_argument("--max-triples", type=int, default=3_000_000)
     ap.add_argument("--lexicon", default=LEX, help="the pack's lexicon (default: English)")
+    ap.add_argument("--rank", choices=["conditional", "entropy"], default="conditional",
+                    help="which n-grams to keep under the limits: the most probable P(w | context) (default, what the "
+                         "English file was built with), or the largest relative-entropy loss if dropped (Stolcke: "
+                         "P(context) x P(w|context) x (ln P(w|context) - its back-off estimate); keeps common pairs of "
+                         "common contexts instead of one-off contexts' certain followers: French 'avons mangé' was cut)")
     ap.add_argument("--legacy", action="store_true", help="the earlier float layout (DGN1); the app reads only DGN2")
     args = ap.parse_args()
     lex = {l.split("\t")[0].lower() for l in open(args.lexicon, encoding="utf-8") if not l.startswith("#")}
@@ -57,18 +62,22 @@ def main():
             elif section == 2:
                 a, b = ids.get(words[0]), ids.get(words[1])
                 if a is not None and b is not None:
-                    e = (p, (a << 32) | b, bo)
+                    r = p if args.rank == "conditional" else math.exp(uni_p[a] + p) * (p - (uni_b[a] + uni_p[b]))
+                    e = (r, (a << 32) | b, bo, p)
                     if len(pairs) < args.max_pairs: heapq.heappush(pairs, e)
-                    elif p > pairs[0][0]: heapq.heapreplace(pairs, e)
+                    elif r > pairs[0][0]: heapq.heapreplace(pairs, e)
             elif section == 3:
                 a, b, c = ids.get(words[0]), ids.get(words[1]), ids.get(words[2])
                 if a is not None and b is not None and c is not None:
-                    e = (p, (a << 42) | (b << 21) | c)
+                    # the context's probability approximated by its words' unigrams (the pairs' own are not at hand while
+                    # streaming), the back-off estimate by the word's unigram
+                    r = p if args.rank == "conditional" else math.exp(uni_p[a] + uni_p[b] + p) * (p - uni_p[c])
+                    e = (r, (a << 42) | (b << 21) | c, p)
                     if len(triples) < args.max_triples: heapq.heappush(triples, e)
-                    elif p > triples[0][0]: heapq.heapreplace(triples, e)
+                    elif r > triples[0][0]: heapq.heapreplace(triples, e)
     print(f"kept vocab {len(vocab)}, top pairs {len(pairs)}, top triples {len(triples)}", file=sys.stderr)
-    pairs = sorted(((k, p, bo) for p, k, bo in pairs), key=lambda e: e[0])
-    triples = sorted(((k, p) for p, k in triples), key=lambda e: e[0])
+    pairs = sorted(((k, p, bo) for _, k, bo, p in pairs), key=lambda e: e[0])
+    triples = sorted(((k, p) for _, k, p in triples), key=lambda e: e[0])
     if not args.legacy:
         write_compact(args.out, vocab, uni_p, uni_b, pairs, triples)
         return
