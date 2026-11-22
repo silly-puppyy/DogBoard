@@ -55,6 +55,17 @@ class RealTypoEvalTest : FunSpec({
         // DOGBOARD_NO_TRIGRAM=1: the decoders score with the word pairs only (ablation; the file still enables the test)
         val noTrigram = System.getenv("DOGBOARD_NO_TRIGRAM") == "1"
         // DOGBOARD_SPACE_KEY=1: the space bar among the keys a tap may have meant (word breaks at a tap)
+        // the context id of a previous word, as the keyboard makes it: an accent twin ("a" / "à") by its own spelling
+        // (TypingEngine.contextId; the engine here is loaded without the pairs file, so the same steps are done here)
+        val twinScorer = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart)
+        fun ctxId(w: String): Int {
+            val id = bigrams.contextId(w)
+            if (!appPath || id < 0 || w == Bigrams.START || twinScorer == null) return id
+            val node = lexicon.find(w).takeIf { it != Lexicon.NONE } ?: return id
+            val forms = lexicon.forms(node)
+            if (forms.size < 2 || forms.all { it.first.equals(forms[0].first, ignoreCase = true) }) return id
+            return twinScorer.spellingContext(w) ?: id
+        }
         val keys = if (System.getenv("DOGBOARD_SPACE_KEY") == "1") QwertyGeometry.keysWithSpace(375f, 216f, letterRows) else QwertyGeometry.letterKeys(375f, 216f, letterRows)
         // an accented letter is tapped on its base key (long press), as the keyboard types it
         fun keyOf(c: Char) = keys[c] ?: keys.getValue(java.text.Normalizer.normalize(c.toString(), java.text.Normalizer.Form.NFD)[0])
@@ -196,7 +207,7 @@ class RealTypoEvalTest : FunSpec({
                     Tap((k.centerX + (hand.first + tapRng.nextGaussian() * sigma.first) * GaussianTouch.POINTS_PER_MM).toFloat(),
                         (k.centerY + (hand.second + tapRng.nextGaussian() * sigma.second) * GaussianTouch.POINTS_PER_MM).toFloat())
                 }
-                val decoded = decoders.get().decode(taps, keys, params, previous = bigrams.contextId(prev), typed = typed, previous2 = prev2?.let { bigrams.contextId(it) } ?: -1)
+                val decoded = decoders.get().decode(taps, keys, params, previous = ctxId(prev), typed = typed, previous2 = prev2?.let { ctxId(it) } ?: -1)
                 val candidates = neuralScores?.let { m ->
                     withNeural(decoded, { w -> m["${row[2]}\t$typed\t${w.replace(",", "")}"] }, neuralWeight, Decoder.LANGUAGE_POWER_CONTEXT)
                 } ?: decoded

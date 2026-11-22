@@ -344,7 +344,14 @@ class NgramScorer(private val model: NgramModel, private val lexicon: Lexicon, p
     private val lexToModel = IntArray(lexicon.size) { id -> lexicon.word(lexicon.nodeOfWord(id))?.let { model.idOf(it.lowercase()) } ?: -1 }
     private val start = model.idOf(NgramModel.START)
 
+    /**
+     * A context id for one spelling of an accent twin ("a" vs "à", "esta" vs "está"), which share a lexicon word and so a
+     * context id: the model's id of [word] encoded below -1 (nothing else uses those), or null when the model lacks it.
+     */
+    fun spellingContext(word: String): Int? = model.idOf(word.lowercase()).takeIf { it >= 0 }?.let { -2 - it }
+
     private fun contextToModel(ctx: Int): Int = when {
+        ctx < -1 -> -2 - ctx // a spelling's own id (spellingContext)
         ctx < 0 -> -1
         ctx == sentenceStart -> start
         ctx < lexToModel.size -> lexToModel[ctx]

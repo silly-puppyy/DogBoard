@@ -612,8 +612,17 @@ object TypingEngine {
         }
     }
 
-    private fun Loaded.contextId(previous: String?): Int =
-        previous?.let { bigrams?.contextId(it) } ?: -1
+    private fun Loaded.contextId(previous: String?): Int {
+        val id = previous?.let { bigrams?.contextId(it) } ?: -1
+        // an accent twin as the previous word ("il a" vs "il à"): its own spelling's context, not its node's
+        // representative spelling ("a mangé" was scored as "à mange", 2026-11-22). Needs the trigram model.
+        if (previous == null || id < 0 || previous == Bigrams.START) return id
+        val scorer = decoder.context as? NgramScorer ?: return id
+        val node = lexicon.find(previous).takeIf { it != Lexicon.NONE } ?: return id
+        val forms = lexicon.forms(node)
+        if (forms.size < 2 || forms.all { it.first.equals(forms[0].first, ignoreCase = true) }) return id
+        return scorer.spellingContext(previous) ?: id
+    }
 
     /**
      * Decoded words for [word]'s taps, best first; empty if not ready or not decodable.
