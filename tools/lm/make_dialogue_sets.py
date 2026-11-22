@@ -1,5 +1,5 @@
-"""Dialogue next-word sets from OpenAssistant oasst2 (Apache-2.0; every message written by a person, prompts and
-replies), like make_lang_predbench.py's human sets: 200 lowercased sentences of 5-25 words per language, no links or
+"""Dialogue next-word sets from OpenAssistant oasst2 (Apache-2.0): the PROMPTS people typed (the human-written
+assistant replies read like encyclopedia text, not typing), like make_lang_predbench.py's human sets: 200 lowercased sentences of 5-25 words per language, no links or
 code; the chosen lines are appended to exclude-<lang>.txt (student training must drop them). Finnish has 138
 messages in oasst2: too few, skipped.
 Usage: make_dialogue_sets.py ready.messages.jsonl.gz OUT_DIR"""
@@ -12,7 +12,7 @@ BAD = re.compile(r'https?://|www\.|[{}<>=_`#@\\|*]|\d{3,}')
 pools = {l: set() for l in LANGS}
 for line in gzip.open(SRC, 'rt', encoding='utf-8'):
     m = json.loads(line)
-    if m.get('lang') not in LANGS or m.get('deleted') or m.get('synthetic'): continue
+    if m.get('lang') not in LANGS or m.get('deleted') or m.get('synthetic') or m.get('role') != 'prompter': continue
     for s in SPLIT.split(m.get('text') or ''):
         s = unicodedata.normalize('NFC', s.strip().strip('"«»“”-'))
         letters = sum(1 for c in s if c.isalpha())
