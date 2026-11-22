@@ -7,7 +7,7 @@
   "Sara",
   "Dani",
   "Laura",
-  "Álex",
+  "Óscar",
   "Carmen",
   "Hugo",
   "Irene",
@@ -17,10 +17,10 @@
   "Nerea",
   "Raúl",
   "Elena",
-  "Adri",
+  "Marcos",
   "Claudia",
   "Mario",
-  "Noa",
+  "Andrea",
   "Iván",
   "Julia",
   "Rubén"
@@ -222,5 +222,31 @@
     "voy"
    ]
   ]
- ]
+ ],
+ "gender": {
+  "Lucía": "femn",
+  "Pablo": "masc",
+  "Marta": "femn",
+  "Javi": "masc",
+  "Sara": "femn",
+  "Dani": "masc",
+  "Laura": "femn",
+  "Óscar": "masc",
+  "Carmen": "femn",
+  "Hugo": "masc",
+  "Irene": "femn",
+  "Diego": "masc",
+  "Paula": "femn",
+  "Sergio": "masc",
+  "Nerea": "femn",
+  "Raúl": "masc",
+  "Elena": "femn",
+  "Marcos": "masc",
+  "Claudia": "femn",
+  "Mario": "masc",
+  "Andrea": "femn",
+  "Iván": "masc",
+  "Julia": "femn",
+  "Rubén": "masc"
+ }
 }

@@ -8,7 +8,7 @@
   "Théo",
   "Manon",
   "Nathan",
-  "Camille",
+  "Margaux",
   "Louis",
   "Inès",
   "Tom",
@@ -222,5 +222,31 @@
     "j arrive"
    ]
   ]
- ]
+ ],
+ "gender": {
+  "Léa": "femn",
+  "Hugo": "masc",
+  "Chloé": "femn",
+  "Lucas": "masc",
+  "Emma": "femn",
+  "Théo": "masc",
+  "Manon": "femn",
+  "Nathan": "masc",
+  "Margaux": "femn",
+  "Louis": "masc",
+  "Inès": "femn",
+  "Tom": "masc",
+  "Sarah": "femn",
+  "Jules": "masc",
+  "Lina": "femn",
+  "Maxime": "masc",
+  "Zoé": "femn",
+  "Enzo": "masc",
+  "Clara": "femn",
+  "Antoine": "masc",
+  "Jade": "femn",
+  "Noah": "masc",
+  "Alice": "femn",
+  "Paul": "masc"
+ }
 }
