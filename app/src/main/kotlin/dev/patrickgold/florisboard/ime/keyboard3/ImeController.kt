@@ -321,7 +321,14 @@ class ImeController(
     }
 
     /** DogBoard: where the next letter key was tapped (set on touch down, used when it emits). */
+    /** DogBoard: typing into the Testing page's key-log field (only there: io.github.sillypuppyy.dogboard.testing.KeyLog). */
+    private fun keyLogOn(): Boolean = activeState.value.editor.info.let {
+        it.packageName == dev.patrickgold.florisboard.FlorisApplication.getHack().packageName &&
+            it.base.privateImeOptions?.contains(io.github.sillypuppyy.dogboard.testing.KeyLog.MARK) == true
+    }
+
     fun notePendingTap(tap: Tap?, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
+        if (tap != null && keyLogOn()) io.github.sillypuppyy.dogboard.testing.KeyLog.add("tap", "x=%.1f y=%.1f dp".format(java.util.Locale.ROOT, tap.x, tap.y))
         pendingTap = PendingTap(tap, keys, params)
         spaceTap = null
         if (keys.isNotEmpty() && params != null) {
@@ -1242,6 +1249,7 @@ class ImeController(
 
         /** Commits a suggestion-strip pick in place of the current word, followed by a space. */
         private fun acceptSuggestion(suggestion: Suggestion): Boolean {
+            if (keyLogOn()) io.github.sillypuppyy.dogboard.testing.KeyLog.add("pick", "“${suggestion.word}” (${suggestion.kind}) for “${currentWord.text}”")
             suggestion.swipeOf?.let { old -> return acceptSwipeAlternative(suggestion, old) }
             if (currentWord.isEmpty && wordAroundCursor != null) return acceptForWordAroundCursor(suggestion)
             val typed = currentWord.text

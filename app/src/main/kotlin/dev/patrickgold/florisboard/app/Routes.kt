@@ -128,6 +128,11 @@ object Routes {
         @Deeplink("settings/gradient")
         data class Gradient(val id: String = "", val pack: String = "", val solid: Boolean = false)
 
+        /** DogBoard: Advanced › Testing (replay the setup, the key log field). */
+        @Serializable
+        @Deeplink("settings/testing")
+        object Testing
+
         /** DogBoard: the theme editor (ThemeEditor.dc.html): a saved editor theme [id], or a new one from [start]. */
         @Serializable
         @Deeplink("settings/theme-editor")
@@ -402,6 +407,7 @@ object Routes {
             composableWithDeepLink(Settings.Layout::class) { io.github.sillypuppyy.dogboard.settings.LayoutScreen() }
             composableWithDeepLink(Settings.Themes::class) { io.github.sillypuppyy.dogboard.settings.ThemesScreen() }
             composableWithDeepLink(Settings.Photo::class) { io.github.sillypuppyy.dogboard.settings.PhotoScreen() }
+            composableWithDeepLink(Settings.Testing::class) { io.github.sillypuppyy.dogboard.settings.TestingScreen() }
             composableWithDeepLink(Settings.ThemeEditor::class) { navBackStack ->
                 val payload = navBackStack.toRoute<Settings.ThemeEditor>()
                 io.github.sillypuppyy.dogboard.settings.ThemeEditorScreen(payload.id, payload.start, payload.pack)

@@ -38,7 +38,7 @@ fun DogAdvancedScreen() {
     val landscape by prefs.keyboard.landscapeInputUiMode.collectAsState()
     val neural by prefs.correction.neuralModel.collectAsState()
     val appIcon by prefs.other.showAppIcon.collectAsState()
-    val dev by prefs.other.devOptionsUnlocked.collectAsState()
+    val devOn by prefs.other.devOptionsUnlocked.collectAsState()
     SetPage("Advanced") {
         SetGroup("Typing") {
             SetSliderRow(
@@ -71,7 +71,8 @@ fun DogAdvancedScreen() {
             SetPageLink("adv:backup", "Back up settings and words", "Save them to a file") { nav.navigate(Routes.Settings.Backup) }
             SetPageLink("adv:restore", "Restore from a backup", "Load a saved file") { nav.navigate(Routes.Settings.Restore()) }
         }
-        if (dev) SetGroup("Developer") {
+        if (devOn || dev.patrickgold.florisboard.BuildConfig.DEBUG) SetGroup("Developer") {
+            SetPageLink("adv:testing", "Testing", "Replay the setup, log your keystrokes in a test field") { nav.navigate(Routes.Settings.Testing) }
             SetPageLink("adv:devtools", "Developer options", "Touch areas, overlays and logs") { nav.navigate(Routes.Devtools.Home) }
         }
     }
