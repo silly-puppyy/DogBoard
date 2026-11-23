@@ -53,7 +53,10 @@ object PackDownloadQueue {
             if (_index.value == null) PackDownloads.of(app).index()?.let { _index.value = it }
             for (tag in tags) {
                 val entry = offered(tag) ?: continue
-                if (LanguagePack.find(app, entry.tag)?.hasWords == true) continue
+                // a pack on the phone is fetched again only when the host has a newer version of it (a downloaded one:
+                // a built-in pack updates with the app)
+                val have = LanguagePack.find(app, entry.tag)?.takeIf { it.hasWords }
+                if (have != null && (have.bundled || _index.value?.let { PackDownloads.of(app).updateFor(have, it) } == null)) continue
                 start(app, entry)
             }
         }
@@ -71,9 +74,11 @@ object PackDownloadQueue {
                     if (r is PackInstaller.Result.Installed) {
                         android.util.Log.i("DogBoardPerf", "pack ${r.tag} ${r.version} installed in the background")
                         _installed.update { it + 1 }
-                        // in use now: load it (the language typed with its layout alone until here)
-                        val active = dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype.primaryLocale.languageTag()
-                        if (active.substringBefore('-').equals(entry.tag.substringBefore('-'), true)) EngineLoader.switchTo(app, active)
+                        // in use now: load it (the language typed with its layout alone until here), or load it again (updated)
+                        val active = dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype
+                        if (!EngineLoader.reloadIfLoaded(app, entry.tag) &&
+                            active.primaryLocale.languageTag().substringBefore('-').equals(entry.tag.substringBefore('-'), true)
+                        ) EngineLoader.switchTo(app, active.primaryLocale.languageTag())
                         return@launch
                     }
                     android.util.Log.w("DogBoardPerf", "pack ${entry.tag}: attempt ${attempt + 1} failed: ${(r as PackInstaller.Result.Failed).reason}")

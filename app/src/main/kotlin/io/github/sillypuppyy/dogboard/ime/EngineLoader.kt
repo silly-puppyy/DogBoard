@@ -83,6 +83,32 @@ object EngineLoader {
         return true
     }
 
+    /**
+     * A pack that was just updated ([tag]): loaded again when the engine has it, as the first language or one typed
+     * together with it (the old files are gone: its snapshots are keyed by the manifest's hashes). True if it was loaded.
+     */
+    @Synchronized
+    fun reloadIfLoaded(context: Context, tag: String): Boolean {
+        val app = context.applicationContext
+        if (secondaryPacks.any { it.tag == tag }) {
+            val tags = secondaryPacks.map { it.tag }
+            secondaryPacks = emptyList()
+            TypingEngine.unloadSecondary()
+            setSecondaries(app, tags)
+            return true
+        }
+        val current = pack ?: return false
+        if (current.tag != tag || current.bundled) return false
+        android.util.Log.i("DogBoardPerf", "language ${current.tag}: updated pack, loading again")
+        // the languages typed together stay loaded (unload leaves them; the first's autocorrect gets their lists again)
+        TypingEngine.unload()
+        TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
+        pack = LanguagePack.find(app, tag)
+        System.gc()
+        ensureLoaded(app)
+        return true
+    }
+
     /** Before the first load: start with [tag]'s pack when one with a dictionary exists (else the default, English). */
     @Synchronized
     fun prefer(context: Context, tag: String) {
