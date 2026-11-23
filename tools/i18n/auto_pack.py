@@ -338,7 +338,8 @@ class Pack:
         if broken_high:
             # Basque at a quarter of its text broke 1.2 % of correct words (full text 0.2 %, like the other packs): too little
             # text; a stricter correction threshold barely helped (1.0 %, two points of fixed typos lost), 2026-11-23
-            report += ['', f'NOT READY TO SHIP: {broken_high} % of correct words broken (at most 0.5 %): more text needed']
+            report += ['', f'NOT READY TO SHIP: {broken_high} % of correct words broken (at most 0.5 %): read the list (DOGBOARD_EVAL_ERRORS); '
+                       'unknown real words want more text, restored accents (Greek tonos, Arabic hamza) are a policy question']
         sizes = {k: v['size'] for k, v in json.load(open(self.p('manifest.json')))['files'].items()}
         report += ['', 'Download size without the text lists: %.1f MB' % (sum(v for k, v in sizes.items() if k not in ('lexicon', 'bigrams')) / 1e6)]
         open(self.p('report.md'), 'w').write('\n'.join(report) + '\n')
