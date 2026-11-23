@@ -832,7 +832,9 @@ object TypingEngine {
 
     fun refineWithNeural(decoded: List<Candidate>, textBefore: String): List<Candidate>? {
         val engine = loaded ?: return null
-        val lm = neuralLm?.takeIf { decoded.size > 1 } ?: return null
+        // one language's model would rank the other's words down: off while a second language is typed (until every
+        // language of the entry has one, notes/design/multilingual.md)
+        val lm = neuralLm?.takeIf { decoded.size > 1 && secondary == null } ?: return null
         val t0 = System.nanoTime()
         val scores = runCatching { tallySteps(lm, "refine") {
             lm.wordScores(textBefore, decoded.map { it.word }, maxSteps = NEURAL_REFINE_STEPS, deadlineNanos = t0 + NEURAL_REFINE_MS * 1_000_000)
@@ -869,7 +871,7 @@ object TypingEngine {
      * in another context than the current word's: call it off the main thread, after the refinement.
      */
     fun retroNeuralScores(previousDecoded: List<Candidate>, current: List<Candidate>, textBeforePrevious: String): Map<String, Double>? {
-        val lm = neuralLm ?: return null
+        val lm = neuralLm?.takeIf { secondary == null } ?: return null
         val phrases = retroPairs(previousDecoded, current).map { (p, c) -> "${p.word} ${c.word}" }.distinct()
         if (phrases.size < 2) return null
         val t0 = System.nanoTime()
@@ -976,7 +978,7 @@ object TypingEngine {
      * without the model.
      */
     fun hindsightFix(before: String, typed: String, after: String): Pair<String, Double>? {
-        val lm = neuralLm ?: return null
+        val lm = neuralLm?.takeIf { secondary == null } ?: return null
         val cands = hindsightCandidates(typed)
         if (cands.isEmpty()) return null
         val phrases = listOf("$typed $after") + cands.keys.map { "$it $after" }
