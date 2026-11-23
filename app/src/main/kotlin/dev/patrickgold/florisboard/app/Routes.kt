@@ -128,6 +128,11 @@ object Routes {
         @Deeplink("settings/gradient")
         data class Gradient(val id: String = "", val pack: String = "", val solid: Boolean = false)
 
+        /** DogBoard: the Languages page opened at a page ("": Add a language; "combine:<id>"), from the setup. */
+        @Serializable
+        @Deeplink("settings/languages-at")
+        data class LanguagesAt(val start: String = "")
+
         /** DogBoard: Advanced › Testing (replay the setup, the key log field). */
         @Serializable
         @Deeplink("settings/testing")
@@ -407,6 +412,10 @@ object Routes {
             composableWithDeepLink(Settings.Layout::class) { io.github.sillypuppyy.dogboard.settings.LayoutScreen() }
             composableWithDeepLink(Settings.Themes::class) { io.github.sillypuppyy.dogboard.settings.ThemesScreen() }
             composableWithDeepLink(Settings.Photo::class) { io.github.sillypuppyy.dogboard.settings.PhotoScreen() }
+            composableWithDeepLink(Settings.LanguagesAt::class) { navBackStack ->
+                val payload = navBackStack.toRoute<Settings.LanguagesAt>()
+                io.github.sillypuppyy.dogboard.settings.LanguagesScreen(startPage = payload.start)
+            }
             composableWithDeepLink(Settings.Testing::class) { io.github.sillypuppyy.dogboard.settings.TestingScreen() }
             composableWithDeepLink(Settings.ThemeEditor::class) { navBackStack ->
                 val payload = navBackStack.toRoute<Settings.ThemeEditor>()

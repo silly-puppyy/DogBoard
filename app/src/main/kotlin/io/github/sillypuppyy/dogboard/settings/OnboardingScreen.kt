@@ -173,7 +173,7 @@ private val FULL = listOf("enable", "langs", "layout", "elements", "theme", "typ
 /** Onboarding script S: each page's title and body. */
 private val TITLES = mapOf(
     "enable" to ("Turn on DogBoard" to "Android asks this for every keyboard. Its warning is generic: nothing you type leaves this phone."),
-    "langs" to ("Your languages" to "Picked from your phone’s languages. Typing in two at once works without switching."),
+    "langs" to ("Languages" to "The languages you type in. Two that share an alphabet can be combined, to type both without switching."),
     "layout" to ("Pick a layout" to "Both type the same letters. You can mix the details later in Settings › Layout."),
     "elements" to ("Fine-tune the layout" to "Each of these can be set on its own. The preview follows."),
     "theme" to ("Theme" to "Colours, sound and vibration. More themes, gradients and photo themes are in Settings › Look."),
@@ -389,19 +389,15 @@ private fun Status(n: Int, label: String, sub: String, done: Boolean, button: St
 }
 
 /**
- * Onboarding S.langs: the languages already added (the first stays), then the phone's other languages DogBoard has a
- * layout for; ticking one adds it with its default layout and fetches its dictionary in the background.
+ * Onboarding S.langs: the Languages page itself (its entries, menus and Add a language); on a first setup the phone's
+ * own language is added first, with its usual layout.
  */
 @Composable
 private fun LanguagesStep() {
     val context = LocalContext.current
-    val nav = LocalNavController.current
     val prefs by FlorisPreferenceStore
     val subtypeManager by context.subtypeManager()
-    val subtypes by subtypeManager.subtypesFlow.collectAsState()
     val memory by prefs.keyboard.layoutByLanguage.collectAsState()
-    val list = subtypes.ifEmpty { listOf(Subtype.DEFAULT) }
-    val added = list.map { it.primaryLocale.language }.toSet()
     val phone = remember {
         val l = android.os.LocaleList.getDefault()
         (0 until l.size()).map { l[it] }
@@ -414,54 +410,8 @@ private fun LanguagesStep() {
         subtypeManager.addSubtypes(Subtype(0, FlorisLocale.fromTag(tag), emptyList(), layoutId = LanguageLayouts.layoutOf(loc.language, memory)))
         if (loc.language != "en") PackDownloadQueue.ensure(context, listOf(tag))
     }
-    fun layoutName(lang: String, id: String?) = GeneratedLayouts.all.firstOrNull { it.id == (id ?: LanguageLayouts.layoutOf(lang, memory)) }?.label ?: ""
-    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Your languages") {
-    for ((n, s) in list.withIndex()) {
-        LangRow(s.primaryLocale.displayName(), if (n == 0) "Your first language" else "Added", layoutName(s.primaryLocale.language, s.layoutId), checked = true, locked = n == 0) {
-            subtypeManager.removeSubtype(s)
-        }
-    }
-    for (loc in phone) {
-        val lang = loc.language
-        if (lang in added || GeneratedLayouts.all.none { it.language == lang }) continue
-        val name = loc.getDisplayName(loc).replaceFirstChar { it.titlecase(loc) }
-        LangRow(name, "From your phone; its dictionary downloads when added", layoutName(lang, null), checked = false, locked = false) {
-            val tag = loc.toLanguageTag()
-            val s = Subtype(0, FlorisLocale.fromTag(tag), emptyList(), layoutId = LanguageLayouts.layoutOf(lang, memory))
-            if (subtypes.isEmpty()) subtypeManager.addSubtypes(Subtype.DEFAULT, s) else subtypeManager.addSubtypes(s)
-            PackDownloadQueue.ensure(context, listOf(tag))
-        }
-    }
-    }
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { nav.navigate(Routes.Settings.Localization) }.padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Symbol("add", 20.sp, SetColors.primary)
-        DText("More languages", style = setText(14f, 500, SetColors.primary))
-    }
-}
-
-/** Onboarding:89-92: a language with its checkbox and its layout. */
-@Composable
-private fun LangRow(label: String, sub: String, layout: String, checked: Boolean, locked: Boolean, onToggle: () -> Unit) {
-    Row(
-        Modifier.card().heightIn(min = 60.dp).padding(start = 8.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(44.dp).clip(CircleShape).then(if (locked) Modifier else Modifier.clickable(onClick = onToggle)), contentAlignment = Alignment.Center) {
-            Symbol(if (checked) "check_box" else "check_box_outline_blank", 24.sp, if (checked) SetColors.primary else SetColors.onSurfaceVariant, fill = if (checked) 1 else 0)
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            DText(label, style = setText(15f))
-            DText(sub, style = setText(12.5f, color = SetColors.onSurfaceVariant), maxLines = 3)
-        }
-        if (layout.isNotEmpty()) Box(
-            Modifier.height(32.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp)
-                .then(if (checked) Modifier else Modifier.background(Color.Transparent)),
-            contentAlignment = Alignment.Center,
-        ) { DText(layout, style = setText(13f, 500, SetColors.onSurface.copy(alpha = if (checked) 1f else 0.38f))) }
-    }
+    // the Languages page itself (the same entries, menus and Add a language)
+    LanguagesScreen(embedded = true)
 }
 
 /** Onboarding S.layout: the two presets as cards, and the keyboard. */

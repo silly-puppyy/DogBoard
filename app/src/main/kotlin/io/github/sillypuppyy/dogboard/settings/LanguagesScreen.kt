@@ -42,7 +42,7 @@ private fun nativeName(tag: String, fallback: String): String {
 
 /** Settings › Languages, live (DogBoard's page in place of FlorisBoard's subtypes page). */
 @Composable
-fun LanguagesScreen() {
+fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
     val prefs by FlorisPreferenceStore
     val context = LocalContext.current
     val navController = LocalNavController.current
@@ -134,6 +134,9 @@ fun LanguagesScreen() {
             PackDownloadQueue.ensure(context, listOf(tag))
         },
         onBack = { navController.popBackStack() },
+        startPage = startPage,
+        embedded = embedded,
+        onOpenPage = { p -> navController.navigate(Routes.Settings.LanguagesAt(start = p)) },
         onTogether = { id, tags ->
             subtypes.firstOrNull { it.id == id }?.let { s -> subtypeManager.modifySubtypeWithSameId(s.copy(secondaryLocales = tags.map { FlorisLocale.fromTag(it) })) }
         },

@@ -95,10 +95,34 @@ fun SetLanguages(
     onCombine: (id: Long, tag: String, layout: String) -> Unit = { _, _, _ -> },
     /** Keyboard [id]'s joined languages become keyboards of their own. */
     onSplit: (id: Long) -> Unit = {},
+    /** The page to open on ("": Add a language). */
+    startPage: String? = null,
+    /**
+     * Shown inside another page (the setup): only your languages and Add a language; the pages that need the whole
+     * screen (adding, combining) open the Languages page at that page ([onOpenPage]).
+     */
+    embedded: Boolean = false,
+    onOpenPage: (String) -> Unit = {},
 ) {
     // null: your languages; "": Add a language; a tag: that language's layouts; "combine:<id>": a language to join
     // keyboard id; "shared:<id>:<tag>": the layout the combined keyboard takes
-    var page by remember { mutableStateOf<String?>(null) }
+    var page by remember { mutableStateOf(startPage) }
+    // opened at a page from elsewhere (the setup): done or back there returns, instead of showing the whole list
+    if (startPage != null && !embedded) androidx.compose.runtime.LaunchedEffect(page) { if (page == null) onBack() }
+    if (embedded) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SetGroup("Your languages") {
+                for (l in langs) LanguageRow(l, langs.size > 1, onUse, onLayout, onRemove, canCombine = combineChoices(l.id).isNotEmpty(),
+                    onCombine = { onOpenPage("combine:${l.id}") }, onSplit = { onSplit(l.id) })
+            }
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(28.dp)).clickable { onOpenPage("") }.padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Symbol("add", 22.sp, SetColors.primary)
+                DText("Add a language", style = setText(16f, 500, SetColors.primary).copy(textAlign = START))
+            }
+        }
+        return
+    }
     // a new language that can join a keyboard: asked first (tag, the keyboards it can join)
     var ask by remember { mutableStateOf<Pair<String, List<Pair<Long, String>>>?>(null) }
     val shared = page?.takeIf { it.startsWith("shared:") }?.split(':')
