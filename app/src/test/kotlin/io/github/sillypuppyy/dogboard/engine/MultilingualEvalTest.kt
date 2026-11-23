@@ -39,6 +39,37 @@ class MultilingualEvalTest : FunSpec({
         val params = GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
         val n = System.getenv("DOGBOARD_ML_N")?.toInt() ?: 2000
         val weights = (System.getenv("DOGBOARD_ML_WEIGHTS") ?: "1").split(',').map { it.toDouble() }
+        // DOGBOARD_ML_LANGID=<train_langid.py json>: the per-word language model's weights (listed / ln P differences for
+        // the word and the two before it); its ln p(language) is added to each candidate's score
+        val langid = System.getenv("DOGBOARD_ML_LANGID")?.let { File(it).readText() }?.let {
+            Regex("\"weights\":\\s*\\[([^\\]]*)\\]").find(it)!!.groupValues[1].split(',').map { v -> v.trim().toDouble() }
+        }
+        fun unigram(l: Lang, w: String): Double? = l.lexicon.logProb(w)
+        /** ln p(the candidate's language) from the word and the two before it, both languages' word lists; [withWord] false: the context only. */
+        fun langLogP(x: Lang, o: Lang, word: String, before: List<String>, withWord: Boolean): Double {
+            val w = langid!!
+            var z = 0.0
+            val words = before.takeLast(2).reversed() // w-1, w-2
+            for ((j, t) in (listOf(word) + words).withIndex()) {
+                if (j == 0 && !withWord) continue
+                val px = unigram(x, t.lowercase()); val po = unigram(o, t.lowercase())
+                val listed = (if (px != null) 1.0 else 0.0) - (if (po != null) 1.0 else 0.0)
+                val lnp = ((px ?: -22.0) - (po ?: -22.0)) / 10
+                z += w[2 * j] * listed + w[2 * j + 1] * lnp
+            }
+            return -kotlin.math.ln(1 + kotlin.math.exp(-z))
+        }
+        /** Both languages' candidates, each shifted by ln p(its language). */
+        fun classified(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, withWord: Boolean): List<Candidate> {
+            val best = LinkedHashMap<String, Candidate>()
+            for ((c, x, o) in ca.map { Triple(it, la, lb) } + cb.map { Triple(it, lb, la) }) {
+                val s = c.copy(score = c.score + langLogP(x, o, c.word, before, withWord))
+                val k = s.word.lowercase(); val old = best[k]
+                if (old == null || s.score > old.score) best[k] = s.copy(isTypedString = s.isTypedString || old?.isTypedString == true)
+                else if (s.isTypedString && !old.isTypedString) best[k] = old.copy(isTypedString = true)
+            }
+            return best.values.sortedByDescending { it.score }
+        }
 
         fun decode(l: Lang, typed: String, taps: List<Tap>, before: List<String>) =
             l.decoder.decode(taps, keys, params, previous = l.ctx(before.lastOrNull()), typed = typed, previous2 = before.getOrNull(before.size - 2)?.let { l.ctx(it) } ?: -1)
@@ -57,7 +88,8 @@ class MultilingualEvalTest : FunSpec({
         }
 
         data class Out(val lang: String, val since: Int, val typo: Boolean, val result: String)
-        val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" }
+        val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
+            (if (langid != null) listOf("classified", "context only") else emptyList())
         val results = modes.associateWith { mutableListOf<Out>() }
         for (kind in listOf("typos", "controls")) {
             val rowsIn = File(set, "mixed-$kind.tsv").readLines().map { it.split('\t') }.filter { it.size >= 7 }.take(n)
@@ -80,6 +112,10 @@ class MultilingualEvalTest : FunSpec({
                 results.getValue(modes[1]).add(Out(lang, since, typo, judge(Autocorrect(lb.lexicon).correction(typed, cb) ?: typed)))
                 for ((i, w) in weights.withIndex())
                     results.getValue(modes[2 + i]).add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, merged(ca, cb, w)) ?: typed)))
+                if (langid != null) {
+                    results.getValue("classified").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, true)) ?: typed)))
+                    results.getValue("context only").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, false)) ?: typed)))
+                }
             }
         }
         fun pct(xs: List<Out>, what: String) = if (xs.isEmpty()) Double.NaN else 100.0 * xs.count { it.result == what } / xs.size

@@ -1,0 +1,46 @@
+{
+ "features": [
+  "listed_w0",
+  "lnp_w0",
+  "listed_w-1",
+  "lnp_w-1",
+  "listed_w-2",
+  "lnp_w-2"
+ ],
+ "weights": [
+  0.6391,
+  4.4545,
+  -0.0562,
+  1.729,
+  -0.1047,
+  0.9545
+ ],
+ "floor": -22.0,
+ "report": {
+  "enxes": {
+   "all": 97.3,
+   "after_switch": 90.2,
+   "word_only_after_switch": 95.7
+  },
+  "enxfr": {
+   "all": 96.6,
+   "after_switch": 88.2,
+   "word_only_after_switch": 93.7
+  },
+  "ruxbg": {
+   "all": 94.2,
+   "after_switch": 83.6,
+   "word_only_after_switch": 87.7
+  },
+  "dexpl (held out)": {
+   "all": 98.0,
+   "after_switch": 92.8,
+   "word_only_after_switch": 97.7
+  },
+  "itxpt (held out)": {
+   "all": 96.9,
+   "after_switch": 87.7,
+   "word_only_after_switch": 93.5
+  }
+ }
+}
