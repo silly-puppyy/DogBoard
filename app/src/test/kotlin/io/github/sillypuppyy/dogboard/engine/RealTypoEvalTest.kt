@@ -234,7 +234,7 @@ class RealTypoEvalTest : FunSpec({
                     val asWritten = row[3].takeIf { typedCase && it.length == typed.length } ?: typed
                     val word = CurrentWord().apply { typed.forEachIndexed { i, c -> addLetter(asWritten[i], taps[i], keys, params) } }
                     // the language's digraph spellings ("fuer"), as TypingEngine.candidates adds them, with this decoder
-                    val withDigraphs = TypingEngine.withDigraphs(word, candidates) { shortTaps, shortTyped ->
+                    val withDigraphs = TypingEngine.withSpellings(word, candidates) { shortTaps, shortTyped ->
                         decoders.get().decode(shortTaps, keys, params, previous = ctxId(prev), typed = shortTyped, previous2 = prev2?.let { ctxId(it) } ?: -1)
                     }
                     TypingEngine.correction(word, withDigraphs, level = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD")) ?: typed

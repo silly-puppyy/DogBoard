@@ -74,7 +74,20 @@ data class LanguageRules(
      * with the second letter's taps left out (TypingEngine.digraphCandidates). Empty: none.
      */
     @SerialName("digraphs") val digraphs: Map<String, String> = emptyMap(),
+    /**
+     * Typed spellings (TypedSpellings): {"letter": "â", "typed": "aa"} a letter typed as others; {"mark": "\u0301",
+     * "typed": "s", "at": "end"} a mark typed as a key at the syllable's end (Telex tones). [digraphs] are letter rules too.
+     */
+    @SerialName("spellings") val spellings: List<Spelling> = emptyList(),
 ) {
+    @Serializable
+    data class Spelling(val letter: String = "", val mark: String = "", val typed: String = "", val at: String = "") {
+        companion object { const val AT_END = "end" }
+    }
+
+    /** [spellings] and [digraphs] as one table. */
+    val typedSpellings: TypedSpellings by lazy { TypedSpellings(spellings + digraphs.map { (l, t) -> Spelling(letter = l, typed = t) }) }
+
     /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
     val closingQuotes: String
         get() = quotes.takeIf { it.length == 5 }?.let { "${it[1]}${it[3]}" } ?: ""

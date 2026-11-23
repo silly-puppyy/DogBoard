@@ -672,7 +672,7 @@ object TypingEngine {
                 previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
             )
                 .let { withTypedApostrophes(word, it) }
-                .let { decoded -> withDigraphs(word, decoded) { shortTaps, shortTyped ->
+                .let { decoded -> withSpellings(word, decoded) { shortTaps, shortTyped ->
                     engine.decoder.decode(
                         shortTaps, personalOffsets.apply(word.keys), word.params!!, 8,
                         previous = engine.contextId(previous), typed = shortTyped,
@@ -689,32 +689,34 @@ object TypingEngine {
     }
 
     /**
-     * A word typed with a language's digraphs ("fuer", "Zuege" for "für", "Züge"; rules.digraphs) and not a word itself:
-     * decoded again without the second letter's taps, and a word whose digraph spelling is exactly what was typed goes
-     * first (German: 33.9 % of such words came out right, 12.8 % wrong: "Zuege" -> "Ziege", 2026-11-23). Only that exact
-     * match counts, so "neue" (-> "neu") or "Feuer" are never touched.
+     * A word typed with a language's typed spellings (rules.spellings / digraphs, TypedSpellings: German "fuer" for "für",
+     * Telex "vieetj" for "việt"): decoded again without the rules' extra letters, and a word whose spelled form is exactly
+     * what was typed goes first (German: 33.9 % of such words came out right, 12.8 % wrong: "Zuege" -> "Ziege", then
+     * 91.8 / 1.2, 2026-11-23). Only that exact match counts, so "neue" (-> "neu") or "Feuer" are never touched.
      */
-    fun withDigraphs(word: CurrentWord, decoded: List<Candidate>, decode: (taps: List<Tap>, typed: String) -> List<Candidate>): List<Candidate> {
+    fun withSpellings(word: CurrentWord, decoded: List<Candidate>, decode: (taps: List<Tap>, typed: String) -> List<Candidate>): List<Candidate> {
         val engine = loaded ?: return decoded
-        val digraphs = engine.rules.digraphs.takeIf { it.isNotEmpty() } ?: return decoded
+        val spellings = engine.rules.typedSpellings.takeIf { !it.isEmpty } ?: return decoded
         val taps = word.tapsOrNull() ?: return decoded
         val typed = word.decoderText
         if (typed.length != taps.size) return decoded
-        // the digraph spellings are words of their own in the text too ("fuer" 263k, "für" 74M): a known typed word only
+        val extra = spellings.extraLetters(typed)
+        if (extra.none { it }) return decoded
+        val lower = typed.lowercase()
+        // the spelled forms are words of their own in the text too ("fuer" 263k, "für" 74M): a known typed word only
         // gives way to a form 100x as frequent (für 280x, können 560x, März 450x; Goethe stays, 63x Göthe; Mueller,
         // a name's own spelling, 31x less than Müller, stays)
         val typedLogP = engine.lexicon.logProb(typed)
-        val lower = typed.lowercase()
-        val drop = BooleanArray(typed.length)
-        for (spelling in digraphs.values) {
-            var i = lower.indexOf(spelling)
-            while (i >= 0) { for (k in 1 until spelling.length) drop[i + k] = true; i = lower.indexOf(spelling, i + spelling.length) }
+        val shortTaps = taps.filterIndexed { i, _ -> !extra[i] }
+        val shortTyped = typed.filterIndexed { i, _ -> !extra[i] }
+        // every spelling on a decoded word's path (viet: viết, việt, Việt share one node): the one typed this way
+        var hit: Candidate? = null
+        for (c in decode(shortTaps, shortTyped)) {
+            if (c.words != 1) continue
+            val form = engine.lexicon.formsOf(c.word).ifEmpty { listOf(c.word) }.firstOrNull { spellings.spelled(it) == lower } ?: continue
+            hit = c.copy(word = form); break
         }
-        if (drop.none { it }) return decoded
-        val shortTaps = taps.filterIndexed { i, _ -> !drop[i] }
-        val shortTyped = typed.filterIndexed { i, _ -> !drop[i] }
-        fun spelled(w: String): String { var out = w.lowercase(); for ((letter, spelling) in digraphs) out = out.replace(letter, spelling); return out }
-        val hit = decode(shortTaps, shortTyped).firstOrNull { it.words == 1 && spelled(it.word) == lower } ?: return decoded
+        if (hit == null) return decoded
         if (typedLogP != null && (engine.lexicon.logProb(hit.word) ?: return decoded) - typedLogP < ln(DIGRAPH_FORM_RATIO)) return decoded
         val top = decoded.firstOrNull()?.score ?: hit.score
         return listOf(hit.copy(score = maxOf(hit.score, top), isTypedString = false)) + decoded.filter { !it.word.equals(hit.word, ignoreCase = true) }
