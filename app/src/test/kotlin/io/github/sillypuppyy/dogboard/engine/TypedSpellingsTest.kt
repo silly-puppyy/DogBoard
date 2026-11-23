@@ -39,6 +39,21 @@ class TypedSpellingsTest : FunSpec({
         "dduowcj".filterIndexed { i, _ -> !vi.extraLetters("dduowcj")[i] } shouldBe "duoc"
     }
 
+    test("a word list along Telex spellings: việt along vieetj, ngay and ngày apart, lookups by the written word") {
+        val rules = LanguageRules(typedMarks = true, spellings = listOf(
+            LanguageRules.Spelling(letter = "ê", typed = "ee"), LanguageRules.Spelling(letter = "đ", typed = "dd"),
+            LanguageRules.Spelling(mark = "̣", typed = "j", at = LanguageRules.Spelling.AT_END),
+            LanguageRules.Spelling(mark = "̀", typed = "f", at = LanguageRules.Spelling.AT_END)))
+        val lex = Lexicon.parse("#dogboard-lexicon 1\nviệt\t500\nngày\t900\nngay\t300\nđi\t800\n".reader().buffered(), TypingEngine.pathOf(rules))
+        lex.contains("việt") shouldBe true
+        lex.contains("vieetj") shouldBe true // the typed spelling reaches it too
+        lex.firstForm(lex.find("vieetj")) shouldBe "việt"
+        lex.firstForm(lex.find("ngay")) shouldBe "ngay"
+        lex.firstForm(lex.find("ngayf")) shouldBe "ngày"
+        lex.firstForm(lex.find("ddi")) shouldBe "đi"
+        lex.contains("viet") shouldBe false
+    }
+
     test("no rules: nothing set aside") {
         TypedSpellings(emptyList()).isEmpty shouldBe true
         TypedSpellings(emptyList()).extraLetters("fuer").none { it } shouldBe true

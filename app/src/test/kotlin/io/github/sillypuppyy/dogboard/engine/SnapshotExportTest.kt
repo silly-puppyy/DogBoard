@@ -54,7 +54,8 @@ class SnapshotExportTest : FunSpec({
         val rules = File(dir, "rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules()
         Lexicon.distinctLetters = rules.distinctLetters.toSet()
         try {
-            val lexicon = File(dir, "$lang.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
+            // a Telex-typed language's words along their typed spelling, as the phone builds them (TypingEngine.pathOf)
+            val lexicon = File(dir, "$lang.lexicon.tsv").bufferedReader().use { Lexicon.parse(it, TypingEngine.pathOf(rules)) }
             val bigrams = File(dir, "$lang.bigrams.tsv").bufferedReader().use { Bigrams.parse(it, lexicon) }
             GZIPOutputStream(File(dir, "$lang-lexicon.dgz").outputStream().buffered(), 64 * 1024).use { lexicon.writeSnapshot(it) }
             GZIPOutputStream(File(dir, "$lang-bigrams.dgz").outputStream().buffered(), 64 * 1024).use { bigrams.writeSnapshot(it) }

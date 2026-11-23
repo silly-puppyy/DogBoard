@@ -324,7 +324,19 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     fun idOf(word: String): Int = find(word).let { if (it == NONE) NONE else gWordId(it) }
 
     /** The node for [prefix] (case-insensitive), or [NONE]. */
+    /**
+     * The typed spelling every path is built and looked up by (LanguageRules.typedMarks: Vietnamese Telex, việt along
+     * v i e e t j), or null: each letter folded to its key. Per word list, so a language typed together with another
+     * keeps its own paths. Set before the list is built and on a snapshot read.
+     */
+    var pathOf: ((String) -> String)? = null
+
     fun find(prefix: CharSequence): Int {
+        pathOf?.let { p ->
+            var node = ROOT
+            for (c in p(prefix.toString())) { node = child(node, c); if (node == NONE) return NONE }
+            return node
+        }
         var node = ROOT
         for (c in prefix) {
             val lig = ligature(c)
@@ -362,9 +374,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     fun addWord(word: String, logProb: Double): Int {
         version++
         var node = ROOT
-        for (c in word) {
-            for (lc in ligature(c) ?: fold(c).toString()) node = child(node, lc).takeIf { it != NONE } ?: newNode(node, lc)
-        }
+        for (lc in path(word)) node = child(node, lc).takeIf { it != NONE } ?: newNode(node, lc)
         val added = when {
             gWordId(node) == NONE -> {
                 setWord(node, word, logProb)
@@ -432,7 +442,14 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         sWordId(node, wordCount)
         aWordNode[wordCount++ - baseWords] = node
         sLogP(node, lp.toFloat())
-        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() || ligature(it) != null }) { surface[node] = word; hasSurface.set(node) }
+        if (word != word.lowercase() || word.any { fold(it) != it.lowercaseChar() || ligature(it) != null } || (pathOf != null && path(word) != word)) {
+            surface[node] = word; hasSurface.set(node)
+        }
+    }
+
+    /** The trie letters of [word]: its typed spelling ([pathOf]), else each letter folded (ligatures spelled out). */
+    private fun path(word: String): String = pathOf?.invoke(word) ?: buildString {
+        for (c in word) { val lig = ligature(c); if (lig != null) append(lig) else append(fold(c)) }
     }
 
     private fun newNode(parentNode: Int, c: Char): Int {
@@ -601,16 +618,15 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
             return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
         }
 
-        fun of(counts: Map<String, Long>): Lexicon {
+        fun of(counts: Map<String, Long>, pathOf: ((String) -> String)? = null): Lexicon {
             val total = counts.values.sum().toDouble()
             val lexicon = Lexicon(counts.size * 3 + 16)
+            lexicon.pathOf = pathOf
             val byNode = LinkedHashMap<Int, MutableList<Pair<String, Double>>>()
             for ((word, count) in counts) {
                 if (word.isEmpty() || count <= 0) continue
                 var node = ROOT
-                for (c in word) {
-                    for (lc in ligature(c) ?: fold(c).toString()) node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
-                }
+                for (lc in lexicon.path(word)) node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
                 byNode.getOrPut(node) { ArrayList(1) }.add(word to ln(count / total))
             }
             // word ids follow the file (frequency) order of each node's first casing
@@ -627,7 +643,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
             return lexicon
         }
 
-        fun parse(reader: BufferedReader): Lexicon {
+        fun parse(reader: BufferedReader, pathOf: ((String) -> String)? = null): Lexicon {
             val header = reader.readLine()
             require(header == FORMAT_HEADER) { "not a DogBoard lexicon (header: $header)" }
             val counts = LinkedHashMap<String, Long>()
@@ -637,7 +653,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
                 require(tab > 0) { "bad lexicon line: $line" }
                 counts[line.substring(0, tab)] = line.substring(tab + 1).trim().toLong()
             }
-            return of(counts)
+            return of(counts, pathOf)
         }
     }
 }

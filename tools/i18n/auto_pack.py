@@ -67,7 +67,12 @@ LANGS = {
     # tones and vowel marks stack (ế, ặ); syllables are written apart, so nearly every bare syllable is several words
     # (ma má mà mả mã mạ): the accent-twin stress test. Gboard's default is plain QWERTY (Telex conversion not modelled)
     'vi': dict(name='Vietnamese', leipzig=['vie_news_2022_1M', 'vie_news_2020_1M', 'vie_wikipedia_2021_1M'], tatoeba='vie',
-               layout=('gboard', 'qwerty'), gboard_tag='vi-VN', script='Latn', compounds=False),
+               layout=('gboard', 'qwerty'), gboard_tag='vi-VN', script='Latn', compounds=False,
+               # Telex (language-families 36): shapes as doubled letters or a w (ươ as "uow": dduowcj = được), the tone as
+               # a key at the syllable's end; marks are typed, so a bare syllable stays bare (typed_marks)
+               rules_extra={'typed_marks': True, 'spellings': [
+                   {'letter': l, 'typed': t} for l, t in [('ươ', 'uow'), ('â', 'aa'), ('ă', 'aw'), ('ê', 'ee'), ('ô', 'oo'), ('ơ', 'ow'), ('ư', 'uw'), ('đ', 'dd')]
+               ] + [{'mark': m, 'typed': t, 'at': 'end'} for m, t in [('\u0301', 's'), ('\u0300', 'f'), ('\u0309', 'r'), ('\u0303', 'x'), ('\u0323', 'j')]]}),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press

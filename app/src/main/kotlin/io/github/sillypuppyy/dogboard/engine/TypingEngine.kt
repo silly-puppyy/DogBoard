@@ -213,7 +213,7 @@ object TypingEngine {
             open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toList() }
         }.orEmpty().groupBy { it.removeSuffix(".").lowercase() }
         mark("small lists")
-        val (lexicon, bigrams, cached) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped, ::mark)
+        val (lexicon, bigrams, cached) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped, ::mark, pathOf(rules))
         parsedAtLoad = !cached
         mark("bigrams")
         packRules = rules
@@ -406,6 +406,7 @@ object TypingEngine {
         snapshotKey: String,
         openShipped: ((String) -> java.io.InputStream?)?,
         mark: (String) -> Unit = {},
+        pathOf: ((String) -> String)? = null,
     ): Triple<Lexicon, Bigrams?, Boolean> {
         // the parsed word data is kept as a binary snapshot (per app version), so later starts
         // copy arrays instead of parsing text
@@ -424,13 +425,13 @@ object TypingEngine {
                 mark("snapshots unpacked")
             }.onFailure { lexiconSnapshot.delete(); bigramSnapshot?.delete() }
         }
-        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it)) }.getOrNull() }
-        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.let { lex ->
+        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it))?.also { l -> l.pathOf = pathOf } }.getOrNull() }
+        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it, pathOf) }.let { lex ->
             snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
             lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
             // the parsed lexicon holds everything on the heap; the snapshot just written maps its cold half, ~40 MB
             // less for the rest of the session (a Galaxy A10 stayed at its 128 MB cap after a parse, 2026-11-21)
-            lexiconSnapshot?.takeIf { it.isFile }?.let { f -> runCatching { Lexicon.readSnapshot(map(f)) }.getOrNull() } ?: lex
+            lexiconSnapshot?.takeIf { it.isFile }?.let { f -> runCatching { Lexicon.readSnapshot(map(f))?.also { l -> l.pathOf = pathOf } }.getOrNull() } ?: lex
         }
         mark(if (cachedLexicon != null) "lexicon (snapshot)" else "lexicon (parsed)")
         val bigrams = openBigrams?.let { open ->
@@ -440,6 +441,9 @@ object TypingEngine {
         }
         return Triple(lexicon, bigrams, cachedLexicon != null)
     }
+
+    /** A language whose marks are typed (Vietnamese Telex) keeps its words along their typed spelling. */
+    fun pathOf(rules: LanguageRules): ((String) -> String)? = if (rules.typedMarks) rules.typedSpellings::spelled else null
 
     /** Whether a second language is loaded. */
     val hasSecondary: Boolean get() = secondaries.isNotEmpty()
@@ -455,7 +459,7 @@ object TypingEngine {
         ngrams: NgramModel?,
         letters: CharModel?,
     ) {
-        val (lexicon, bigrams, _) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped)
+        val (lexicon, bigrams, _) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped, pathOf = pathOf(rules))
         loadSecondary(lexicon, bigrams, rules, ngrams, letters)
     }
 
@@ -811,6 +815,8 @@ object TypingEngine {
      */
     fun withSpellings(word: CurrentWord, decoded: List<Candidate>, decode: (taps: List<Tap>, typed: String) -> List<Candidate>): List<Candidate> {
         val engine = loaded ?: return decoded
+        // a word list along typed spellings (Telex) already decodes them, typos included
+        if (engine.lexicon.pathOf != null) return decoded
         val spellings = engine.rules.typedSpellings.takeIf { !it.isEmpty } ?: return decoded
         val taps = word.tapsOrNull() ?: return decoded
         val typed = word.decoderText

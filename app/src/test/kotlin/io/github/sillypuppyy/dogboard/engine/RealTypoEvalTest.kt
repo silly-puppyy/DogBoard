@@ -57,7 +57,7 @@ class RealTypoEvalTest : FunSpec({
             )
             packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         }
-        val lexicon = if (appPath) TypingEngine.lexiconForTest()!! else packReader("lexicon.tsv").use { Lexicon.parse(it) }
+        val lexicon = if (appPath) TypingEngine.lexiconForTest()!! else packReader("lexicon.tsv").use { Lexicon.parse(it, TypingEngine.pathOf(evalRules)) }
         val bigrams = packReader("bigrams.tsv").use { Bigrams.parse(it, lexicon) }
         val ngrams = ngramFile!!.inputStream().use { NgramModel.readBinary(it) }!!
         // DOGBOARD_NO_TRIGRAM=1: the decoders score with the word pairs only (ablation; the file still enables the test)
@@ -266,6 +266,8 @@ class RealTypoEvalTest : FunSpec({
                 val result = when {
                     got.equals(intended, ignoreCase = true) -> if (typo) "fixed" else "kept"
                     got.equals(typed, ignoreCase = true) -> "left"
+                    // marks typed as letters (Telex): the word the keys spell is the typed word, written ("tronf" -> tròn)
+                    evalRules.typedMarks && evalRules.typedSpellings.spelled(got) == typed.lowercase() -> "left"
                     else -> if (typo) "wrong" else "broken"
                 }
                 val dump = if (dumpCandidates == null) "" else candidates.take(8).joinToString("|") {
