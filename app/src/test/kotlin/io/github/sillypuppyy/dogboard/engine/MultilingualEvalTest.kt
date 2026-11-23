@@ -129,6 +129,32 @@ class MultilingualEvalTest : FunSpec({
             }
             return best.values.sortedByDescending { it.score }
         }
+        // iOS (decoded 2026-11-23, notes/research/ios-multilingual.md "how iOS combines languages"): each candidate's own-
+        // language likelihood times P(its lexicon | context): the last 4 words weighted 0.66^i, r = their weighted share in
+        // that word list (r = w with no context), P = r * stationary + (1 - r) * 0.04 * w, stationary = 1 - sum of 0.04 * w
+        // over the other lexicons; w = the language's weight (user prior; DOGBOARD_ML_IOS_W = the first language's, default 0.5)
+        val iosW = System.getenv("DOGBOARD_ML_IOS_W")?.toDouble() ?: 0.5
+        fun iosLexiconLogP(x: Lang, wx: Double, wOther: Double, before: List<String>): Double {
+            val last = before.takeLast(4).reversed()
+            val r = if (last.isEmpty()) wx else {
+                var num = 0.0; var den = 0.0
+                for ((i, t) in last.withIndex()) { val g = Math.pow(0.66, i.toDouble()); den += g; if (x.lexicon.logProb(t.lowercase()) != null) num += g }
+                num / den
+            }
+            val stationary = 1 - 0.04 * wOther
+            return kotlin.math.ln(r * stationary + (1 - r) * 0.04 * wx)
+        }
+        fun iosMerged(ca: List<Candidate>, cb: List<Candidate>, before: List<String>): List<Candidate> {
+            val sa = iosLexiconLogP(la, iosW, 1 - iosW, before); val sb = iosLexiconLogP(lb, 1 - iosW, iosW, before)
+            val best = LinkedHashMap<String, Candidate>()
+            for ((c, sh) in ca.map { it to sa } + cb.map { it to sb }) {
+                val x = c.copy(score = c.score + sh)
+                val k = x.word.lowercase(); val old = best[k]
+                if (old == null || x.score > old.score) best[k] = x.copy(isTypedString = x.isTypedString || old?.isTypedString == true)
+                else if (x.isTypedString && !old.isTypedString) best[k] = old.copy(isTypedString = true)
+            }
+            return best.values.sortedByDescending { it.score }
+        }
         /** Both languages' candidates, each shifted by ln p(its language). */
         fun classified(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, withWord: Boolean): List<Candidate> {
             val best = LinkedHashMap<String, Candidate>()
@@ -162,7 +188,7 @@ class MultilingualEvalTest : FunSpec({
         val errors = System.getenv("DOGBOARD_ML_ERRORS")?.let { File(it).printWriter() }
         val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
             (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList()) +
-            priorWeights.map { "matrix prior b=$it" } + listOf("merged two lists")
+            priorWeights.map { "matrix prior b=$it" } + listOf("merged two lists", "ios")
         val results = modes.associateWith { mutableListOf<Out>() }
         for (kind in listOf("typos", "controls")) {
             val rowsIn = File(set, "mixed-$kind.tsv").readLines().map { it.split('\t') }.filter { it.size >= 7 }.take(n)
@@ -192,6 +218,7 @@ class MultilingualEvalTest : FunSpec({
                 }
                 // as the app does it: the first language's Autocorrect, told about the second's word list (no union list)
                 results.getValue("merged two lists").add(Out(lang, since, typo, judge(Autocorrect(la.lexicon).also { it.otherLexicons = listOf(lb.lexicon) }.correction(typed, merged(ca, cb, 1.0)) ?: typed)))
+                results.getValue("ios").add(Out(lang, since, typo, judge(Autocorrect(la.lexicon).also { it.otherLexicons = listOf(lb.lexicon) }.correction(typed, iosMerged(ca, cb, before)) ?: typed)))
                 for (bt in priorWeights) results.getValue("matrix prior b=$bt").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, withPrior(ca, cb, before, bt)) ?: typed)))
                 if (langid != null) {
                     results.getValue("classified").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, true)) ?: typed)))
