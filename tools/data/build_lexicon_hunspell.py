@@ -29,6 +29,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_lexicon import load_wordfreq  # noqa: E402
 from expand_hunspell import expand  # noqa: E402
 
+# a letter, or a mark belonging to one (Devanagari ि ा ्): Python's \w has no marks, so किताब split into क त ब
+# (the Hindi pack's text, 2026-11-23)
+L = '(?:[^\\W\\d_]|[' + ''.join(chr(c) for c in range(0x300, 0x10000) if unicodedata.category(chr(c))[0] == 'M') + '])'
+
 # Zipf floor for Hunspell forms wordfreq has never seen (below wordfreq's own floor, about 1.0)
 FLOOR_ZIPF = 0.5
 # wordfreq words Hunspell lacks are kept from this Zipf on (build_lexicon.py's web-only cut)
@@ -51,7 +55,7 @@ NAME_SHARE = 0.8
 # corpus uses needed before its casing is trusted
 MIN_CASING_USES = 20
 
-WORD = re.compile(r"[^\W\d_]+(?:['’-][^\W\d_]+)*")
+WORD = re.compile(L + r"+(?:['’-]" + L + r"+)*")
 
 
 def edits1(w, letters):

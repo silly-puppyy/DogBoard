@@ -10,9 +10,14 @@ splits the text, . ! ? end a sentence. Every sentence whose Leipzig id ends in 0
 import argparse
 import re
 import sys
+import unicodedata
+
+# a letter, or a mark belonging to one (Devanagari ि ा ्): Python's \w has no marks, so किताब split into क त ब
+# (the Hindi pack's text, 2026-11-23)
+L = '(?:[^\\W\\d_]|[' + ''.join(chr(c) for c in range(0x300, 0x10000) if unicodedata.category(chr(c))[0] == 'M') + '])'
 
 # letters of any script (Latin, Cyrillic, Greek...), digits and underscores excluded
-WORD = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
+WORD = re.compile(L + r"+(?:['’]" + L + r"+)*")
 SENTENCE_END = re.compile(r"[.!?¿¡\n]+")
 
 

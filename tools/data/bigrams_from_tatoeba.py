@@ -16,6 +16,11 @@ times are kept. Sentences whose id ends in 0 are left out, for evaluation.
 import collections
 import re
 import sys
+import unicodedata
+
+# a letter, or a mark belonging to one (Devanagari ि ा ्): Python's \w has no marks, so किताब split into क त ब
+# (the Hindi pack's text, 2026-11-23)
+L = '(?:[^\\W\\d_]|[' + ''.join(chr(c) for c in range(0x300, 0x10000) if unicodedata.category(chr(c))[0] == 'M') + '])'
 
 LEXICON = "app/src/main/assets/dogboard/en.lexicon.tsv"
 DST = "app/src/main/assets/dogboard/en.bigrams.tsv"
@@ -26,7 +31,7 @@ START = "<s>"
 OVERUSED_NAMES = {"tom", "mary", "maría"}  # Spanish Tatoeba translates Mary as María
 TOKEN = re.compile(r"[A-Za-z]+(?:['’][A-Za-z]+)*|[.!?]")
 # other languages: Latin-1 letters too (English keeps the ASCII tokens its shipped file was built with)
-TOKEN_LATIN1 = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*|[.!?]")  # any script's letters (name kept)
+TOKEN_LATIN1 = re.compile(L + r"+(?:['’]" + L + r"+)*|[.!?]")  # any script's letters (name kept)
 
 
 def is_eval_sentence(sentence_id: str) -> bool:

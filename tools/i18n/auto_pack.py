@@ -24,6 +24,10 @@ LANGS holds what can't be derived (corpus names, Tatoeba code, layout choice); e
 import argparse, glob, gzip, hashlib, json, shutil, math, os, re, subprocess, sys, tarfile, time, unicodedata, urllib.request, zlib
 from collections import Counter
 
+# a letter, or a mark belonging to one (Devanagari ि ा ्): Python's \w has no marks, so किताब split into क त ब
+# (the Hindi pack's text, 2026-11-23)
+L = '(?:[^\\W\\d_]|[' + ''.join(chr(c) for c in range(0x300, 0x10000) if unicodedata.category(chr(c))[0] == 'M') + '])'
+
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 DATA = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data'
 KENLM = f'{DATA}/kenlm/build/bin/lmplz'
@@ -288,7 +292,7 @@ class Pack:
         else:
             # too little Tatoeba: word pairs from the corpus training text instead (same format)
             lex = {l.split('\t')[0].lower() for l in open(self.p(f'{self.lang}.lexicon.tsv'), encoding='utf-8') if not l.startswith('#')}
-            pairs = Counter(); W = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
+            pairs = Counter(); W = re.compile(L + r"+(?:['’]" + L + r"+)*")
             for i, line in enumerate(open(self.p('train.txt'), encoding='utf-8')):
                 if i >= 400000: break
                 ws = ['<s>'] + [w.lower() for w in W.findall(line)]
@@ -310,7 +314,7 @@ class Pack:
         alphabet = ''.join(c for c in alphabet if c.isalpha())[:60]
         uni = self.p(f'{self.lang}.unigrams.tsv')
         if not os.path.exists(uni):
-            cnt = Counter(); W = re.compile(r"[^\W\d_]+")
+            cnt = Counter(); W = re.compile(L + r"+")
             for line in open(self.p('train.txt'), encoding='utf-8'): cnt.update(w.lower() for w in W.findall(line))
             with open(uni, 'w', encoding='utf-8') as o:
                 for w, c in cnt.most_common(): o.write(f'{w}\t{c}\n')

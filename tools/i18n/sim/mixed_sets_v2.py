@@ -14,8 +14,13 @@ import random
 import re
 import subprocess
 import sys
+import unicodedata
 
-WORD = re.compile(r"[^\W\d_]+(?:['’][^\W\d_]+)*")
+# a letter, or a mark belonging to one (Devanagari ि ा ्): Python's \w has no marks, so किताब split into क त ब
+# (the Hindi pack's text, 2026-11-23)
+L = '(?:[^\\W\\d_]|[' + ''.join(chr(c) for c in range(0x300, 0x10000) if unicodedata.category(chr(c))[0] == 'M') + '])'
+
+WORD = re.compile(L + r"+(?:['’]" + L + r"+)*")
 HERE = os.path.dirname(os.path.abspath(__file__))
 CLAUSE = re.compile(r",\s+|\s+(?:and|but|because|so|y|pero|porque|que|et|mais|parce)\s+")
 SHARES = {'mono': 0.5, 'insert': 0.3, 'alternate': 0.2}
