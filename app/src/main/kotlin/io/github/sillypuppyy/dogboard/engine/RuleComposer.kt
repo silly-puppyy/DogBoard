@@ -89,9 +89,13 @@ class RuleComposer private constructor(private val rules: List<Rule>) {
             Rule(Regex("(?:${s.pattern})$"), s.text.replace("\\$", "\u0000").replace("\\\\", "\\").replace("\u0000", "$"), last)
         })
 
-        /** The rule set each language's layout uses (Gboard's dynamic layout for that language). */
+        /**
+         * The rule set each language's layout uses live (Gboard's dynamic layout for that language). Not Hindi: our
+         * Hindi is Gboard's compact layout, which has no dynamic layout; Gboard types क आ there as कआ and its
+         * dictionary offers का (emulator, 2026-11-23), as the Hindi pack's word list along the keys does.
+         */
         val SCRIPT_OF = mapOf(
-            "hi" to "devanagari", "sa" to "sanskrit", "mr" to "devanagari_eyelash_reph", "ne" to "devanagari_eyelash_reph",
+            "sa" to "sanskrit", "mr" to "devanagari_eyelash_reph", "ne" to "devanagari_eyelash_reph",
             "bn" to "bengali", "as" to "bengali", "ta" to "tamil", "te" to "telugu", "kn" to "kannada", "ml" to "malayalam",
             "gu" to "gujarati", "pa" to "punjabi", "or" to "oriya",
         )

@@ -42,7 +42,8 @@ class RuleComposerTest : FunSpec({
         val lex = Lexicon.parse("#dogboard-lexicon 1\nकिताब\t500\nनमस्ते\t100\n".reader().buffered(), TypingEngine.pathOf(LanguageRules(path = "rules:devanagari")))
         lex.firstForm(lex.find("कइतआब")) shouldBe "किताब"
         lex.firstForm(lex.find("नमस्तए")) shouldBe "नमस्ते"
-        RuleComposer.forLanguage("hi-IN") shouldBe RuleComposer.forScript("devanagari")
+        RuleComposer.forLanguage("mr-IN") shouldBe RuleComposer.forScript("devanagari_eyelash_reph")
+        RuleComposer.forLanguage("hi") shouldBe null // compact: the keys as typed, the dictionary corrects
     }
     test("every language's rule set loads") {
         for (script in RuleComposer.SCRIPT_OF.values.toSet()) rules(script).compose("") shouldBe ""
