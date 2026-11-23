@@ -36,7 +36,7 @@ object LinkInfo {
     )
 
     /** 3: short links followed first, platform oEmbed endpoints, TikTok's page data, PNG icons (2026-11-21: TikTok showed its generic page title). */
-    private const val VERSION = 4 // Discord invites, Claude artifacts (2026-11-24)
+    private const val VERSION = 5 // one "platform, author" line; GitHub, Wikipedia, Steam (2026-11-24)
 
     private val json = Json { ignoreUnknownKeys = true }
     private val infos = ConcurrentHashMap<String, Info>()
@@ -119,13 +119,17 @@ object LinkInfo {
         val page = info.target ?: resolve(link, ua) ?: link
         val host = runCatching { URL(page).host.removePrefix("www.").lowercase() }.getOrNull() ?: return info.copy(previews = true, version = VERSION)
         var title: String? = null; var site: String? = null; var image: String? = null; var duration: Int? = null
+        // who made it (channel, account) and what else is worth a word (members, stars, price): the line under the title
+        // reads "<platform>, <that>" the same way for every platform
+        var author: String? = null; var extra: String? = null
         fun fromOembed(o: String) = runCatching {
             val obj = json.parseToJsonElement(read(o, 64 * 1024) ?: return@runCatching).let { it as kotlinx.serialization.json.JsonObject }
             fun s(k: String) = (obj[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content?.trim()?.takeIf { it.isNotEmpty() }
             // a post (X, Bluesky) has no title: its text, from the embed's first paragraph, and its author
             val text = s("html")?.let(::postText)
             title = s("title") ?: text
-            site = if (s("title") == null && text != null) s("author_name") ?: s("provider_name") else s("provider_name")
+            site = s("provider_name")
+            author = s("author_name")
             image = s("thumbnail_url")
             duration = (obj["duration"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toDoubleOrNull()?.toInt()
         }
@@ -140,15 +144,17 @@ object LinkInfo {
             val g = obj["guild"]; val id = str(g, "id") ?: return@runCatching
             title = str(g, "name")
             val members = (obj["approximate_member_count"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
-            site = "Discord" + (members?.let { ", " + java.text.NumberFormat.getIntegerInstance().format(it) + " members" } ?: "")
+            extra = members?.let { java.text.NumberFormat.getIntegerInstance().format(it) + " members" }
             image = str(g, "banner")?.let { "https://cdn.discordapp.com/banners/$id/$it.png?size=480" } ?: str(g, "splash")?.let { "https://cdn.discordapp.com/splashes/$id/$it.png?size=480" }
             serverIcon = str(g, "icon")?.let { "https://cdn.discordapp.com/icons/$id/$it.png?size=128" }
         }
+        // public endpoints with more than the page says: a repository's stars, an article's summary, a game's price
+        targeted(page)?.let { t -> title = t.title ?: title; image = t.image ?: image; extra = t.extra ?: extra; if (t.icon != null) serverIcon = t.icon }
         // 1 MB: video pages put the length late (YouTube's at ~650 KB, 2026-11-20); a Discord invite needs no page
         val html = if (invite != null && title != null) null else read(page, 1024 * 1024, ua)
         // TikTok: its oEmbed now answers with the player only; the page's own data has the caption
         if (tiktok && html != null) tiktokItem(html)?.let { v ->
-            title = v.caption ?: title; site = v.author ?: site; image = v.cover ?: image; duration = v.seconds ?: duration
+            title = v.caption ?: title; author = v.author ?: author; image = v.cover ?: image; duration = v.seconds ?: duration
         }
         if (html != null) {
             val head = html.substringBefore("</head>")
@@ -161,8 +167,7 @@ object LinkInfo {
                 ?: Regex("""itemprop=["']duration["'][^>]*content=["']([^"']+)""").find(html)?.groupValues?.get(1)?.let(::isoSeconds)
                 ?: Regex(""""lengthSeconds":"(\d+)"""").find(html)?.groupValues?.get(1)?.toIntOrNull()
         }
-        // a Claude artifact shows only Claude's generic page to someone signed out: name it, without the logo as a banner
-        if (isClaudeArtifact(page)) { title = "Claude artifact"; site = "Claude"; image = null }
+        platformOf(page)?.let { p -> site = listOfNotNull(p, extra ?: subredditOf(page) ?: author).joinToString(", ") }
         val key = Integer.toHexString(info.url.hashCode())
         val banner = image?.let { runCatching { URL(URL(page), it).toString() }.getOrNull() }?.let { saveImage(it, "$key.jpg", 480) }
         // the page's icons, PNG ones first (a .ico doesn't decode everywhere), then the real host's favicon.ico
@@ -269,10 +274,57 @@ object LinkInfo {
         return code?.takeIf { Regex("[A-Za-z0-9-]{2,40}").matches(it) }
     }
 
-    /** A link to a Claude artifact (claude.ai/artifact/..., claude.ai/code/artifact/..., claude.ai/public/artifacts/...). */
-    internal fun isClaudeArtifact(url: String): Boolean = runCatching {
-        val u = URL(url); u.host.lowercase().removePrefix("www.") == "claude.ai" && Regex("/(artifact|artifacts)/").containsMatchIn(u.path)
-    }.getOrDefault(false)
+    /** The platforms named the same way everywhere (their oEmbed names differ: "reddit", "YouTube"). */
+    private val PLATFORMS = mapOf(
+        "youtube.com" to "YouTube", "youtu.be" to "YouTube", "music.youtube.com" to "YouTube Music", "tiktok.com" to "TikTok",
+        "x.com" to "X", "twitter.com" to "X", "reddit.com" to "Reddit", "old.reddit.com" to "Reddit", "new.reddit.com" to "Reddit",
+        "vimeo.com" to "Vimeo", "open.spotify.com" to "Spotify", "soundcloud.com" to "SoundCloud", "bsky.app" to "Bluesky",
+        "discord.gg" to "Discord", "discord.com" to "Discord", "github.com" to "GitHub", "store.steampowered.com" to "Steam",
+        "twitch.tv" to "Twitch", "instagram.com" to "Instagram",
+    )
+
+    internal fun platformOf(url: String): String? = runCatching {
+        val h = URL(url).host.lowercase().removePrefix("www.").removePrefix("m.").removePrefix("mobile.")
+        PLATFORMS[h] ?: if (h.startsWith("pinterest.")) "Pinterest" else if (h.endsWith(".wikipedia.org")) "Wikipedia" else null
+    }.getOrNull()
+
+    /** A Reddit link's community ("r/Android"), shown instead of the poster. */
+    internal fun subredditOf(url: String): String? {
+        if (platformOf(url) != "Reddit") return null
+        val path = runCatching { URL(url).path }.getOrNull() ?: return null
+        return Regex("^/r/([A-Za-z0-9_]+)").find(path)?.groupValues?.get(1)?.let { "r/$it" }
+    }
+
+    data class Targeted(val title: String?, val extra: String?, val image: String?, val icon: String? = null)
+
+    /** GitHub repositories, Wikipedia articles and Steam games, from their public endpoints. */
+    private fun targeted(page: String): Targeted? = runCatching {
+        val u = URL(page); val host = u.host.lowercase().removePrefix("www.").removePrefix("m.")
+        val path = u.path.trim('/').split('/').filter { it.isNotEmpty() }
+        fun obj(url: String): kotlinx.serialization.json.JsonObject? = read(url, 256 * 1024)?.let { json.parseToJsonElement(it) as? kotlinx.serialization.json.JsonObject }
+        fun str(o: kotlinx.serialization.json.JsonElement?, k: String) = ((o as? kotlinx.serialization.json.JsonObject)?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content?.trim()?.takeIf { it.isNotEmpty() }
+        fun num(o: kotlinx.serialization.json.JsonElement?, k: String) = ((o as? kotlinx.serialization.json.JsonObject)?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull()
+        val fmt = java.text.NumberFormat.getIntegerInstance()
+        when {
+            host == "github.com" && path.size >= 2 && path[0] !in setOf("orgs", "settings", "topics", "search", "marketplace") -> {
+                val r = obj("https://api.github.com/repos/${path[0]}/${path[1]}") ?: return null
+                val stars = num(r, "stargazers_count")
+                Targeted(str(r, "full_name")?.let { n -> str(r, "description")?.let { "$n: $it" } ?: n }, stars?.let { fmt.format(it) + " stars" }, null,
+                    str(r["owner"], "avatar_url"))
+            }
+            host.endsWith(".wikipedia.org") && path.size >= 2 && path[0] == "wiki" -> {
+                val w = obj("https://$host/api/rest_v1/page/summary/${path[1]}") ?: return null
+                Targeted(str(w, "title"), str(w, "description"), str(w["thumbnail"], "source"))
+            }
+            host == "store.steampowered.com" && path.size >= 2 && path[0] == "app" -> {
+                val id = path[1].takeIf { it.all(Char::isDigit) } ?: return null
+                val d = (obj("https://store.steampowered.com/api/appdetails?appids=$id&filters=basic,price_overview")?.get(id) as? kotlinx.serialization.json.JsonObject)?.get("data")
+                val free = ((d as? kotlinx.serialization.json.JsonObject)?.get("is_free") as? kotlinx.serialization.json.JsonPrimitive)?.content == "true"
+                Targeted(str(d, "name"), if (free) "free" else str((d as? kotlinx.serialization.json.JsonObject)?.get("price_overview"), "final_formatted"), str(d, "header_image"))
+            }
+            else -> null
+        }
+    }.getOrNull()
 
     internal fun oembedFor(page: String): String? {
         val host = runCatching { URL(page).host.lowercase().removePrefix("www.").removePrefix("m.").removePrefix("mobile.") }.getOrNull() ?: return null

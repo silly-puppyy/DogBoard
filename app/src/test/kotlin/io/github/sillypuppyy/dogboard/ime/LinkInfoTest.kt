@@ -63,12 +63,17 @@ class LinkInfoTest : FunSpec({
     test("the first link in a text") {
         LinkInfo.linkIn("look https://vm.tiktok.com/ZM123/ ok") shouldBe "https://vm.tiktok.com/ZM123/"
     }
-    test("Discord invite codes, Claude artifact links") {
+    test("Discord invite codes") {
         LinkInfo.discordInviteCode("https://discord.gg/discord-developers") shouldBe "discord-developers"
         LinkInfo.discordInviteCode("https://discord.com/invite/AbC123?event=1") shouldBe "AbC123"
         LinkInfo.discordInviteCode("https://discord.com/channels/1/2") shouldBe null
-        LinkInfo.isClaudeArtifact("https://claude.ai/artifact/YAzgKHm2Txz7U3anHW3vuX") shouldBe true
-        LinkInfo.isClaudeArtifact("https://claude.ai/code/artifact/fc7089a1-fc59-4917-b1aa-f1ec6b65313a") shouldBe true
-        LinkInfo.isClaudeArtifact("https://claude.ai/chat/123") shouldBe false
+    }
+    test("platforms named the same way, a Reddit link's community") {
+        LinkInfo.platformOf("https://www.reddit.com/r/Android/comments/abc/") shouldBe "Reddit"
+        LinkInfo.platformOf("https://youtu.be/xyz") shouldBe "YouTube"
+        LinkInfo.platformOf("https://de.m.wikipedia.org/wiki/Hund".replace("de.m.", "de.")) shouldBe "Wikipedia"
+        LinkInfo.platformOf("https://example.com/") shouldBe null
+        LinkInfo.subredditOf("https://www.reddit.com/r/Android/comments/abc/") shouldBe "r/Android"
+        LinkInfo.subredditOf("https://youtube.com/r/x") shouldBe null
     }
 })
