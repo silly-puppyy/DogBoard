@@ -82,7 +82,11 @@ open class ImeEditor(
         // Only the first few replacements of a field are checked, and never inside a batch: reading the field in
         // the middle of the keyboard's batched edit made the app draw every step of it (a picked suggestion
         // erased the typed word letter by letter before the new one appeared, user 2026-11-18)
-        if (!plainMode && replaced > 0 && checksLeft > 0 && batchDepth == 0) {
+        // Not over a selection: the text replaced is then the selection, not the text before the cursor, and a paste
+        // over a selected word looked like an appended replacement ("hello [world]" + paste "hello world": the field read
+        // "hello hello world", which ends with what was before plus the new text; it was "repaired" with 16 deletes and
+        // the field set to plain typing, user 2026-11-23)
+        if (!plainMode && replaced > 0 && checksLeft > 0 && batchDepth == 0 && ic.getSelectedText(0).isNullOrEmpty()) {
             val before = ic.getTextBeforeCursor(replaced + CHECK_CONTEXT, 0)?.toString()
             if (before.isNullOrEmpty()) {
                 switchToPlain("keeps no text")
