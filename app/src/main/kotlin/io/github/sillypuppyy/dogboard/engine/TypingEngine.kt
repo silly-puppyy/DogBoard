@@ -1185,6 +1185,22 @@ object TypingEngine {
         }
     }
 
+    /**
+     * Words run together: the last word's letters must come from the keys typed after the break, at least one of them on
+     * its key or next to it. A stray last letter read as a missed space and a short word the language model likes
+     * ("fueronb" -> "fueron a", then "fueron de"; "всегоп" -> "всего с"; "produitsx" -> "produits à") was ~15-20 wrong
+     * fixes of 2000 typos per language; a real missed space ("existey" -> "existe y", "obtenerun" -> "obtener un") keeps
+     * its typed letters.
+     */
+    private fun typesLastWord(typed: String, candidate: String): Boolean {
+        if (' ' !in candidate) return true
+        val last = candidate.substringAfterLast(' ')
+        val tail = typed.drop(candidate.substringBeforeLast(' ').count { it != ' ' })
+        if (tail.isEmpty()) return false
+        val rows = rules.letterRows
+        return last.any { c -> tail.any { t -> rows.near(Lexicon.foldPlain(t), Lexicon.foldPlain(c)) } }
+    }
+
     fun correction(
         word: CurrentWord,
         candidates: List<Candidate>,
@@ -1202,7 +1218,7 @@ object TypingEngine {
         if (candidates.isEmpty()) return null
         val kept = respectingContactNames(word.text, withoutLearnedTypo(word.text, candidates))
             .filter {
-                keepsPopupLetters(word.text, it.word, word.keys.keys) && keepsOneLetterWord(word.text, it.word, engine) &&
+                keepsPopupLetters(word.text, it.word, word.keys.keys) && keepsOneLetterWord(word.text, it.word, engine) && typesLastWord(word.decoderText, it.word) &&
                     keepsAmpersands(word.text, it.word) && noDoubleApostrophe(word.text, it.word) && !isAllCapsNoSuggest(word.text, it.word) &&
                     !isCommonLearnedTypo(word.text, it.word, rules.learnedTypoOverrides) && !isInvalidUserEntry(word.text, it.word)
             }
