@@ -99,8 +99,27 @@ class MultilingualEvalTest : FunSpec({
             }
             return nx / (nx + no)
         }
+        /** The language of one word: the one listing it more often (null: neither, or equal). */
+        fun langOf(t: String): Lang? {
+            val pa = la.lexicon.logProb(t.lowercase()) ?: -22.0; val pb = lb.lexicon.logProb(t.lowercase()) ?: -22.0
+            return if (pa > pb) la else if (pb > pa) lb else null
+        }
+        // DOGBOARD_ML_PRIOR_MODE: "pause" (user 2026-11-23: after a word in the other language, no weighting for the next
+        // word) or "follow" (the prior is the last word's language)
+        val priorMode = System.getenv("DOGBOARD_ML_PRIOR_MODE") ?: "sentence"
         fun withPrior(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, beta: Double): List<Candidate> {
-            val sa = kotlin.math.ln(matrixShare(la, lb, before)); val sb = kotlin.math.ln(matrixShare(lb, la, before))
+            var sa = kotlin.math.ln(matrixShare(la, lb, before)); var sb = kotlin.math.ln(matrixShare(lb, la, before))
+            val last = before.lastOrNull()?.let { langOf(it) }
+            when (priorMode) {
+                "pause" -> {
+                    val majority = if (sa > sb) la else if (sb > sa) lb else null
+                    if (last != null && majority != null && last !== majority) { sa = 0.0; sb = 0.0 }
+                }
+                "follow" -> {
+                    // the last word's language, as strongly as the sentence share would favour it (2:1 at most early on)
+                    if (last == null) { sa = 0.0; sb = 0.0 } else { sa = if (last === la) 0.0 else kotlin.math.ln(0.5); sb = if (last === lb) 0.0 else kotlin.math.ln(0.5) }
+                }
+            }
             val best = LinkedHashMap<String, Candidate>()
             for ((c, sh) in ca.map { it to beta * sa } + cb.map { it to beta * sb }) {
                 val x = c.copy(score = c.score + sh)
