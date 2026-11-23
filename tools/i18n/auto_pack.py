@@ -98,6 +98,10 @@ LANGS = {
     'fa': dict(name='Persian', leipzig=['fas_news_2022_1M', 'fas_newscrawl_2019_1M', 'pes_wikipedia_2021_1M'], tatoeba='pes',
                layout=('gboard', 'persian'), gboard_tag='fa-IR', script='Arab', compounds=False, rtl=True,
                normalize={'ي': 'ی', 'ى': 'ی', 'ك': 'ک'}),
+    # Slavic in Cyrillic; the phonetic layout (user 2026-11-23: Russian x Bulgarian on a Bulgarian phonetic keyboard): no
+    # ы э ё keys, which Russian needs (the multilingual pass)
+    'bg': dict(name='Bulgarian', leipzig=['bul_news_2022_1M', 'bul_wikipedia_2021_1M'], tatoeba='bul',
+               layout=('gboard', 'bulgarian_phonetic'), gboard_tag='bg-BG', script='Cyrl', compounds=False),
     'ar': dict(name='Arabic', leipzig=['ara_news_2022_1M', 'ara_wikipedia_2021_1M'], tatoeba='ara',
                layout=('gboard', 'arabic'), script='Arab', compounds=False, rtl=True),
 }
