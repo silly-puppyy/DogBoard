@@ -34,7 +34,9 @@ def main():
     # long-press reaches only the language's own letters (SIM_LETTERS, from CLDR): a foreign name's ä in the Czech
     # lexicon let slips type "sprävedlnosti"
     if os.environ.get('SIM_LETTERS'): lexchars &= set(os.environ['SIM_LETTERS'])
-    def base(c):  # a letter not on the layout is typed on its base key (long press): é on e, œ on o
+    shifted = dict(zip(os.environ.get('SIM_SHIFTED', '')[0::2], os.environ.get('SIM_SHIFTED', '')[1::2]))
+    def base(c):  # a letter not on the layout is typed on its base key (long press): é on e, œ on o; ㄲ on ㄱ (shift)
+        if c in shifted: return shifted[c] if shifted[c] in st.POS else None
         b = fold(c.replace('œ', 'o').replace('æ', 'a'))[:1]
         return b if b in st.POS else None
     for c in lexchars:  # accented letters sit on their base key (long press)

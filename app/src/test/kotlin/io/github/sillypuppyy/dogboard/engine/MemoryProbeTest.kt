@@ -13,6 +13,7 @@ class MemoryProbeTest : FunSpec({
         val lang = System.getenv("DOGBOARD_PACK_LANG") ?: "en"
         val rules = File(dir, "rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules()
         Lexicon.distinctLetters = rules.distinctLetters.toSet()
+        Lexicon.keyOf = rules.keyOfLetters
         fun used(): Long { repeat(3) { System.gc(); Thread.sleep(200) }; val r = Runtime.getRuntime(); return r.totalMemory() - r.freeMemory() }
         val m0 = used()
         val snap = File(dir, "$lang-lexicon.dgz")

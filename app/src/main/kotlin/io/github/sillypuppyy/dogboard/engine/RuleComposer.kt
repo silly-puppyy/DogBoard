@@ -70,6 +70,20 @@ class RuleComposer private constructor(private val rules: List<Rule>) {
         private const val INHERENT = "\u200c\u200c\u200c"
         private val json = Json { ignoreUnknownKeys = true }
 
+        /** A script's rule file: the app's assets (set at start-up), the source tree in tests. */
+        @Volatile var source: (String) -> String? = { script ->
+            java.io.File("src/main/assets/dogboard/dynamic_rules/$script.json").takeIf { it.exists() }?.readText()
+        }
+        private val loaded = HashMap<String, RuleComposer?>()
+
+        /** [script]'s rules, read once; null when there is no such file. */
+        fun forScript(script: String): RuleComposer? = synchronized(loaded) {
+            loaded.getOrPut(script) { runCatching { source(script)?.let(::parse) }.getOrNull() }
+        }
+
+        /** The rules [language]'s layout types with (Indic), or null. */
+        fun forLanguage(language: String): RuleComposer? = SCRIPT_OF[language.substringBefore('-')]?.let(::forScript)
+
         fun parse(text: String): RuleComposer = RuleComposer(json.decodeFromString<File>(text).rules.map { s ->
             val last = s.pattern.lastOrNull()?.takeIf { it !in """)]}?*+.|\$""" && s.pattern.getOrNull(s.pattern.length - 2) != '\\' }
             Rule(Regex("(?:${s.pattern})$"), s.text.replace("\\$", "\u0000").replace("\\\\", "\\").replace("\u0000", "$"), last)

@@ -1111,15 +1111,6 @@ class ImeController(
          * keeps the keys for the decoder (the loaded pack's rules: a downloaded pack's are not among the built-in ones
          * languageRules() reads). Other languages: the letters as typed.
          */
-        /** Each script's typing rules (Gboard's dynamic layouts), read once: null when the asset is missing. */
-        private val ruleComposers = HashMap<String, io.github.sillypuppyy.dogboard.engine.RuleComposer?>()
-
-        private fun ruleComposer(script: String) = ruleComposers.getOrPut(script) {
-            runCatching {
-                dev.patrickgold.florisboard.FlorisApplication.getHack().assets.open("dogboard/dynamic_rules/$script.json")
-                    .bufferedReader().use { io.github.sillypuppyy.dogboard.engine.RuleComposer.parse(it.readText()) }
-            }.getOrNull()
-        }
 
         private fun withTypedMarks(word: CurrentWord): CurrentWord {
             // Korean: jamo keys drawn as Hangul syllables (by the language: Korean has no pack whose rules could say so)
@@ -1130,8 +1121,7 @@ class ImeController(
                 return word
             }
             // Indic keyboards: the script's rules (a vowel key after a consonant writes its sign: क + आ -> का)
-            val script = io.github.sillypuppyy.dogboard.engine.RuleComposer.SCRIPT_OF[language.substringBefore('-')]
-            val rules = script?.let(::ruleComposer)
+            val rules = io.github.sillypuppyy.dogboard.engine.RuleComposer.forLanguage(language)
             if (rules != null) {
                 word.composer = rules::compose
                 word.decomposer = rules::decompose

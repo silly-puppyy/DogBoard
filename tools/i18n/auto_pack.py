@@ -76,7 +76,11 @@ LANGS = {
     # Korean (2-set): words along their jamo keys (rules path "hangul": the word list, snapshots and eval in jamo space)
     'ko': dict(name='Korean', leipzig=['kor_news_2022_1M', 'kor_news_2020_1M', 'kor_wikipedia_2021_1M'], tatoeba='kor',
                layout=('gboard', 'korean_two_bulsik'), gboard_tag='ko', script='Kore', compounds=False,
-               rules_extra={'path': 'hangul'}),
+               rules_extra={'path': 'hangul', 'key_of': dict(zip('ㄲㄸㅃㅆㅉㅒㅖ', 'ㄱㄷㅂㅅㅈㅐㅔ'))}),
+    # Hindi (Gboard's compact layout): words along the keys Gboard's Devanagari rules take them from (rules path)
+    'hi': dict(name='Hindi', leipzig=['hin_news_2022_1M', 'hin_news_2020_1M', 'hin_wikipedia_2021_1M'], tatoeba='hin',
+               layout=('gboard', 'hindi_compact'), gboard_tag='hi', script='Deva', compounds=False,
+               rules_extra={'path': 'rules:devanagari'}),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
@@ -319,7 +323,7 @@ class Pack:
         out = self.p('rules.json')
         if os.path.exists(out): return
         src, name = self.cfg['layout']
-        rows = None
+        rows, longpress = None, {}
         if src == 'gboard':
             langs = json.load(open(f'{LAYOUTS}/gboard/languages.json')); lays = json.load(open(f'{LAYOUTS}/gboard/layouts.json'))
             v = next(v for v in langs[self.cfg.get('gboard_tag', self.lang)]['variants'] if v['variant'] == name)
@@ -328,9 +332,12 @@ class Pack:
             # the extracted data has no id for some variants (fr-FR azerty, 2026-11-23): the same-named variant of another
             # language (fr-CA's azerty, p4q: the same rows)
             rows = lays[lid]['rows']
+            longpress = lays[lid].get('longpress', {})
         else:
             rows = json.load(open(f'{LAYOUTS}/ios/layouts.json'))[name]['rows']
-        letters = [''.join(k for k in r if isinstance(k, str) and len(k) == 1 and k.isalpha()) for r in rows]
+        # a sign with its own key (Hindi ् ं) is typed like a letter
+        letters = [''.join(k for k in r if isinstance(k, str) and len(k) == 1 and (k.isalpha() or unicodedata.category(k) in ('Mn', 'Mc')))
+                   for r in rows]
         letters = [r for r in letters if len(r) >= 5][:3]
         # a key that types two letters (Arabic ﻻ = ل + ا, a presentation form) can't be one decoder key: typed as two
         letters = [''.join(c for c in r if not ('\ufb50' <= c <= '\ufeff')) for r in letters]
@@ -342,6 +349,14 @@ class Pack:
         rules = {'sentence_end': '.!?' + ('؟' if self.cfg.get('rtl') else ''), 'compounds': self.cfg.get('compounds', False),
                  'letter_rows': {'rows': letters, 'offsets': [round((w - len(r)) / 2 * 2) / 2 for r in letters]},
                  'distinct_letters': distinct}
+        # letters with no key of their own, typed by long-press on another (Hindi compact भ on ब): folded to that key
+        # (Lexicon.keyOf); letters an accent fold already reaches (é on e) left to it
+        key_of = {}
+        for k, alts in longpress.items():
+            if len(k) != 1 or k not in on_keys: continue
+            for c in alts.split(','):
+                if len(c) == 1 and c.isalpha() and c not in on_keys and fold(c) == c and c not in key_of: key_of[c] = k
+        if key_of: rules['key_of'] = key_of
         # letters also typed as two (German "fuer" for "für", TypingEngine.digraphCandidates)
         if self.cfg.get('digraphs'): rules['digraphs'] = self.cfg['digraphs']
         # typography no corpus shows (French: a space before ? ! : ;, « » quotes), as the hand-built packs had it
@@ -352,8 +367,15 @@ class Pack:
     # 8
     def tests(self):
         if glob.glob(self.p(f'{self.lang}-typos.tsv')): return
+        if json.load(open(self.p('rules.json'))).get('path'):
+            # typed in key space (Korean jamo, Indic vowel keys): the sets as a typist's keys, made apart from the pack
+            sub = self.p('typed')
+            sh([sys.executable, '-I', f'{REPO}/tools/i18n/sim/telex_sets.py', self.dir, sub, str(self.n)])
+            for kind in ('typos', 'controls'): shutil.copy(f'{sub}/{self.lang}-{kind}.tsv', self.p(f'{self.lang}-{kind}.tsv'))
+            return
         rows = json.load(open(self.p('rules.json')))['letter_rows']['rows']
-        env = dict(os.environ, SIM_ROWS=','.join(rows), SIM_PREFIX=self.lang, SIM_LETTERS=''.join(c for c in letters_of(self.lang) if c.islower() or not c.isupper()))
+        key_of = json.load(open(self.p('rules.json'))).get('key_of', {})
+        env = dict(os.environ, SIM_ROWS=','.join(rows), SIM_SHIFTED=''.join(a + b for a, b in key_of.items()), SIM_PREFIX=self.lang, SIM_LETTERS=''.join(c for c in letters_of(self.lang) if c.islower() or not c.isupper()))
         sh([sys.executable, f'{PREDBENCH}/make_es_sets.py', self.p(f'{self.lang}.heldout.txt'), self.p(f'{self.lang}.lexicon.tsv'),
             f'{PREDBENCH}/typo_model7.json', self.dir, str(self.n)], env=env, cwd=PREDBENCH)
 

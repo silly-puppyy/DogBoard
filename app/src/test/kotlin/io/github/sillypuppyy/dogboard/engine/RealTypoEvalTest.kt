@@ -46,6 +46,7 @@ class RealTypoEvalTest : FunSpec({
             System.getenv("DOGBOARD_DISTINCT") != null -> System.getenv("DOGBOARD_DISTINCT")!!.toSet()
             else -> File("${packDir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()).distinctLetters.toSet() } ?: emptySet()
         }
+        Lexicon.keyOf = File("${packDir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()).keyOfLetters } ?: emptyMap()
         if (appPath) {
             TypingEngine.unloadForTest()
             TypingEngine.load(

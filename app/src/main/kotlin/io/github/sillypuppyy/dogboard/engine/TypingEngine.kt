@@ -447,6 +447,8 @@ object TypingEngine {
         rules.typedMarks -> rules.typedSpellings::spelled
         // Korean: words along their jamo keys, as typed on the 2-set layout
         rules.path == "hangul" -> { w -> HangulComposer.decompose(w.lowercase()) }
+    // Indic: words along the keys the script's rules take them from (किताब along क इ त आ ब)
+    rules.path.startsWith("rules:") -> RuleComposer.forScript(rules.path.removePrefix("rules:"))?.let { c -> c::decompose }
         else -> null
     }
 

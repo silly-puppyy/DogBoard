@@ -53,6 +53,7 @@ class SnapshotExportTest : FunSpec({
         val lang = System.getenv("DOGBOARD_EXPORT_PACK_LANG") ?: dir.name
         val rules = File(dir, "rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules()
         Lexicon.distinctLetters = rules.distinctLetters.toSet()
+        Lexicon.keyOf = rules.keyOfLetters
         try {
             // a Telex-typed language's words along their typed spelling, as the phone builds them (TypingEngine.pathOf)
             val lexicon = File(dir, "$lang.lexicon.tsv").bufferedReader().use { Lexicon.parse(it, TypingEngine.pathOf(rules)) }
@@ -67,6 +68,7 @@ class SnapshotExportTest : FunSpec({
             }
         } finally {
             Lexicon.distinctLetters = emptySet()
+            Lexicon.keyOf = emptyMap()
         }
     }
 })

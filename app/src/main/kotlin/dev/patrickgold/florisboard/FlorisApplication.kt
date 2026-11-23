@@ -93,6 +93,10 @@ class FlorisApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         FlorisApplicationReference = WeakReference(this)
+        // script typing rules (Indic) come from the app's assets
+        io.github.sillypuppyy.dogboard.engine.RuleComposer.source = { script ->
+            runCatching { assets.open("dogboard/dynamic_rules/$script.json").bufferedReader().use { it.readText() } }.getOrNull()
+        }
 
         try {
             Flog.install(

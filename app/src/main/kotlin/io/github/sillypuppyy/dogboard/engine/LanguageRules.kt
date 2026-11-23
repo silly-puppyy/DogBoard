@@ -70,6 +70,11 @@ data class LanguageRules(
      */
     @SerialName("distinct_letters") val distinctLetters: String = "",
     /**
+     * Letters typed from another letter's key (Lexicon.keyOf): the layout's long-press and shift planes, where the
+     * letter has no key of its own (Hindi compact भ on ब, Korean ㄲ on ㄱ with shift). Folded to that key, as an accent.
+     */
+    @SerialName("key_of") val keyOf: Map<String, String> = emptyMap(),
+    /**
      * Letters people also type as two letters (German "ä": "ae", "fuer" for "für"): a word typed that way is also decoded
      * with the second letter's taps left out (TypingEngine.digraphCandidates). Empty: none.
      */
@@ -84,9 +89,15 @@ data class LanguageRules(
      * marked twin (bare syllables are words of their own: ngay, ba, trong; restoring marks broke 3.1 % of correct words).
      */
     @SerialName("typed_marks") val typedMarks: Boolean = false,
-    /** Words typed as other keys than their letters: "hangul" (Korean: jamo keys, 한 along ㅎ ㅏ ㄴ). Empty: the letters. */
+    /**
+     * Words typed as other keys than their letters: "hangul" (Korean: jamo keys, 한 along ㅎ ㅏ ㄴ), "rules:<script>"
+     * (Indic: each sign as the vowel key a RuleComposer takes it from, किताब along क इ त आ ब). Empty: the letters.
+     */
     @SerialName("path") val path: String = "",
 ) {
+    /** [keyOf] as single letters (a multi-letter entry can't fold). */
+    val keyOfLetters: Map<Char, Char> get() = keyOf.entries.filter { it.key.length == 1 && it.value.length == 1 }.associate { it.key[0] to it.value[0] }
+
     @Serializable
     data class Spelling(val letter: String = "", val mark: String = "", val typed: String = "", val at: String = "") {
         companion object { const val AT_END = "end" }

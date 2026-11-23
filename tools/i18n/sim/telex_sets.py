@@ -35,11 +35,26 @@ def hangul_keys(word):
     return ''.join(out)
 
 
+def rule_keys(script):
+    """RuleComposer.decompose in Python: each sign as the key the script's rules write it from (किताब -> कइतआब)."""
+    rules = json.load(open(f'{HERE}/../../../app/src/main/assets/dogboard/dynamic_rules/{script}.json', encoding='utf-8'))['rules']
+    key_of_sign = {}
+    for r in rules:
+        p, t = r['pattern'], r['text']
+        last = p[-1] if p and p[-1] not in ')]}?*+.|$' and (len(p) < 2 or p[-2] != '\\') else None
+        sign = t[2:] if t.startswith('$1') else ''
+        if len(sign) == 1 and last and sign != last and unicodedata.category(sign) in ('Mn', 'Mc'):
+            key_of_sign.setdefault(sign, last)
+    return lambda word: ''.join(key_of_sign.get(c, c) for c in word.lower())
+
+
 def speller(rules):
     """The keys a word is typed with: Hangul jamo (rules path "hangul"), else TypedSpellings.spelled in Python (end
     marks (tones) off the letters, their keys appended; letters replaced)."""
     if rules.get('path') == 'hangul':
         return hangul_keys
+    if rules.get('path', '').startswith('rules:'):
+        return rule_keys(rules['path'][len('rules:'):])
     sp = rules.get('spellings', [])
     letters = sorted([s for s in sp if s.get('letter') and s.get('typed')], key=lambda s: -len(s['letter']))
     marks = [s for s in sp if s.get('mark') and s.get('typed') and s.get('at') == 'end']
@@ -64,6 +79,8 @@ def main():
     rules = json.load(open(f'{pack}/rules.json', encoding='utf-8'))
     spelled = speller(rules)
     keyset = set(''.join(rules['letter_rows']['rows']))
+    shifted = ''.join(a + b for a, b in rules.get('key_of', {}).items())  # pairs: letter, the key it's typed from
+    keyset |= set(shifted[0::2])
     lang = os.path.basename(os.path.normpath(pack)).split('-')[0]
     back = {}  # Telex spelling -> the most frequent word spelled so
     counts = {}
@@ -84,7 +101,7 @@ def main():
     rows = ','.join(rules['letter_rows']['rows'])
     subprocess.run([sys.executable, '-I', f'{HERE}/make_es_sets.py', f'{out}/{lang}.heldout.txt', f'{out}/{lang}.lexicon.tsv',
                     f'{HERE}/typo_model7.json', out, n],
-                   env=dict(os.environ, SIM_ROWS=rows, SIM_PREFIX=lang, SIM_LETTERS=''.join(sorted(keyset))),
+                   env=dict(os.environ, SIM_ROWS=rows, SIM_SHIFTED=shifted, SIM_PREFIX=lang, SIM_LETTERS=''.join(sorted(keyset))),
                    cwd=HERE, check=True, stdout=subprocess.DEVNULL)
     # context and target back in Vietnamese; the typed text stays as typed
     for kind in ('typos', 'controls'):

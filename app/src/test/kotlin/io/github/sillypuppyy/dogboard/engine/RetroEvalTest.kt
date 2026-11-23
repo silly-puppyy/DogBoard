@@ -21,6 +21,7 @@ class RetroEvalTest : FunSpec({
         fun f(name: String) = File("$dir$lang.$name")
         val rules = File("${dir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules.ENGLISH
         Lexicon.distinctLetters = rules.distinctLetters.toSet()
+        Lexicon.keyOf = rules.keyOfLetters
         TypingEngine.unloadForTest()
         TypingEngine.load(
             openLexicon = { f("lexicon.tsv").bufferedReader() },

@@ -21,6 +21,7 @@ class TypedProbeTest : FunSpec({
         fun reader(name: String) = File("$dir$lang.$name").takeIf { it.isFile }?.bufferedReader() ?: java.io.BufferedReader(java.io.StringReader(""))
         val rules = File("${dir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) }
         Lexicon.distinctLetters = rules?.distinctLetters?.toSet() ?: emptySet()
+        Lexicon.keyOf = rules?.keyOfLetters ?: emptyMap()
         TypingEngine.load(
             openLexicon = { reader("lexicon.tsv") },
             openBigrams = { reader("bigrams.tsv") },

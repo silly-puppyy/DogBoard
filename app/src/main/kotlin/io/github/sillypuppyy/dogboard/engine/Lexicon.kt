@@ -606,6 +606,13 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
          */
         private val FINAL_FORMS = mapOf('ς' to 'σ')
 
+        /**
+         * Letters typed from another letter's key (rules.json key_of): Korean ㄲ is ㄱ's shift plane, as a capital is
+         * its letter's; Hindi compact's भ is ब's long-press. Folded to that key (까지 typed without shift still reaches
+         * it, as Hello does from hello).
+         */
+        @Volatile var keyOf: Map<Char, Char> = emptyMap()
+
         fun foldPlain(c: Char): Char {
             val lc = c.lowercaseChar()
             if (lc.code < 0xC0) return lc
@@ -618,6 +625,7 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
             if (lc.code < 0xC0) return lc
             if (lc in distinctLetters) return lc
             FINAL_FORMS[lc]?.let { return it }
+            keyOf[lc]?.let { return it }
             return java.text.Normalizer.normalize(lc.toString(), java.text.Normalizer.Form.NFD)[0]
         }
 

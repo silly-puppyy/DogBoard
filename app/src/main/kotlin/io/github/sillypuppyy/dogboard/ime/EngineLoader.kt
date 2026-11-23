@@ -290,6 +290,7 @@ object EngineLoader {
         // the language's letters of their own (å ä ö, й; rules distinct_letters) stay distinct in the trie: set before
         // the lexicon is built (English and Spanish: none)
         io.github.sillypuppyy.dogboard.engine.Lexicon.distinctLetters = rules.distinctLetters.toSet()
+        io.github.sillypuppyy.dogboard.engine.Lexicon.keyOf = rules.keyOfLetters
         // the language's casing (Turkish İ): automatic capitals follow it
         io.github.sillypuppyy.dogboard.engine.CaseAdapt.locale = java.util.Locale.forLanguageTag(p.tag)
         TypingEngine.load(
