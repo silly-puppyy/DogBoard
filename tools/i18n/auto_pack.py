@@ -57,6 +57,12 @@ LANGS = {
                layout=('gboard', 'azerty'), gboard_tag='fr-FR', script='Latn', compounds=False,
                rules_extra={'space_before_marks': '?!:;', 'quotes': '«»‘’’', 'double_space': '. '},
                hunspell=('fr', 'Dicollecte, MPL 2.0'), elision='l,d,j,m,t,s,c,n,qu,jusqu,lorsqu,puisqu'),
+    # Cyrillic; Gboard's ЙЦУКЕН has ъ on its own key (the hand-built pack's rows had it on long-press); ё folds to е
+    'ru': dict(name='Russian', leipzig=['rus_news_2024_1M', 'rus_news_2023_1M', 'rus_wikipedia_2021_1M'], tatoeba='rus',
+               layout=('gboard', 'russian'), gboard_tag='ru-RU', script='Cyrl', compounds=False,
+               # with Hunspell it matches the hand-built pack (typos 40.2 / 6.3 vs 39.9 / 6.3, broken 0.1 vs 0.0); corpus-only
+               # broke 0.6 % of the hand sets' words (341k words), 2026-11-23
+               hunspell=('ru', 'BSD-style licence')),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
