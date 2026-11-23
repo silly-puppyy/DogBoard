@@ -29,6 +29,16 @@ class TypedSpellingsTest : FunSpec({
         kept(telex, "nguwowif") shouldBe "nguoi"
     }
 
+    test("Telex ươ typed as uow: u and o stay, only the w and the tone are set aside (được, người)") {
+        val vi = TypedSpellings(listOf(LanguageRules.Spelling(letter = "ươ", typed = "uow")) +
+            listOf("ơ" to "ow", "ư" to "uw", "đ" to "dd").map { LanguageRules.Spelling(letter = it.first, typed = it.second) } +
+            listOf("̣" to "j", "̀" to "f").map { LanguageRules.Spelling(mark = it.first, typed = it.second, at = LanguageRules.Spelling.AT_END) })
+        vi.spelled("được") shouldBe "dduowcj"
+        vi.spelled("người") shouldBe "nguowif"
+        "nguowif".filterIndexed { i, _ -> !vi.extraLetters("nguowif")[i] } shouldBe "nguoi"
+        "dduowcj".filterIndexed { i, _ -> !vi.extraLetters("dduowcj")[i] } shouldBe "duoc"
+    }
+
     test("no rules: nothing set aside") {
         TypedSpellings(emptyList()).isEmpty shouldBe true
         TypedSpellings(emptyList()).extraLetters("fuer").none { it } shouldBe true

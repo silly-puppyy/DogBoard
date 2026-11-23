@@ -113,6 +113,7 @@ object TypingEngine {
         )
         val autocorrect = Autocorrect(lexicon).also { ac ->
             ac.keepCompounds = rules.compounds
+            ac.keepAccentTwins = rules.typedMarks
             // a typed non-word that is two words run together is split only when the words go together
             if (bigrams != null) ac.pairSupport = Autocorrect.pairSupport(lexicon, bigrams)
         }

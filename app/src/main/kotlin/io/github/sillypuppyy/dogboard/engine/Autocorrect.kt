@@ -48,6 +48,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var accentTwinLead: Double? = null
 
+    /** Marks are typed (LanguageRules.typedMarks): a typed word is never changed into its accent twin. */
+    var keepAccentTwins: Boolean = false
+
     /**
      * A compounding language (Finnish, German: rules.json "compounds"): a typed word that is exactly two or more
      * dictionary words joined ("vakoiluosasto") is a compound, kept as typed, not split ("vakoilu osasto"). Finnish
@@ -248,6 +251,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
                 return keptAsTyped(typed, asTyped, case)
         }
         // an accent twin of a typed word needs the same lead as any other change of a typed word (see accentTwinLead)
+        if (keepAccentTwins && top.words == 1 && t != typed && isAccentTwin(t, typed) && isWordAsTyped(typed)) return null
         if (top.words == 1 && t != typed && isAccentTwin(t, typed) && isWordAsTyped(typed)) {
             val asTyped = ranked.firstOrNull { it.words == 1 && it.word.equals(typed, ignoreCase = true) }
             if (asTyped != null && top.score - asTyped.score < ln(accentTwinLead ?: level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)

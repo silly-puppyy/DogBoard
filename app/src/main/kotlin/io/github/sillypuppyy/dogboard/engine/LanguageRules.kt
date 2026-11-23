@@ -79,6 +79,11 @@ data class LanguageRules(
      * "typed": "s", "at": "end"} a mark typed as a key at the syllable's end (Telex tones). [digraphs] are letter rules too.
      */
     @SerialName("spellings") val spellings: List<Spelling> = emptyList(),
+    /**
+     * Marks are typed (Vietnamese Telex: "ngayf" for ngày): a bare word that is a word stays bare, never turned into its
+     * marked twin (bare syllables are words of their own: ngay, ba, trong; restoring marks broke 3.1 % of correct words).
+     */
+    @SerialName("typed_marks") val typedMarks: Boolean = false,
 ) {
     @Serializable
     data class Spelling(val letter: String = "", val mark: String = "", val typed: String = "", val at: String = "") {

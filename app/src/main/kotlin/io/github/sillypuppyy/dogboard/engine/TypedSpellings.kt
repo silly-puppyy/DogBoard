@@ -42,7 +42,8 @@ class TypedSpellings(rules: List<LanguageRules.Spelling>) {
         for (l in letters) {
             var i = lower.indexOf(l.typed)
             while (i >= 0) {
-                if ((i until i + l.typed.length).none { extra[it] }) for (k in 1 until l.typed.length) extra[i + k] = true
+                // as many typed letters stay as the rule's letter has (ươ typed "uow": u and o stay, the w is extra)
+                if ((i until i + l.typed.length).none { extra[it] }) for (k in l.letter.length until l.typed.length) extra[i + k] = true
                 i = lower.indexOf(l.typed, i + l.typed.length)
             }
         }
