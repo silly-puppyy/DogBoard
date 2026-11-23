@@ -201,7 +201,10 @@ class FlorisLocale private constructor(val base: Locale) {
         get() = when (language) {
             // DogBoard: Georgian has capitals in Unicode (Mtavruli) but writes no sentence capitals; on the phonetic
             // layout Shift types other letters (ტ -> თ), so an automatic shift would change the first letter
-            "zh", "ko", "th", "bn", "hi", "ka" -> false
+            // DogBoard: scripts without case; Thai and Lao's shift planes type other letters, so an automatic shift
+            // at a field's start would type them
+            "zh", "ko", "th", "lo", "km", "my", "si", "bn", "as", "hi", "mr", "ne", "sa", "ta", "te", "kn", "ml", "gu",
+            "pa", "or", "ka" -> false
             else -> true
         }
 

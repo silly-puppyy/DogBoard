@@ -160,6 +160,21 @@ def indic_layout(id: str, locale: str, name: str, layout: str, indicator: str, t
     return no_capitals(Layout(id, locale, name, layout, indicator, [r for r in rows if r], accents=accents, label=label))
 
 
+def ios_two_planes(id: str, locale: str, name: str, layout: str, indicator: str, ios_name: str, label: str) -> Layout:
+    """An iOS layout whose shift plane types other letters (Thai: ฎ ฑ ธ on shift): the small-letter rows, and each
+    capital-plane key at the same place as that key's shift (Gboard's extracted data has only the base plane)."""
+    d = json.loads((GBOARD_DATA.parent / "ios" / "layouts.json").read_text(encoding="utf-8"))[ios_name]
+    small = [[k for k in r if isinstance(k, str) and k and not k.startswith("<")] for r in d["rows"]]
+    caps = [[k for k in r if isinstance(k, str) and k and not k.startswith("<")] for r in d["planes"]["Capital-Letters"][0]["rows"]]
+    rows, uppers = [], {}
+    for sr, cr in zip(small, caps):
+        keep = [k for k in sr if len(k) == 1]
+        rows.append(keep)
+        for k, c in zip(sr, cr):
+            if len(k) == 1: uppers[k] = c if len(c) == 1 else k
+    return Layout(id, locale, name, layout, indicator, [r for r in rows if r], uppers=uppers, label=label)
+
+
 def hindi_compact() -> Layout:
     """Gboard's hindi_compact (its default Hindi layout)."""
     return indic_layout("compact-hi", "hi", "हिन्दी (कॉम्पैक्ट)", "कॉम्पैक्ट", "HI", "hi", "hindi_compact", "Compact")
@@ -220,6 +235,9 @@ LAYOUTS = [
     # the coeng key, so no composer. Thai and Lao wait for their shift planes (not in the extracted data: half their
     # letters), Burmese and Sinhala for their own composition
     indic_layout("khmer-km", "km", "ខ្មែរ", "ខ្មែរ", "KM", "km-KH", "khmer_cambodia_native", "ខ្មែរ"),
+    # Thai Kedmanee from iOS (both planes: Gboard's extracted data lacks the shifted half); typed in logical order
+    ios_two_planes("kedmanee-th", "th", "ไทย", "เกษมณี", "TH", "Thai", "เกษมณี"),
+    ios_two_planes("lao-lo", "lo", "ລາວ", "ລາວ", "LO", "Lao", "ລາວ"),
 ]
 
 SYMBOL_1 = [
