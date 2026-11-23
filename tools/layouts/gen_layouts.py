@@ -216,6 +216,10 @@ LAYOUTS = [
     indic_layout("odia-or", "or", "ଓଡ଼ିଆ", "ଓଡ଼ିଆ", "OR", "or", "odia", "ଓଡ଼ିଆ"),
     indic_layout("nepali-ne", "ne", "नेपाली", "नेपाली", "NE", "ne-NP", "nepali_nepal_dynamic", "नेपाली"),
     indic_layout("assamese-as", "as", "অসমীয়া", "অসমীয়া", "AS", "as", "assamese", "অসমীয়া"),
+    # Khmer: Gboard's native layout read the same way (every key and long-press); typed in logical order, subscripts by
+    # the coeng key, so no composer. Thai and Lao wait for their shift planes (not in the extracted data: half their
+    # letters), Burmese and Sinhala for their own composition
+    indic_layout("khmer-km", "km", "ខ្មែរ", "ខ្មែរ", "KM", "km-KH", "khmer_cambodia_native", "ខ្មែរ"),
 ]
 
 SYMBOL_1 = [
