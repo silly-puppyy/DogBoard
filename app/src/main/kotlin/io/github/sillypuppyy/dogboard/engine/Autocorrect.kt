@@ -94,13 +94,25 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var pairSupport: ((String, String) -> Double?)? = null
 
+    /**
+     * The other languages typed together with this one (multilingual typing, notes/design/multilingual.md): a word
+     * of any of them is a word as typed, and its probability counts. Each list is asked on its own (node ids never mix).
+     */
+    var otherLexicons: List<Lexicon> = emptyList()
+
     /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
-    private fun isWordAsTyped(typed: String): Boolean {
+    private fun isWordAsTyped(typed: String): Boolean = isWordAsTypedIn(lexicon, typed) || otherLexicons.any { isWordAsTypedIn(it, typed) }
+
+    private fun isWordAsTypedIn(lexicon: Lexicon, typed: String): Boolean {
         val node = lexicon.find(typed)
         if (node == Lexicon.NONE || !lexicon.isWord(node)) return false
         if (typed != typed.lowercase() || lexicon.forms(node).any { it.first == typed }) return true
         return nameAsTypedRank >= lexicon.size || lexicon.logProb(node) >= lexicon.logProb(lexicon.nodeOfWord(nameAsTypedRank))
     }
+
+    /** ln P of [word] in whichever of the entry's languages lists it most often; null in none. */
+    private fun anyLogProb(word: String): Double? =
+        (listOf(lexicon) + otherLexicons).mapNotNull { it.logProb(word) }.maxOrNull()
 
     /**
      * How readily words are changed (design: Gentle / Standard / Strong; Off is not calling this).
@@ -220,7 +232,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         if (keepCompounds && top.words > 1 && !top.isCompletion && top.word.replace(" ", "").equals(typed, ignoreCase = true)) return null
         // (only a change of letters: a casing or apostrophe fix of what was typed stays, "gboard" -> "Gboard")
         if (top.words == 1 && minTargetLogProb > Double.NEGATIVE_INFINITY && sortKey(t) != sortKey(typed) &&
-            (lexicon.logProb(top.word) ?: lexicon.logProb(top.word.lowercase()) ?: Double.NEGATIVE_INFINITY) < minTargetLogProb) return null
+            (anyLogProb(top.word) ?: anyLogProb(top.word.lowercase()) ?: Double.NEGATIVE_INFINITY) < minTargetLogProb) return null
         // Rule 2 (spec 4.1): a correction longer than the input that has fewer one-letter words than it is
         // rejected ("a" -> "and", and as well "o" -> "in"; audit 2026-11-20: ours needed T to start with I)
         if (t.length > typed.length && oneLetterWords(t) < oneLetterWords(typed)) return null

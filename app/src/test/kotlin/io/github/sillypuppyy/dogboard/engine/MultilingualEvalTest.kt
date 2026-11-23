@@ -162,7 +162,7 @@ class MultilingualEvalTest : FunSpec({
         val errors = System.getenv("DOGBOARD_ML_ERRORS")?.let { File(it).printWriter() }
         val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
             (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList()) +
-            priorWeights.map { "matrix prior b=$it" }
+            priorWeights.map { "matrix prior b=$it" } + listOf("merged two lists")
         val results = modes.associateWith { mutableListOf<Out>() }
         for (kind in listOf("typos", "controls")) {
             val rowsIn = File(set, "mixed-$kind.tsv").readLines().map { it.split('\t') }.filter { it.size >= 7 }.take(n)
@@ -190,6 +190,8 @@ class MultilingualEvalTest : FunSpec({
                     if (i == 0 && (res == "wrong" || res == "broken")) errors?.println(listOf(res, typed, intended, got, lang, since, r[2].takeLast(40),
                         "en:" + ca.take(3).joinToString("/") { it.word }, "es:" + cb.take(3).joinToString("/") { it.word }).joinToString("\t"))
                 }
+                // as the app does it: the first language's Autocorrect, told about the second's word list (no union list)
+                results.getValue("merged two lists").add(Out(lang, since, typo, judge(Autocorrect(la.lexicon).also { it.otherLexicons = listOf(lb.lexicon) }.correction(typed, merged(ca, cb, 1.0)) ?: typed)))
                 for (bt in priorWeights) results.getValue("matrix prior b=$bt").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, withPrior(ca, cb, before, bt)) ?: typed)))
                 if (langid != null) {
                     results.getValue("classified").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, true)) ?: typed)))
