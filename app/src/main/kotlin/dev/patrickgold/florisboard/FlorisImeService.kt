@@ -337,8 +337,10 @@ class FlorisImeService : LifecycleInputMethodService() {
                 (own?.takeIf { it != prefs.keyboard.layoutId.get() }
                     ?: if (own == null) io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get(), prefs.keyboard.layoutByLanguage.get()) else null)
                     ?.let { prefs.keyboard.layoutId.set(it) }
-                if (io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag))
-                    imeController.updateState { refreshSuggestions() }
+                val switched = io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag)
+                // a language typed together with this one ("Type together with"): both decoded, candidates merged
+                val second = io.github.sillypuppyy.dogboard.ime.EngineLoader.setSecondary(this@FlorisImeService, active.secondaryLocales.firstOrNull()?.languageTag())
+                if (switched || second) imeController.updateState { refreshSuggestions() }
             }
         }
 

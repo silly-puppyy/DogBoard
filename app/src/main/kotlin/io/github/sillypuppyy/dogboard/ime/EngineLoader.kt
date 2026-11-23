@@ -39,6 +39,44 @@ object EngineLoader {
         return true
     }
 
+    /** The second language typed together with the first (Subtype.secondaryLocales), or null. */
+    @Volatile var secondaryPack: LanguagePack? = null
+        private set
+
+    /**
+     * Types [tag] together with the loaded language (notes/design/multilingual.md): its words, pairs, trigram and letter
+     * model beside the first's, both decoded on every word and merged. Null, the loaded language's own, or a language
+     * without a dictionary on the phone: one language. Off the main thread; true when anything changed.
+     */
+    @Synchronized
+    fun setSecondary(context: Context, tag: String?): Boolean {
+        val app = context.applicationContext
+        val next = tag?.let { LanguagePack.find(app, it) }?.takeIf { it.hasWords && it.tag != pack?.tag }
+        if (next?.tag == secondaryPack?.tag) return false
+        TypingEngine.unloadSecondary()
+        secondaryPack = next
+        if (next == null) { android.util.Log.i("DogBoardPerf", "second language: none"); return true }
+        val t0 = android.os.SystemClock.uptimeMillis()
+        runCatching {
+            val rules = runCatching { next.open("rules")?.bufferedReader()?.use { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(it.readText()) } }.getOrNull()
+                ?: io.github.sillypuppyy.dogboard.engine.LanguageRules()
+            TypingEngine.loadSecondary(
+                openLexicon = { (next.open("lexicon") ?: error("${next.tag}: no lexicon")).bufferedReader() },
+                openBigrams = next.open("bigrams")?.let { s -> s.close(); { next.open("bigrams")!!.bufferedReader() } },
+                snapshotDir = dataDir(app, next),
+                snapshotKey = snapshotKey(app, next),
+                openShipped = { name -> shippedSnapshot(app, next, name) },
+                rules = rules,
+                // the trigram only where the heap has room for two languages' (M8 measures the phone)
+                ngrams = if (heapMb(app) > LOW_HEAP_MB) loadNgrams(app, next) else null,
+                letters = runCatching { next.open("charlm")?.use { CharModel.read(it) } }.getOrNull(),
+            )
+        }.onFailure { secondaryPack = null; android.util.Log.w("DogBoardPerf", "second language ${next.tag} failed: ${it.javaClass.simpleName}") }
+        android.util.Log.i("DogBoardPerf", "second language ${next.tag} loaded after ${android.os.SystemClock.uptimeMillis() - t0} ms")
+        nativeMark("second language")
+        return true
+    }
+
     /** Before the first load: start with [tag]'s pack when one with a dictionary exists (else the default, English). */
     @Synchronized
     fun prefer(context: Context, tag: String) {
@@ -73,8 +111,7 @@ object EngineLoader {
             if (p.bundled) "" else "-" + listOf("snapshot_lexicon", "snapshot_bigrams", "snapshot_ngramindex")
                 .joinToString("") { p.manifest.files[it]?.sha256?.take(6).orEmpty() }
 
-    private fun loadNgrams(app: Context): io.github.sillypuppyy.dogboard.engine.NgramModel? = runCatching {
-        val p = pack(app)
+    private fun loadNgrams(app: Context, p: LanguagePack = pack(app)): io.github.sillypuppyy.dogboard.engine.NgramModel? = runCatching {
         val buffer = p.map("ngrams") ?: return null
         run {
                 val t0 = android.os.SystemClock.uptimeMillis()
@@ -92,8 +129,8 @@ object EngineLoader {
                     }
                 }
                 if (!indexFile.isFile && p.bundled) runCatching {
-                    val sha = pack(app).manifest.files["ngrams"]?.sha256?.take(8)?.takeIf { it.length == 8 } ?: return@runCatching
-                    java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${pack(app).tag}-ngramindex-$sha.dgz"), 64 * 1024).use { s ->
+                    val sha = p.manifest.files["ngrams"]?.sha256?.take(8)?.takeIf { it.length == 8 } ?: return@runCatching
+                    java.util.zip.GZIPInputStream(app.assets.open("dogboard/snapshot/${p.tag}-ngramindex-$sha.dgz"), 64 * 1024).use { s ->
                         indexFile.parentFile?.mkdirs()
                         val tmp = File(indexFile.path + ".tmp")
                         tmp.outputStream().use { s.copyTo(it, 64 * 1024) }

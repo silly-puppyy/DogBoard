@@ -66,6 +66,10 @@ fun LanguagesScreen() {
     val withWords = packs.filter { it.hasWords }
     fun hasDictionary(tag: String) = withWords.any { it.tag.equals(tag, true) || it.tag.equals(tag.substringBefore('-'), true) }
     fun layoutOfEntry(s: Subtype) = s.layoutId ?: LanguageLayouts.layoutOf(s.primaryLocale.language, memory) ?: layoutId
+    // the alphabet an entry types (its layout's first letter): languages typed together share the keys
+    fun script(s: Subtype) = GeneratedLayouts.all.firstOrNull { it.id == layoutOfEntry(s) }?.rows?.firstOrNull()?.firstOrNull { it.isLetter() }
+        ?.let { Character.UnicodeScript.of(it.code) } ?: Character.UnicodeScript.LATIN
+    fun packName(tag: String, s: Subtype) = packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName()
     val rows = list.map { s ->
         val tag = s.primaryLocale.languageTag()
         val layout = layoutOfEntry(s)
@@ -78,6 +82,12 @@ fun LanguagesScreen() {
             s.id == active.id || list.size == 1,
             // the host has its dictionary and the phone doesn't yet: downloading, or waiting to try again
             gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,
+            together = s.secondaryLocales.firstOrNull()?.let { second -> list.firstOrNull { it.primaryLocale == second }?.let { packName(second.languageTag(), it) } ?: second.displayName() },
+            togetherChoices = if (!hasDictionary(tag)) emptyList() else list
+                .filter { o -> o.primaryLocale.language != s.primaryLocale.language && hasDictionary(o.primaryLocale.languageTag()) && script(o) == script(s) }
+                .distinctBy { it.primaryLocale.language }
+                .filter { o -> o.primaryLocale != s.secondaryLocales.firstOrNull() }
+                .map { o -> o.primaryLocale.languageTag() to packName(o.primaryLocale.languageTag(), o) },
         )
     }
     // what can be added: the packs with words, the host's packs, then every language with layouts; the phone's languages first
@@ -108,5 +118,8 @@ fun LanguagesScreen() {
             PackDownloadQueue.ensure(context, listOf(tag))
         },
         onBack = { navController.popBackStack() },
+        onTogether = { id, tag ->
+            subtypes.firstOrNull { it.id == id }?.let { s -> subtypeManager.modifySubtypeWithSameId(s.copy(secondaryLocales = listOfNotNull(tag?.let { FlorisLocale.fromTag(it) }))) }
+        },
     )
 }

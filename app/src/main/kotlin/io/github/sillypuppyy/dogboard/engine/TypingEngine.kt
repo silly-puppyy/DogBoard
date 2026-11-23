@@ -193,39 +193,9 @@ object TypingEngine {
         abbreviations = openAbbreviations?.let { open ->
             open().useLines { lines -> lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.toList() }
         }.orEmpty().groupBy { it.removeSuffix(".").lowercase() }
-        // the parsed word data is kept as a binary snapshot (per app version), so later starts
-        // copy arrays instead of parsing text
-        fun snapshot(name: String) = snapshotDir?.let { File(it, "$name-$snapshotKey.bin") }
-        val lexiconSnapshot = snapshot("lexicon")
-        val bigramSnapshot = snapshot("bigrams")
-        // mapped, not read into a byte array: the arrays are copied straight from the file's pages
-        fun map(f: File) = java.io.RandomAccessFile(f, "r").channel.use { it.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, it.size()) }
         mark("small lists")
-        // a first start: the snapshots that came with the app, when they match these word lists
-        if (lexiconSnapshot != null && !lexiconSnapshot.isFile) openShipped?.let { open ->
-            runCatching {
-                val lex = open("lexicon") ?: return@runCatching
-                snapshotDir?.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() }
-                lex.use { s -> writeAtomically(lexiconSnapshot) { s.copyTo(it, 64 * 1024) } }
-                bigramSnapshot?.let { f -> open("bigrams")?.use { s -> writeAtomically(f) { s.copyTo(it, 64 * 1024) } } }
-                mark("snapshots unpacked")
-            }.onFailure { lexiconSnapshot.delete(); bigramSnapshot?.delete() }
-        }
-        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it)) }.getOrNull() }
-        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.let { lex ->
-            snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
-            lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
-            // the parsed lexicon holds everything on the heap; the snapshot just written maps its cold half, ~40 MB
-            // less for the rest of the session (a Galaxy A10 stayed at its 128 MB cap after a parse, 2026-11-21)
-            lexiconSnapshot?.takeIf { it.isFile }?.let { f -> runCatching { Lexicon.readSnapshot(map(f)) }.getOrNull() } ?: lex
-        }
-        mark(if (cachedLexicon != null) "lexicon (snapshot)" else "lexicon (parsed)")
-        parsedAtLoad = cachedLexicon == null
-        val bigrams = openBigrams?.let { open ->
-            bigramSnapshot?.takeIf { cachedLexicon != null && it.isFile }
-                ?.let { runCatching { Bigrams.readSnapshot(map(it), lexicon) }.getOrNull() }
-                ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
-        }
+        val (lexicon, bigrams, cached) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped, ::mark)
+        parsedAtLoad = !cached
         mark("bigrams")
         this.rules = rules
         val engine = Loaded(lexicon, bigrams, rules)
@@ -268,6 +238,8 @@ object TypingEngine {
             blockedWords?.takeIf { it.exists() }?.forEachLine { if (it.isNotBlank()) blocked.add(it.trim().lowercase()) }
         }
         loaded = engine
+        // a second language loaded before this one was (re)built: its words count for this autocorrect again
+        secondary?.let { engine.autocorrect.otherLexicons = listOf(it.lexicon) }
         ngramModel?.let { attachNgrams(it) }
         mark("rest")
         runCatching { android.util.Log.i("DogBoardPerf", "load stages: $stages") }
@@ -387,6 +359,112 @@ object TypingEngine {
         val lm = neuralLm ?: return
         neuralLm = null
         runCatching { lm.close() }
+    }
+
+    /**
+     * A second language typed together with the first (multilingual typing, notes/design/multilingual.md: Subtype
+     * secondaryLocales): its own words, pairs, word-sequence and letter models. Each word is decoded in both and the
+     * candidates merged on their scores (plain merging: the fewest wrong corrections on three measured pairs); a word of
+     * either language counts as a word (Autocorrect.otherLexicons). Null: one language.
+     */
+    @Volatile private var secondary: Loaded? = null
+
+    /**
+     * A language's words and word pairs: from its binary snapshot (per app version) when there is one, else the one
+     * built with the app, else parsed from the text lists (and the snapshot written). Third: read from a snapshot.
+     */
+    private fun wordData(
+        openLexicon: () -> BufferedReader,
+        openBigrams: (() -> BufferedReader)?,
+        snapshotDir: File?,
+        snapshotKey: String,
+        openShipped: ((String) -> java.io.InputStream?)?,
+        mark: (String) -> Unit = {},
+    ): Triple<Lexicon, Bigrams?, Boolean> {
+        // the parsed word data is kept as a binary snapshot (per app version), so later starts
+        // copy arrays instead of parsing text
+        fun snapshot(name: String) = snapshotDir?.let { File(it, "$name-$snapshotKey.bin") }
+        val lexiconSnapshot = snapshot("lexicon")
+        val bigramSnapshot = snapshot("bigrams")
+        // mapped, not read into a byte array: the arrays are copied straight from the file's pages
+        fun map(f: File) = java.io.RandomAccessFile(f, "r").channel.use { it.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, it.size()) }
+        // a first start: the snapshots that came with the app, when they match these word lists
+        if (lexiconSnapshot != null && !lexiconSnapshot.isFile) openShipped?.let { open ->
+            runCatching {
+                val lex = open("lexicon") ?: return@runCatching
+                snapshotDir?.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() }
+                lex.use { s -> writeAtomically(lexiconSnapshot) { s.copyTo(it, 64 * 1024) } }
+                bigramSnapshot?.let { f -> open("bigrams")?.use { s -> writeAtomically(f) { s.copyTo(it, 64 * 1024) } } }
+                mark("snapshots unpacked")
+            }.onFailure { lexiconSnapshot.delete(); bigramSnapshot?.delete() }
+        }
+        val cachedLexicon = lexiconSnapshot?.takeIf { it.isFile }?.let { runCatching { Lexicon.readSnapshot(map(it)) }.getOrNull() }
+        val lexicon = cachedLexicon ?: openLexicon().use { Lexicon.parse(it) }.let { lex ->
+            snapshotDir?.let { dir -> dir.listFiles()?.forEach { if (!it.name.endsWith("-$snapshotKey.bin")) it.delete() } }
+            lexiconSnapshot?.let { f -> writeAtomically(f) { lex.writeSnapshot(it) } }
+            // the parsed lexicon holds everything on the heap; the snapshot just written maps its cold half, ~40 MB
+            // less for the rest of the session (a Galaxy A10 stayed at its 128 MB cap after a parse, 2026-11-21)
+            lexiconSnapshot?.takeIf { it.isFile }?.let { f -> runCatching { Lexicon.readSnapshot(map(f)) }.getOrNull() } ?: lex
+        }
+        mark(if (cachedLexicon != null) "lexicon (snapshot)" else "lexicon (parsed)")
+        val bigrams = openBigrams?.let { open ->
+            bigramSnapshot?.takeIf { cachedLexicon != null && it.isFile }
+                ?.let { runCatching { Bigrams.readSnapshot(map(it), lexicon) }.getOrNull() }
+                ?: open().use { Bigrams.parse(it, lexicon) }.also { b -> bigramSnapshot?.let { f -> writeAtomically(f) { b.writeSnapshot(it) } } }
+        }
+        return Triple(lexicon, bigrams, cachedLexicon != null)
+    }
+
+    /** Whether a second language is loaded. */
+    val hasSecondary: Boolean get() = secondary != null
+
+    /** Loads the second language from its pack's parts (as [load], without the user's files: those are the first's). */
+    fun loadSecondary(
+        openLexicon: () -> BufferedReader,
+        openBigrams: (() -> BufferedReader)?,
+        snapshotDir: File?,
+        snapshotKey: String,
+        openShipped: ((String) -> java.io.InputStream?)?,
+        rules: LanguageRules,
+        ngrams: NgramModel?,
+        letters: CharModel?,
+    ) {
+        val (lexicon, bigrams, _) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped)
+        loadSecondary(lexicon, bigrams, rules, ngrams, letters)
+    }
+
+    fun loadSecondary(lexicon: Lexicon, bigrams: Bigrams?, rules: LanguageRules, ngrams: NgramModel?, letters: CharModel?) {
+        val sec = Loaded(lexicon, bigrams, rules)
+        if (ngrams != null && bigrams != null) sec.decoder.context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)
+        sec.decoder.unknownWords = letters
+        sec.decoder.beamWidth = beam
+        lock.write {
+            secondary = sec
+            loaded?.autocorrect?.otherLexicons = listOf(lexicon)
+        }
+    }
+
+    fun unloadSecondary() = lock.write {
+        secondary = null
+        loaded?.autocorrect?.otherLexicons = emptyList()
+    }
+
+    /** Both languages' candidates as one list, best first: each word once, at its best score (plain merging). */
+    private fun mergeLanguages(first: List<Candidate>, second: List<Candidate>): List<Candidate> {
+        if (second.isEmpty()) return first
+        val best = LinkedHashMap<String, Candidate>()
+        for (c in first + second) {
+            val k = c.word.lowercase()
+            val old = best[k]
+            // the typed letters are a non-word only if neither language knows them
+            best[k] = when {
+                old == null -> c
+                c.isTypedString != old.isTypedString -> if (c.isTypedString) old else c
+                c.score > old.score -> c
+                else -> old
+            }
+        }
+        return best.values.sortedByDescending { it.score }
     }
 
     fun attachNgrams(model: NgramModel?) {
@@ -665,12 +743,22 @@ object TypingEngine {
         val engine = loaded ?: return emptyList()
         val taps = word.tapsOrNull() ?: return emptyList()
         val decoded = lock.read {
-            engine.decoder.decode(
-                taps, personalOffsets.apply(word.keys), word.params!!, maxResults + blocked.size.coerceAtMost(4) + 2,
+            val want = maxResults + blocked.size.coerceAtMost(4) + 2
+            val first = engine.decoder.decode(
+                taps, personalOffsets.apply(word.keys), word.params!!, want,
                 previous = engine.contextId(previous), typed = word.decoderText,
                 personal = personalMix(engine, previous, previous2),
                 previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
             )
+            // a second language: the same taps in its words and its context (the personal model is the first's)
+            val second = secondary?.let { sec ->
+                sec.decoder.decode(
+                    taps, personalOffsets.apply(word.keys), word.params!!, want,
+                    previous = sec.contextId(previous), typed = word.decoderText,
+                    previous2 = if (previous == null || previous == Bigrams.START) -1 else sec.contextId(previous2),
+                )
+            }.orEmpty()
+            mergeLanguages(first, second)
                 .let { withTypedApostrophes(word, it) }
                 .let { decoded -> withSpellings(word, decoded) { shortTaps, shortTyped ->
                     engine.decoder.decode(
