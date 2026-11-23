@@ -44,6 +44,12 @@ data class KbTokens(
     val seg: Boolean = false, val segCellFg: Color? = null,
     /** Kb:516: Dalmatian's spots (seed, then the spotted keys' colours); null = no spots. */
     val spots: KbSpots? = null,
+    /**
+     * Keys coloured by what's under them (user 2026-11-23, the Pride pack): each letter and function key takes the
+     * gradient background's colour at its centre, mixed this far towards white, its label black or white to read on
+     * it; 0 = off.
+     */
+    val keyUnder: Float = 0f,
 )
 
 data class KbSpots(val seed: Int, val bg: Color, val fg: Color, val hint: Color, val press: Color)
@@ -57,7 +63,39 @@ object KbThemes {
      * colours without its spots yet, Labrador / Chocolate Lab; Kb:522-530 the gradient Dusk, Lagoon and Peach), drawable in the gallery; not in the Look
      * list until the user decides the list (canvas 17 vs the designer's answer of nine).
      */
-    val moreIds = listOf("gloss", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach")
+    val moreIds: List<String> get() = listOf("gloss", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach") + PRIDE.map { it.first }
+
+    /**
+     * The Pride pack (user 2026-11-23: "a pack of pride flag gradient themes to really test the keyboard ... keys
+     * switch colour depending on what's underneath them"): each flag's stripes top to bottom, hard-edged, in the flags'
+     * published colours; keys take the stripe under them (keyUnder), the return key the flag's darkest stripe.
+     */
+    val PRIDE: List<Triple<String, String, List<String>>> = listOf(
+        Triple("pride", "Pride", listOf("#e40303", "#ff8c00", "#ffed00", "#008026", "#24408e", "#732982")),
+        Triple("trans", "Trans", listOf("#5bcefa", "#f5a9b8", "#ffffff", "#f5a9b8", "#5bcefa")),
+        Triple("bi", "Bi", listOf("#d60270", "#d60270", "#9b4f96", "#0038a8", "#0038a8")),
+        Triple("pan", "Pan", listOf("#ff218c", "#ffd800", "#21b1ff")),
+        Triple("lesbian", "Lesbian", listOf("#d52d00", "#ef7627", "#ff9a56", "#ffffff", "#d162a4", "#b55690", "#a30262")),
+        Triple("nonbinary", "Nonbinary", listOf("#fcf434", "#ffffff", "#9c59d1", "#2c2c2c")),
+        Triple("ace", "Asexual", listOf("#000000", "#a3a3a3", "#ffffff", "#800080")),
+        Triple("aro", "Aromantic", listOf("#3da542", "#a7d379", "#ffffff", "#a9a9a9", "#000000")),
+        Triple("genderfluid", "Genderfluid", listOf("#ff76a4", "#ffffff", "#c011d7", "#000000", "#2f3cbe")),
+    )
+
+    private fun prideTheme(stripes: List<String>): Map<String, Map<String, String>> {
+        val n = stripes.size
+        fun pct(i: Int) = "%.2f".format(java.util.Locale.ROOT, i * 100.0 / n)
+        val bg = "linear-gradient(180deg, " + stripes.indices.joinToString(", ") { i -> "${stripes[i]} ${pct(i)}%, ${stripes[i]} ${pct(i + 1)}%" } + ")"
+        val act = stripes.minBy { ThemeModel.lum(it) }
+        val actFg = if (ThemeModel.cr(act, "#ffffff") >= 4.5) "#ffffff" else "#1a1b20"
+        return mapOf("light" to m(
+            "bg" to bg, "keyUnder" to "0.55", "key" to "#ffffff", "keyFg" to "#1a1b20", "fn" to "#ffffff", "fnFg" to "#1a1b20",
+            "act" to act, "actFg" to actFg, "chip" to "rgba(255,255,255,0.85)", "chipFg" to "#1a1b20", "pop" to "#ffffff", "popFg" to "#1a1b20",
+            "sel" to act, "selFg" to actFg, "lock" to act, "lockFg" to actFg, "hint" to "#3a3b40", "barFg" to "#1a1b20", "barMuted" to "#1a1b20",
+            "div" to "rgba(26,27,32,0.25)", "tile" to "#ffffff", "tileFg" to "#1a1b20", "pressKey" to "rgba(255,255,255,0.6)", "pressFn" to "rgba(255,255,255,0.6)",
+            "radius" to "8",
+        ))
+    }
 
     // Kb:364
     private val DEF = mapOf(
@@ -68,7 +106,7 @@ object KbThemes {
     private fun m(vararg p: Pair<String, String>) = mapOf(*p)
 
     // Kb:365-394, verbatim
-    private val T: Map<String, Map<String, Map<String, String>>> = mapOf(
+    private val T: Map<String, Map<String, Map<String, String>>> = PRIDE.associate { (id, _, stripes) -> id to prideTheme(stripes) } + mapOf(
         "dogboard" to mapOf(
             "light" to m("bg" to "#ededf4", "key" to "#ffffff", "keyFg" to "#1a1b20", "fn" to "#dbe2f9", "fnFg" to "#3f4759", "act" to "#435e91", "actFg" to "#ffffff", "chip" to "#d8e2ff", "chipFg" to "#2a4678", "pop" to "#ffffff", "popFg" to "#1a1b20", "sel" to "#435e91", "selFg" to "#ffffff", "hint" to "#6b6e76", "div" to "#c4c6d0", "barFg" to "#1a1b20", "barMuted" to "#44474f", "tile" to "#ffffff", "tileFg" to "#1a1b20", "pressKey" to "#e2e2e9", "pressFn" to "#c4cbe2", "lock" to "#435e91", "lockFg" to "#ffffff"),
             "dark" to m("bg" to "#1a1b20", "key" to "#33353a", "keyFg" to "#e2e2e9", "fn" to "#3f4759", "fnFg" to "#dbe2f9", "act" to "#adc7ff", "actFg" to "#0f2f60", "chip" to "#2a4678", "chipFg" to "#d8e2ff", "pop" to "#45474c", "popFg" to "#e2e2e9", "sel" to "#adc7ff", "selFg" to "#0f2f60", "hint" to "#b4b7c0", "div" to "#44474f", "barFg" to "#e2e2e9", "barMuted" to "#c4c6d0", "tile" to "#282a2f", "tileFg" to "#e2e2e9", "pressKey" to "#4a4c52", "pressFn" to "#545d72", "lock" to "#adc7ff", "lockFg" to "#0f2f60"),
@@ -210,7 +248,8 @@ object KbThemes {
         fun c(k: String) = t.getValue(k).let { v -> CssGradient.parse(v)?.stops?.first()?.first ?: css(v) }
         val linkFg = t["linkFg"]?.let { css(it) } ?: if (t["act"] == "transparent") c("actFg") else c("act")
         return KbTokens(
-            bg = c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
+            // a gradient's plain colour is the one at the bottom middle: what the navigation bar area under the keys continues
+            bg = CssGradient.parse(t.getValue("bg"))?.colorAt(0.5f, 1f, 1f, 1f) ?: c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
             act = c("act"), actFg = c("actFg"), chip = c("chip"), chipFg = c("chipFg"), pop = c("pop"),
             popFg = c("popFg"), sel = c("sel"), selFg = c("selFg"), hint = c("hint"), div = c("div"),
             barFg = c("barFg"), barMuted = c("barMuted"), tile = c("tile"), tileFg = c("tileFg"),
@@ -222,6 +261,7 @@ object KbThemes {
             actShadow = CssShadow.parse(t.getValue("actShadow")), linkFg = linkFg,
             actIsTransparent = t["act"] == "transparent",
             bgGradient = CssGradient.parse(t.getValue("bg")),
+            keyUnder = t["keyUnder"]?.toFloatOrNull() ?: 0f,
             grad = t.mapNotNull { (k, v) -> CssGradient.parse(v)?.let { k to it } }.toMap(),
             bkspFill = t["bkspFill"]?.toInt() ?: 0, retText = t["retText"].orEmpty(), forceWord = t["forceWord"] == "true",
             spaceText = t["spaceText"].orEmpty(), spaceFg = t["spaceFg"]?.let(::css), actOffFg = t["actOffFg"]?.let(::css),
@@ -358,6 +398,19 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
         override fun createShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader = synchronized(shaders) {
             shaders[size] ?: makeShader(size).also { if (shaders.size >= MAX_SHADERS) shaders.clear(); shaders[size] = it }
         }
+    }
+
+    /** The colour drawn at ([x], [y]) on a [w] x [h] area: the same line and stops as [makeShader] (keys coloured by what's under them). */
+    fun colorAt(x: Float, y: Float, w: Float, h: Float): Color {
+        val a = Math.toRadians(angleDeg.toDouble())
+        val dx = kotlin.math.sin(a).toFloat(); val dy = -kotlin.math.cos(a).toFloat()
+        val half = (kotlin.math.abs(w * dx) + kotlin.math.abs(h * dy)) / 2
+        if (half == 0f) return stops.first().first
+        val t = (((x - w / 2) * dx + (y - h / 2) * dy) / (2 * half) + 0.5f).coerceIn(0f, 1f)
+        val i = stops.indexOfFirst { it.second >= t }
+        if (i <= 0) return stops[maxOf(i, 0)].first
+        val (c0, p0) = stops[i - 1]; val (c1, p1) = stops[i]
+        return if (p1 <= p0) c1 else androidx.compose.ui.graphics.lerp(c0, c1, (t - p0) / (p1 - p0))
     }
 
     private fun makeShader(size: androidx.compose.ui.geometry.Size): androidx.compose.ui.graphics.Shader {

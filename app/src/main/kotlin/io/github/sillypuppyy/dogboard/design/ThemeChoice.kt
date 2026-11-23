@@ -29,7 +29,7 @@ object ThemeChoice {
         Theme("lagoon", "Lagoon", "2 colours", "dark"),
         Theme("peach", "Peach", "2 colours", "light"),
         Theme("gloss", "Gloss", "Glossy caps, pressed-in labels", "light"),
-    )
+    ) + KbThemes.PRIDE.map { (id, name, stripes) -> Theme(id, name, "${stripes.size} stripes, keys take the colour under them", "light") }
     private val byId = THEMES.associateBy { it.id }
     fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").copy(mode = glassMode) else byId[id] ?: GradientSpec.parse(id)?.let { g ->
         Theme(id, userNames[id] ?: "Your gradient", if (g.colors.size == 1) "Solid colour" else "${g.colors.size} colours", if (g.white) "dark" else "light")
@@ -54,6 +54,8 @@ object ThemeChoice {
         Section("breeds", "Breeds", "Pack, 5 themes", listOf("dog", "lab", "husky", "greyhound", "dalmatian"), pack = true),
         Section("gradients", "Gradients", "Pack, 3 themes", listOf("dusk", "lagoon", "peach"), pack = true, add = "gradient" to "New gradient"),
         Section("retro", "Retro", "Pack, 1 theme", listOf("gloss"), pack = true),
+        // user 2026-11-23: flags as gradients, keys coloured by the stripe under them
+        Section("pride", "Pride", "Pack, ${KbThemes.PRIDE.size} themes", KbThemes.PRIDE.map { it.first }, pack = true),
         // user 2026-11-22: built-in themes and packs first, yours after them (and a "Yours" filter chip)
         Section("yours", "Your themes", "", listOf("glass"), add = "add_photo_alternate" to "From a photo"),
     )

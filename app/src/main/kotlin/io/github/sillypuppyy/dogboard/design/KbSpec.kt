@@ -1,6 +1,7 @@
 package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -705,6 +706,17 @@ object KbSpec {
                 // Kb:779-781
                 val spot = t.spots?.takeIf { "$ri:$ci" in spotOf }
                 if (spot != null) { bg = spot.bg; bgG = null; fg = spot.fg; shadow = emptyList(); ts = emptyList() }
+                // keys coloured by what's under them (the Pride pack): the background at the key's centre, lightened; the
+                // label black or white to read on it (the return key keeps its own colour)
+                val under = t.bgGradient
+                if (t.keyUnder > 0f && under != null && spot == null && (k.kind != "ret" || bg != t.act)) {
+                    val c = under.colorAt(kx + w / 2, keyTop0 + rowTops[ri] + rowHs[ri] / 2, kbW, keyTop0 + keyAreaH)
+                    // on a near-white stripe a lighter key would vanish: a touch darker instead
+                    bg = if (c.luminance() > 0.8f) androidx.compose.ui.graphics.lerp(c, Color(0xFF1A1B20), 0.1f)
+                        else androidx.compose.ui.graphics.lerp(c, Color.White, t.keyUnder)
+                    bgG = null
+                    fg = if (bg.luminance() > 0.4f) Color(0xFF1A1B20) else Color.White
+                }
                 if (k.id == pressed && !(k.kind == "ret" && RET[ret] != null)) {
                     val fnPress = isFnTone || k.kind == "ret"
                     bg = if (spot != null) spot.press else if (fnPress) t.pressFn else t.pressKey
