@@ -72,6 +72,18 @@ class PackInstallerTest : FunSpec({
         } finally { dir.deleteRecursively() }
     }
 
+    // DOGBOARD_DIST_PACK=<dist>/<tag>: a pack made by tools/i18n/dist_pack.py installs whole (the real files, end to end)
+    val distPack = System.getenv("DOGBOARD_DIST_PACK")?.let(::File)?.takeIf { File(it, "manifest.json").isFile }
+    test("a dist_pack.py pack installs").config(enabled = distPack != null) {
+        val dir = tmp()
+        try {
+            val r = PackInstaller(dir).install({ p -> File(distPack!!, p).inputStream() })
+            println("DISTPACK $r")
+            r.shouldBeInstanceOf<PackInstaller.Result.Installed>()
+            LanguagePack.openDir(File(dir, r.tag))!!.hasWords shouldBe true
+        } finally { dir.deleteRecursively() }
+    }
+
     test("a downloaded pack can be removed") {
         val dir = tmp()
         try {
