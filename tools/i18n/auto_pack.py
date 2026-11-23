@@ -52,6 +52,10 @@ LANGS = {
     'de': dict(name='German', digraphs={'ä': 'ae', 'ö': 'oe', 'ü': 'ue'}, leipzig=['deu_news_2024_1M', 'deu_news_2023_1M', 'deu_wikipedia_2021_1M'], tatoeba='deu',
                layout=('gboard', 'qwertz'), gboard_tag='de-DE', script='Latn', compounds=True),
     # Romance with clitic pronouns (dá-me, fazê-lo) and ç / ã / õ by long-press; news mixes Brazil and Portugal
+    # the hand-built French pack's typography rules carried over (fr/rules.json)
+    'fr': dict(name='French', leipzig=['fra_news_2024_1M', 'fra_news_2023_1M', 'fra_wikipedia_2021_1M'], tatoeba='fra',
+               layout=('gboard', 'azerty'), gboard_tag='fr-FR', script='Latn', compounds=False,
+               rules_extra={'space_before_marks': '?!:;', 'quotes': '«»‘’’', 'double_space': '. '}),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
@@ -263,7 +267,11 @@ class Pack:
         if src == 'gboard':
             langs = json.load(open(f'{LAYOUTS}/gboard/languages.json')); lays = json.load(open(f'{LAYOUTS}/gboard/layouts.json'))
             v = next(v for v in langs[self.cfg.get('gboard_tag', self.lang)]['variants'] if v['variant'] == name)
-            rows = lays[v['layout_id']]['rows']
+            lid = v['layout_id'] or next((x['layout_id'] for l in langs.values() for x in l['variants']
+                                          if x['variant'] == name and x.get('layout_id')), '')
+            # the extracted data has no id for some variants (fr-FR azerty, 2026-11-23): the same-named variant of another
+            # language (fr-CA's azerty, p4q: the same rows)
+            rows = lays[lid]['rows']
         else:
             rows = json.load(open(f'{LAYOUTS}/ios/layouts.json'))[name]['rows']
         letters = [''.join(k for k in r if isinstance(k, str) and len(k) == 1 and k.isalpha()) for r in rows]
@@ -280,6 +288,8 @@ class Pack:
                  'distinct_letters': distinct}
         # letters also typed as two (German "fuer" for "für", TypingEngine.digraphCandidates)
         if self.cfg.get('digraphs'): rules['digraphs'] = self.cfg['digraphs']
+        # typography no corpus shows (French: a space before ? ! : ;, « » quotes), as the hand-built packs had it
+        rules.update(self.cfg.get('rules_extra', {}))
         json.dump(rules, open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
         log('rows', letters, 'distinct', distinct or '-')
 
