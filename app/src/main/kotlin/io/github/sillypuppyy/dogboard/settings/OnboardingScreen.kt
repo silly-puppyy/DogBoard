@@ -1,5 +1,8 @@
 package io.github.sillypuppyy.dogboard.settings
 
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.focus.focusRequester
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -148,6 +151,8 @@ fun OnboardingScreen() {
                 onBack = { if (i == 0) path = null else i-- },
                 onNext = { if (i < steps.size - 1) i++ else finish() },
                 onSkip = { finish() },
+                // the visual pages and typing: the real keyboard docked below, to see each change on it
+                tryIt = selected && id in TRY_IT,
             ) {
                 when (id) {
                     "enable" -> EnableStep(enabled, selected)
@@ -168,6 +173,7 @@ fun OnboardingScreen() {
 // its usual layout), done; Full drops emoji, puts look and feel on one Theme page and contacts with incognito on one
 // Privacy page. Writing tools, GIFs, tips and codes from messages aren't built (port map).
 private val QUICK = listOf("enable", "langs")
+private val TRY_IT = setOf("layout", "elements", "theme", "typing")
 private val FULL = listOf("enable", "langs", "layout", "elements", "theme", "typing", "clipboard", "privacy")
 
 /** Onboarding script S: each page's title and body. */
@@ -217,10 +223,18 @@ private fun PathButton(label: String, filled: Boolean, onClick: () -> Unit) {
 @Composable
 private fun StepFrame(
     stepText: String, pathName: String, progress: Float, title: String, body: String, nextLabel: String, canSkip: Boolean,
-    onBack: () -> Unit, onNext: () -> Unit, onSkip: () -> Unit, content: @Composable ColumnScope.() -> Unit,
+    onBack: () -> Unit, onNext: () -> Unit, onSkip: () -> Unit, tryIt: Boolean = false, content: @Composable ColumnScope.() -> Unit,
 ) {
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    val kbUp = WindowInsets.isImeVisible
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).windowInsetsPadding(WindowInsets.navigationBars)) {
-        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        val compact = tryIt && kbUp
+        // with the keyboard up the page needs the room: one line (the title and the step), no description
+        if (compact) Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            DText(title, Modifier.weight(1f), style = setText(20f).copy(lineHeight = 26.sp), maxLines = 1)
+            DText(stepText, style = setText(13f, color = SetColors.onSurfaceVariant))
+        }
+        if (!compact) Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 DText(stepText, style = setText(13f, color = SetColors.onSurfaceVariant))
                 DText(pathName, style = setText(13f, color = SetColors.onSurfaceVariant))
@@ -234,8 +248,9 @@ private fun StepFrame(
         }
         Column(
             Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp), content = content,
-        )
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) { CompositionLocalProvider(LocalTryIt provides tryIt) { content() } }
+        if (tryIt) TryField(title)
         Row(
             Modifier.fillMaxWidth().cssShadow(listOf(CssShadow(false, 0f, -1f, 0f, 0f, SetColors.surfaceContainerHighest)), RoundedCornerShape(0.dp))
                 .background(SetColors.screen).padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 16.dp),
@@ -433,7 +448,7 @@ private fun LayoutStep() {
         sel,
     ) { n -> scope.launch { LayoutPrefs.write(prefs, if (n == 0) LayoutElements.SIMPLE else LayoutElements.CLASSIC) } }
     }
-    Preview()
+    if (!LocalTryIt.current) Preview()
 }
 
 /**
@@ -468,7 +483,7 @@ private fun ElementsStep() {
         scope.launch { prefs.typing.spaceHold.set(holds[n]) }
     }
     }
-    Preview()
+    if (!LocalTryIt.current) Preview()
 }
 
 /**
@@ -504,7 +519,7 @@ private fun ThemeStep() {
         Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
     }
     }
-    Preview()
+    if (!LocalTryIt.current) Preview()
     io.github.sillypuppyy.dogboard.design.settings.SetGroup("Sound and vibration") {
     Toggle("Vibration", "A short tap on each key.", vib) { scope.launch { prefs.inputFeedback.hapticEnabled.set(it) } }
     // the sounds of Settings › Sound and vibration
@@ -603,4 +618,25 @@ private fun PrivacyStep() {
     }
 }
 
+/** True on a page with the real keyboard docked below (its drawn preview is then left out). */
+private val LocalTryIt = androidx.compose.runtime.staticCompositionLocalOf { false }
 
+/**
+ * A field above Back / Next, focused as the page opens so the real DogBoard keyboard comes up under it: each setting
+ * changed on the page shows on it at once, and typing tries autocorrect. [page] refocuses it on the next page.
+ */
+@Composable
+private fun TryField(page: String) {
+    var text by remember { mutableStateOf("") }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(page) { runCatching { focus.requestFocus() } }
+    Box(
+        Modifier.fillMaxWidth().background(SetColors.screen).padding(start = 16.dp, end = 16.dp, top = 8.dp)
+            .height(44.dp).clip(RoundedCornerShape(22.dp)).background(SetColors.row).padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        BasicTextField(text, { text = it }, Modifier.fillMaxWidth().focusRequester(focus), singleLine = true, textStyle = setText(16f),
+            cursorBrush = SolidColor(SetColors.primary),
+            decorationBox = { inner -> Box { if (text.isEmpty()) DText("Type here to try it", style = setText(16f, color = SetColors.outline)); inner() } })
+    }
+}
