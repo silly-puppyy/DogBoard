@@ -113,8 +113,21 @@ object ThemeModel {
     )
 
     @kotlinx.serialization.Serializable
-    /** [nav]: the colour of Android's own icons under the keys (hide keyboard, switch keyboard): auto, light or dark. */
-    data class Version(val bg: Bg = Bg(), val tint: Boolean = false, val ov: Map<String, String> = emptyMap(), val nav: String = "auto")
+    /**
+     * [nav]: the colour of Android's own icons under the keys (hide keyboard, switch keyboard): auto, light or dark.
+     * [keep]: a copied built-in's tokens the editor has no control for (press colours, label shadows, gradient keys...),
+     * used as they are while the background and colours are still the copy's ([keepFor]); [STYLE_TOKENS] always.
+     */
+    data class Version(
+        val bg: Bg = Bg(), val tint: Boolean = false, val ov: Map<String, String> = emptyMap(), val nav: String = "auto",
+        val keep: Map<String, String> = emptyMap(), val keepFor: String = "",
+    )
+
+    /** Kept tokens that don't depend on colour: they stay whatever is changed. */
+    private val STYLE_TOKENS = setOf("hintFs", "hintFw", "retIcon", "bkspFill")
+
+    /** What [Version.keep] was made for: the background and the colours set. */
+    fun fingerprint(v: Version): String = (v.bg.toString() + v.ov.toString()).hashCode().toString()
 
     /**
      * lib SHAPE0: corner radius (dp), label weight, label size (%), border width (dp). [keys]: how keys sit on the
@@ -273,7 +286,8 @@ object ThemeModel {
             "pressKey" to up(x.getValue("key"), x.getValue("keyFg")), "pressFn" to up(x.getValue("fn"), x.getValue("fnFg")),
             "radius" to num(shape.radius), "fw" to shape.weight.toString(), "fsScale" to num(shape.size / 100.0),
             "keyShadow" to line(x["keyLine"]), "fnShadow" to line(x["fnLine"]), "actShadow" to line(x["actLine"]), "linkFg" to x.getValue("act"),
-        ) + (if (shape.keys == "under") mapOf("keyUnder" to "0.55") else emptyMap())
+        ) + (if (shape.keys == "under") mapOf("keyUnder" to "0.55") else emptyMap()) +
+            (if (v.keep.isNotEmpty() && fingerprint(v) == v.keepFor) v.keep else v.keep.filterKeys { it in STYLE_TOKENS })
     }
 
     /**
@@ -326,19 +340,33 @@ object ThemeModel {
      * background, its corners and label weight kept.
      */
     fun fromBuiltIn(name: String, light: Map<String, String>?, dark: Map<String, String>?): Theme {
+        fun shapeOf(t: Map<String, String>) = Shape(
+            radius = t["radius"]?.toDoubleOrNull() ?: 10.0, weight = t["fw"]?.toIntOrNull() ?: 400,
+            size = ((t["fsScale"]?.toDoubleOrNull() ?: 1.0) * 100).roundToInt(),
+            line = listOf("keyShadow", "fnShadow", "actShadow").firstNotNullOfOrNull { Regex("""^inset 0 0 0 ([\d.]+)px""").find(t[it]?.trim() ?: "")?.groupValues?.get(1)?.toDoubleOrNull() } ?: 1.5,
+            keys = if ((t["keyUnder"]?.toFloatOrNull() ?: 0f) > 0f) "under" else "auto",
+        )
         fun ver(m: Map<String, String>?): Version? = m?.let { t ->
             val bg = t["bg"] ?: return@let null
             val g = CssGradient.parse(bg)
             val back = if (g != null) Bg(type = "gradient", stops = g.stops.mapIndexed { i, (c, p) -> Stop(cssHex(c), (p * 100).roundToInt()) }, angle = g.angleDeg.toInt())
                 else Bg(color = bg)
-            Version(back, tint = false, ov = ROLES.filter { !it.endsWith("Line") }.mapNotNull { r -> t[r]?.let { r to it } }.toMap())
+            // borders drawn as a ring (inset 0 0 0 Npx colour) are the editor's border roles
+            fun ring(s: String?) = s?.let { Regex("""^inset 0 0 0 ([\d.]+)px (.+)$""").matchEntire(it.trim()) }
+            val lines = listOf("keyShadow" to "keyLine", "fnShadow" to "fnLine", "actShadow" to "actLine").mapNotNull { (sh, r) -> ring(t[sh])?.let { r to it.groupValues[2] } }
+            val ov = ROLES.filter { !it.endsWith("Line") && it != "barIcon" }.mapNotNull { r -> t[r]?.let { r to it } }.toMap() +
+                (t["barMuted"]?.let { mapOf("barIcon" to it) } ?: emptyMap()) + lines
+            val v0 = Version(back, tint = false, ov = ov)
+            // whatever the editor would not give back by itself, kept as it is
+            val made = toRoles(v0, shapeOf(t), bgCss(back))
+            val keep = t.filter { (k, x) -> k != "bg" && made[k]?.trim()?.lowercase()?.replace(" ", "") != x.trim().lowercase().replace(" ", "") }
+            v0.copy(keep = keep, keepFor = fingerprint(v0))
         }
         val l = ver(light); val d = ver(dark)
         val any = light ?: dark ?: emptyMap()
         return Theme(
             name, versions = if (l != null && d != null) "both" else if (d != null) "dark" else "light", light = l, dark = d,
-            shape = Shape(radius = any["radius"]?.toDoubleOrNull() ?: 10.0, weight = any["fw"]?.toIntOrNull() ?: 400,
-                keys = if ((any["keyUnder"]?.toFloatOrNull() ?: 0f) > 0f) "under" else "auto"),
+            shape = shapeOf(any),
         )
     }
 
