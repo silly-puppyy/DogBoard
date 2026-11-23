@@ -99,22 +99,30 @@ object ThemeModel {
     @kotlinx.serialization.Serializable
     data class Stop(val c: String, val p: Int)
 
-    /** A version's background (lib: bgOf). For a photo: its main colours [photoCols] and accents [photoAcc], measured. */
+    /**
+     * A version's background (lib: bgOf). For a photo: its main colours [photoCols] and accents [photoAcc], measured.
+     * [hard]: a gradient's colours as bands with sharp edges (a flag) instead of blending.
+     */
     @kotlinx.serialization.Serializable
     data class Bg(
         val type: String = "solid", val color: String = "#ededf4",
         val stops: List<Stop> = listOf(Stop("#ffe3d1", 0), Stop("#f4c4d8", 100)), val angle: Int = 180,
         val photo: String = "", val pos: String = "center", val dim: Double = 0.0,
         val photoCols: List<String> = emptyList(), val photoAcc: List<String> = emptyList(),
+        val hard: Boolean = false,
     )
 
     @kotlinx.serialization.Serializable
     /** [nav]: the colour of Android's own icons under the keys (hide keyboard, switch keyboard): auto, light or dark. */
     data class Version(val bg: Bg = Bg(), val tint: Boolean = false, val ov: Map<String, String> = emptyMap(), val nav: String = "auto")
 
-    /** lib SHAPE0: corner radius (dp), label weight, label size (%), border width (dp). */
+    /**
+     * lib SHAPE0: corner radius (dp), label weight, label size (%), border width (dp). [keys]: how keys sit on the
+     * background: auto (the colours as set), solid (no see-through), frosted (see-through white) or under (each key
+     * the colour beneath it, lightened).
+     */
     @kotlinx.serialization.Serializable
-    data class Shape(val radius: Double = 10.0, val weight: Int = 400, val size: Int = 100, val line: Double = 1.5)
+    data class Shape(val radius: Double = 10.0, val weight: Int = 400, val size: Int = 100, val line: Double = 1.5, val keys: String = "auto")
 
     private fun dimc(c: String, d: Double) = if (d != 0.0) mix(c, "#000000", d) else c
 
@@ -241,7 +249,19 @@ object ThemeModel {
 
     /** lib toRoles: the keyboard's theme tokens (KbTheme names) for a version and the shared shape; bg is the CSS background. */
     fun toRoles(v: Version, shape: Shape, bgCss: String): Map<String, String> {
-        val x = resolve(v).vals
+        val res = resolve(v); val x = HashMap(res.vals); val dark = res.base == "dark"
+        val back = bgCols(v.bg)[0]
+        when (shape.keys) {
+            "solid" -> for (r in listOf("key", "fn")) if (r !in v.ov) x[r] = over(x.getValue(r), back)
+            "frosted" -> {
+                // white glass: labels white on a dark background, ink on a light one, unless set by hand
+                if ("key" !in v.ov) x["key"] = if (dark) "rgba(255,255,255,0.16)" else "rgba(255,255,255,0.5)"
+                if ("fn" !in v.ov) x["fn"] = if (dark) "rgba(255,255,255,0.08)" else "rgba(255,255,255,0.28)"
+                val label = if (dark) "#ffffff" else DEFAULTS.getValue("light").getValue("keyFg")
+                if ("keyFg" !in v.ov) x["keyFg"] = label
+                if ("fnFg" !in v.ov) x["fnFg"] = label
+            }
+        }
         fun line(c: String?) = if (c != null && c != "none") "inset 0 0 0 ${num(shape.line)}px $c" else "none"
         fun up(c: String, t: String): String { val o = parse(c); return if (o.a < 0.999) str(o.copy(a = min(1.0, o.a + 0.12))) else mix(c, t, 0.12) }
         return mapOf(
@@ -253,7 +273,7 @@ object ThemeModel {
             "pressKey" to up(x.getValue("key"), x.getValue("keyFg")), "pressFn" to up(x.getValue("fn"), x.getValue("fnFg")),
             "radius" to num(shape.radius), "fw" to shape.weight.toString(), "fsScale" to num(shape.size / 100.0),
             "keyShadow" to line(x["keyLine"]), "fnShadow" to line(x["fnLine"]), "actShadow" to line(x["actLine"]), "linkFg" to x.getValue("act"),
-        )
+        ) + (if (shape.keys == "under") mapOf("keyUnder" to "0.55") else emptyMap())
     }
 
     /**
@@ -317,7 +337,8 @@ object ThemeModel {
         val any = light ?: dark ?: emptyMap()
         return Theme(
             name, versions = if (l != null && d != null) "both" else if (d != null) "dark" else "light", light = l, dark = d,
-            shape = Shape(radius = any["radius"]?.toDoubleOrNull() ?: 10.0, weight = any["fw"]?.toIntOrNull() ?: 400),
+            shape = Shape(radius = any["radius"]?.toDoubleOrNull() ?: 10.0, weight = any["fw"]?.toIntOrNull() ?: 400,
+                keys = if ((any["keyUnder"]?.toFloatOrNull() ?: 0f) > 0f) "under" else "auto"),
         )
     }
 
@@ -329,9 +350,20 @@ object ThemeModel {
     private fun num(d: Double) = if (d == d.toLong().toDouble()) d.toLong().toString() else d.toString()
 
     /** lib bgCss for solid and gradient backgrounds (a photo is drawn by the photo theme's own layer). */
+    /** Hard edges: each stop's colour fills its band, the edges halfway between neighbouring stops (a stop marks a band's middle). */
+    private fun hardCss(bg: Bg): String {
+        val s = bg.stops.sortedBy { it.p }
+        val parts = s.indices.flatMap { i ->
+            val from = if (i == 0) 0.0 else (s[i - 1].p + s[i].p) / 2.0
+            val to = if (i == s.lastIndex) 100.0 else (s[i].p + s[i + 1].p) / 2.0
+            listOf("${s[i].c} ${num(from)}%", "${s[i].c} ${num(to)}%")
+        }
+        return "linear-gradient(${bg.angle}deg, " + parts.joinToString(", ") + ")"
+    }
+
     fun bgCss(bg: Bg): String = when (bg.type) {
         "solid" -> bg.color
-        "gradient" -> "linear-gradient(${bg.angle}deg, " + bg.stops.joinToString(", ") { "${it.c} ${it.p}%" } + ")"
+        "gradient" -> if (bg.hard) hardCss(bg) else "linear-gradient(${bg.angle}deg, " + bg.stops.joinToString(", ") { "${it.c} ${it.p}%" } + ")"
         else -> "linear-gradient(rgba(0,0,0,${num(bg.dim)}), rgba(0,0,0,${num(bg.dim)}))"
     }
 }

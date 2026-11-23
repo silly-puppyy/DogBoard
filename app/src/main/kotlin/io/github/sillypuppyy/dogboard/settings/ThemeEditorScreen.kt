@@ -345,6 +345,17 @@ private fun BackgroundTab(v: Version, edit: String, both: Boolean, verName: Stri
         DText(if (mismatch) "$side It’s still the $verName version, used ${if (edit == "dark") "at night." else "by day."}" else side, style = setText(13f, color = SetColors.onSurfaceVariant).copy(lineHeight = 18.sp), maxLines = 4)
     }
     if (v.bg.type == "gradient") Card { AngleDial(v.bg.angle) { a -> setV { it.copy(bg = it.bg.copy(angle = a)) } } }
+    if (v.bg.type == "gradient") Row(
+        Modifier.padding(horizontal = 16.dp).fillMaxWidth().heightIn(min = 72.dp).clip(card).background(SetColors.row).clickable { setV { it.copy(bg = it.bg.copy(hard = !it.bg.hard)) } }.padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DText("Hard edges", style = setText(16f))
+            DText(if (v.bg.hard) "Each colour is a band with a sharp edge, like a flag." else "Off: the colours blend into each other.",
+                style = setText(13f, color = SetColors.onSurfaceVariant).copy(lineHeight = 18.sp), maxLines = 4)
+        }
+        Switch(v.bg.hard)
+    }
     // ThemeEditor:228-231: tint keys to match
     Row(
         Modifier.padding(horizontal = 16.dp).fillMaxWidth().heightIn(min = 72.dp).clip(card).background(SetColors.row).clickable { setV { it.copy(tint = !it.tint) } }.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -557,6 +568,19 @@ private fun ElementsTab(
             val navs = listOf("auto", "light", "dark")
             Segmented("te:nav", listOf("Auto", "Light", "Dark"), navs.indexOf(v.nav).coerceAtLeast(0)) { i -> setV { it.copy(nav = navs[i]) } }
         }
+        // how keys sit on the background (shared by both versions, like the shape)
+        DText("Key style", Modifier.padding(start = 16.dp, top = 4.dp), style = setText(14f, 500, SetColors.primary))
+        Column(Modifier.fillMaxWidth().clip(card).background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            val styles = listOf("auto", "solid", "frosted", "under")
+            val k = t.shape.keys
+            io.github.sillypuppyy.dogboard.design.settings.TitleSub("Keys", when (k) {
+                "solid" -> "Solid: nothing shows through the keys."
+                "frosted" -> "Frosted: see-through white keys, the background showing through."
+                "under" -> "Colour under: each key takes the colour beneath it, lightened, so a gradient runs across the keys."
+                else -> "As set: the key colours above, as they are."
+            })
+            Segmented("te:keys", listOf("As set", "Solid", "Frosted", "Under"), styles.indexOf(k).coerceAtLeast(0)) { i -> setT(t.copy(shape = t.shape.copy(keys = styles[i]))) }
+        }
         // ThemeEditor:256-280: the shape, shared by both versions
         DText(if (both) "Shape, for both versions" else "Shape", Modifier.padding(start = 16.dp, top = 4.dp), style = setText(14f, 500, SetColors.primary))
         val s0 = ThemeModel.Shape(); val sh = t.shape
@@ -574,7 +598,7 @@ private fun ElementsTab(
             }
         }
         // ThemeEditor:282-288: how much is set by hand; reset or start over
-        val count = v.ov.size + listOf(sh.radius != s0.radius, sh.weight != s0.weight, sh.size != s0.size, sh.line != s0.line).count { it }
+        val count = v.ov.size + listOf(sh.radius != s0.radius, sh.weight != s0.weight, sh.size != s0.size, sh.line != s0.line, sh.keys != s0.keys).count { it }
         Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             DText(when (count) { 0 -> "Nothing set by hand yet."; 1 -> "1 thing set by hand."; else -> "$count things set by hand." }, style = setText(13f, color = SetColors.onSurfaceVariant))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
