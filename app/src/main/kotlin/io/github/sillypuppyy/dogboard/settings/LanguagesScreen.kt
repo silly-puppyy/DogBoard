@@ -98,7 +98,8 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,
             together = s.secondaryLocales.map { second -> list.firstOrNull { it.primaryLocale == second }?.let { packName(second.languageTag(), it) } ?: second.displayName() },
             togetherTags = s.secondaryLocales.map { it.languageTag() },
-            code = (listOf(s.primaryLocale) + s.secondaryLocales).joinToString("+") { it.language.uppercase() }.let { if (it.length > 3) s.primaryLocale.language.uppercase() + "+" else it },
+            // every language's code; the badge stacks them (EN over FR)
+            code = (listOf(s.primaryLocale) + s.secondaryLocales).joinToString("+") { it.language.uppercase() },
             togetherChoices = if (!hasDictionary(tag)) emptyList() else list
                 .filter { o -> o.primaryLocale.language != s.primaryLocale.language && hasDictionary(o.primaryLocale.languageTag()) && script(o) == script(s) }
                 .distinctBy { it.primaryLocale.language }

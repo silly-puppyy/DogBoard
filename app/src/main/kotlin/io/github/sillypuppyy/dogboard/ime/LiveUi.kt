@@ -14,6 +14,10 @@ import kotlinx.coroutines.launch
  * Tools are named by their icon in Kb.dc.html (Kb:663-674).
  */
 object LiveUi {
+    /** Where the keyboard window draws its background (root pixels): a gradient there runs under bar and keys alike. */
+    val bgFrame = MutableStateFlow<androidx.compose.ui.geometry.Rect?>(null)
+    fun setBgFrame(r: androidx.compose.ui.geometry.Rect) { if (bgFrame.value != r) bgFrame.value = r }
+
     /** A theme being test-driven (Themes › press and hold a theme): the keyboard draws it until the sheet closes. */
     val themePreview = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 

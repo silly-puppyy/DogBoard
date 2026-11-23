@@ -225,31 +225,26 @@ private fun StepFrame(
     stepText: String, pathName: String, progress: Float, title: String, body: String, nextLabel: String, canSkip: Boolean,
     onBack: () -> Unit, onNext: () -> Unit, onSkip: () -> Unit, tryIt: Boolean = false, content: @Composable ColumnScope.() -> Unit,
 ) {
-    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-    val kbUp = WindowInsets.isImeVisible
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars).windowInsetsPadding(WindowInsets.navigationBars)) {
-        val compact = tryIt && kbUp
-        // with the keyboard up the page needs the room: one line (the title and the step), no description
-        if (compact) Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            DText(title, Modifier.weight(1f), style = setText(20f).copy(lineHeight = 26.sp), maxLines = 1)
-            DText(stepText, style = setText(13f, color = SetColors.onSurfaceVariant))
-        }
-        if (!compact) Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                DText(stepText, style = setText(13f, color = SetColors.onSurfaceVariant))
-                DText(pathName, style = setText(13f, color = SetColors.onSurfaceVariant))
-            }
-            Row(Modifier.fillMaxWidth().height(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Box(Modifier.weight(progress.coerceAtLeast(0.01f)).fillMaxHeight().background(SetColors.primary, RoundedCornerShape(2.dp)))
-                if (progress < 1f) Box(Modifier.weight(1f - progress).fillMaxHeight().background(SetColors.secondaryContainer, RoundedCornerShape(2.dp)))
-            }
-            DText(title, Modifier.padding(top = 8.dp), style = setText(28f).copy(lineHeight = 36.sp), maxLines = 3)
-            DText(body, style = setText(15f, color = SetColors.onSurfaceVariant).copy(lineHeight = 22.sp), maxLines = 6)
-        }
+        // the header scrolls with the page (not pinned above it)
         Column(
-            Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
+            Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) { CompositionLocalProvider(LocalTryIt provides tryIt) { content() } }
+        ) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    DText(stepText, style = setText(13f, color = SetColors.onSurfaceVariant))
+                    DText(pathName, style = setText(13f, color = SetColors.onSurfaceVariant))
+                }
+                Row(Modifier.fillMaxWidth().height(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.weight(progress.coerceAtLeast(0.01f)).fillMaxHeight().background(SetColors.primary, RoundedCornerShape(2.dp)))
+                    if (progress < 1f) Box(Modifier.weight(1f - progress).fillMaxHeight().background(SetColors.secondaryContainer, RoundedCornerShape(2.dp)))
+                }
+                DText(title, Modifier.padding(top = 8.dp), style = setText(28f).copy(lineHeight = 36.sp), maxLines = 3)
+                DText(body, style = setText(15f, color = SetColors.onSurfaceVariant).copy(lineHeight = 22.sp), maxLines = 6)
+            }
+            CompositionLocalProvider(LocalTryIt provides tryIt) { content() }
+        }
         if (tryIt) TryField(title)
         Row(
             Modifier.fillMaxWidth().cssShadow(listOf(CssShadow(false, 0f, -1f, 0f, 0f, SetColors.surfaceContainerHighest)), RoundedCornerShape(0.dp))
@@ -438,15 +433,15 @@ private fun LayoutStep() {
     prefs.keyboard.hintKind.collectAsState().value
     val st = LayoutPrefs.read(prefs)
     // the preset the bottom row comes from (other elements may have been changed since)
-    val sel = if (st.bottom == "classic") 1 else 0
+    val sel = if (st.bottom == "classic") 0 else 1
     io.github.sillypuppyy.dogboard.design.settings.SetGroup("Layout") {
     Cards(
         listOf(
-            Triple("Simple", "Punctuation on 123 and long-press. Fewer keys, bigger space bar.", null),
             Triple("Classic", "Comma and period beside space; digits and symbols on long-press.", null),
+            Triple("Simple", "Punctuation on 123 and long-press. Fewer keys, bigger space bar.", null),
         ),
         sel,
-    ) { n -> scope.launch { LayoutPrefs.write(prefs, if (n == 0) LayoutElements.SIMPLE else LayoutElements.CLASSIC) } }
+    ) { n -> scope.launch { LayoutPrefs.write(prefs, if (n == 0) LayoutElements.CLASSIC else LayoutElements.SIMPLE) } }
     }
     if (!LocalTryIt.current) Preview()
 }

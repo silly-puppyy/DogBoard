@@ -129,7 +129,15 @@ data class KbProps(
     val pressed: String = "",
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
+    /** More than one language (keyboards or a combined one): Auto then names the language on the space bar. */
+    val multiLang: Boolean = false,
     val only: String = "", // "", keys, bar, live (the live keyboard's key area: no bar, no nav area)
+    /**
+     * The live keyboard: this render's top within the window's background, and that background's height (dp; 0 = the
+     * render's own box). A gradient is then the window's (drawn once behind everything) and keys sample it there.
+     */
+    val bgTop: Float = 0f,
+    val bgH: Float = 0f,
     // DogBoard options (notes/research/suggestion-overflow.md), not in the design:
     /**
      * A word too long for its slot, one setting with two choices:
@@ -258,6 +266,8 @@ data class KbRender(
     val tpX: Float,
     val tpY: Float,
     val rootRadius: Float,
+    /** The window draws the background (a gradient theme in the live keyboard): the root paints none of its own. */
+    val windowBg: Boolean = false,
     val rootShadow: List<CssShadow>,
     /** For [KbSpec.overlays]: the letters show upper case on the base plane (long-press variants follow), and the
      *  trackpad's resting x (dp, the key area's middle). */
@@ -670,7 +680,7 @@ object KbSpec {
                 if (k.kind == "space") {
                     label = when {
                         P.spaceLabel == "space" -> "space"
-                        P.spaceLabel == "lang" || (P.spaceLabel == "auto" && fnKeyKind == "globe") -> P.langName
+                        P.spaceLabel == "lang" || (P.spaceLabel == "auto" && (fnKeyKind == "globe" || P.multiLang)) -> P.langName
                         // Auto with one language: the word "space"
                         P.spaceLabel == "auto" && t.spaceText.isEmpty() -> "space"
                         P.spaceLabel == "auto" && t.spaceText.isNotEmpty() -> t.spaceText
@@ -712,10 +722,10 @@ object KbSpec {
                 // label black or white to read on it (the return key keeps its own colour)
                 val under = t.bgGradient
                 if (t.keyUnder > 0f && under != null && spot == null && (k.kind != "ret" || bg != t.act)) {
-                    val c = under.colorAt(kx + w / 2, keyTop0 + rowTops[ri] + rowHs[ri] / 2, kbW, keyTop0 + keyAreaH)
-                    // on a near-white stripe a lighter key would vanish: a touch darker instead
-                    bg = if (c.luminance() > 0.8f) androidx.compose.ui.graphics.lerp(c, Color(0xFF1A1B20), 0.1f)
-                        else androidx.compose.ui.graphics.lerp(c, Color.White, t.keyUnder)
+                    val c = if (P.bgH > 0f) under.colorAt(kx + w / 2, P.bgTop + keyTop0 + rowTops[ri] + rowHs[ri] / 2, kbW, P.bgH)
+                        else under.colorAt(kx + w / 2, keyTop0 + rowTops[ri] + rowHs[ri] / 2, kbW, keyTop0 + keyAreaH)
+                    // lightened the same way everywhere (a darker key on near-white stripes looked random)
+                    bg = androidx.compose.ui.graphics.lerp(c, Color.White, t.keyUnder)
                     bgG = null
                     // the label that reads better on it (a brightness cut-off left grey and salmon keys hard to read)
                     val l = bg.luminance()
@@ -819,6 +829,7 @@ object KbSpec {
             trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowHs.last() / 2 - 28,
             upperBase = upper && plane == "base", tpRestX = kbW / 2 + stripL.w,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
+            windowBg = P.bgH > 0f && t.bgGradient != null,
             x = KbExtrasSpec.extras(P, t, W),
             slotOverflow = P.slotOverflow, glass = P.theme == "glass" && P.backdrop, blurPx = P.blur, dimA = P.dim,
             rootShadow = if (floating) CssShadow.parse("0 2px 6px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.18)") else emptyList(),

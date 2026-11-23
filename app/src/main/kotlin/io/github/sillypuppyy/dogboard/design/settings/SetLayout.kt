@@ -67,6 +67,8 @@ data class LayoutElements(
         // accent hints stay one choice away (Settings > Layout > Hints)
         /** Android-style (was "Classic"): Gboard's bottom row, symbol pages and pill keys. */
         val CLASSIC = LayoutElements(numRow = "hints", bottom = "classic", hints = "off", symbols = "android", pill = true)
+        /** What a fresh install has (AppPrefs) and what each element's reset puts back. */
+        val DEFAULT = CLASSIC
     }
 }
 
@@ -206,40 +208,40 @@ fun SetLayout(state: SetLayoutState) {
             SetGroup("Preset") {
                 Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Segmented(
-                        "layout:preset", listOf("iPhone-style", "Android-style", "Custom"), listOf("simple", "classic", "custom").indexOf(preset),
-                    ) { i -> if (i == 0) state.onChange(LayoutElements.SIMPLE) else if (i == 1) state.onChange(LayoutElements.CLASSIC) }
+                        "layout:preset", listOf("Android-style", "iPhone-style", "Custom"), listOf("classic", "simple", "custom").indexOf(preset),
+                    ) { i -> if (i == 0) state.onChange(LayoutElements.CLASSIC) else if (i == 1) state.onChange(LayoutElements.SIMPLE) }
                     DText(PRESET_NOTES.getValue(preset), style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8)
                 }
             }
             // :43-78 Mix and match
             // 16 dp side margins as every other settings page (it ran edge to edge; borders audit)
             SetGroup("Mix and match", Modifier.padding(horizontal = 16.dp)) {
-                ElementRow("Number row", "A row of digits above the letters, or each digit on its top-row letter, typed by holding it.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
+                ElementRow("Number row", "A row of digits above the letters, or each digit on its top-row letter, typed by holding it.", st.numRow != LayoutElements.DEFAULT.numRow, { state.onChange(st.copy(numRow = LayoutElements.DEFAULT.numRow)) }) {
                     ElementSeg("numrow", listOf("off" to "Off", "on" to "Always", "hints" to "On hold"), st.numRow) { state.onChange(st.copy(numRow = it)) }
                 }
-                ElementRow("Bottom row", "Where comma and period live. Email fields put @ in the comma slot, web addresses /.", st.bottom != LayoutElements.SIMPLE.bottom, { state.onChange(st.copy(bottom = LayoutElements.SIMPLE.bottom)) }) {
+                ElementRow("Bottom row", "Where comma and period live. Email fields put @ in the comma slot, web addresses /.", st.bottom != LayoutElements.DEFAULT.bottom, { state.onChange(st.copy(bottom = LayoutElements.DEFAULT.bottom)) }) {
                     BottomRowCard(st.bottom == "simple", "123, emoji, space, action", listOf(Mk("123", 1.24f, 'f'), Mk("emo", 1.25f, 'f'), Mk("", 5f, 'k'), Mk("ret", 2.5f, 'a'))) { state.onChange(st.copy(bottom = "simple")) }
                     BottomRowCard(st.bottom == "classic", "?123, comma, emoji, space, period, action", listOf(Mk("?123", 1.5f, 'f'), Mk(",", 1f, 'k'), Mk("emo", 1f, 'f'), Mk("", 4f, 'k'), Mk(".", 1f, 'k'), Mk("ret", 1.5f, 'a'))) { state.onChange(st.copy(bottom = "classic")) }
                 }
-                ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.SIMPLE.symbols, { state.onChange(st.copy(symbols = LayoutElements.SIMPLE.symbols)) }) {
+                ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.DEFAULT.symbols, { state.onChange(st.copy(symbols = LayoutElements.DEFAULT.symbols)) }) {
                     ElementSeg("symbols", listOf("iphone" to "iPhone-style", "android" to "Android-style"), st.symbols) { state.onChange(st.copy(symbols = it)) }
                 }
-                ElementRow("Return to letters", "After you type on the 123 page, it can switch back to letters by itself: after any key, after a space, or never (you tap ABC).", st.symbolsReturn != LayoutElements.SIMPLE.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.SIMPLE.symbolsReturn)) }) {
+                ElementRow("Return to letters", "After you type on the 123 page, it can switch back to letters by itself: after any key, after a space, or never (you tap ABC).", st.symbolsReturn != LayoutElements.DEFAULT.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.DEFAULT.symbolsReturn)) }) {
                     ElementSeg("symbolsReturn", listOf("any" to "Any key", "space" to "Space", "none" to "Never"), st.symbolsReturn) { state.onChange(st.copy(symbolsReturn = it)) }
                 }
-                ElementRow("Round keys", "123 and the action key as round pills.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {
+                ElementRow("Round keys", "123 and the action key as round pills.", st.pill != LayoutElements.DEFAULT.pill, { state.onChange(st.copy(pill = LayoutElements.DEFAULT.pill)) }) {
                     ElementSeg("pill", listOf("off" to "Off", "on" to "On"), if (st.pill) "on" else "off") { state.onChange(st.copy(pill = it == "on")) }
                 }
-                ElementRow("Hold for symbols", "A symbol or accent in each key’s corner, typed by holding the key.", st.hints != LayoutElements.SIMPLE.hints, { state.onChange(st.copy(hints = LayoutElements.SIMPLE.hints)) }) {
+                ElementRow("Hold for symbols", "A symbol or accent in each key’s corner, typed by holding the key.", st.hints != LayoutElements.DEFAULT.hints, { state.onChange(st.copy(hints = LayoutElements.DEFAULT.hints)) }) {
                     ElementSeg("hints", listOf("off" to "Off", "accents" to "Accents", "symbols" to "Whole page"), st.hints) { state.onChange(st.copy(hints = it)) }
                 }
-                ElementRow("Space-bar label", "Auto shows the language name only when you have more than one.", st.space != LayoutElements.SIMPLE.space, { state.onChange(st.copy(space = LayoutElements.SIMPLE.space)) }) {
+                ElementRow("Space-bar label", "Auto shows the language name only when you have more than one.", st.space != LayoutElements.DEFAULT.space, { state.onChange(st.copy(space = LayoutElements.DEFAULT.space)) }) {
                     ElementSeg("space", listOf("auto" to "Auto", "lang" to "Language", "space" to "“space”", "blank" to "Blank"), st.space) { state.onChange(st.copy(space = it)) }
                 }
-                ElementRow("Action key", "Icons read the same in every language; words say exactly what happens.", st.action != LayoutElements.SIMPLE.action, { state.onChange(st.copy(action = LayoutElements.SIMPLE.action)) }) {
+                ElementRow("Action key", "Icons read the same in every language; words say exactly what happens.", st.action != LayoutElements.DEFAULT.action, { state.onChange(st.copy(action = LayoutElements.DEFAULT.action)) }) {
                     ElementSeg("action", listOf("icon" to "Icon", "word" to "Word"), st.action) { state.onChange(st.copy(action = it)) }
                 }
-                ElementRow("Letter case", "Whether letters on keys follow shift or always show capitals.", st.caseMode != LayoutElements.SIMPLE.caseMode, { state.onChange(st.copy(caseMode = LayoutElements.SIMPLE.caseMode)) }) {
+                ElementRow("Letter case", "Whether letters on keys follow shift or always show capitals.", st.caseMode != LayoutElements.DEFAULT.caseMode, { state.onChange(st.copy(caseMode = LayoutElements.DEFAULT.caseMode)) }) {
                     ElementSeg("case", listOf("shift" to "Follows shift", "caps" to "Always capitals"), st.caseMode) { state.onChange(st.copy(caseMode = it)) }
                 }
             }

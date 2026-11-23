@@ -201,29 +201,30 @@ private fun LanguageRow(
 ) {
     var menu by remember { mutableStateOf(false) }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 80.dp).background(SetColors.row).clickable { if (l.active) onLayout() else onUse(l.id) }
+        Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).clickable { onLayout() }
             .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        // the language's code in a tonal circle; ticked when in use
-        Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(if (l.active) SetColors.primary else SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) {
-            if (l.active) Symbol("check", 22.sp, Color.White)
-            else DText(l.code.ifEmpty { l.name.take(2) }, style = setText(14f, 500, SetColors.onSurfaceVariant))
+        // the language's code in a tonal circle; a combined keyboard's codes stacked (EN over FR); which one is in use
+        // isn't marked (switching happens on the keyboard)
+        val codes = l.code.ifEmpty { l.name.take(2) }.split('+').filter { it.isNotEmpty() }
+        Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                val size = when (codes.size) { 1 -> 14f; 2 -> 11f; else -> 9f }
+                for (c in codes) DText(c, style = setText(size, 500, SetColors.onSurfaceVariant).copy(lineHeight = (size + 1).sp))
+            }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DText(l.name + (l.native?.takeIf { it != l.name }?.let { " ($it)" } ?: ""), style = setText(16f).copy(textAlign = START), maxLines = 2)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Chip(l.layout)
-                if (l.gettingDictionary) OutlineChip("Getting dictionary")
-                else Chip(if (l.swipe) "Swipe typing" else "Taps only")
-            }
+            // the layout as a line, not tags
+            DText(listOfNotNull(l.layout, "swipe typing".takeIf { l.swipe }, "getting dictionary…".takeIf { l.gettingDictionary }).joinToString(", "),
+                style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
         }
-        if (l.active) Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant, Modifier.padding(end = 12.dp))
         if (removable || canCombine || l.together.isNotEmpty()) Box {
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { menu = true }, contentAlignment = Alignment.Center) { Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant) }
             // combining: languages typed on one keyboard without switching (up to three), with a layout they share
             SetMenu(menu, { menu = false }, listOfNotNull(
-                ("Use this language" to { onUse(l.id) }).takeIf { !l.active }, "Layout" to onLayout,
+                "Layout" to onLayout,
                 ("Combine with…" to onCombine).takeIf { canCombine },
                 ("Split up" to onSplit).takeIf { l.together.isNotEmpty() },
                 ("Remove" to { onRemove(l.id) }).takeIf { removable },

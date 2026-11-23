@@ -354,9 +354,9 @@ class ImeController(
         prefs.keyboard.layoutId.asFlow(),
         prefs.localization.activeSubtypeId.asFlow(),
     ) { values ->
-        // more than one language and the key as it comes: the globe (FnKeyArrangement.Multilingual)
-        val languages = Regex("\"id\"").findAll(values[12] as String).count()
-        val fnKey = (values[2] as FnKeyArrangement).let { if (languages > 1 && it == FnKeyArrangement.Default) FnKeyArrangement.Multilingual else it }
+        // the emoji key stays with several languages: switching is the system's switcher under the keys (the
+        // keyboards are system subtypes, SystemSubtypes) and holding space
+        val fnKey = values[2] as FnKeyArrangement
         TouchModelOptions(
             showNumberRow = values[0] as Boolean,
             fnKeyEnabled = values[1] as Boolean,
@@ -391,13 +391,16 @@ class ImeController(
         prefs.typing.deleteWordMs.asFlow().collectIn(scope) { feel.deleteWordMs = it.toLong() }
         prefs.typing.trackpadHoldMs.asFlow().collectIn(scope) { feel.trackpadHoldMs = it.toLong() }
         // holding the space bar: the trackpad only when it's set to move the cursor (spaceHold), the language list instead
+        // (with one language there is no list to pick from: the hold moves the cursor)
         fun spaceHold() {
-            val hold = prefs.typing.spaceHold.get()
+            val oneLanguage = Regex("\"id\"").findAll(prefs.localization.subtypes.get()).count() <= 1
+            val hold = prefs.typing.spaceHold.get().let { if (it == "language" && oneLanguage) "cursor" else it }
             feel.trackpadEnabled = prefs.typing.trackpadEnabled.get() && hold == "cursor"
             feel.spaceHoldLanguages = hold == "language"
         }
         prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { spaceHold() }
         prefs.typing.spaceHold.asFlow().collectIn(scope) { spaceHold() }
+        prefs.localization.subtypes.asFlow().collectIn(scope) { spaceHold() }
         // the engine's letter rows follow the layout in use (a pack is built for one of its language's layouts)
         prefs.keyboard.layoutId.asFlow().collectIn(scope) { id ->
             io.github.sillypuppyy.dogboard.engine.TypingEngine.useLayoutRows(io.github.sillypuppyy.dogboard.ime.GeneratedLayouts.all.firstOrNull { it.id == id }?.rows)

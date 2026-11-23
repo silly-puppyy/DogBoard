@@ -102,7 +102,9 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
             .width(r.W.dp)
             .height(r.H.dp)
             .cssShadow(r.rootShadow, RoundedCornerShape(r.rootRadius.dp))
-            .themeBg(t, RoundedCornerShape(r.rootRadius.dp)) // no clip: popups overflow the root (Kb:16)
+            // no clip: popups overflow the root (Kb:16); the live keyboard's gradient is the window's, drawn once behind
+            // bar and keys (each painting its own squeezed the whole gradient into its height)
+            .then(if (r.windowBg) Modifier else Modifier.themeBg(t, RoundedCornerShape(r.rootRadius.dp)))
             .lint("kb"),
     ) { LintParent("kb") {
         if (r.glass) GlassBackdrop(r)

@@ -156,7 +156,8 @@ fun ImeKeyboardBox(
             }
         }
         val all = listOf(activeSubtype.primaryLocale) + activeSubtype.secondaryLocales
-        if (all.size == 1) name(all[0], short = false) else all.joinToString(" + ") { name(it, short = true) }
+        // a combined keyboard: its codes, Google style ("EN • FR"); names alone got long with three
+        if (all.size == 1) name(all[0], short = false) else all.joinToString(" • ") { it.language.uppercase() }
     }
     val spaceBarDisplayOverride = remember(model, spaceBarMode, displayLanguageNamesIn) {
         when (spaceBarMode) {
@@ -431,6 +432,8 @@ fun ImeKeyboardBox(
                     hintKind = prefs.keyboard.hintKind.collectAsState().value,
                     spaceLabel = prefs.keyboard.spaceLabel.collectAsState().value,
                     langName = languageName,
+                    multiLang = activeSubtype.secondaryLocales.isNotEmpty() ||
+                        androidx.compose.ui.platform.LocalContext.current.subtypeManager().value.subtypesFlow.collectAsState().value.size > 1,
                     capsLabels = prefs.keyboard.capsLabels.collectAsState().value,
                     symbolPages = prefs.keyboard.symbolPages.collectAsState().value,
                     pillKeys = prefs.keyboard.pillKeys.collectAsState().value,

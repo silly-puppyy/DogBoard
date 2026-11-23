@@ -1,5 +1,7 @@
 package io.github.sillypuppyy.dogboard.design
 
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -59,6 +61,7 @@ fun LiveKbView(
     panelVariant: String = "default",
     /** "emoji" or "globe": what the fn key does (FlorisBoard's fn key setting). */
     fnKey: String = "emoji",
+    multiLang: Boolean = false,
     /** The space-bar trackpad's finger x (dp), or null when it isn't in use. */
     trackpadX: Float? = null,
     /** The active layout's letter rows ([LiveKb.letterRows]); null = English. */
@@ -71,7 +74,8 @@ fun LiveKbView(
     // the default theme in the system's Material You colours (neutral greys before Android 14), as Gboard
     val context = androidx.compose.ui.platform.LocalContext.current
     remember(context) { MaterialYouTheme.override = MaterialYouTheme.forDevice(context); DesignFonts.preferSystemGoogleSans = true; 0 }
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    val bg = rememberWindowBgFrame()
+    BoxWithConstraints(modifier.fillMaxSize().then(bg.track)) {
         // nothing to draw until the key area has a real size (the first measure can be empty)
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f || maxHeight.value < 100f) return@BoxWithConstraints
         val plane = LiveKb.plane(layerId)
@@ -128,8 +132,10 @@ fun LiveKbView(
             clips = clips, clipFilter = clipFilter,
             panelVariant = panelVariant,
             fnKey = fnKey,
+            multiLang = multiLang,
             trackpad = trackpadX != null,
             trackpadX = trackpadX,
+            bgTop = bg.top, bgH = bg.height,
         )
         val themed = liveTheme().apply(props)
         // one layout per keyboard state and pressed key; the preview (and its fade frames), the long-press
@@ -241,7 +247,8 @@ fun LiveKbBar(
 ) {
     val dark = liveDark()
     // Gboard's 44 dp strip with the default Material You look, the canvas's 48 otherwise
-    BoxWithConstraints(modifier.fillMaxWidth().height(if (MaterialYouTheme.override != null) 44.dp else 48.dp)) {
+    val bg = rememberWindowBgFrame()
+    BoxWithConstraints(modifier.fillMaxWidth().height(if (MaterialYouTheme.override != null) 44.dp else 48.dp).then(bg.track)) {
         if (!maxWidth.value.isFinite() || maxWidth.value < 100f) return@BoxWithConstraints
         val slots = strip.map { s ->
             when (s.kind) {
@@ -266,6 +273,7 @@ fun LiveKbBar(
             clipLabel = clipLabel ?: "", clipMedia = clipMedia, clipThumb = clipThumb,
             panel = panel, width = maxWidth.value, only = "bar", incognito = incognito, trackpad = trackpad,
             removedWord = removed ?: "", clipFilter = clipFilter, emojiSearch = emojiSearch,
+            bgTop = bg.top, bgH = bg.height,
         )
         val themed = liveTheme().apply(props)
         val render = remember(themed) { KbSpec.render(themed) }
@@ -309,4 +317,20 @@ fun LiveSideStrip(left: Boolean, onAction: (String) -> Unit, modifier: Modifier 
             ) { Symbol(icon, 22.sp, t.fnFg) }
         }
     }
+}
+
+/** This view's place in the window's background (dp): [track] measures it; 0 height until both are known. */
+class WindowBgFrame(val top: Float, val height: Float, val track: Modifier)
+
+@Composable
+fun rememberWindowBgFrame(): WindowBgFrame {
+    val frame by io.github.sillypuppyy.dogboard.ime.LiveUi.bgFrame.collectAsState()
+    var mine by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val track = androidx.compose.runtime.remember {
+        Modifier.onGloballyPositioned { c -> val b = c.boundsInRoot(); if (mine != b) mine = b }
+    }
+    val f = frame; val m = mine
+    return if (f == null || m == null || f.height <= 0f) WindowBgFrame(0f, 0f, track)
+        else WindowBgFrame((m.top - f.top) / density, f.height / density, track)
 }

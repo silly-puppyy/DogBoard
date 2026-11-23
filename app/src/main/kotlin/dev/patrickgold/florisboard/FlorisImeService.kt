@@ -230,6 +230,13 @@ class FlorisImeService : LifecycleInputMethodService() {
      *
      * @return true if the switch was successful
      */
+    /** DogBoard: the system switcher (under the keys) picked one of DogBoard's keyboards: use it. */
+    override fun onCurrentInputMethodSubtypeChanged(newSubtype: android.view.inputmethod.InputMethodSubtype?) {
+        super.onCurrentInputMethodSubtypeChanged(newSubtype)
+        val id = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.idOf(newSubtype) ?: return
+        if (subtypeManager.activeSubtype.id != id && subtypeManager.subtypes.any { it.id == id }) subtypeManager.switchToSubtypeById(id)
+    }
+
     fun switchToVoiceInputMethod(): Boolean {
         val imm = systemServiceOrNull(InputMethodManager::class) ?: return false
         val list: List<InputMethodInfo> = imm.enabledInputMethodList
@@ -290,6 +297,18 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
         // DogBoard: Brave's link rules for "Strip trackers from links" (small: 31 KB)
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.ime.LinkCleaner.ensureLoaded(this@FlorisImeService) }
+        // DogBoard: the keyboards as system subtypes (the switcher under the keys goes through them), and the system's
+        // current one kept in step with the keyboard's
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            subtypeManager.subtypesFlow.collect { list -> if (list.isNotEmpty()) io.github.sillypuppyy.dogboard.ime.SystemSubtypes.publish(this@FlorisImeService, list) }
+        }
+        lifecycleScope.launch {
+            subtypeManager.activeSubtypeFlow.collect { s ->
+                if (io.github.sillypuppyy.dogboard.ime.SystemSubtypes.idOf(systemServiceOrNull(InputMethodManager::class)?.currentInputMethodSubtype) == s.id) return@collect
+                val id = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.imeId(this@FlorisImeService) ?: return@collect
+                if (AndroidVersion.ATLEAST_API28_P) runCatching { switchInputMethod(id, io.github.sillypuppyy.dogboard.ime.SystemSubtypes.of(s)) }
+            }
+        }
         systemLocalesFlow.value = resources.configuration.locales
         // DogBoard: debug builds log main-thread stalls (DogBoardJank) and disk access on it (StrictMode)
         if (dev.patrickgold.florisboard.BuildConfig.DEBUG) io.github.sillypuppyy.dogboard.perf.JankWatch.install()

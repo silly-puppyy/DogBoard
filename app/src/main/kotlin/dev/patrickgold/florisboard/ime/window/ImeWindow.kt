@@ -166,6 +166,8 @@ fun BoxScope.ImeWindow() {
         modifier = Modifier
             .align(Alignment.BottomStart)
             .drawBehind { if (dogBrush != null) drawRect(dogBrush) else drawRect(dogBg) }
+            // where that gradient lies, so the bar and the keys show their part of it (LiveUi.bgFrame)
+            .onGloballyPositioned { c -> io.github.sillypuppyy.dogboard.ime.LiveUi.setBgFrame(c.boundsInRoot()) }
             .ifIsInstance<ImeWindowProps.Fixed>(windowSpec.props) {
                 Modifier
                     .fillMaxWidth()

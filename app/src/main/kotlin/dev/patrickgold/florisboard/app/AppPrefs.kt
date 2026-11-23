@@ -916,7 +916,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard: Settings › Gestures: hold space, then slide to move the cursor (iOS); on by default
         val trackpadEnabled = boolean(key = "feel__trackpad_enabled", default = true)
         /** DogBoard: holding the space bar: "cursor" (the trackpad, iOS), "language" (the language list, Gboard), "nothing". */
-        val spaceHold = string(key = "feel__space_hold", default = "cursor")
+        // holding space switches language by default (it moves the cursor when set to): the keyboard has no globe key
+        val spaceHold = string(key = "feel__space_hold", default = "language")
         // DogBoard: Settings › Gestures, the Gboard gestures: slide left from delete to delete
         // words; a quick sideways swipe on the space bar moves the cursor without the hold; on by default
         val deleteSlide = boolean(key = "feel__delete_slide", default = true)
