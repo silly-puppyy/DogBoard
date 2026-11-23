@@ -30,7 +30,7 @@ class PackDownloadsTest : FunSpec({
         }
         server.start()
         try {
-            val d = PackDownloads("http://127.0.0.1:${server.address.port}/", packs)
+            val d = PackDownloads("http://127.0.0.1:${server.address.port}/", packs, publicKey = "")
             val index = d.index()!!
             index.packs.map { it.tag } shouldBe listOf("xx")
             d.install("xx").shouldBeInstanceOf<PackInstaller.Result.Installed>()
@@ -44,5 +44,22 @@ class PackDownloadsTest : FunSpec({
         } finally {
             server.stop(0); host.deleteRecursively(); packs.deleteRecursively()
         }
+    }
+
+    test("a signed index verifies, a changed one doesn't") {
+        val kp = java.security.KeyPairGenerator.getInstance("EC").apply { initialize(java.security.spec.ECGenParameterSpec("secp256r1")) }.generateKeyPair()
+        val pub = java.util.Base64.getEncoder().encodeToString(kp.public.encoded)
+        val data = """{"format": 1, "packs": []}""".toByteArray()
+        val sig = java.security.Signature.getInstance("SHA256withECDSA").run { initSign(kp.private); update(data); sign() }
+        PackDownloads.verify(data, sig, pub) shouldBe true
+        PackDownloads.verify("""{"format": 1, "packs": [{"tag": "xx"}]}""".toByteArray(), sig, pub) shouldBe false
+        PackDownloads.verify(data, sig, PackDownloads.PUBLIC_KEY) shouldBe false // another key
+    }
+
+    // DOGBOARD_SIGNED_INDEX=<dist>/index.json with its .sig from tools/i18n/sign_index.py: the app's built-in key accepts it
+    val signed = System.getenv("DOGBOARD_SIGNED_INDEX")?.let(::File)?.takeIf { it.isFile && File(it.path + ".sig").isFile }
+    test("sign_index.py's signature verifies with the app's key").config(enabled = signed != null) {
+        val sig = java.util.Base64.getDecoder().decode(File(signed!!.path + ".sig").readText().trim())
+        PackDownloads.verify(signed.readBytes(), sig, PackDownloads.PUBLIC_KEY) shouldBe true
     }
 })

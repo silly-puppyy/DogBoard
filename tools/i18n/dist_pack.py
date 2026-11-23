@@ -28,7 +28,7 @@ def sha256(path):
     return h.hexdigest()
 
 
-def dist(pack_dir, out, tag=None):
+def dist(pack_dir, out, tag=None, base_url=''):
     man = json.load(open(os.path.join(pack_dir, 'manifest.json'), encoding='utf-8'))
     tag = tag or man['tag']
     dest = os.path.join(out, tag)
@@ -57,6 +57,9 @@ def dist(pack_dir, out, tag=None):
             t.add(os.path.join(dest, name), arcname=name)
     os.replace(archive + '.tmp', archive)
     entry['archive'] = {'file': os.path.basename(archive), 'size': os.path.getsize(archive), 'sha256': sha256(archive)}
+    # where the phone fetches it (a release asset: .../releases/download/<release tag>/<tag>.tar.xz); a pack can stay in
+    # an older release while others move on, the index says where each one is
+    if base_url: entry['archive']['url'] = base_url.rstrip('/') + '/' + entry['archive']['file']
     return entry
 
 
@@ -65,17 +68,19 @@ def main():
     ap.add_argument('packs', nargs='+')
     ap.add_argument('--out', required=True)
     ap.add_argument('--tag', help='the tag to publish under (one pack only; default: its manifest tag)')
+    ap.add_argument('--base-url', default='', help="the archives' download folder (a release's download URL)")
     args = ap.parse_args()
     if args.tag and len(args.packs) > 1: raise SystemExit('--tag with one pack only')
     index_path = os.path.join(args.out, 'index.json')
     index = json.load(open(index_path, encoding='utf-8')) if os.path.exists(index_path) else {'format': 1, 'packs': []}
     for p in args.packs:
-        entry = dist(p, args.out, args.tag)
+        entry = dist(p, args.out, args.tag, args.base_url)
         index['packs'] = [e for e in index['packs'] if e['tag'] != entry['tag']] + [entry]
         print(f"{entry['tag']}: {entry['size'] / 1e6:.1f} MB, archive {entry['archive']['size'] / 1e6:.1f} MB, version {entry['version']}")
     index['packs'].sort(key=lambda e: e['tag'])
     with open(index_path, 'w', encoding='utf-8') as f:
         json.dump(index, f, ensure_ascii=False, indent=1)
+    print('sign it: tools/i18n/sign_index.py sign', index_path)
 
 
 if __name__ == '__main__':

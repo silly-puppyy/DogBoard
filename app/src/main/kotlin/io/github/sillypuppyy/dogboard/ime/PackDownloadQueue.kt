@@ -67,7 +67,7 @@ object PackDownloadQueue {
             try {
                 for ((attempt, wait) in RETRY_WAITS_MS.withIndex()) {
                     if (attempt > 0) delay(wait)
-                    val r = PackDownloads.of(app).install(entry.tag)
+                    val r = PackDownloads.of(app).install(entry.tag, entry = entry)
                     if (r is PackInstaller.Result.Installed) {
                         android.util.Log.i("DogBoardPerf", "pack ${r.tag} ${r.version} installed in the background")
                         _installed.update { it + 1 }
