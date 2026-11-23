@@ -45,6 +45,12 @@ class DigraphTest : FunSpec({
         }
     }
 
+    test("a pack's rules.json carries the digraphs") {
+        LanguageRules.parse("""{"distinct_letters": "", "digraphs": {"ä": "ae", "ö": "oe", "ü": "ue"}}""").digraphs shouldBe
+            mapOf("ä" to "ae", "ö" to "oe", "ü" to "ue")
+        LanguageRules.parse("""{"distinct_letters": ""}""").digraphs shouldBe emptyMap()
+    }
+
     test("without the rule nothing changes for words that hold the letters") {
         load(emptyMap())
         try {
