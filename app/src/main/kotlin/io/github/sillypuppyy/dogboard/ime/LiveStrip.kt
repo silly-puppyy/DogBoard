@@ -52,7 +52,7 @@ object LiveStrip {
             Regex("\\b(date|dd/mm|mm/dd|day)\\b").containsMatchIn(h)
     }
 
-    /** The chips for a typed word: one contact's name, number and birthday, or up to three names. */
+    /** The chips for a typed word: one contact's name, number, email, birthday and address, or up to three names. */
     fun contactChips(typed: String): List<io.github.sillypuppyy.dogboard.design.KbChipData> {
         val cards = contactCards[typed.lowercase()].orEmpty()
         if (typed.length < 2 || cards.isEmpty()) return emptyList()
@@ -61,7 +61,9 @@ object LiveStrip {
         return listOfNotNull(
             io.github.sillypuppyy.dogboard.design.KbChipData("person", c.name),
             c.phone?.let { io.github.sillypuppyy.dogboard.design.KbChipData("call", it) },
+            c.email?.let { io.github.sillypuppyy.dogboard.design.KbChipData("mail", it) },
             c.birthday?.let { io.github.sillypuppyy.dogboard.design.KbChipData("cake", it) },
+            c.address?.let { io.github.sillypuppyy.dogboard.design.KbChipData("location_on", it) },
         )
     }
 

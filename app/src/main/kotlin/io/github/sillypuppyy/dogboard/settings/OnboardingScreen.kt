@@ -632,7 +632,7 @@ private fun ContactsRow() {
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         scope.launch { prefs.spelling.useContacts.set(granted) }
     }
-    Toggle("Contacts", "Names, numbers and birthdays of your contacts as you type them. Read on the phone, never sent.", contacts) { on ->
+    Toggle("Contacts", "Names, numbers, emails, addresses and birthdays of your contacts as you type their names. Read on the phone, never sent.", contacts) { on ->
         if (on) ask.launch(android.Manifest.permission.READ_CONTACTS) else scope.launch { prefs.spelling.useContacts.set(false) }
     }
 }

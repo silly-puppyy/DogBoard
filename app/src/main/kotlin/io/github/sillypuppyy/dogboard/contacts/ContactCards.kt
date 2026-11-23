@@ -7,8 +7,8 @@ import java.time.MonthDay
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** One contact for the bar's contact chips: full name, primary phone number and birthday (as written). */
-data class ContactCard(val name: String, val phone: String?, val birthday: String?)
+/** One contact for the bar's contact chips: full name, primary phone number, email and postal address, and birthday (as written). */
+data class ContactCard(val name: String, val phone: String?, val birthday: String?, val email: String? = null, val address: String? = null)
 
 /**
  * The designer's contact chips (More board, Smart chips: "Typing a contact's name: with contacts
@@ -19,7 +19,10 @@ object ContactCards {
     /** Contacts by lowercase first name (and by lowercase single-word nickname-like display name). */
     fun read(context: Context): Map<String, List<ContactCard>> {
         if (!ContactNames.isAllowed(context)) return emptyMap()
-        data class Acc(var name: String? = null, var given: String? = null, var phone: String? = null, var primary: Boolean = false, var birthday: String? = null)
+        data class Acc(
+            var name: String? = null, var given: String? = null, var phone: String? = null, var primary: Boolean = false, var birthday: String? = null,
+            var email: String? = null, var emailPrimary: Boolean = false, var address: String? = null, var addressPrimary: Boolean = false,
+        )
         val byId = HashMap<Long, Acc>()
         val projection = arrayOf(
             ContactsContract.Data.CONTACT_ID, ContactsContract.Data.MIMETYPE, ContactsContract.Data.DATA1,
@@ -29,8 +32,10 @@ object ContactCards {
             ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE,
             ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE,
             ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE,
+            ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE,
+            ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE,
         )
-        val selection = "${ContactsContract.Data.MIMETYPE} IN (?, ?, ?)"
+        val selection = "${ContactsContract.Data.MIMETYPE} IN (?, ?, ?, ?, ?)"
         runCatching {
             context.contentResolver.query(ContactsContract.Data.CONTENT_URI, projection, selection, types, null)?.use { c ->
                 while (c.moveToNext()) {
@@ -43,6 +48,9 @@ object ContactCards {
                             if (acc.phone == null || (primary && !acc.primary)) { acc.phone = c.getString(2); acc.primary = primary }
                         }
                         types[2] -> if (c.getInt(3) == ContactsContract.CommonDataKinds.Event.TYPE_BIRTHDAY) acc.birthday = birthday(c.getString(2))
+                        // the primary email and address, else the first (DATA1: the address; for a postal one, formatted)
+                        types[3] -> { val p = c.getInt(4) != 0; if (acc.email == null || (p && !acc.emailPrimary)) { acc.email = c.getString(2); acc.emailPrimary = p } }
+                        types[4] -> { val p = c.getInt(4) != 0; if (acc.address == null || (p && !acc.addressPrimary)) { acc.address = c.getString(2)?.replace('\n', ' ')?.replace(Regex(" {2,}"), " "); acc.addressPrimary = p } }
                     }
                 }
             }
@@ -51,7 +59,7 @@ object ContactCards {
         for (a in byId.values) {
             val name = a.name?.trim()?.takeIf { it.isNotEmpty() } ?: continue
             val first = (a.given ?: name.substringBefore(' ')).trim().lowercase()
-            if (first.length >= 2) out.getOrPut(first) { ArrayList() }.add(ContactCard(name, a.phone?.trim(), a.birthday))
+            if (first.length >= 2) out.getOrPut(first) { ArrayList() }.add(ContactCard(name, a.phone?.trim(), a.birthday, a.email?.trim(), a.address?.trim()))
         }
         return out
     }

@@ -13,13 +13,16 @@ class ContactChipsTest : FunSpec({
         chips.map { it.insert } shouldBe listOf("11/14/26", "11/15/26", "11/16/26")
     }
 
-    test("one contact: full name, number and birthday; several: their names; nothing for other words") {
+    test("one contact: full name, number, email, birthday and address; several: their names; nothing for other words") {
         LiveStrip.contactCards = mapOf(
-            "sam" to listOf(ContactCard("Sam Lee", "+1 555-0142", "3 December")),
+            "sam" to listOf(ContactCard("Sam Lee", "+1 555-0142", "3 December", "sam@example.org", "1 Dog Lane, Springfield")),
             "alex" to listOf(ContactCard("Alex Kim", null, null), ContactCard("Alex Roe", "+44 20 7946 0000", null)),
         )
         try {
-            LiveStrip.contactChips("Sam") shouldBe listOf(KbChipData("person", "Sam Lee"), KbChipData("call", "+1 555-0142"), KbChipData("cake", "3 December"))
+            LiveStrip.contactChips("Sam") shouldBe listOf(
+                KbChipData("person", "Sam Lee"), KbChipData("call", "+1 555-0142"), KbChipData("mail", "sam@example.org"),
+                KbChipData("cake", "3 December"), KbChipData("location_on", "1 Dog Lane, Springfield"),
+            )
             LiveStrip.contactChips("alex") shouldBe listOf(KbChipData("person", "Alex Kim"), KbChipData("person", "Alex Roe"))
             LiveStrip.contactChips("sa") shouldBe emptyList()
             LiveStrip.contactChips("s") shouldBe emptyList()
