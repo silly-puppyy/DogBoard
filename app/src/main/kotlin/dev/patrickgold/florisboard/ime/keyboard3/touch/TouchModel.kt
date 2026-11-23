@@ -159,6 +159,19 @@ class TouchKeyboard(
                     // the nearest letter ("l'ecole" became "l'envolée", 2026-11-22)
                     else if (text == "'" || text == "’") put('\'', target)
                 }
+                // the other text layer's letters where they differ (phonetic Georgian: Shift+ტ types თ): a word mixes
+                // taps from both layers ("თბილისი": Shift for the first letter only), and its keys come from one of them.
+                // Latin layouts are unchanged: their Shift letters lowercase to the same letters
+                val companion = when (layerId) {
+                    ImeLayerIds.Base -> ImeLayerIds.Shift
+                    ImeLayerIds.Shift, ImeLayerIds.Caps -> ImeLayerIds.Base
+                    else -> null
+                }
+                if (companion != null && layers[companion] != null) for (key in textKeysOf(companion)) {
+                    val text = java.text.Normalizer.normalize((key.attrs.output as K3String).toText(), java.text.Normalizer.Form.NFC)
+                    if (text.length == 1 && text[0].isLetter() && text[0].lowercaseChar() !in this)
+                        put(text[0].lowercaseChar(), key.target(widthDp, heightDp))
+                }
             }
             // the space bar too, as ' ': iOS reads a touch near it as a possible space between words
             // ("donyou" -> "do you"); the decoder keeps it apart from the letters

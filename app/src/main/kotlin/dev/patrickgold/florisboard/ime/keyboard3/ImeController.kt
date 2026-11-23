@@ -1960,8 +1960,9 @@ class ImeController(
                 InputAttributes.CapsMode.NONE -> io.github.sillypuppyy.dogboard.engine.AutoShift.Type.NONE
             }
             val shift = prefs.typing.autoCapitalization.get() &&
-                io.github.sillypuppyy.dogboard.engine.TypingEngine.shouldAutoShift(state.content.surroundingText.textBefore, type)
-                // && subtypeManager.activeSubtype.primaryLocale.supportsCapitalization
+                io.github.sillypuppyy.dogboard.engine.TypingEngine.shouldAutoShift(state.content.surroundingText.textBefore, type) &&
+                // a language without sentence capitals (Georgian: FlorisLocale) gets no automatic shift
+                dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype.primaryLocale.supportsCapitalization
             val inputShiftState = when {
                 shift -> InputShiftState.SHIFTED_AUTOMATIC
                 else -> InputShiftState.UNSHIFTED

@@ -157,12 +157,15 @@
         <key id="u10e5" output="ქ" />
         <key id="u10ec" output="წ" longPressKeyIds="u10ec-alt0" longPressDefaultKeyId="u10ec-alt0" />
         <key id="u10ec-alt0" output="ჭ" />
+        <key id="u10ed" output="ჭ" />
         <key id="u10d4" output="ე" longPressKeyIds="u10d4-alt0" longPressDefaultKeyId="u10d4-alt0" />
         <key id="u10d4-alt0" output="ჱ" />
         <key id="u10e0" output="რ" longPressKeyIds="u10e0-alt0" longPressDefaultKeyId="u10e0-alt0" />
         <key id="u10e0-alt0" output="ღ" />
+        <key id="u10e6" output="ღ" />
         <key id="u10e2" output="ტ" longPressKeyIds="u10e2-alt0" longPressDefaultKeyId="u10e2-alt0" />
         <key id="u10e2-alt0" output="თ" />
+        <key id="u10d7" output="თ" />
         <key id="u10e7" output="ყ" longPressKeyIds="u10e7-alt0" longPressDefaultKeyId="u10e7-alt0" />
         <key id="u10e7-alt0" output="ჸ" />
         <key id="u10e3" output="უ" />
@@ -174,6 +177,7 @@
         <key id="u10d0-alt0" output="ჺ" />
         <key id="u10e1" output="ს" longPressKeyIds="u10e1-alt0" longPressDefaultKeyId="u10e1-alt0" />
         <key id="u10e1-alt0" output="შ" />
+        <key id="u10e8" output="შ" />
         <key id="u10d3" output="დ" />
         <key id="u10e4" output="ფ" longPressKeyIds="u10e4-alt0" longPressDefaultKeyId="u10e4-alt0" />
         <key id="u10e4-alt0" output="ჶ" />
@@ -184,14 +188,17 @@
         <key id="u10ef" output="ჯ" longPressKeyIds="u10ef-alt0 u10ef-alt1" longPressDefaultKeyId="u10ef-alt0" />
         <key id="u10ef-alt0" output="ჟ" />
         <key id="u10ef-alt1" output="ჷ" />
+        <key id="u10df" output="ჟ" />
         <key id="u10d9" output="კ" />
         <key id="u10da" output="ლ" />
         <key id="u10d6" output="ზ" longPressKeyIds="u10d6-alt0" longPressDefaultKeyId="u10d6-alt0" />
         <key id="u10d6-alt0" output="ძ" />
+        <key id="u10eb" output="ძ" />
         <key id="u10ee" output="ხ" longPressKeyIds="u10ee-alt0" longPressDefaultKeyId="u10ee-alt0" />
         <key id="u10ee-alt0" output="ჴ" />
         <key id="u10ea" output="ც" longPressKeyIds="u10ea-alt0" longPressDefaultKeyId="u10ea-alt0" />
         <key id="u10ea-alt0" output="ჩ" />
+        <key id="u10e9" output="ჩ" />
         <key id="u10d5" output="ვ" longPressKeyIds="u10d5-alt0" longPressDefaultKeyId="u10d5-alt0" />
         <key id="u10d5-alt0" output="ჳ" />
         <key id="u10d1" output="ბ" />
@@ -236,9 +243,9 @@
         </layer>
 
         <layer id="shift">
-            <row keys="u10e5 u10ec u10d4 u10e0 u10e2 u10e7 u10e3 u10d8 u10dd u10de" />
-            <row keys="gap2-georgian-qwerty-ka u10d0 u10e1 u10d3 u10e4 u10d2 u10f0 u10ef u10d9 u10da gap2-georgian-qwerty-ka" />
-            <row keys="shift-to-base u10d6 u10ee u10ea u10d5 u10d1 u10dc u10db bksp" />
+            <row keys="u10e5 u10ed u10d4 u10e6 u10d7 u10e7 u10e3 u10d8 u10dd u10de" />
+            <row keys="gap2-georgian-qwerty-ka u10d0 u10e8 u10d3 u10e4 u10d2 u10f0 u10df u10d9 u10da gap2-georgian-qwerty-ka" />
+            <row keys="shift-to-base u10eb u10ee u10e9 u10d5 u10d1 u10dc u10db bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -278,9 +285,9 @@
         </layer>
 
         <layer id="shift-email">
-            <row keys="u10e5 u10ec u10d4 u10e0 u10e2 u10e7 u10e3 u10d8 u10dd u10de" />
-            <row keys="gap2-georgian-qwerty-ka u10d0 u10e1 u10d3 u10e4 u10d2 u10f0 u10ef u10d9 u10da gap2-georgian-qwerty-ka" />
-            <row keys="shift-to-base u10d6 u10ee u10ea u10d5 u10d1 u10dc u10db bksp" />
+            <row keys="u10e5 u10ed u10d4 u10e6 u10d7 u10e7 u10e3 u10d8 u10dd u10de" />
+            <row keys="gap2-georgian-qwerty-ka u10d0 u10e8 u10d3 u10e4 u10d2 u10f0 u10df u10d9 u10da gap2-georgian-qwerty-ka" />
+            <row keys="shift-to-base u10eb u10ee u10e9 u10d5 u10d1 u10dc u10db bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -292,9 +299,9 @@
         </layer>
 
         <layer id="shift-url">
-            <row keys="u10e5 u10ec u10d4 u10e0 u10e2 u10e7 u10e3 u10d8 u10dd u10de" />
-            <row keys="gap2-georgian-qwerty-ka u10d0 u10e1 u10d3 u10e4 u10d2 u10f0 u10ef u10d9 u10da gap2-georgian-qwerty-ka" />
-            <row keys="shift-to-base u10d6 u10ee u10ea u10d5 u10d1 u10dc u10db bksp" />
+            <row keys="u10e5 u10ed u10d4 u10e6 u10d7 u10e7 u10e3 u10d8 u10dd u10de" />
+            <row keys="gap2-georgian-qwerty-ka u10d0 u10e8 u10d3 u10e4 u10d2 u10f0 u10df u10d9 u10da gap2-georgian-qwerty-ka" />
+            <row keys="shift-to-base u10eb u10ee u10e9 u10d5 u10d1 u10dc u10db bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -306,9 +313,9 @@
         </layer>
 
         <layer id="shift-classic">
-            <row keys="u10e5 u10ec u10d4 u10e0 u10e2 u10e7 u10e3 u10d8 u10dd u10de" />
-            <row keys="gap2-georgian-qwerty-ka u10d0 u10e1 u10d3 u10e4 u10d2 u10f0 u10ef u10d9 u10da gap2-georgian-qwerty-ka" />
-            <row keys="shift-to-base u10d6 u10ee u10ea u10d5 u10d1 u10dc u10db bksp" />
+            <row keys="u10e5 u10ed u10d4 u10e6 u10d7 u10e7 u10e3 u10d8 u10dd u10de" />
+            <row keys="gap2-georgian-qwerty-ka u10d0 u10e8 u10d3 u10e4 u10d2 u10f0 u10df u10d9 u10da gap2-georgian-qwerty-ka" />
+            <row keys="shift-to-base u10eb u10ee u10e9 u10d5 u10d1 u10dc u10db bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -320,9 +327,9 @@
         </layer>
 
         <layer id="shift-classic-email">
-            <row keys="u10e5 u10ec u10d4 u10e0 u10e2 u10e7 u10e3 u10d8 u10dd u10de" />
-            <row keys="gap2-georgian-qwerty-ka u10d0 u10e1 u10d3 u10e4 u10d2 u10f0 u10ef u10d9 u10da gap2-georgian-qwerty-ka" />
-            <row keys="shift-to-base u10d6 u10ee u10ea u10d5 u10d1 u10dc u10db bksp" />
+            <row keys="u10e5 u10ed u10d4 u10e6 u10d7 u10e7 u10e3 u10d8 u10dd u10de" />
+            <row keys="gap2-georgian-qwerty-ka u10d0 u10e8 u10d3 u10e4 u10d2 u10f0 u10df u10d9 u10da gap2-georgian-qwerty-ka" />
+            <row keys="shift-to-base u10eb u10ee u10e9 u10d5 u10d1 u10dc u10db bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -334,9 +341,9 @@
         </layer>
 
         <layer id="shift-classic-url">
-            <row keys="u10e5 u10ec u10d4 u10e0 u10e2 u10e7 u10e3 u10d8 u10dd u10de" />
-            <row keys="gap2-georgian-qwerty-ka u10d0 u10e1 u10d3 u10e4 u10d2 u10f0 u10ef u10d9 u10da gap2-georgian-qwerty-ka" />
-            <row keys="shift-to-base u10d6 u10ee u10ea u10d5 u10d1 u10dc u10db bksp" />
+            <row keys="u10e5 u10ed u10d4 u10e6 u10d7 u10e7 u10e3 u10d8 u10dd u10de" />
+            <row keys="gap2-georgian-qwerty-ka u10d0 u10e8 u10d3 u10e4 u10d2 u10f0 u10df u10d9 u10da gap2-georgian-qwerty-ka" />
+            <row keys="shift-to-base u10eb u10ee u10e9 u10d5 u10d1 u10dc u10db bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

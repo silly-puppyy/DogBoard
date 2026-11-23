@@ -651,6 +651,14 @@ def all_layouts() -> list[Layout]:
                      note="taps" if base in PACKS else "nodict")
         if base == "ka":
             lay = no_capitals(lay)
+            # the phonetic layout's Shift plane: iOS's Georgian-Phonetic Capital-Letters (ტ -> თ, წ -> ჭ, რ -> ღ, ს -> შ,
+            # ჯ -> ჟ, ზ -> ძ, ც -> ჩ; Gboard's data has them only on long-press, kept too), user 2026-11-23 "implement
+            # both layouts". Auto-shift is off for Georgian (FlorisLocale.supportsCapitalization), so only a tap on Shift
+            ph = i_lays.get("Georgian-Phonetic", {})
+            caps = next((pl["rows"] for pl in ph.get("planes", {}).get("Capital-Letters", []) if pl.get("keylayout") == "iPhone-Letters-Keylayout"), None)
+            if caps and letters_only(rows) == letters_only(ph["rows"]):
+                for small, big in zip((c for r in ph["rows"] for c in r), (c for r in caps for c in r)):
+                    if big != small: lay.uppers[small] = big
         # Turkic dotted / dotless i (Turkish, Azerbaijani, Kirmanjki...): i -> İ, ı -> I (str.upper gave I for both)
         letters = {c for r in rows for c in r}
         # (Turkish and Azerbaijani always: Gboard's Turkish QWERTY has ı on long-press, so no ı key, and Shift+i

@@ -199,7 +199,9 @@ class FlorisLocale private constructor(val base: Locale) {
      */
     val supportsCapitalization: Boolean
         get() = when (language) {
-            "zh", "ko", "th", "bn", "hi" -> false
+            // DogBoard: Georgian has capitals in Unicode (Mtavruli) but writes no sentence capitals; on the phonetic
+            // layout Shift types other letters (ტ -> თ), so an automatic shift would change the first letter
+            "zh", "ko", "th", "bn", "hi", "ka" -> false
             else -> true
         }
 
