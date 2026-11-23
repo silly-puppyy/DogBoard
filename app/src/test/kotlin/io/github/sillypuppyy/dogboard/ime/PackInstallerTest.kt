@@ -84,6 +84,26 @@ class PackInstallerTest : FunSpec({
         } finally { dir.deleteRecursively() }
     }
 
+    // DOGBOARD_DIST_ARCHIVE=<dist>/<tag>.tar.xz (+ DOGBOARD_DIST_ARCHIVE_SHA): dist_pack.py's archive installs whole, and a
+    // flipped byte in it fails without touching the installed pack
+    val archive = System.getenv("DOGBOARD_DIST_ARCHIVE")?.let(::File)?.takeIf { it.isFile }
+    test("a dist_pack.py archive installs; a damaged one doesn't").config(enabled = archive != null) {
+        val dir = tmp()
+        try {
+            val sha = System.getenv("DOGBOARD_DIST_ARCHIVE_SHA") ?: ""
+            val r = archive!!.inputStream().use { PackInstaller(dir).installArchive(it, sha) }
+            println("DISTARCHIVE $r")
+            r.shouldBeInstanceOf<PackInstaller.Result.Installed>()
+            LanguagePack.openDir(File(dir, r.tag))!!.hasWords shouldBe true
+            val bytes = archive.readBytes().also { it[it.size / 2] = (it[it.size / 2] + 1).toByte() }
+            val bad = PackInstaller(dir).installArchive(bytes.inputStream(), sha)
+            println("DISTARCHIVE damaged: $bad")
+            bad.shouldBeInstanceOf<PackInstaller.Result.Failed>()
+            LanguagePack.openDir(File(dir, r.tag))!!.hasWords shouldBe true
+            dir.list()!!.sorted() shouldBe listOf(r.tag)
+        } finally { dir.deleteRecursively() }
+    }
+
     test("a downloaded pack can be removed") {
         val dir = tmp()
         try {

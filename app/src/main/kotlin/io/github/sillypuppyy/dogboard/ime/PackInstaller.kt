@@ -66,6 +66,62 @@ class PackInstaller(private val packsDir: File) {
             return fail(staging, e.message ?: "read error")
         }
 
+        return swapIn(staging, manifest, done)
+    }
+
+    /**
+     * A pack from one .tar.xz (tools/i18n/dist_pack.py: manifest.json first, then the files), streamed: the archive's
+     * own SHA-256 ([archiveSha256], from the index) and every file's size and SHA-256 against the manifest are checked
+     * on the way; a file the manifest doesn't name, or one it names missing, fails the whole pack.
+     */
+    fun installArchive(input: InputStream, archiveSha256: String = "", onProgress: (done: Long, total: Long) -> Unit = { _, _ -> }): Result {
+        val archiveDigest = MessageDigest.getInstance("SHA-256")
+        var staging: File? = null
+        try {
+            val counted = java.security.DigestInputStream(input.buffered(1 shl 16), archiveDigest)
+            val tar = TarReader(org.tukaani.xz.XZInputStream(counted))
+            val first = tar.next() ?: return Result.Failed("empty archive")
+            if (first.name != "manifest.json") return Result.Failed("the archive does not start with its manifest")
+            val manifestBytes = tar.readEntry()
+            val manifest = runCatching { json.decodeFromString<PackManifest>(manifestBytes.decodeToString()) }.getOrElse { return Result.Failed("manifest: ${it.message}") }
+            if (manifest.format > LanguagePack.FORMAT) return Result.Failed("pack format ${manifest.format} is newer than this app's ${LanguagePack.FORMAT}")
+            if (!safeName(manifest.tag)) return Result.Failed("bad tag '${manifest.tag}'")
+            val files = manifest.files.values.distinctBy { it.path }.associateBy { it.path }
+            files.values.firstOrNull { !safePath(it.path) }?.let { return Result.Failed("bad path '${it.path}'") }
+            files.values.firstOrNull { it.sha256.isEmpty() && !it.optional }?.let { return Result.Failed("${it.path}: no checksum") }
+            packsDir.mkdirs()
+            val stage = File(packsDir, ".staging-${manifest.tag}").also { it.deleteRecursively(); it.mkdirs() }
+            staging = stage
+            val total = files.values.sumOf { it.size.coerceAtLeast(0) }
+            var done = 0L
+            val seen = HashSet<String>()
+            while (true) {
+                val e = tar.next() ?: break
+                val f = files[e.name] ?: return fail(stage, "${e.name}: not in the manifest")
+                if (!seen.add(e.name)) return fail(stage, "${e.name}: twice in the archive")
+                if (f.size >= 0 && e.size != f.size) return fail(stage, "${e.name}: ${e.size} bytes, the manifest says ${f.size}")
+                val digest = MessageDigest.getInstance("SHA-256")
+                File(stage, f.path).also { it.parentFile?.mkdirs() }.outputStream().use { out ->
+                    tar.copyEntry { buf, n -> out.write(buf, 0, n); digest.update(buf, 0, n); done += n; onProgress(done, total) }
+                }
+                val sha = digest.digest().joinToString("") { "%02x".format(it) }
+                if (f.sha256.isNotEmpty() && !sha.equals(f.sha256, ignoreCase = true)) return fail(stage, "${e.name}: checksum differs")
+            }
+            files.values.firstOrNull { it.path !in seen && !it.optional }?.let { return fail(stage, "${it.path}: missing from the archive") }
+            // the rest of the stream (tar padding, xz index) so the archive's checksum covers all of it
+            val sink = ByteArray(1 shl 16)
+            while (counted.read(sink) >= 0) Unit
+            val archiveSha = archiveDigest.digest().joinToString("") { "%02x".format(it) }
+            if (archiveSha256.isNotEmpty() && !archiveSha.equals(archiveSha256, ignoreCase = true)) return fail(stage, "archive checksum differs")
+            File(stage, "manifest.json").writeBytes(manifestBytes)
+            return swapIn(stage, manifest, done)
+        } catch (e: java.io.IOException) {
+            staging?.let { return fail(it, e.message ?: "read error") }
+            return Result.Failed(e.message ?: "read error")
+        }
+    }
+
+    private fun swapIn(staging: File, manifest: PackManifest, done: Long): Result {
         // the swap: the old pack aside, the new one in, the old one removed (a crash in between leaves one of them whole)
         val dest = File(packsDir, manifest.tag)
         val old = File(packsDir, ".old-${manifest.tag}")
@@ -77,6 +133,65 @@ class PackInstaller(private val packsDir: File) {
         }
         old.deleteRecursively()
         return Result.Installed(manifest.tag, manifest.version, done)
+    }
+
+    /** A tar stream's entries (ustar / pax as Python's tarfile writes them; pax and GNU long-name headers skipped). */
+    private class TarReader(private val input: InputStream) {
+        class Entry(val name: String, val size: Long)
+        private var left = 0L
+        private var pad = 0L
+        private val header = ByteArray(512)
+
+        fun next(): Entry? {
+            skip(left + pad); left = 0; pad = 0
+            while (true) {
+                if (!readFully(header)) return null
+                if (header.all { it == 0.toByte() }) return null // end of archive
+                val name = field(0, 100)
+                val prefix = field(345, 155)
+                val size = field(124, 12).trim().ifEmpty { "0" }.toLong(8)
+                val type = header[156].toInt().toChar()
+                val padded = (size + 511) / 512 * 512
+                if (type == 'x' || type == 'g' || type == 'L' || type == 'K') { skip(padded); continue }
+                // folders and links: not in our packs, skipped with their data
+                if (type != '0' && type != '\u0000') { skip(padded); continue }
+                left = size; pad = padded - size
+                return Entry(if (prefix.isEmpty()) name else "$prefix/$name", size)
+            }
+        }
+
+        fun readEntry(): ByteArray {
+            val out = java.io.ByteArrayOutputStream(left.toInt())
+            copyEntry { b, n -> out.write(b, 0, n) }
+            return out.toByteArray()
+        }
+
+        fun copyEntry(sink: (ByteArray, Int) -> Unit) {
+            val buf = ByteArray(1 shl 16)
+            while (left > 0) {
+                val n = input.read(buf, 0, minOf(buf.size.toLong(), left).toInt())
+                if (n < 0) throw java.io.EOFException("archive ends inside a file")
+                sink(buf, n); left -= n
+            }
+        }
+
+        private fun field(at: Int, len: Int): String {
+            var end = at
+            while (end < at + len && header[end] != 0.toByte()) end++
+            return String(header, at, end - at, Charsets.UTF_8)
+        }
+
+        private fun readFully(b: ByteArray): Boolean {
+            var off = 0
+            while (off < b.size) { val n = input.read(b, off, b.size - off); if (n < 0) return false; off += n }
+            return true
+        }
+
+        private fun skip(n: Long) {
+            var r = n
+            val buf = ByteArray(8192)
+            while (r > 0) { val k = input.read(buf, 0, minOf(buf.size.toLong(), r).toInt()); if (k < 0) throw java.io.EOFException(); r -= k }
+        }
     }
 
     /** Removes a downloaded pack (a built-in one of the same tag takes over again). */

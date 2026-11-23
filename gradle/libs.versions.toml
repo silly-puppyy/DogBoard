@@ -22,6 +22,8 @@ k3lp = "0.1.0"
 kotlin = "2.4.20"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization-json = "1.11.0"
+# DogBoard: .tar.xz language packs (PackInstaller.installArchive); XZ for Java, public domain
+tukaani-xz = "1.10"
 ksp = "2.3.11"
 material-kolor = "4.1.1"
 mikepenz-aboutlibraries = "15.2.0"
@@ -75,6 +77,7 @@ k3lp-core = { module = "org.k3lp:k3lp-core", version.ref = "k3lp" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+tukaani-xz = { module = "org.tukaani:xz", version.ref = "tukaani-xz" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "material-kolor" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "mikepenz-aboutlibraries" }
 mikepenz-aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "mikepenz-aboutlibraries" }

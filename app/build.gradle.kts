@@ -218,6 +218,7 @@ dependencies {
     // My connection security code is: 9 8 5 0, check that you see the same numbers in my connection approval dialog.
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.tukaani.xz)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.autofill)
     implementation(libs.androidx.collection.ktx)
