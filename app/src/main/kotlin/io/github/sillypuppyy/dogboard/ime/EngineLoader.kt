@@ -39,41 +39,47 @@ object EngineLoader {
         return true
     }
 
-    /** The second language typed together with the first (Subtype.secondaryLocales), or null. */
-    @Volatile var secondaryPack: LanguagePack? = null
+    /** The languages typed together with the first (Subtype.secondaryLocales, at most [MAX_TOGETHER] - 1). */
+    @Volatile var secondaryPacks: List<LanguagePack> = emptyList()
         private set
 
     /**
-     * Types [tag] together with the loaded language (notes/design/multilingual.md): its words, pairs, trigram and letter
-     * model beside the first's, both decoded on every word and merged. Null, the loaded language's own, or a language
-     * without a dictionary on the phone: one language. Off the main thread; true when anything changed.
+     * Types [tags] together with the loaded language (notes/design/multilingual.md): each pack's words, pairs, trigram
+     * and letter model beside the first's, every word decoded in all and merged. Tags without a dictionary on the phone,
+     * or the loaded language's own, are skipped. Off the main thread; true when anything changed.
      */
     @Synchronized
-    fun setSecondary(context: Context, tag: String?): Boolean {
+    fun setSecondaries(context: Context, tags: List<String>): Boolean {
         val app = context.applicationContext
-        val next = tag?.let { LanguagePack.find(app, it) }?.takeIf { it.hasWords && it.tag != pack?.tag }
-        if (next?.tag == secondaryPack?.tag) return false
+        val next = tags.mapNotNull { t -> LanguagePack.find(app, t)?.takeIf { it.hasWords && it.tag != pack?.tag } }
+            // three languages took the java heap to 128 MB on the emulator (en + es + fr): a 128 MB heap gets one beside
+            .distinctBy { it.tag }.take(if (heapMb(app) <= LOW_HEAP_MB) 1 else MAX_TOGETHER - 1)
+        if (next.map { it.tag } == secondaryPacks.map { it.tag }) return false
         TypingEngine.unloadSecondary()
-        secondaryPack = next
-        if (next == null) { android.util.Log.i("DogBoardPerf", "second language: none"); return true }
-        val t0 = android.os.SystemClock.uptimeMillis()
-        runCatching {
-            val rules = runCatching { next.open("rules")?.bufferedReader()?.use { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(it.readText()) } }.getOrNull()
-                ?: io.github.sillypuppyy.dogboard.engine.LanguageRules()
-            TypingEngine.loadSecondary(
-                openLexicon = { (next.open("lexicon") ?: error("${next.tag}: no lexicon")).bufferedReader() },
-                openBigrams = next.open("bigrams")?.let { s -> s.close(); { next.open("bigrams")!!.bufferedReader() } },
-                snapshotDir = dataDir(app, next),
-                snapshotKey = snapshotKey(app, next),
-                openShipped = { name -> shippedSnapshot(app, next, name) },
-                rules = rules,
-                // the trigram only where the heap has room for two languages' (M8 measures the phone)
-                ngrams = if (heapMb(app) > LOW_HEAP_MB) loadNgrams(app, next) else null,
-                letters = runCatching { next.open("charlm")?.use { CharModel.read(it) } }.getOrNull(),
-            )
-        }.onFailure { secondaryPack = null; android.util.Log.w("DogBoardPerf", "second language ${next.tag} failed: ${it.javaClass.simpleName}") }
-        android.util.Log.i("DogBoardPerf", "second language ${next.tag} loaded after ${android.os.SystemClock.uptimeMillis() - t0} ms")
-        nativeMark("second language")
+        secondaryPacks = emptyList()
+        if (next.isEmpty()) { android.util.Log.i("DogBoardPerf", "second language: none"); return true }
+        System.gc() // the languages that went before the new ones are read
+        for (p in next) {
+            val t0 = android.os.SystemClock.uptimeMillis()
+            runCatching {
+                val rules = runCatching { p.open("rules")?.bufferedReader()?.use { io.github.sillypuppyy.dogboard.engine.LanguageRules.parse(it.readText()) } }.getOrNull()
+                    ?: io.github.sillypuppyy.dogboard.engine.LanguageRules()
+                TypingEngine.loadSecondary(
+                    openLexicon = { (p.open("lexicon") ?: error("${p.tag}: no lexicon")).bufferedReader() },
+                    openBigrams = p.open("bigrams")?.let { s -> s.close(); { p.open("bigrams")!!.bufferedReader() } },
+                    snapshotDir = dataDir(app, p),
+                    snapshotKey = snapshotKey(app, p),
+                    openShipped = { name -> shippedSnapshot(app, p, name) },
+                    rules = rules,
+                    // the trigram only where the heap has room for more than one language's (M8 measures the phone)
+                    ngrams = if (heapMb(app) > LOW_HEAP_MB) loadNgrams(app, p) else null,
+                    letters = runCatching { p.open("charlm")?.use { CharModel.read(it) } }.getOrNull(),
+                )
+                secondaryPacks = secondaryPacks + p
+                android.util.Log.i("DogBoardPerf", "second language ${p.tag} loaded after ${android.os.SystemClock.uptimeMillis() - t0} ms")
+            }.onFailure { android.util.Log.w("DogBoardPerf", "second language ${p.tag} failed: ${it.javaClass.simpleName}") }
+            nativeMark("second language")
+        }
         return true
     }
 
@@ -170,6 +176,9 @@ object EngineLoader {
      */
     /** Phones whose app heap is this small (2 GB devices) hold back the trigram on a first start. */
     private const val LOW_HEAP_MB = 128
+
+    /** Languages typed at once, the keyboard's own included (Gboard: 3; M4 measured what a third costs). */
+    const val MAX_TOGETHER = 3
 
     private fun heapMb(context: Context): Int =
         context.getSystemService(android.app.ActivityManager::class.java)?.memoryClass ?: Int.MAX_VALUE

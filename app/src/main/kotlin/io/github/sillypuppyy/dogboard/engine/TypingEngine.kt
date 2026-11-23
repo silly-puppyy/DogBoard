@@ -258,7 +258,7 @@ object TypingEngine {
         }
         loaded = engine
         // a second language loaded before this one was (re)built: its words count for this autocorrect again
-        secondary?.let { engine.autocorrect.otherLexicons = listOf(it.lexicon) }
+        engine.autocorrect.otherLexicons = secondaries.map { it.lexicon }
         ngramModel?.let { attachNgrams(it) }
         mark("rest")
         runCatching { android.util.Log.i("DogBoardPerf", "load stages: $stages") }
@@ -364,7 +364,7 @@ object TypingEngine {
                 return beam.mapNotNull { c -> lex.firstForm(c.node)?.let { it to total(c) } }
             }
             // a second language: the same path in its words, merged on the totals (as typed words)
-            (spelled(engine) + (secondary?.let { spelled(it) }.orEmpty())).sortedByDescending { it.second }.map { it.first }
+            (spelled(engine) + secondaries.flatMap { spelled(it) }).sortedByDescending { it.second }.map { it.first }
                 .filter { it.lowercase() !in blocked }.distinct().take(top)
                 .also { lastSwipeTiming = "network ${(t1 - t0) / 1_000_000} ms, search ${(System.nanoTime() - t1) / 1_000_000} ms, ${f.size / 4} steps" }
         }
@@ -392,7 +392,7 @@ object TypingEngine {
      * candidates merged on their scores (plain merging: the fewest wrong corrections on three measured pairs); a word of
      * either language counts as a word (Autocorrect.otherLexicons). Null: one language.
      */
-    @Volatile private var secondary: Loaded? = null
+    @Volatile private var secondaries: List<Loaded> = emptyList()
 
     /**
      * A language's words and word pairs: from its binary snapshot (per app version) when there is one, else the one
@@ -441,7 +441,7 @@ object TypingEngine {
     }
 
     /** Whether a second language is loaded. */
-    val hasSecondary: Boolean get() = secondary != null
+    val hasSecondary: Boolean get() = secondaries.isNotEmpty()
 
     /** Loads the second language from its pack's parts (as [load], without the user's files: those are the first's). */
     fun loadSecondary(
@@ -464,13 +464,14 @@ object TypingEngine {
         sec.decoder.unknownWords = letters
         sec.decoder.beamWidth = beam
         lock.write {
-            secondary = sec
-            loaded?.autocorrect?.otherLexicons = listOf(lexicon)
+            secondaries = secondaries + sec
+            loaded?.autocorrect?.otherLexicons = secondaries.map { it.lexicon }
         }
     }
 
+    /** Back to one language: every language loaded beside the first goes. */
     fun unloadSecondary() = lock.write {
-        secondary = null
+        secondaries = emptyList()
         loaded?.autocorrect?.otherLexicons = emptyList()
     }
 
@@ -776,14 +777,14 @@ object TypingEngine {
                 previous2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2),
             )
             // a second language: the same taps in its words and its context (the personal model is the first's)
-            val second = secondary?.let { sec ->
+            val others = secondaries.flatMap { sec ->
                 sec.decoder.decode(
                     taps, personalOffsets.apply(word.keys), word.params!!, want,
                     previous = sec.contextId(previous), typed = word.decoderText,
                     previous2 = if (previous == null || previous == Bigrams.START) -1 else sec.contextId(previous2),
                 )
-            }.orEmpty()
-            mergeLanguages(first, second)
+            }
+            mergeLanguages(first, others)
                 .let { withTypedApostrophes(word, it) }
                 .let { decoded -> withSpellings(word, decoded) { shortTaps, shortTyped ->
                     engine.decoder.decode(
@@ -859,7 +860,7 @@ object TypingEngine {
         val engine = loaded ?: return null
         // one language's model would rank the other's words down: off while a second language is typed (until every
         // language of the entry has one, notes/design/multilingual.md)
-        val lm = neuralLm?.takeIf { decoded.size > 1 && secondary == null } ?: return null
+        val lm = neuralLm?.takeIf { decoded.size > 1 && secondaries.isEmpty() } ?: return null
         val t0 = System.nanoTime()
         val scores = runCatching { tallySteps(lm, "refine") {
             lm.wordScores(textBefore, decoded.map { it.word }, maxSteps = NEURAL_REFINE_STEPS, deadlineNanos = t0 + NEURAL_REFINE_MS * 1_000_000)
@@ -896,7 +897,7 @@ object TypingEngine {
      * in another context than the current word's: call it off the main thread, after the refinement.
      */
     fun retroNeuralScores(previousDecoded: List<Candidate>, current: List<Candidate>, textBeforePrevious: String): Map<String, Double>? {
-        val lm = neuralLm?.takeIf { secondary == null } ?: return null
+        val lm = neuralLm?.takeIf { secondaries.isEmpty() } ?: return null
         val phrases = retroPairs(previousDecoded, current).map { (p, c) -> "${p.word} ${c.word}" }.distinct()
         if (phrases.size < 2) return null
         val t0 = System.nanoTime()
@@ -1003,7 +1004,7 @@ object TypingEngine {
      * without the model.
      */
     fun hindsightFix(before: String, typed: String, after: String): Pair<String, Double>? {
-        val lm = neuralLm?.takeIf { secondary == null } ?: return null
+        val lm = neuralLm?.takeIf { secondaries.isEmpty() } ?: return null
         val cands = hindsightCandidates(typed)
         if (cands.isEmpty()) return null
         val phrases = listOf("$typed $after") + cands.keys.map { "$it $after" }
@@ -1074,8 +1075,8 @@ object TypingEngine {
             val d = engine.retroDecoder
             // the look back weighs words with the first language's pairs: around a word only the second language knows
             // it would turn that word into the first's, so it stays out (until it has both languages' context)
-            val sec = secondary
-            fun secondOnly(w: String?) = sec != null && w != null && !engine.lexicon.contains(w) && sec.lexicon.contains(w)
+            val secs = secondaries
+            fun secondOnly(w: String?) = w != null && !engine.lexicon.contains(w) && secs.any { it.lexicon.contains(w) }
             if (secondOnly(previousCommitted) || secondOnly(previous.text) || secondOnly(currentCandidates?.firstOrNull()?.word)) return@read null
             // a typed word the lexicon knows isn't turned into itself plus a letter ("the" -> "they"):
             // the decoder reads a skipped last key as a typo fix for autocorrect's missing-last-letter fix

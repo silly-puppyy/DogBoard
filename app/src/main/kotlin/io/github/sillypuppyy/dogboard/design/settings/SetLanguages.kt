@@ -46,10 +46,14 @@ data class LangRow(
     val id: Long, val name: String, val native: String?, val layout: String, val swipe: Boolean, val active: Boolean,
     /** Its dictionary is on its way (PackDownloadQueue): until then it types with its layout, without suggestions. */
     val gettingDictionary: Boolean = false,
-    /** The language typed together with this one (both suggested and corrected at once), by name; null: alone. */
-    val together: String? = null,
+    /** The languages typed together with this one (all suggested and corrected at once), by name; empty: alone. */
+    val together: List<String> = emptyList(),
+    /** Their tags, in order. */
+    val togetherTags: List<String> = emptyList(),
     /** What it can be typed together with: the other added languages with a dictionary in the same alphabet (tag, name). */
     val togetherChoices: List<Pair<String, String>> = emptyList(),
+    /** How many languages can be typed at once, this one included. */
+    val togetherMax: Int = 3,
 )
 
 /**
@@ -77,8 +81,8 @@ fun SetLanguages(
     langs: List<LangRow>, packs: List<LangPack>, layoutsFor: (String) -> List<LayoutChoice>,
     onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit, onAdd: (tag: String, layouts: List<String>) -> Unit,
     onBack: () -> Unit,
-    /** Types the entry together with the language [tag] (null: alone). */
-    onTogether: (id: Long, tag: String?) -> Unit = { _, _ -> },
+    /** Types the entry together with the languages [tags] (empty: alone). */
+    onTogether: (id: Long, tags: List<String>) -> Unit = { _, _ -> },
 ) {
     // null: your languages; "": Add a language; a tag: that language's layouts
     var page by remember { mutableStateOf<String?>(null) }
@@ -123,7 +127,7 @@ private fun TitleBar(title: String, onBack: () -> Unit, subtitle: String? = null
 }
 
 @Composable
-private fun LanguageRow(l: LangRow, removable: Boolean, onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit, onTogether: (Long, String?) -> Unit) {
+private fun LanguageRow(l: LangRow, removable: Boolean, onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit, onTogether: (Long, List<String>) -> Unit) {
     var menu by remember { mutableStateOf(false) }
     var together by remember { mutableStateOf(false) }
     Row(
@@ -143,7 +147,7 @@ private fun LanguageRow(l: LangRow, removable: Boolean, onUse: (Long) -> Unit, o
                 if (l.gettingDictionary) OutlineChip("Getting dictionary")
                 else Chip(if (l.swipe) "Swipe typing" else "Taps only")
             }
-            if (l.together != null) DText("Typed together with ${l.together}", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
+            if (l.together.isNotEmpty()) DText("Typed together with " + l.together.joinToString(" and "), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
         }
         if (l.active) Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant, Modifier.padding(end = 12.dp))
         if (removable) Box {
@@ -151,11 +155,17 @@ private fun LanguageRow(l: LangRow, removable: Boolean, onUse: (Long) -> Unit, o
             SetMenu(menu, { menu = false }, listOfNotNull(
                 ("Use this language" to { onUse(l.id) }).takeIf { !l.active }, "Layout" to onLayout,
                 // Gboard's multilingual typing: words of both languages suggested and corrected without switching
-                ("Type together with…" to { together = true }).takeIf { l.togetherChoices.isNotEmpty() || l.together != null },
+                ("Type together with…" to { together = true }).takeIf { l.togetherChoices.isNotEmpty() || l.together.isNotEmpty() },
                 "Remove" to { onRemove(l.id) },
             ))
+            // each choice adds or removes that language (ticked when on); a full set swaps out the one added first
             SetMenu(together, { together = false },
-                listOf("${l.name} only" to { onTogether(l.id, null) }) + l.togetherChoices.map { (tag, name) -> name to { onTogether(l.id, tag) } })
+                listOf("${l.name} only" to { onTogether(l.id, emptyList()) }) + l.togetherChoices.map { (tag, name) ->
+                    val on = tag in l.togetherTags
+                    (if (on) "✓ $name" else name) to {
+                        onTogether(l.id, if (on) l.togetherTags - tag else (l.togetherTags + tag).takeLast(l.togetherMax - 1))
+                    }
+                })
         }
     }
 }

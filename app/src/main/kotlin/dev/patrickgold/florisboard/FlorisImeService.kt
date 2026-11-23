@@ -339,7 +339,7 @@ class FlorisImeService : LifecycleInputMethodService() {
                     ?.let { prefs.keyboard.layoutId.set(it) }
                 val switched = io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag)
                 // a language typed together with this one ("Type together with"): both decoded, candidates merged
-                val second = io.github.sillypuppyy.dogboard.ime.EngineLoader.setSecondary(this@FlorisImeService, active.secondaryLocales.firstOrNull()?.languageTag())
+                val second = io.github.sillypuppyy.dogboard.ime.EngineLoader.setSecondaries(this@FlorisImeService, active.secondaryLocales.map { it.languageTag() })
                 if (switched || second) imeController.updateState { refreshSuggestions() }
             }
         }

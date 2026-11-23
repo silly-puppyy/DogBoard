@@ -366,8 +366,8 @@ class ImeController(
             // the entry's second language: its letters this layout lacks on long-presses
             extraLetters = runCatching {
                 dev.patrickgold.florisboard.ime.core.SubtypeJsonConfig.decodeFromString<List<dev.patrickgold.florisboard.ime.core.Subtype>>(values[12] as String)
-                    .firstOrNull { it.id == values[14] as Long }?.secondaryLocales?.firstOrNull()?.language
-            }.getOrNull().let { io.github.sillypuppyy.dogboard.ime.ExtraLetters.forEntry(values[13] as String, it) },
+                    .firstOrNull { it.id == values[14] as Long }?.secondaryLocales?.map { it.language }
+            }.getOrNull().orEmpty().let { io.github.sillypuppyy.dogboard.ime.ExtraLetters.forEntry(values[13] as String, it) },
         )
     }.stateIn(scope, SharingStarted.Eagerly, TouchModelOptions.Default)
 

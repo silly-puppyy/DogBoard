@@ -36,6 +36,11 @@ class SecondLanguageTest : FunSpec({
             // the look back leaves a word of the second language alone
             val prev = typed("perro"); val cur = typed("is")
             TypingEngine.retrocorrection(prev, "perro", null, cur, previousCandidates = TypingEngine.candidates(prev, null), currentCandidates = TypingEngine.candidates(cur, "perro")) shouldBe null
+            // a third language: its words count too, the second's stay
+            (finished("boulangeroe") == "boulangerie") shouldBe false // not yet: no language has it
+            TypingEngine.loadSecondary(Lexicon.parse("#dogboard-lexicon 1\nboulangerie\t4000\n".reader().buffered()), null, LanguageRules(), null, null)
+            finished("boulangeroe") shouldBe "boulangerie"
+            finished("desayubo") shouldBe "desayuno"
             TypingEngine.unloadSecondary()
             TypingEngine.hasSecondary shouldBe false
         } finally {

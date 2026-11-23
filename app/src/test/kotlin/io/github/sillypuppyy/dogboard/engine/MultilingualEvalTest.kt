@@ -17,6 +17,8 @@ import java.io.File
 class MultilingualEvalTest : FunSpec({
     val a = System.getenv("DOGBOARD_ML_A")?.split(':')
     val b = System.getenv("DOGBOARD_ML_B")?.split(':')
+    // a third language typed together with both (M4): what it costs on a two-language set
+    val c3 = System.getenv("DOGBOARD_ML_C")?.split(':')
     val set = System.getenv("DOGBOARD_ML_SET")?.let(::File)?.takeIf { File(it, "mixed-typos.tsv").isFile }
 
     class Lang(val dir: String, val tag: String) {
@@ -32,6 +34,7 @@ class MultilingualEvalTest : FunSpec({
 
     test("two languages typed together").config(enabled = a != null && b != null && set != null, timeout = kotlin.time.Duration.parse("2h")) {
         val la = Lang(a!![0], a[1]); val lb = Lang(b!![0], b[1])
+        val lc = c3?.let { Lang(it[0], it[1]) }
         val union = File(set!!, "union.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
         val rows = System.getenv("DOGBOARD_ROWS")?.split(',')?.let { rs -> LetterRows(rs, rs.mapIndexed { i, r -> if (i == 2) 1.28f + 0.2133f else (10 - r.length) / 2f }) } ?: LetterRows()
         val keys = QwertyGeometry.letterKeys(375f, 216f, rows)
@@ -188,7 +191,7 @@ class MultilingualEvalTest : FunSpec({
         val errors = System.getenv("DOGBOARD_ML_ERRORS")?.let { File(it).printWriter() }
         val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
             (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList()) +
-            priorWeights.map { "matrix prior b=$it" } + listOf("merged two lists", "ios")
+            priorWeights.map { "matrix prior b=$it" } + listOf("merged two lists", "ios") + listOfNotNull(lc?.let { "plus ${it.tag}" })
         val results = modes.associateWith { mutableListOf<Out>() }
         for (kind in listOf("typos", "controls")) {
             val rowsIn = File(set, "mixed-$kind.tsv").readLines().map { it.split('\t') }.filter { it.size >= 7 }.take(n)
@@ -218,6 +221,12 @@ class MultilingualEvalTest : FunSpec({
                 }
                 // as the app does it: the first language's Autocorrect, told about the second's word list (no union list)
                 results.getValue("merged two lists").add(Out(lang, since, typo, judge(Autocorrect(la.lexicon).also { it.otherLexicons = listOf(lb.lexicon) }.correction(typed, merged(ca, cb, 1.0)) ?: typed)))
+                if (lc != null) {
+                    // the app with three: every language's candidates merged, each word list known to autocorrect
+                    val cc = decode(lc, typed, taps, before)
+                    val got = Autocorrect(la.lexicon).also { it.otherLexicons = listOf(lb.lexicon, lc.lexicon) }.correction(typed, merged(merged(ca, cb, 1.0), cc, 1.0)) ?: typed
+                    results.getValue("plus ${lc.tag}").add(Out(lang, since, typo, judge(got)))
+                }
                 results.getValue("ios").add(Out(lang, since, typo, judge(Autocorrect(la.lexicon).also { it.otherLexicons = listOf(lb.lexicon) }.correction(typed, iosMerged(ca, cb, before)) ?: typed)))
                 for (bt in priorWeights) results.getValue("matrix prior b=$bt").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, withPrior(ca, cb, before, bt)) ?: typed)))
                 if (langid != null) {

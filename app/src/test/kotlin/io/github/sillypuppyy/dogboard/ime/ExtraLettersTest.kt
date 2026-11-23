@@ -11,8 +11,11 @@ class ExtraLettersTest : FunSpec({
         ExtraLetters.forEntry("qwerty-en", "es") shouldBe mapOf("n" to listOf("ñ"))
         ExtraLetters.forEntry("qwerty-en", "fi") shouldBe mapOf("a" to listOf("å", "ä"), "o" to listOf("ö"))
     }
+    test("two languages beside English: both sets of letters, each once") {
+        ExtraLetters.forEntry("qwerty-en", listOf("es", "fi")) shouldBe mapOf("n" to listOf("ñ"), "a" to listOf("å", "ä"), "o" to listOf("ö"))
+    }
     test("nothing without a second language, or when the layout has every letter") {
-        ExtraLetters.forEntry("qwerty-en", null) shouldBe emptyMap()
+        ExtraLetters.forEntry("qwerty-en", null as String?) shouldBe emptyMap()
         ExtraLetters.forEntry("qwerty-es", "en") shouldBe emptyMap()
     }
 })

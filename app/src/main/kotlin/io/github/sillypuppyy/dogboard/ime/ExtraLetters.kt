@@ -20,6 +20,13 @@ object ExtraLetters {
     private fun base(c: Char): Char =
         Normalizer.normalize(c.toString(), Normalizer.Form.NFD).firstOrNull()?.takeIf { it != c && it.isLetter() } ?: c
 
+    /** [forEntry] for every language typed together with the layout's, each letter once per key. */
+    fun forEntry(layoutId: String, others: List<String>): Map<String, List<String>> =
+        others.map { forEntry(layoutId, it) }.fold(LinkedHashMap<String, List<String>>()) { acc, m ->
+            for ((k, v) in m) acc[k] = ((acc[k] ?: emptyList()) + v).distinct()
+            acc
+        }
+
     /**
      * For the layout [layoutId] typing [second] too: host letter -> the letters to add to its long-press. Letters the
      * layout has, or with no key to go on, are left out. Empty for no second language or no layout of its own.
