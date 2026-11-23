@@ -63,4 +63,12 @@ class LinkInfoTest : FunSpec({
     test("the first link in a text") {
         LinkInfo.linkIn("look https://vm.tiktok.com/ZM123/ ok") shouldBe "https://vm.tiktok.com/ZM123/"
     }
+    test("Discord invite codes, Claude artifact links") {
+        LinkInfo.discordInviteCode("https://discord.gg/discord-developers") shouldBe "discord-developers"
+        LinkInfo.discordInviteCode("https://discord.com/invite/AbC123?event=1") shouldBe "AbC123"
+        LinkInfo.discordInviteCode("https://discord.com/channels/1/2") shouldBe null
+        LinkInfo.isClaudeArtifact("https://claude.ai/artifact/YAzgKHm2Txz7U3anHW3vuX") shouldBe true
+        LinkInfo.isClaudeArtifact("https://claude.ai/code/artifact/fc7089a1-fc59-4917-b1aa-f1ec6b65313a") shouldBe true
+        LinkInfo.isClaudeArtifact("https://claude.ai/chat/123") shouldBe false
+    }
 })

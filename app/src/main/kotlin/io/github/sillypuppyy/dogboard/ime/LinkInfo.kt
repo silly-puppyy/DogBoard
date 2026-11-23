@@ -36,7 +36,7 @@ object LinkInfo {
     )
 
     /** 3: short links followed first, platform oEmbed endpoints, TikTok's page data, PNG icons (2026-11-21: TikTok showed its generic page title). */
-    private const val VERSION = 3
+    private const val VERSION = 4 // Discord invites, Claude artifacts (2026-11-24)
 
     private val json = Json { ignoreUnknownKeys = true }
     private val infos = ConcurrentHashMap<String, Info>()
@@ -131,8 +131,21 @@ object LinkInfo {
         }
         // the platforms' own oEmbed answers (title or post text, author, frame); the page for the rest
         oembedFor(page)?.let(::fromOembed)
-        // 1 MB: video pages put the length late (YouTube's at ~650 KB, 2026-11-20)
-        val html = read(page, 1024 * 1024, ua)
+        // a Discord invite: the server's name, size, banner and icon from Discord's public invite endpoint
+        var serverIcon: String? = null
+        val invite = discordInviteCode(link) ?: discordInviteCode(page)
+        if (invite != null) runCatching {
+            val obj = json.parseToJsonElement(read("https://discord.com/api/v10/invites/$invite?with_counts=true", 64 * 1024) ?: return@runCatching) as kotlinx.serialization.json.JsonObject
+            fun str(o: kotlinx.serialization.json.JsonElement?, k: String) = ((o as? kotlinx.serialization.json.JsonObject)?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+            val g = obj["guild"]; val id = str(g, "id") ?: return@runCatching
+            title = str(g, "name")
+            val members = (obj["approximate_member_count"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull()
+            site = "Discord" + (members?.let { ", " + java.text.NumberFormat.getIntegerInstance().format(it) + " members" } ?: "")
+            image = str(g, "banner")?.let { "https://cdn.discordapp.com/banners/$id/$it.png?size=480" } ?: str(g, "splash")?.let { "https://cdn.discordapp.com/splashes/$id/$it.png?size=480" }
+            serverIcon = str(g, "icon")?.let { "https://cdn.discordapp.com/icons/$id/$it.png?size=128" }
+        }
+        // 1 MB: video pages put the length late (YouTube's at ~650 KB, 2026-11-20); a Discord invite needs no page
+        val html = if (invite != null && title != null) null else read(page, 1024 * 1024, ua)
         // TikTok: its oEmbed now answers with the player only; the page's own data has the caption
         if (tiktok && html != null) tiktokItem(html)?.let { v ->
             title = v.caption ?: title; site = v.author ?: site; image = v.cover ?: image; duration = v.seconds ?: duration
@@ -148,10 +161,12 @@ object LinkInfo {
                 ?: Regex("""itemprop=["']duration["'][^>]*content=["']([^"']+)""").find(html)?.groupValues?.get(1)?.let(::isoSeconds)
                 ?: Regex(""""lengthSeconds":"(\d+)"""").find(html)?.groupValues?.get(1)?.toIntOrNull()
         }
+        // a Claude artifact shows only Claude's generic page to someone signed out: name it, without the logo as a banner
+        if (isClaudeArtifact(page)) { title = "Claude artifact"; site = "Claude"; image = null }
         val key = Integer.toHexString(info.url.hashCode())
         val banner = image?.let { runCatching { URL(URL(page), it).toString() }.getOrNull() }?.let { saveImage(it, "$key.jpg", 480) }
         // the page's icons, PNG ones first (a .ico doesn't decode everywhere), then the real host's favicon.ico
-        val icons = (html?.let { iconHrefs(it.substringBefore("</head>")) }.orEmpty().mapNotNull { runCatching { URL(URL(page), it).toString() }.getOrNull() } +
+        val icons = (listOfNotNull(serverIcon) + html?.let { iconHrefs(it.substringBefore("</head>")) }.orEmpty().mapNotNull { runCatching { URL(URL(page), it).toString() }.getOrNull() } +
             "https://${URL(page).host}/favicon.ico").distinct()
         val icon = icons.asSequence().take(4).mapNotNull { saveImage(it, "$key-icon.png", 128) }.firstOrNull()
         return info.copy(title = title?.take(200), site = site?.take(80), duration = duration, image = banner, icon = icon, previews = true, version = VERSION)
@@ -241,6 +256,24 @@ object LinkInfo {
             .toList()
 
     /** The platform's public oEmbed endpoint for [page] (no key needed), or null. */
+    /** The code of a Discord invite link (discord.gg/abc, discord.com/invite/abc), or null. */
+    internal fun discordInviteCode(url: String): String? {
+        val u = runCatching { URL(url) }.getOrNull() ?: return null
+        val host = u.host.lowercase().removePrefix("www.")
+        val path = u.path.trim('/').split('/')
+        val code = when {
+            host == "discord.gg" -> path.firstOrNull()
+            (host == "discord.com" || host == "discordapp.com") && path.firstOrNull() == "invite" -> path.getOrNull(1)
+            else -> null
+        }
+        return code?.takeIf { Regex("[A-Za-z0-9-]{2,40}").matches(it) }
+    }
+
+    /** A link to a Claude artifact (claude.ai/artifact/..., claude.ai/code/artifact/..., claude.ai/public/artifacts/...). */
+    internal fun isClaudeArtifact(url: String): Boolean = runCatching {
+        val u = URL(url); u.host.lowercase().removePrefix("www.") == "claude.ai" && Regex("/(artifact|artifacts)/").containsMatchIn(u.path)
+    }.getOrDefault(false)
+
     internal fun oembedFor(page: String): String? {
         val host = runCatching { URL(page).host.lowercase().removePrefix("www.").removePrefix("m.").removePrefix("mobile.") }.getOrNull() ?: return null
         val u = java.net.URLEncoder.encode(page, "UTF-8")
