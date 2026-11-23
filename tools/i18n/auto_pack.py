@@ -65,8 +65,9 @@ LANGS = {
     'cs': dict(name='Czech', leipzig=['ces_news_2024_1M', 'ces_news_2022_1M', 'ces_wikipedia_2021_1M'], tatoeba='ces',
                layout=('gboard', 'qwertz'), script='Latn', compounds=False),
     'ka': dict(name='Georgian', leipzig=['kat-ge_web_2019_1M'], tatoeba='kat',
-               # the standard Georgian layout (Gboard's default, FlorisBoard's georgian_standard): all 33 letters on
-               # the base plane; iOS's phonetic one puts 7 letters (ჭ ღ თ შ ჟ ძ ჩ) on Shift, which the rows can't hold
+               # the standard Georgian layout (FlorisBoard's georgian_standard): all 33 letters on the base plane. Gboard's
+               # default is the phonetic georgian_qwerty (its languages.json, checked 2026-11-23), as iOS's, with 7
+               # letters (ჭ ღ თ შ ჟ ძ ჩ) on Shift, which the rows can't hold: an open question for the user
                layout=('gboard', 'georgian_georgia'), script='Geor', compounds=False),
     'ar': dict(name='Arabic', leipzig=['ara_news_2022_1M', 'ara_wikipedia_2021_1M'], tatoeba='ara',
                layout=('gboard', 'arabic'), script='Arab', compounds=False, rtl=True),
