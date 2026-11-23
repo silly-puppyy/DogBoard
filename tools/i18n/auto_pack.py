@@ -55,7 +55,8 @@ LANGS = {
     # the hand-built French pack's typography rules carried over (fr/rules.json)
     'fr': dict(name='French', leipzig=['fra_news_2024_1M', 'fra_news_2023_1M', 'fra_wikipedia_2021_1M'], tatoeba='fra',
                layout=('gboard', 'azerty'), gboard_tag='fr-FR', script='Latn', compounds=False,
-               rules_extra={'space_before_marks': '?!:;', 'quotes': '«»‘’’', 'double_space': '. '}),
+               rules_extra={'space_before_marks': '?!:;', 'quotes': '«»‘’’', 'double_space': '. '},
+               hunspell=('fr', 'Dicollecte, MPL 2.0'), elision='l,d,j,m,t,s,c,n,qu,jusqu,lorsqu,puisqu'),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
@@ -193,6 +194,20 @@ class Pack:
         args += ['--min-corpus-form', os.environ.get('MIN_CORPUS_FORM', '3')]
         src = (f'wordfreq 3.1.1 (CC BY-SA 4.0) attested in ' if os.path.exists(wf) else 'counts of ') + \
               f'Leipzig {self.cfg["name"]} corpora (CC BY 4.0)'
+        # a Hunspell dictionary (wooorm/dictionaries layout: <dir>/index.dic + .aff) adds every inflection it accepts: the
+        # hand-built French list (519k words) beat a corpus-only one (201k: more wrong corrections, rare forms missing)
+        if self.cfg.get('hunspell'):
+            hdir, licence = self.cfg['hunspell']
+            args += ['--hunspell', f'{DATA}/hunspell/{hdir}/index']
+            src = f'Hunspell {hdir} ({licence}), ' + src
+        # elided forms as words (French l', d', qu'...): from the training text's counts
+        if self.cfg.get('elision'):
+            uni = self.p(f'{self.lang}.unigrams.tsv')
+            if not os.path.exists(uni):
+                c = Counter(w for line in open(self.p('train.txt'), encoding='utf-8') for w in line.split())
+                with open(uni, 'w', encoding='utf-8') as f:
+                    for w, n in c.most_common(): f.write(f'{w}\t{n}\n')
+            args += ['--elision', self.cfg['elision'], '--unigrams', uni]
         cmd = ['taskset', '-c', CPU, 'nice', WF_PY if os.path.exists(WF_PY) else sys.executable, '-I',
                f'{REPO}/tools/data/build_lexicon_hunspell.py', '--lang', self.lang] + args
         for f in self.corpus_files: cmd += ['--corpus', f]
