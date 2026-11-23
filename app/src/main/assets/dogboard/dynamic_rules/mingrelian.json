@@ -1,0 +1,96 @@
+{
+ "script": "mingrelian",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "ʒʒ",
+   "text": "ʒ̆",
+   "label": "ʒ̆"
+  },
+  {
+   "pattern": "ƷƷ",
+   "text": "Ʒ̆",
+   "label": "Ʒ̆"
+  },
+  {
+   "pattern": "Ʒʒ",
+   "text": "Ʒ̆",
+   "label": "Ʒ̆"
+  },
+  {
+   "pattern": "kk",
+   "text": "k̆",
+   "label": "k̆"
+  },
+  {
+   "pattern": "KK",
+   "text": "K̆",
+   "label": "K̆"
+  },
+  {
+   "pattern": "Kk",
+   "text": "K̆",
+   "label": "K̆"
+  },
+  {
+   "pattern": "pp",
+   "text": "p̆",
+   "label": "p̆"
+  },
+  {
+   "pattern": "PP",
+   "text": "P̆",
+   "label": "P̆"
+  },
+  {
+   "pattern": "Pp",
+   "text": "P̆",
+   "label": "P̆"
+  },
+  {
+   "pattern": "tt",
+   "text": "t̆",
+   "label": "t̆"
+  },
+  {
+   "pattern": "TT",
+   "text": "T̆",
+   "label": "T̆"
+  },
+  {
+   "pattern": "Tt",
+   "text": "T̆",
+   "label": "T̆"
+  },
+  {
+   "pattern": "zz",
+   "text": "z̆",
+   "label": "z̆"
+  },
+  {
+   "pattern": "ZZ",
+   "text": "Z̆",
+   "label": "Z̆"
+  },
+  {
+   "pattern": "Zz",
+   "text": "Z̆",
+   "label": "Z̆"
+  },
+  {
+   "pattern": "çç",
+   "text": "ç̆",
+   "label": "ç̆"
+  },
+  {
+   "pattern": "ÇÇ",
+   "text": "Ç̆",
+   "label": "Ç̆"
+  },
+  {
+   "pattern": "Çç",
+   "text": "Ç̆",
+   "label": "Ç̆"
+  }
+ ]
+}

@@ -58,6 +58,8 @@ def speller(rules):
 def main():
     pack, out = sys.argv[1], sys.argv[2]
     n = sys.argv[3] if len(sys.argv) > 3 else '2000'
+    if os.path.realpath(out) == os.path.realpath(pack):
+        sys.exit('OUT_DIR must differ from PACK_DIR: it gets its own key-typed word list and held-out text')
     os.makedirs(out, exist_ok=True)
     rules = json.load(open(f'{pack}/rules.json', encoding='utf-8'))
     spelled = speller(rules)

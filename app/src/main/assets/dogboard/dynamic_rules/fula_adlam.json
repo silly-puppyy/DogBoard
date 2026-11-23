@@ -1,0 +1,26 @@
+{
+ "script": "fula_adlam",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([𞤀𞤢])´",
+   "text": "$1𞥄",
+   "label": "$1𞥄"
+  },
+  {
+   "pattern": "([𞤉𞤋𞤌𞤓𞤫𞤭𞤮𞤵])´",
+   "text": "$1𞥅",
+   "label": "$1𞥅"
+  },
+  {
+   "pattern": "([𞤁-𞤈𞤊𞤍-𞤒𞤔-𞤡𞤣-𞤪𞤬𞤯-𞤴𞤶-𞥃])´",
+   "text": "$1𞥆",
+   "label": "$1𞥆"
+  },
+  {
+   "pattern": "´",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

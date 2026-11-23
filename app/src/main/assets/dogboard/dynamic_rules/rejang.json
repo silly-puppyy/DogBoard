@@ -1,0 +1,156 @@
+{
+ "script": "rejang",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([ꤰ-ꥆ])ꥇ",
+   "text": "$1ꥇ",
+   "label": "$1ꥇ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥈ",
+   "text": "$1ꥈ",
+   "label": "$1ꥈ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥉ",
+   "text": "$1ꥉ",
+   "label": "$1ꥉ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥊ",
+   "text": "$1ꥊ",
+   "label": "$1ꥊ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥋ",
+   "text": "$1ꥋ",
+   "label": "$1ꥋ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥌ",
+   "text": "$1ꥌ",
+   "label": "$1ꥌ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥍ",
+   "text": "$1ꥍ",
+   "label": "$1ꥍ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥎ",
+   "text": "$1ꥎ",
+   "label": "$1ꥎ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])꥓",
+   "text": "$1꥓",
+   "label": "$1꥓"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥏ",
+   "text": "$1ꥏ",
+   "label": "$1ꥏ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])([ꥇ-ꥎ]?)ꥏ",
+   "text": "$1$2ꥏ",
+   "label": "$1$2ꥏ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥐ",
+   "text": "$1ꥐ",
+   "label": "$1ꥐ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])([ꥇ-ꥎ]?)ꥐ",
+   "text": "$1$2ꥐ",
+   "label": "$1$2ꥐ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥑ",
+   "text": "$1ꥑ",
+   "label": "$1ꥑ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])([ꥇ-ꥎ]?)ꥑ",
+   "text": "$1$2ꥑ",
+   "label": "$1$2ꥑ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])ꥒ",
+   "text": "$1ꥒ",
+   "label": "$1ꥒ"
+  },
+  {
+   "pattern": "([ꤰ-ꥆ])([ꥇ-ꥎ]?)ꥒ",
+   "text": "$1$2ꥒ",
+   "label": "$1$2ꥒ"
+  },
+  {
+   "pattern": "ꥇ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥈ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥉ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥊ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥋ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥌ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥍ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥎ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "꥓",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥏ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥐ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥑ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꥒ",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

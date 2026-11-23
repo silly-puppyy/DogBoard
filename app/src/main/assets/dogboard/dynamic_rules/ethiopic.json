@@ -1,0 +1,1516 @@
+{
+ "script": "ethiopic",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "ህ",
+   "text": "ሀ",
+   "label": "ሀ"
+  },
+  {
+   "pattern": "ህ",
+   "text": "ሁ",
+   "label": "ሁ"
+  },
+  {
+   "pattern": "ህ",
+   "text": "ሂ",
+   "label": "ሂ"
+  },
+  {
+   "pattern": "ህ",
+   "text": "ሃ",
+   "label": "ሃ"
+  },
+  {
+   "pattern": "ህ",
+   "text": "ሄ",
+   "label": "ሄ"
+  },
+  {
+   "pattern": "ህ",
+   "text": "ሆ",
+   "label": "ሆ"
+  },
+  {
+   "pattern": "ህ",
+   "text": "ሇ",
+   "label": "ሇ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ለ",
+   "label": "ለ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ሉ",
+   "label": "ሉ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ሊ",
+   "label": "ሊ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ላ",
+   "label": "ላ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ሌ",
+   "label": "ሌ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ሎ",
+   "label": "ሎ"
+  },
+  {
+   "pattern": "ል",
+   "text": "ሏ",
+   "label": "ሏ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሐ",
+   "label": "ሐ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሑ",
+   "label": "ሑ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሒ",
+   "label": "ሒ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሓ",
+   "label": "ሓ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሔ",
+   "label": "ሔ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሖ",
+   "label": "ሖ"
+  },
+  {
+   "pattern": "ሕ",
+   "text": "ሗ",
+   "label": "ሗ"
+  },
+  {
+   "pattern": "ም",
+   "text": "መ",
+   "label": "መ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ሙ",
+   "label": "ሙ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ሚ",
+   "label": "ሚ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ማ",
+   "label": "ማ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ሜ",
+   "label": "ሜ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ሞ",
+   "label": "ሞ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ሟ",
+   "label": "ሟ"
+  },
+  {
+   "pattern": "ም",
+   "text": "ፙ",
+   "label": "ፙ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሠ",
+   "label": "ሠ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሡ",
+   "label": "ሡ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሢ",
+   "label": "ሢ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሣ",
+   "label": "ሣ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሤ",
+   "label": "ሤ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሦ",
+   "label": "ሦ"
+  },
+  {
+   "pattern": "ሥ",
+   "text": "ሧ",
+   "label": "ሧ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ረ",
+   "label": "ረ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ሩ",
+   "label": "ሩ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ሪ",
+   "label": "ሪ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ራ",
+   "label": "ራ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ሬ",
+   "label": "ሬ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ሮ",
+   "label": "ሮ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ሯ",
+   "label": "ሯ"
+  },
+  {
+   "pattern": "ር",
+   "text": "ፘ",
+   "label": "ፘ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሰ",
+   "label": "ሰ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሱ",
+   "label": "ሱ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሲ",
+   "label": "ሲ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሳ",
+   "label": "ሳ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሴ",
+   "label": "ሴ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሶ",
+   "label": "ሶ"
+  },
+  {
+   "pattern": "ስ",
+   "text": "ሷ",
+   "label": "ሷ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሸ",
+   "label": "ሸ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሹ",
+   "label": "ሹ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሺ",
+   "label": "ሺ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሻ",
+   "label": "ሻ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሼ",
+   "label": "ሼ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሾ",
+   "label": "ሾ"
+  },
+  {
+   "pattern": "ሽ",
+   "text": "ሿ",
+   "label": "ሿ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቀ",
+   "label": "ቀ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቁ",
+   "label": "ቁ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቂ",
+   "label": "ቂ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቃ",
+   "label": "ቃ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቄ",
+   "label": "ቄ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቆ",
+   "label": "ቆ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቇ",
+   "label": "ቇ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቈ",
+   "label": "ቈ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቊ",
+   "label": "ቊ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቋ",
+   "label": "ቋ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቌ",
+   "label": "ቌ"
+  },
+  {
+   "pattern": "ቅ",
+   "text": "ቍ",
+   "label": "ቍ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቐ",
+   "label": "ቐ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቑ",
+   "label": "ቑ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቒ",
+   "label": "ቒ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቓ",
+   "label": "ቓ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቔ",
+   "label": "ቔ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቖ",
+   "label": "ቖ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቘ",
+   "label": "ቘ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቚ",
+   "label": "ቚ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቛ",
+   "label": "ቛ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቜ",
+   "label": "ቜ"
+  },
+  {
+   "pattern": "ቕ",
+   "text": "ቝ",
+   "label": "ቝ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "በ",
+   "label": "በ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "ቡ",
+   "label": "ቡ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "ቢ",
+   "label": "ቢ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "ባ",
+   "label": "ባ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "ቤ",
+   "label": "ቤ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "ቦ",
+   "label": "ቦ"
+  },
+  {
+   "pattern": "ብ",
+   "text": "ቧ",
+   "label": "ቧ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቨ",
+   "label": "ቨ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቩ",
+   "label": "ቩ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቪ",
+   "label": "ቪ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቫ",
+   "label": "ቫ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቬ",
+   "label": "ቬ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቮ",
+   "label": "ቮ"
+  },
+  {
+   "pattern": "ቭ",
+   "text": "ቯ",
+   "label": "ቯ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ተ",
+   "label": "ተ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ቱ",
+   "label": "ቱ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ቲ",
+   "label": "ቲ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ታ",
+   "label": "ታ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ቴ",
+   "label": "ቴ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ቶ",
+   "label": "ቶ"
+  },
+  {
+   "pattern": "ት",
+   "text": "ቷ",
+   "label": "ቷ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቸ",
+   "label": "ቸ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቹ",
+   "label": "ቹ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቺ",
+   "label": "ቺ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቻ",
+   "label": "ቻ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቼ",
+   "label": "ቼ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቾ",
+   "label": "ቾ"
+  },
+  {
+   "pattern": "ች",
+   "text": "ቿ",
+   "label": "ቿ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኀ",
+   "label": "ኀ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኁ",
+   "label": "ኁ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኂ",
+   "label": "ኂ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኃ",
+   "label": "ኃ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኄ",
+   "label": "ኄ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኆ",
+   "label": "ኆ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኇ",
+   "label": "ኇ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኈ",
+   "label": "ኈ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኊ",
+   "label": "ኊ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኋ",
+   "label": "ኋ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኌ",
+   "label": "ኌ"
+  },
+  {
+   "pattern": "ኅ",
+   "text": "ኍ",
+   "label": "ኍ"
+  },
+  {
+   "pattern": "ን",
+   "text": "ነ",
+   "label": "ነ"
+  },
+  {
+   "pattern": "ን",
+   "text": "ኑ",
+   "label": "ኑ"
+  },
+  {
+   "pattern": "ን",
+   "text": "ኒ",
+   "label": "ኒ"
+  },
+  {
+   "pattern": "ን",
+   "text": "ና",
+   "label": "ና"
+  },
+  {
+   "pattern": "ን",
+   "text": "ኔ",
+   "label": "ኔ"
+  },
+  {
+   "pattern": "ን",
+   "text": "ኖ",
+   "label": "ኖ"
+  },
+  {
+   "pattern": "ን",
+   "text": "ኗ",
+   "label": "ኗ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኘ",
+   "label": "ኘ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኙ",
+   "label": "ኙ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኚ",
+   "label": "ኚ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኛ",
+   "label": "ኛ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኜ",
+   "label": "ኜ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኞ",
+   "label": "ኞ"
+  },
+  {
+   "pattern": "ኝ",
+   "text": "ኟ",
+   "label": "ኟ"
+  },
+  {
+   "pattern": "እ",
+   "text": "አ",
+   "label": "አ"
+  },
+  {
+   "pattern": "እ",
+   "text": "ኡ",
+   "label": "ኡ"
+  },
+  {
+   "pattern": "እ",
+   "text": "ኢ",
+   "label": "ኢ"
+  },
+  {
+   "pattern": "እ",
+   "text": "ኣ",
+   "label": "ኣ"
+  },
+  {
+   "pattern": "እ",
+   "text": "ኤ",
+   "label": "ኤ"
+  },
+  {
+   "pattern": "እ",
+   "text": "ኦ",
+   "label": "ኦ"
+  },
+  {
+   "pattern": "እ",
+   "text": "ኧ",
+   "label": "ኧ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ከ",
+   "label": "ከ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኩ",
+   "label": "ኩ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኪ",
+   "label": "ኪ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ካ",
+   "label": "ካ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኬ",
+   "label": "ኬ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኮ",
+   "label": "ኮ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኯ",
+   "label": "ኯ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኰ",
+   "label": "ኰ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኲ",
+   "label": "ኲ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኳ",
+   "label": "ኳ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኴ",
+   "label": "ኴ"
+  },
+  {
+   "pattern": "ክ",
+   "text": "ኵ",
+   "label": "ኵ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ኸ",
+   "label": "ኸ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ኹ",
+   "label": "ኹ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ኺ",
+   "label": "ኺ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ኻ",
+   "label": "ኻ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ኼ",
+   "label": "ኼ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ኾ",
+   "label": "ኾ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ዀ",
+   "label": "ዀ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ዂ",
+   "label": "ዂ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ዃ",
+   "label": "ዃ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ዄ",
+   "label": "ዄ"
+  },
+  {
+   "pattern": "ኽ",
+   "text": "ዅ",
+   "label": "ዅ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ወ",
+   "label": "ወ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ዉ",
+   "label": "ዉ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ዊ",
+   "label": "ዊ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ዋ",
+   "label": "ዋ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ዌ",
+   "label": "ዌ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ዎ",
+   "label": "ዎ"
+  },
+  {
+   "pattern": "ው",
+   "text": "ዏ",
+   "label": "ዏ"
+  },
+  {
+   "pattern": "ዕ",
+   "text": "ዐ",
+   "label": "ዐ"
+  },
+  {
+   "pattern": "ዕ",
+   "text": "ዑ",
+   "label": "ዑ"
+  },
+  {
+   "pattern": "ዕ",
+   "text": "ዒ",
+   "label": "ዒ"
+  },
+  {
+   "pattern": "ዕ",
+   "text": "ዓ",
+   "label": "ዓ"
+  },
+  {
+   "pattern": "ዕ",
+   "text": "ዔ",
+   "label": "ዔ"
+  },
+  {
+   "pattern": "ዕ",
+   "text": "ዖ",
+   "label": "ዖ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዘ",
+   "label": "ዘ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዙ",
+   "label": "ዙ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዚ",
+   "label": "ዚ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዛ",
+   "label": "ዛ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዜ",
+   "label": "ዜ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዞ",
+   "label": "ዞ"
+  },
+  {
+   "pattern": "ዝ",
+   "text": "ዟ",
+   "label": "ዟ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዠ",
+   "label": "ዠ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዡ",
+   "label": "ዡ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዢ",
+   "label": "ዢ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዣ",
+   "label": "ዣ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዤ",
+   "label": "ዤ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዦ",
+   "label": "ዦ"
+  },
+  {
+   "pattern": "ዥ",
+   "text": "ዧ",
+   "label": "ዧ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "የ",
+   "label": "የ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "ዩ",
+   "label": "ዩ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "ዪ",
+   "label": "ዪ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "ያ",
+   "label": "ያ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "ዬ",
+   "label": "ዬ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "ዮ",
+   "label": "ዮ"
+  },
+  {
+   "pattern": "ይ",
+   "text": "ዯ",
+   "label": "ዯ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ደ",
+   "label": "ደ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ዱ",
+   "label": "ዱ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ዲ",
+   "label": "ዲ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ዳ",
+   "label": "ዳ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ዴ",
+   "label": "ዴ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ዶ",
+   "label": "ዶ"
+  },
+  {
+   "pattern": "ድ",
+   "text": "ዷ",
+   "label": "ዷ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዸ",
+   "label": "ዸ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዹ",
+   "label": "ዹ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዺ",
+   "label": "ዺ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዻ",
+   "label": "ዻ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዼ",
+   "label": "ዼ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዾ",
+   "label": "ዾ"
+  },
+  {
+   "pattern": "ዽ",
+   "text": "ዿ",
+   "label": "ዿ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጀ",
+   "label": "ጀ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጁ",
+   "label": "ጁ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጂ",
+   "label": "ጂ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጃ",
+   "label": "ጃ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጄ",
+   "label": "ጄ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጆ",
+   "label": "ጆ"
+  },
+  {
+   "pattern": "ጅ",
+   "text": "ጇ",
+   "label": "ጇ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ገ",
+   "label": "ገ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጉ",
+   "label": "ጉ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጊ",
+   "label": "ጊ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጋ",
+   "label": "ጋ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጌ",
+   "label": "ጌ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጎ",
+   "label": "ጎ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጏ",
+   "label": "ጏ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጐ",
+   "label": "ጐ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጒ",
+   "label": "ጒ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጓ",
+   "label": "ጓ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጔ",
+   "label": "ጔ"
+  },
+  {
+   "pattern": "ግ",
+   "text": "ጕ",
+   "label": "ጕ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጘ",
+   "label": "ጘ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጙ",
+   "label": "ጙ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጚ",
+   "label": "ጚ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጛ",
+   "label": "ጛ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጜ",
+   "label": "ጜ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጞ",
+   "label": "ጞ"
+  },
+  {
+   "pattern": "ጝ",
+   "text": "ጟ",
+   "label": "ጟ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጠ",
+   "label": "ጠ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጡ",
+   "label": "ጡ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጢ",
+   "label": "ጢ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጣ",
+   "label": "ጣ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጤ",
+   "label": "ጤ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጦ",
+   "label": "ጦ"
+  },
+  {
+   "pattern": "ጥ",
+   "text": "ጧ",
+   "label": "ጧ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጨ",
+   "label": "ጨ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጩ",
+   "label": "ጩ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጪ",
+   "label": "ጪ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጫ",
+   "label": "ጫ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጬ",
+   "label": "ጬ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጮ",
+   "label": "ጮ"
+  },
+  {
+   "pattern": "ጭ",
+   "text": "ጯ",
+   "label": "ጯ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጰ",
+   "label": "ጰ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጱ",
+   "label": "ጱ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጲ",
+   "label": "ጲ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጳ",
+   "label": "ጳ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጴ",
+   "label": "ጴ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጶ",
+   "label": "ጶ"
+  },
+  {
+   "pattern": "ጵ",
+   "text": "ጷ",
+   "label": "ጷ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጸ",
+   "label": "ጸ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጹ",
+   "label": "ጹ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጺ",
+   "label": "ጺ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጻ",
+   "label": "ጻ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጼ",
+   "label": "ጼ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጾ",
+   "label": "ጾ"
+  },
+  {
+   "pattern": "ጽ",
+   "text": "ጿ",
+   "label": "ጿ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፀ",
+   "label": "ፀ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፁ",
+   "label": "ፁ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፂ",
+   "label": "ፂ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፃ",
+   "label": "ፃ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፄ",
+   "label": "ፄ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፆ",
+   "label": "ፆ"
+  },
+  {
+   "pattern": "ፅ",
+   "text": "ፇ",
+   "label": "ፇ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፈ",
+   "label": "ፈ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፉ",
+   "label": "ፉ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፊ",
+   "label": "ፊ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፋ",
+   "label": "ፋ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፌ",
+   "label": "ፌ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፎ",
+   "label": "ፎ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፏ",
+   "label": "ፏ"
+  },
+  {
+   "pattern": "ፍ",
+   "text": "ፚ",
+   "label": "ፚ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፐ",
+   "label": "ፐ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፑ",
+   "label": "ፑ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፒ",
+   "label": "ፒ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፓ",
+   "label": "ፓ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፔ",
+   "label": "ፔ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፖ",
+   "label": "ፖ"
+  },
+  {
+   "pattern": "ፕ",
+   "text": "ፗ",
+   "label": "ፗ"
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

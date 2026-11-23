@@ -1,0 +1,401 @@
+{
+ "script": "french_presto",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "Á",
+   "text": "À",
+   "label": "À"
+  },
+  {
+   "pattern": "À́",
+   "text": "Â",
+   "label": "Â"
+  },
+  {
+   "pattern": "Ấ",
+   "text": "Æ",
+   "label": "Æ"
+  },
+  {
+   "pattern": "Ǽ",
+   "text": "A",
+   "label": "A"
+  },
+  {
+   "pattern": "á",
+   "text": "à",
+   "label": "à"
+  },
+  {
+   "pattern": "à́",
+   "text": "â",
+   "label": "â"
+  },
+  {
+   "pattern": "ấ",
+   "text": "æ",
+   "label": "æ"
+  },
+  {
+   "pattern": "ǽ",
+   "text": "a",
+   "label": "a"
+  },
+  {
+   "pattern": "(^)Ć",
+   "text": "C'",
+   "label": "'"
+  },
+  {
+   "pattern": "(^)C'́",
+   "text": "Ç",
+   "label": "Ç"
+  },
+  {
+   "pattern": "(^)Ḉ",
+   "text": "C",
+   "label": "C"
+  },
+  {
+   "pattern": "(^)ć",
+   "text": "c'",
+   "label": "'"
+  },
+  {
+   "pattern": "(^)c'́",
+   "text": "ç",
+   "label": "ç"
+  },
+  {
+   "pattern": "(^)ḉ",
+   "text": "c",
+   "label": "c"
+  },
+  {
+   "pattern": "Ć",
+   "text": "Ç",
+   "label": "Ç"
+  },
+  {
+   "pattern": "Ḉ",
+   "text": "C'",
+   "label": "'"
+  },
+  {
+   "pattern": "ć",
+   "text": "ç",
+   "label": "ç"
+  },
+  {
+   "pattern": "ḉ",
+   "text": "c'",
+   "label": "'"
+  },
+  {
+   "pattern": "É",
+   "text": "É",
+   "label": "É"
+  },
+  {
+   "pattern": "É́",
+   "text": "È",
+   "label": "È"
+  },
+  {
+   "pattern": "È́",
+   "text": "Ê",
+   "label": "Ê"
+  },
+  {
+   "pattern": "Ế",
+   "text": "Ë",
+   "label": "Ë"
+  },
+  {
+   "pattern": "Ë́",
+   "text": "E",
+   "label": "E"
+  },
+  {
+   "pattern": "é",
+   "text": "é",
+   "label": "é"
+  },
+  {
+   "pattern": "é́",
+   "text": "è",
+   "label": "è"
+  },
+  {
+   "pattern": "è́",
+   "text": "ê",
+   "label": "ê"
+  },
+  {
+   "pattern": "ế",
+   "text": "ë",
+   "label": "ë"
+  },
+  {
+   "pattern": "ë́",
+   "text": "e",
+   "label": "e"
+  },
+  {
+   "pattern": "Í",
+   "text": "Î",
+   "label": "Î"
+  },
+  {
+   "pattern": "Î́",
+   "text": "Ï",
+   "label": "Ï"
+  },
+  {
+   "pattern": "Ḯ",
+   "text": "I",
+   "label": "I"
+  },
+  {
+   "pattern": "í",
+   "text": "î",
+   "label": "î"
+  },
+  {
+   "pattern": "î́",
+   "text": "ï",
+   "label": "ï"
+  },
+  {
+   "pattern": "ḯ",
+   "text": "i",
+   "label": "i"
+  },
+  {
+   "pattern": "Ó",
+   "text": "Ô",
+   "label": "Ô"
+  },
+  {
+   "pattern": "Ố",
+   "text": "Œ",
+   "label": "Œ"
+  },
+  {
+   "pattern": "Œ́",
+   "text": "O",
+   "label": "O"
+  },
+  {
+   "pattern": "ó",
+   "text": "ô",
+   "label": "ô"
+  },
+  {
+   "pattern": "ố",
+   "text": "œ",
+   "label": "œ"
+  },
+  {
+   "pattern": "œ́",
+   "text": "o",
+   "label": "o"
+  },
+  {
+   "pattern": "(^)OÚ",
+   "text": "OÙ",
+   "label": "Ù"
+  },
+  {
+   "pattern": "(^)OÙ́",
+   "text": "OÛ",
+   "label": "Û"
+  },
+  {
+   "pattern": "(^)OÛ́",
+   "text": "OÜ",
+   "label": "Ü"
+  },
+  {
+   "pattern": "(^)OǗ",
+   "text": "OU",
+   "label": "U"
+  },
+  {
+   "pattern": "(^)Oú",
+   "text": "Où",
+   "label": "ù"
+  },
+  {
+   "pattern": "(^)Où́",
+   "text": "Oû",
+   "label": "û"
+  },
+  {
+   "pattern": "(^)Oû́",
+   "text": "Oü",
+   "label": "ü"
+  },
+  {
+   "pattern": "(^)Oǘ",
+   "text": "Ou",
+   "label": "u"
+  },
+  {
+   "pattern": "(^)oÚ",
+   "text": "oÙ",
+   "label": "Ù"
+  },
+  {
+   "pattern": "(^)oÙ́",
+   "text": "oÛ",
+   "label": "Û"
+  },
+  {
+   "pattern": "(^)oÛ́",
+   "text": "oÜ",
+   "label": "Ü"
+  },
+  {
+   "pattern": "(^)oǗ",
+   "text": "oU",
+   "label": "U"
+  },
+  {
+   "pattern": "(^)oú",
+   "text": "où",
+   "label": "ù"
+  },
+  {
+   "pattern": "(^)où́",
+   "text": "oû",
+   "label": "û"
+  },
+  {
+   "pattern": "(^)oû́",
+   "text": "oü",
+   "label": "ü"
+  },
+  {
+   "pattern": "(^)oǘ",
+   "text": "ou",
+   "label": "u"
+  },
+  {
+   "pattern": "QÚ",
+   "text": "QU'",
+   "label": "U'"
+  },
+  {
+   "pattern": "Qú",
+   "text": "Qu'",
+   "label": "'"
+  },
+  {
+   "pattern": "qÚ",
+   "text": "qU'",
+   "label": "'"
+  },
+  {
+   "pattern": "qú",
+   "text": "qu'",
+   "label": "'"
+  },
+  {
+   "pattern": "Ú",
+   "text": "Û",
+   "label": "Û"
+  },
+  {
+   "pattern": "Û́",
+   "text": "Ü",
+   "label": "Ü"
+  },
+  {
+   "pattern": "Ǘ",
+   "text": "Ù",
+   "label": "Ù"
+  },
+  {
+   "pattern": "Ù́",
+   "text": "U",
+   "label": "U"
+  },
+  {
+   "pattern": "ú",
+   "text": "û",
+   "label": "û"
+  },
+  {
+   "pattern": "û́",
+   "text": "ü",
+   "label": "ü"
+  },
+  {
+   "pattern": "ǘ",
+   "text": "ù",
+   "label": "ù"
+  },
+  {
+   "pattern": "ù́",
+   "text": "u",
+   "label": "u"
+  },
+  {
+   "pattern": "(^)Ý",
+   "text": "Y'",
+   "label": "'"
+  },
+  {
+   "pattern": "(^)Y'́",
+   "text": "Ÿ",
+   "label": "Ÿ"
+  },
+  {
+   "pattern": "(^)Ÿ́",
+   "text": "Y",
+   "label": "Y"
+  },
+  {
+   "pattern": "(^)ý",
+   "text": "y'",
+   "label": "'"
+  },
+  {
+   "pattern": "(^)y'́",
+   "text": "ÿ",
+   "label": "ÿ"
+  },
+  {
+   "pattern": "(^)ÿ́",
+   "text": "y",
+   "label": "y"
+  },
+  {
+   "pattern": "Ý",
+   "text": "Ÿ",
+   "label": "Ÿ"
+  },
+  {
+   "pattern": "Ÿ́",
+   "text": "Y'",
+   "label": "Y'"
+  },
+  {
+   "pattern": "ý",
+   "text": "ÿ",
+   "label": "ÿ"
+  },
+  {
+   "pattern": "ÿ́",
+   "text": "y'",
+   "label": "y'"
+  },
+  {
+   "pattern": "́",
+   "text": "'",
+   "label": "'"
+  }
+ ]
+}

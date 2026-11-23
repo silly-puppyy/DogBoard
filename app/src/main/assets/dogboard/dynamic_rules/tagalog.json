@@ -1,0 +1,36 @@
+{
+ "script": "tagalog",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([ᜃ-ᜑ])ᜒ",
+   "text": "$1ᜒ",
+   "label": "$1ᜒ"
+  },
+  {
+   "pattern": "([ᜃ-ᜑ])ᜓ",
+   "text": "$1ᜓ",
+   "label": "$1ᜓ"
+  },
+  {
+   "pattern": "([ᜃ-ᜑ])᜔",
+   "text": "$1᜔",
+   "label": "$1᜔"
+  },
+  {
+   "pattern": "ᜒ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ᜓ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "᜔",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

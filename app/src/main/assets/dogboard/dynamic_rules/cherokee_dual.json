@@ -1,0 +1,1566 @@
+{
+ "script": "cherokee_dual",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "ᎦᎠ",
+   "text": "Ꭶ",
+   "label": "Ꭶ"
+  },
+  {
+   "pattern": "Ꭶꭰ",
+   "text": "Ꭶ",
+   "label": "Ꭶ"
+  },
+  {
+   "pattern": "ᎦᎡ",
+   "text": "Ꭸ",
+   "label": "Ꭸ"
+  },
+  {
+   "pattern": "Ꭶꭱ",
+   "text": "Ꭸ",
+   "label": "Ꭸ"
+  },
+  {
+   "pattern": "ᎦᎢ",
+   "text": "Ꭹ",
+   "label": "Ꭹ"
+  },
+  {
+   "pattern": "Ꭶꭲ",
+   "text": "Ꭹ",
+   "label": "Ꭹ"
+  },
+  {
+   "pattern": "ᎦᎣ",
+   "text": "Ꭺ",
+   "label": "Ꭺ"
+  },
+  {
+   "pattern": "Ꭶꭳ",
+   "text": "Ꭺ",
+   "label": "Ꭺ"
+  },
+  {
+   "pattern": "ᎦᎤ",
+   "text": "Ꭻ",
+   "label": "Ꭻ"
+  },
+  {
+   "pattern": "Ꭶꭴ",
+   "text": "Ꭻ",
+   "label": "Ꭻ"
+  },
+  {
+   "pattern": "ᎦᎥ",
+   "text": "Ꭼ",
+   "label": "Ꭼ"
+  },
+  {
+   "pattern": "Ꭶꭵ",
+   "text": "Ꭼ",
+   "label": "Ꭼ"
+  },
+  {
+   "pattern": "ꭶᎠ",
+   "text": "ꭶ",
+   "label": "ꭶ"
+  },
+  {
+   "pattern": "ꭶꭰ",
+   "text": "ꭶ",
+   "label": "ꭶ"
+  },
+  {
+   "pattern": "ꭶᎡ",
+   "text": "ꭸ",
+   "label": "ꭸ"
+  },
+  {
+   "pattern": "ꭶꭱ",
+   "text": "ꭸ",
+   "label": "ꭸ"
+  },
+  {
+   "pattern": "ꭶᎢ",
+   "text": "ꭹ",
+   "label": "ꭹ"
+  },
+  {
+   "pattern": "ꭶꭲ",
+   "text": "ꭹ",
+   "label": "ꭹ"
+  },
+  {
+   "pattern": "ꭶᎣ",
+   "text": "ꭺ",
+   "label": "ꭺ"
+  },
+  {
+   "pattern": "ꭶꭳ",
+   "text": "ꭺ",
+   "label": "ꭺ"
+  },
+  {
+   "pattern": "ꭶᎤ",
+   "text": "ꭻ",
+   "label": "ꭻ"
+  },
+  {
+   "pattern": "ꭶꭴ",
+   "text": "ꭻ",
+   "label": "ꭻ"
+  },
+  {
+   "pattern": "ꭶᎥ",
+   "text": "ꭼ",
+   "label": "ꭼ"
+  },
+  {
+   "pattern": "ꭶꭵ",
+   "text": "ꭼ",
+   "label": "ꭼ"
+  },
+  {
+   "pattern": "ᎭᎠ",
+   "text": "Ꭽ",
+   "label": "Ꭽ"
+  },
+  {
+   "pattern": "Ꭽꭰ",
+   "text": "Ꭽ",
+   "label": "Ꭽ"
+  },
+  {
+   "pattern": "ᎭᎡ",
+   "text": "Ꭾ",
+   "label": "Ꭾ"
+  },
+  {
+   "pattern": "Ꭽꭱ",
+   "text": "Ꭾ",
+   "label": "Ꭾ"
+  },
+  {
+   "pattern": "ᎭᎢ",
+   "text": "Ꭿ",
+   "label": "Ꭿ"
+  },
+  {
+   "pattern": "Ꭽꭲ",
+   "text": "Ꭿ",
+   "label": "Ꭿ"
+  },
+  {
+   "pattern": "ᎭᎣ",
+   "text": "Ꮀ",
+   "label": "Ꮀ"
+  },
+  {
+   "pattern": "Ꭽꭳ",
+   "text": "Ꮀ",
+   "label": "Ꮀ"
+  },
+  {
+   "pattern": "ᎭᎤ",
+   "text": "Ꮁ",
+   "label": "Ꮁ"
+  },
+  {
+   "pattern": "Ꭽꭴ",
+   "text": "Ꮁ",
+   "label": "Ꮁ"
+  },
+  {
+   "pattern": "ᎭᎥ",
+   "text": "Ꮂ",
+   "label": "Ꮂ"
+  },
+  {
+   "pattern": "Ꭽꭵ",
+   "text": "Ꮂ",
+   "label": "Ꮂ"
+  },
+  {
+   "pattern": "ꭽᎠ",
+   "text": "ꭽ",
+   "label": "ꭽ"
+  },
+  {
+   "pattern": "ꭽꭰ",
+   "text": "ꭽ",
+   "label": "ꭽ"
+  },
+  {
+   "pattern": "ꭽᎡ",
+   "text": "ꭾ",
+   "label": "ꭾ"
+  },
+  {
+   "pattern": "ꭽꭱ",
+   "text": "ꭾ",
+   "label": "ꭾ"
+  },
+  {
+   "pattern": "ꭽᎢ",
+   "text": "ꭿ",
+   "label": "ꭿ"
+  },
+  {
+   "pattern": "ꭽꭲ",
+   "text": "ꭿ",
+   "label": "ꭿ"
+  },
+  {
+   "pattern": "ꭽᎣ",
+   "text": "ꮀ",
+   "label": "ꮀ"
+  },
+  {
+   "pattern": "ꭽꭳ",
+   "text": "ꮀ",
+   "label": "ꮀ"
+  },
+  {
+   "pattern": "ꭽᎤ",
+   "text": "ꮁ",
+   "label": "ꮁ"
+  },
+  {
+   "pattern": "ꭽꭴ",
+   "text": "ꮁ",
+   "label": "ꮁ"
+  },
+  {
+   "pattern": "ꭽᎥ",
+   "text": "ꮂ",
+   "label": "ꮂ"
+  },
+  {
+   "pattern": "ꭽꭵ",
+   "text": "ꮂ",
+   "label": "ꮂ"
+  },
+  {
+   "pattern": "ᎳᎠ",
+   "text": "Ꮃ",
+   "label": "Ꮃ"
+  },
+  {
+   "pattern": "Ꮃꭰ",
+   "text": "Ꮃ",
+   "label": "Ꮃ"
+  },
+  {
+   "pattern": "ᎳᎡ",
+   "text": "Ꮄ",
+   "label": "Ꮄ"
+  },
+  {
+   "pattern": "Ꮃꭱ",
+   "text": "Ꮄ",
+   "label": "Ꮄ"
+  },
+  {
+   "pattern": "ᎳᎢ",
+   "text": "Ꮅ",
+   "label": "Ꮅ"
+  },
+  {
+   "pattern": "Ꮃꭲ",
+   "text": "Ꮅ",
+   "label": "Ꮅ"
+  },
+  {
+   "pattern": "ᎳᎣ",
+   "text": "Ꮆ",
+   "label": "Ꮆ"
+  },
+  {
+   "pattern": "Ꮃꭳ",
+   "text": "Ꮆ",
+   "label": "Ꮆ"
+  },
+  {
+   "pattern": "ᎳᎤ",
+   "text": "Ꮇ",
+   "label": "Ꮇ"
+  },
+  {
+   "pattern": "Ꮃꭴ",
+   "text": "Ꮇ",
+   "label": "Ꮇ"
+  },
+  {
+   "pattern": "ᎳᎥ",
+   "text": "Ꮈ",
+   "label": "Ꮈ"
+  },
+  {
+   "pattern": "Ꮃꭵ",
+   "text": "Ꮈ",
+   "label": "Ꮈ"
+  },
+  {
+   "pattern": "ꮃᎠ",
+   "text": "ꮃ",
+   "label": "ꮃ"
+  },
+  {
+   "pattern": "ꮃꭰ",
+   "text": "ꮃ",
+   "label": "ꮃ"
+  },
+  {
+   "pattern": "ꮃᎡ",
+   "text": "ꮄ",
+   "label": "ꮄ"
+  },
+  {
+   "pattern": "ꮃꭱ",
+   "text": "ꮄ",
+   "label": "ꮄ"
+  },
+  {
+   "pattern": "ꮃᎢ",
+   "text": "ꮅ",
+   "label": "ꮅ"
+  },
+  {
+   "pattern": "ꮃꭲ",
+   "text": "ꮅ",
+   "label": "ꮅ"
+  },
+  {
+   "pattern": "ꮃᎣ",
+   "text": "ꮆ",
+   "label": "ꮆ"
+  },
+  {
+   "pattern": "ꮃꭳ",
+   "text": "ꮆ",
+   "label": "ꮆ"
+  },
+  {
+   "pattern": "ꮃᎤ",
+   "text": "ꮇ",
+   "label": "ꮇ"
+  },
+  {
+   "pattern": "ꮃꭴ",
+   "text": "ꮇ",
+   "label": "ꮇ"
+  },
+  {
+   "pattern": "ꮃᎥ",
+   "text": "ꮈ",
+   "label": "ꮈ"
+  },
+  {
+   "pattern": "ꮃꭵ",
+   "text": "ꮈ",
+   "label": "ꮈ"
+  },
+  {
+   "pattern": "ᎹᎠ",
+   "text": "Ꮉ",
+   "label": "Ꮉ"
+  },
+  {
+   "pattern": "Ꮉꭰ",
+   "text": "Ꮉ",
+   "label": "Ꮉ"
+  },
+  {
+   "pattern": "ᎹᎡ",
+   "text": "Ꮊ",
+   "label": "Ꮊ"
+  },
+  {
+   "pattern": "Ꮉꭱ",
+   "text": "Ꮊ",
+   "label": "Ꮊ"
+  },
+  {
+   "pattern": "ᎹᎢ",
+   "text": "Ꮋ",
+   "label": "Ꮋ"
+  },
+  {
+   "pattern": "Ꮉꭲ",
+   "text": "Ꮋ",
+   "label": "Ꮋ"
+  },
+  {
+   "pattern": "ᎹᎣ",
+   "text": "Ꮌ",
+   "label": "Ꮌ"
+  },
+  {
+   "pattern": "Ꮉꭳ",
+   "text": "Ꮌ",
+   "label": "Ꮌ"
+  },
+  {
+   "pattern": "ᎹᎤ",
+   "text": "Ꮍ",
+   "label": "Ꮍ"
+  },
+  {
+   "pattern": "Ꮉꭴ",
+   "text": "Ꮍ",
+   "label": "Ꮍ"
+  },
+  {
+   "pattern": "ᎹᎥ",
+   "text": "Ᏽ",
+   "label": "Ᏽ"
+  },
+  {
+   "pattern": "Ꮉꭵ",
+   "text": "Ᏽ",
+   "label": "Ᏽ"
+  },
+  {
+   "pattern": "ꮉᎠ",
+   "text": "ꮉ",
+   "label": "ꮉ"
+  },
+  {
+   "pattern": "ꮉꭰ",
+   "text": "ꮉ",
+   "label": "ꮉ"
+  },
+  {
+   "pattern": "ꮉᎡ",
+   "text": "ꮊ",
+   "label": "ꮊ"
+  },
+  {
+   "pattern": "ꮉꭱ",
+   "text": "ꮊ",
+   "label": "ꮊ"
+  },
+  {
+   "pattern": "ꮉᎢ",
+   "text": "ꮋ",
+   "label": "ꮋ"
+  },
+  {
+   "pattern": "ꮉꭲ",
+   "text": "ꮋ",
+   "label": "ꮋ"
+  },
+  {
+   "pattern": "ꮉᎣ",
+   "text": "ꮌ",
+   "label": "ꮌ"
+  },
+  {
+   "pattern": "ꮉꭳ",
+   "text": "ꮌ",
+   "label": "ꮌ"
+  },
+  {
+   "pattern": "ꮉᎤ",
+   "text": "ꮍ",
+   "label": "ꮍ"
+  },
+  {
+   "pattern": "ꮉꭴ",
+   "text": "ꮍ",
+   "label": "ꮍ"
+  },
+  {
+   "pattern": "ꮉᎥ",
+   "text": "ᏽ",
+   "label": "ᏽ"
+  },
+  {
+   "pattern": "ꮉꭵ",
+   "text": "ᏽ",
+   "label": "ᏽ"
+  },
+  {
+   "pattern": "ᎾᎠ",
+   "text": "Ꮎ",
+   "label": "Ꮎ"
+  },
+  {
+   "pattern": "Ꮎꭰ",
+   "text": "Ꮎ",
+   "label": "Ꮎ"
+  },
+  {
+   "pattern": "ᎾᎡ",
+   "text": "Ꮑ",
+   "label": "Ꮑ"
+  },
+  {
+   "pattern": "Ꮎꭱ",
+   "text": "Ꮑ",
+   "label": "Ꮑ"
+  },
+  {
+   "pattern": "ᎾᎢ",
+   "text": "Ꮒ",
+   "label": "Ꮒ"
+  },
+  {
+   "pattern": "Ꮎꭲ",
+   "text": "Ꮒ",
+   "label": "Ꮒ"
+  },
+  {
+   "pattern": "ᎾᎣ",
+   "text": "Ꮓ",
+   "label": "Ꮓ"
+  },
+  {
+   "pattern": "Ꮎꭳ",
+   "text": "Ꮓ",
+   "label": "Ꮓ"
+  },
+  {
+   "pattern": "ᎾᎤ",
+   "text": "Ꮔ",
+   "label": "Ꮔ"
+  },
+  {
+   "pattern": "Ꮎꭴ",
+   "text": "Ꮔ",
+   "label": "Ꮔ"
+  },
+  {
+   "pattern": "ᎾᎥ",
+   "text": "Ꮕ",
+   "label": "Ꮕ"
+  },
+  {
+   "pattern": "Ꮎꭵ",
+   "text": "Ꮕ",
+   "label": "Ꮕ"
+  },
+  {
+   "pattern": "ꮎᎠ",
+   "text": "ꮎ",
+   "label": "ꮎ"
+  },
+  {
+   "pattern": "ꮎꭰ",
+   "text": "ꮎ",
+   "label": "ꮎ"
+  },
+  {
+   "pattern": "ꮎᎡ",
+   "text": "ꮑ",
+   "label": "ꮑ"
+  },
+  {
+   "pattern": "ꮎꭱ",
+   "text": "ꮑ",
+   "label": "ꮑ"
+  },
+  {
+   "pattern": "ꮎᎢ",
+   "text": "ꮒ",
+   "label": "ꮒ"
+  },
+  {
+   "pattern": "ꮎꭲ",
+   "text": "ꮒ",
+   "label": "ꮒ"
+  },
+  {
+   "pattern": "ꮎᎣ",
+   "text": "ꮓ",
+   "label": "ꮓ"
+  },
+  {
+   "pattern": "ꮎꭳ",
+   "text": "ꮓ",
+   "label": "ꮓ"
+  },
+  {
+   "pattern": "ꮎᎤ",
+   "text": "ꮔ",
+   "label": "ꮔ"
+  },
+  {
+   "pattern": "ꮎꭴ",
+   "text": "ꮔ",
+   "label": "ꮔ"
+  },
+  {
+   "pattern": "ꮎᎥ",
+   "text": "ꮕ",
+   "label": "ꮕ"
+  },
+  {
+   "pattern": "ꮎꭵ",
+   "text": "ꮕ",
+   "label": "ꮕ"
+  },
+  {
+   "pattern": "ᏆᎠ",
+   "text": "Ꮖ",
+   "label": "Ꮖ"
+  },
+  {
+   "pattern": "Ꮖꭰ",
+   "text": "Ꮖ",
+   "label": "Ꮖ"
+  },
+  {
+   "pattern": "ᏆᎡ",
+   "text": "Ꮗ",
+   "label": "Ꮗ"
+  },
+  {
+   "pattern": "Ꮖꭱ",
+   "text": "Ꮗ",
+   "label": "Ꮗ"
+  },
+  {
+   "pattern": "ᏆᎢ",
+   "text": "Ꮘ",
+   "label": "Ꮘ"
+  },
+  {
+   "pattern": "Ꮖꭲ",
+   "text": "Ꮘ",
+   "label": "Ꮘ"
+  },
+  {
+   "pattern": "ᏆᎣ",
+   "text": "Ꮙ",
+   "label": "Ꮙ"
+  },
+  {
+   "pattern": "Ꮖꭳ",
+   "text": "Ꮙ",
+   "label": "Ꮙ"
+  },
+  {
+   "pattern": "ᏆᎤ",
+   "text": "Ꮚ",
+   "label": "Ꮚ"
+  },
+  {
+   "pattern": "Ꮖꭴ",
+   "text": "Ꮚ",
+   "label": "Ꮚ"
+  },
+  {
+   "pattern": "ᏆᎥ",
+   "text": "Ꮛ",
+   "label": "Ꮛ"
+  },
+  {
+   "pattern": "Ꮖꭵ",
+   "text": "Ꮛ",
+   "label": "Ꮛ"
+  },
+  {
+   "pattern": "ꮖᎠ",
+   "text": "ꮖ",
+   "label": "ꮖ"
+  },
+  {
+   "pattern": "ꮖꭰ",
+   "text": "ꮖ",
+   "label": "ꮖ"
+  },
+  {
+   "pattern": "ꮖᎡ",
+   "text": "ꮗ",
+   "label": "ꮗ"
+  },
+  {
+   "pattern": "ꮖꭱ",
+   "text": "ꮗ",
+   "label": "ꮗ"
+  },
+  {
+   "pattern": "ꮖᎢ",
+   "text": "ꮘ",
+   "label": "ꮘ"
+  },
+  {
+   "pattern": "ꮖꭲ",
+   "text": "ꮘ",
+   "label": "ꮘ"
+  },
+  {
+   "pattern": "ꮖᎣ",
+   "text": "ꮙ",
+   "label": "ꮙ"
+  },
+  {
+   "pattern": "ꮖꭳ",
+   "text": "ꮙ",
+   "label": "ꮙ"
+  },
+  {
+   "pattern": "ꮖᎤ",
+   "text": "ꮚ",
+   "label": "ꮚ"
+  },
+  {
+   "pattern": "ꮖꭴ",
+   "text": "ꮚ",
+   "label": "ꮚ"
+  },
+  {
+   "pattern": "ꮖᎥ",
+   "text": "ꮛ",
+   "label": "ꮛ"
+  },
+  {
+   "pattern": "ꮖꭵ",
+   "text": "ꮛ",
+   "label": "ꮛ"
+  },
+  {
+   "pattern": "ᏌᎠ",
+   "text": "Ꮜ",
+   "label": "Ꮜ"
+  },
+  {
+   "pattern": "Ꮜꭰ",
+   "text": "Ꮜ",
+   "label": "Ꮜ"
+  },
+  {
+   "pattern": "ᏌᎡ",
+   "text": "Ꮞ",
+   "label": "Ꮞ"
+  },
+  {
+   "pattern": "Ꮜꭱ",
+   "text": "Ꮞ",
+   "label": "Ꮞ"
+  },
+  {
+   "pattern": "ᏌᎢ",
+   "text": "Ꮟ",
+   "label": "Ꮟ"
+  },
+  {
+   "pattern": "Ꮜꭲ",
+   "text": "Ꮟ",
+   "label": "Ꮟ"
+  },
+  {
+   "pattern": "ᏌᎣ",
+   "text": "Ꮠ",
+   "label": "Ꮠ"
+  },
+  {
+   "pattern": "Ꮜꭳ",
+   "text": "Ꮠ",
+   "label": "Ꮠ"
+  },
+  {
+   "pattern": "ᏌᎤ",
+   "text": "Ꮡ",
+   "label": "Ꮡ"
+  },
+  {
+   "pattern": "Ꮜꭴ",
+   "text": "Ꮡ",
+   "label": "Ꮡ"
+  },
+  {
+   "pattern": "ᏌᎥ",
+   "text": "Ꮢ",
+   "label": "Ꮢ"
+  },
+  {
+   "pattern": "Ꮜꭵ",
+   "text": "Ꮢ",
+   "label": "Ꮢ"
+  },
+  {
+   "pattern": "ꮜᎠ",
+   "text": "ꮜ",
+   "label": "ꮜ"
+  },
+  {
+   "pattern": "ꮜꭰ",
+   "text": "ꮜ",
+   "label": "ꮜ"
+  },
+  {
+   "pattern": "ꮜᎡ",
+   "text": "ꮞ",
+   "label": "ꮞ"
+  },
+  {
+   "pattern": "ꮜꭱ",
+   "text": "ꮞ",
+   "label": "ꮞ"
+  },
+  {
+   "pattern": "ꮜᎢ",
+   "text": "ꮟ",
+   "label": "ꮟ"
+  },
+  {
+   "pattern": "ꮜꭲ",
+   "text": "ꮟ",
+   "label": "ꮟ"
+  },
+  {
+   "pattern": "ꮜᎣ",
+   "text": "ꮠ",
+   "label": "ꮠ"
+  },
+  {
+   "pattern": "ꮜꭳ",
+   "text": "ꮠ",
+   "label": "ꮠ"
+  },
+  {
+   "pattern": "ꮜᎤ",
+   "text": "ꮡ",
+   "label": "ꮡ"
+  },
+  {
+   "pattern": "ꮜꭴ",
+   "text": "ꮡ",
+   "label": "ꮡ"
+  },
+  {
+   "pattern": "ꮜᎥ",
+   "text": "ꮢ",
+   "label": "ꮢ"
+  },
+  {
+   "pattern": "ꮜꭵ",
+   "text": "ꮢ",
+   "label": "ꮢ"
+  },
+  {
+   "pattern": "ᏓᎠ",
+   "text": "Ꮣ",
+   "label": "Ꮣ"
+  },
+  {
+   "pattern": "Ꮣꭰ",
+   "text": "Ꮣ",
+   "label": "Ꮣ"
+  },
+  {
+   "pattern": "ᏓᎡ",
+   "text": "Ꮥ",
+   "label": "Ꮥ"
+  },
+  {
+   "pattern": "Ꮣꭱ",
+   "text": "Ꮥ",
+   "label": "Ꮥ"
+  },
+  {
+   "pattern": "ᏓᎢ",
+   "text": "Ꮧ",
+   "label": "Ꮧ"
+  },
+  {
+   "pattern": "Ꮣꭲ",
+   "text": "Ꮧ",
+   "label": "Ꮧ"
+  },
+  {
+   "pattern": "ᏓᎣ",
+   "text": "Ꮩ",
+   "label": "Ꮩ"
+  },
+  {
+   "pattern": "Ꮣꭳ",
+   "text": "Ꮩ",
+   "label": "Ꮩ"
+  },
+  {
+   "pattern": "ᏓᎤ",
+   "text": "Ꮪ",
+   "label": "Ꮪ"
+  },
+  {
+   "pattern": "Ꮣꭴ",
+   "text": "Ꮪ",
+   "label": "Ꮪ"
+  },
+  {
+   "pattern": "ᏓᎥ",
+   "text": "Ꮫ",
+   "label": "Ꮫ"
+  },
+  {
+   "pattern": "Ꮣꭵ",
+   "text": "Ꮫ",
+   "label": "Ꮫ"
+  },
+  {
+   "pattern": "ꮣᎠ",
+   "text": "ꮣ",
+   "label": "ꮣ"
+  },
+  {
+   "pattern": "ꮣꭰ",
+   "text": "ꮣ",
+   "label": "ꮣ"
+  },
+  {
+   "pattern": "ꮣᎡ",
+   "text": "ꮥ",
+   "label": "ꮥ"
+  },
+  {
+   "pattern": "ꮣꭱ",
+   "text": "ꮥ",
+   "label": "ꮥ"
+  },
+  {
+   "pattern": "ꮣᎢ",
+   "text": "ꮧ",
+   "label": "ꮧ"
+  },
+  {
+   "pattern": "ꮣꭲ",
+   "text": "ꮧ",
+   "label": "ꮧ"
+  },
+  {
+   "pattern": "ꮣᎣ",
+   "text": "ꮩ",
+   "label": "ꮩ"
+  },
+  {
+   "pattern": "ꮣꭳ",
+   "text": "ꮩ",
+   "label": "ꮩ"
+  },
+  {
+   "pattern": "ꮣᎤ",
+   "text": "ꮪ",
+   "label": "ꮪ"
+  },
+  {
+   "pattern": "ꮣꭴ",
+   "text": "ꮪ",
+   "label": "ꮪ"
+  },
+  {
+   "pattern": "ꮣᎥ",
+   "text": "ꮫ",
+   "label": "ꮫ"
+  },
+  {
+   "pattern": "ꮣꭵ",
+   "text": "ꮫ",
+   "label": "ꮫ"
+  },
+  {
+   "pattern": "ᏔᎠ",
+   "text": "Ꮤ",
+   "label": "Ꮤ"
+  },
+  {
+   "pattern": "Ꮤꭰ",
+   "text": "Ꮤ",
+   "label": "Ꮤ"
+  },
+  {
+   "pattern": "ᏔᎡ",
+   "text": "Ꮦ",
+   "label": "Ꮦ"
+  },
+  {
+   "pattern": "Ꮤꭱ",
+   "text": "Ꮦ",
+   "label": "Ꮦ"
+  },
+  {
+   "pattern": "ᏔᎢ",
+   "text": "Ꮨ",
+   "label": "Ꮨ"
+  },
+  {
+   "pattern": "Ꮤꭲ",
+   "text": "Ꮨ",
+   "label": "Ꮨ"
+  },
+  {
+   "pattern": "ꮤᎠ",
+   "text": "ꮤ",
+   "label": "ꮤ"
+  },
+  {
+   "pattern": "ꮤꭰ",
+   "text": "ꮤ",
+   "label": "ꮤ"
+  },
+  {
+   "pattern": "ꮤᎡ",
+   "text": "ꮦ",
+   "label": "ꮦ"
+  },
+  {
+   "pattern": "ꮤꭱ",
+   "text": "ꮦ",
+   "label": "ꮦ"
+  },
+  {
+   "pattern": "ꮤᎢ",
+   "text": "ꮨ",
+   "label": "ꮨ"
+  },
+  {
+   "pattern": "ꮤꭲ",
+   "text": "ꮨ",
+   "label": "ꮨ"
+  },
+  {
+   "pattern": "ᏝᎠ",
+   "text": "Ꮭ",
+   "label": "Ꮭ"
+  },
+  {
+   "pattern": "Ꮭꭰ",
+   "text": "Ꮭ",
+   "label": "Ꮭ"
+  },
+  {
+   "pattern": "ᏝᎡ",
+   "text": "Ꮮ",
+   "label": "Ꮮ"
+  },
+  {
+   "pattern": "Ꮭꭱ",
+   "text": "Ꮮ",
+   "label": "Ꮮ"
+  },
+  {
+   "pattern": "ᏝᎢ",
+   "text": "Ꮯ",
+   "label": "Ꮯ"
+  },
+  {
+   "pattern": "Ꮭꭲ",
+   "text": "Ꮯ",
+   "label": "Ꮯ"
+  },
+  {
+   "pattern": "ᏝᎣ",
+   "text": "Ꮰ",
+   "label": "Ꮰ"
+  },
+  {
+   "pattern": "Ꮭꭳ",
+   "text": "Ꮰ",
+   "label": "Ꮰ"
+  },
+  {
+   "pattern": "ᏝᎤ",
+   "text": "Ꮱ",
+   "label": "Ꮱ"
+  },
+  {
+   "pattern": "Ꮭꭴ",
+   "text": "Ꮱ",
+   "label": "Ꮱ"
+  },
+  {
+   "pattern": "ᏝᎥ",
+   "text": "Ꮲ",
+   "label": "Ꮲ"
+  },
+  {
+   "pattern": "Ꮭꭵ",
+   "text": "Ꮲ",
+   "label": "Ꮲ"
+  },
+  {
+   "pattern": "ꮭᎠ",
+   "text": "ꮭ",
+   "label": "ꮭ"
+  },
+  {
+   "pattern": "ꮭꭰ",
+   "text": "ꮭ",
+   "label": "ꮭ"
+  },
+  {
+   "pattern": "ꮭᎡ",
+   "text": "ꮮ",
+   "label": "ꮮ"
+  },
+  {
+   "pattern": "ꮭꭱ",
+   "text": "ꮮ",
+   "label": "ꮮ"
+  },
+  {
+   "pattern": "ꮭᎢ",
+   "text": "ꮯ",
+   "label": "ꮯ"
+  },
+  {
+   "pattern": "ꮭꭲ",
+   "text": "ꮯ",
+   "label": "ꮯ"
+  },
+  {
+   "pattern": "ꮭᎣ",
+   "text": "ꮰ",
+   "label": "ꮰ"
+  },
+  {
+   "pattern": "ꮭꭳ",
+   "text": "ꮰ",
+   "label": "ꮰ"
+  },
+  {
+   "pattern": "ꮭᎤ",
+   "text": "ꮱ",
+   "label": "ꮱ"
+  },
+  {
+   "pattern": "ꮭꭴ",
+   "text": "ꮱ",
+   "label": "ꮱ"
+  },
+  {
+   "pattern": "ꮭᎥ",
+   "text": "ꮲ",
+   "label": "ꮲ"
+  },
+  {
+   "pattern": "ꮭꭵ",
+   "text": "ꮲ",
+   "label": "ꮲ"
+  },
+  {
+   "pattern": "ᏣᎠ",
+   "text": "Ꮳ",
+   "label": "Ꮳ"
+  },
+  {
+   "pattern": "Ꮳꭰ",
+   "text": "Ꮳ",
+   "label": "Ꮳ"
+  },
+  {
+   "pattern": "ᏣᎡ",
+   "text": "Ꮴ",
+   "label": "Ꮴ"
+  },
+  {
+   "pattern": "Ꮳꭱ",
+   "text": "Ꮴ",
+   "label": "Ꮴ"
+  },
+  {
+   "pattern": "ᏣᎢ",
+   "text": "Ꮵ",
+   "label": "Ꮵ"
+  },
+  {
+   "pattern": "Ꮳꭲ",
+   "text": "Ꮵ",
+   "label": "Ꮵ"
+  },
+  {
+   "pattern": "ᏣᎣ",
+   "text": "Ꮶ",
+   "label": "Ꮶ"
+  },
+  {
+   "pattern": "Ꮳꭳ",
+   "text": "Ꮶ",
+   "label": "Ꮶ"
+  },
+  {
+   "pattern": "ᏣᎤ",
+   "text": "Ꮷ",
+   "label": "Ꮷ"
+  },
+  {
+   "pattern": "Ꮳꭴ",
+   "text": "Ꮷ",
+   "label": "Ꮷ"
+  },
+  {
+   "pattern": "ᏣᎥ",
+   "text": "Ꮸ",
+   "label": "Ꮸ"
+  },
+  {
+   "pattern": "Ꮳꭵ",
+   "text": "Ꮸ",
+   "label": "Ꮸ"
+  },
+  {
+   "pattern": "ꮳᎠ",
+   "text": "ꮳ",
+   "label": "ꮳ"
+  },
+  {
+   "pattern": "ꮳꭰ",
+   "text": "ꮳ",
+   "label": "ꮳ"
+  },
+  {
+   "pattern": "ꮳᎡ",
+   "text": "ꮴ",
+   "label": "ꮴ"
+  },
+  {
+   "pattern": "ꮳꭱ",
+   "text": "ꮴ",
+   "label": "ꮴ"
+  },
+  {
+   "pattern": "ꮳᎢ",
+   "text": "ꮵ",
+   "label": "ꮵ"
+  },
+  {
+   "pattern": "ꮳꭲ",
+   "text": "ꮵ",
+   "label": "ꮵ"
+  },
+  {
+   "pattern": "ꮳᎣ",
+   "text": "ꮶ",
+   "label": "ꮶ"
+  },
+  {
+   "pattern": "ꮳꭳ",
+   "text": "ꮶ",
+   "label": "ꮶ"
+  },
+  {
+   "pattern": "ꮳᎤ",
+   "text": "ꮷ",
+   "label": "ꮷ"
+  },
+  {
+   "pattern": "ꮳꭴ",
+   "text": "ꮷ",
+   "label": "ꮷ"
+  },
+  {
+   "pattern": "ꮳᎥ",
+   "text": "ꮸ",
+   "label": "ꮸ"
+  },
+  {
+   "pattern": "ꮳꭵ",
+   "text": "ꮸ",
+   "label": "ꮸ"
+  },
+  {
+   "pattern": "ᏩᎠ",
+   "text": "Ꮹ",
+   "label": "Ꮹ"
+  },
+  {
+   "pattern": "Ꮹꭰ",
+   "text": "Ꮹ",
+   "label": "Ꮹ"
+  },
+  {
+   "pattern": "ᏩᎡ",
+   "text": "Ꮺ",
+   "label": "Ꮺ"
+  },
+  {
+   "pattern": "Ꮹꭱ",
+   "text": "Ꮺ",
+   "label": "Ꮺ"
+  },
+  {
+   "pattern": "ᏩᎢ",
+   "text": "Ꮻ",
+   "label": "Ꮻ"
+  },
+  {
+   "pattern": "Ꮹꭲ",
+   "text": "Ꮻ",
+   "label": "Ꮻ"
+  },
+  {
+   "pattern": "ᏩᎣ",
+   "text": "Ꮼ",
+   "label": "Ꮼ"
+  },
+  {
+   "pattern": "Ꮹꭳ",
+   "text": "Ꮼ",
+   "label": "Ꮼ"
+  },
+  {
+   "pattern": "ᏩᎤ",
+   "text": "Ꮽ",
+   "label": "Ꮽ"
+  },
+  {
+   "pattern": "Ꮹꭴ",
+   "text": "Ꮽ",
+   "label": "Ꮽ"
+  },
+  {
+   "pattern": "ᏩᎥ",
+   "text": "Ꮾ",
+   "label": "Ꮾ"
+  },
+  {
+   "pattern": "Ꮹꭵ",
+   "text": "Ꮾ",
+   "label": "Ꮾ"
+  },
+  {
+   "pattern": "ꮹᎠ",
+   "text": "ꮹ",
+   "label": "ꮹ"
+  },
+  {
+   "pattern": "ꮹꭰ",
+   "text": "ꮹ",
+   "label": "ꮹ"
+  },
+  {
+   "pattern": "ꮹᎡ",
+   "text": "ꮺ",
+   "label": "ꮺ"
+  },
+  {
+   "pattern": "ꮹꭱ",
+   "text": "ꮺ",
+   "label": "ꮺ"
+  },
+  {
+   "pattern": "ꮹᎢ",
+   "text": "ꮻ",
+   "label": "ꮻ"
+  },
+  {
+   "pattern": "ꮹꭲ",
+   "text": "ꮻ",
+   "label": "ꮻ"
+  },
+  {
+   "pattern": "ꮹᎣ",
+   "text": "ꮼ",
+   "label": "ꮼ"
+  },
+  {
+   "pattern": "ꮹꭳ",
+   "text": "ꮼ",
+   "label": "ꮼ"
+  },
+  {
+   "pattern": "ꮹᎤ",
+   "text": "ꮽ",
+   "label": "ꮽ"
+  },
+  {
+   "pattern": "ꮹꭴ",
+   "text": "ꮽ",
+   "label": "ꮽ"
+  },
+  {
+   "pattern": "ꮹᎥ",
+   "text": "ꮾ",
+   "label": "ꮾ"
+  },
+  {
+   "pattern": "ꮹꭵ",
+   "text": "ꮾ",
+   "label": "ꮾ"
+  },
+  {
+   "pattern": "ᏯᎠ",
+   "text": "Ꮿ",
+   "label": "Ꮿ"
+  },
+  {
+   "pattern": "Ꮿꭰ",
+   "text": "Ꮿ",
+   "label": "Ꮿ"
+  },
+  {
+   "pattern": "ᏯᎡ",
+   "text": "Ᏸ",
+   "label": "Ᏸ"
+  },
+  {
+   "pattern": "Ꮿꭱ",
+   "text": "Ᏸ",
+   "label": "Ᏸ"
+  },
+  {
+   "pattern": "ᏯᎢ",
+   "text": "Ᏹ",
+   "label": "Ᏹ"
+  },
+  {
+   "pattern": "Ꮿꭲ",
+   "text": "Ᏹ",
+   "label": "Ᏹ"
+  },
+  {
+   "pattern": "ᏯᎣ",
+   "text": "Ᏺ",
+   "label": "Ᏺ"
+  },
+  {
+   "pattern": "Ꮿꭳ",
+   "text": "Ᏺ",
+   "label": "Ᏺ"
+  },
+  {
+   "pattern": "ᏯᎤ",
+   "text": "Ᏻ",
+   "label": "Ᏻ"
+  },
+  {
+   "pattern": "Ꮿꭴ",
+   "text": "Ᏻ",
+   "label": "Ᏻ"
+  },
+  {
+   "pattern": "ᏯᎥ",
+   "text": "Ᏼ",
+   "label": "Ᏼ"
+  },
+  {
+   "pattern": "Ꮿꭵ",
+   "text": "Ᏼ",
+   "label": "Ᏼ"
+  },
+  {
+   "pattern": "ꮿᎠ",
+   "text": "ꮿ",
+   "label": "ꮿ"
+  },
+  {
+   "pattern": "ꮿꭰ",
+   "text": "ꮿ",
+   "label": "ꮿ"
+  },
+  {
+   "pattern": "ꮿᎡ",
+   "text": "ᏸ",
+   "label": "ᏸ"
+  },
+  {
+   "pattern": "ꮿꭱ",
+   "text": "ᏸ",
+   "label": "ᏸ"
+  },
+  {
+   "pattern": "ꮿᎢ",
+   "text": "ᏹ",
+   "label": "ᏹ"
+  },
+  {
+   "pattern": "ꮿꭲ",
+   "text": "ᏹ",
+   "label": "ᏹ"
+  },
+  {
+   "pattern": "ꮿᎣ",
+   "text": "ᏺ",
+   "label": "ᏺ"
+  },
+  {
+   "pattern": "ꮿꭳ",
+   "text": "ᏺ",
+   "label": "ᏺ"
+  },
+  {
+   "pattern": "ꮿᎤ",
+   "text": "ᏻ",
+   "label": "ᏻ"
+  },
+  {
+   "pattern": "ꮿꭴ",
+   "text": "ᏻ",
+   "label": "ᏻ"
+  },
+  {
+   "pattern": "ꮿᎥ",
+   "text": "ᏼ",
+   "label": "ᏼ"
+  },
+  {
+   "pattern": "ꮿꭵ",
+   "text": "ᏼ",
+   "label": "ᏼ"
+  },
+  {
+   "pattern": "‌Ꭰ",
+   "text": "Ꭰ",
+   "label": "Ꭰ"
+  },
+  {
+   "pattern": "‌Ꭱ",
+   "text": "Ꭱ",
+   "label": "Ꭱ"
+  },
+  {
+   "pattern": "‌Ꭲ",
+   "text": "Ꭲ",
+   "label": "Ꭲ"
+  },
+  {
+   "pattern": "‌Ꭳ",
+   "text": "Ꭳ",
+   "label": "Ꭳ"
+  },
+  {
+   "pattern": "‌Ꭴ",
+   "text": "Ꭴ",
+   "label": "Ꭴ"
+  },
+  {
+   "pattern": "‌Ꭵ",
+   "text": "Ꭵ",
+   "label": "Ꭵ"
+  },
+  {
+   "pattern": "‌ꭰ",
+   "text": "ꭰ",
+   "label": "ꭰ"
+  },
+  {
+   "pattern": "‌ꭱ",
+   "text": "ꭱ",
+   "label": "ꭱ"
+  },
+  {
+   "pattern": "‌ꭲ",
+   "text": "ꭲ",
+   "label": "ꭲ"
+  },
+  {
+   "pattern": "‌ꭳ",
+   "text": "ꭳ",
+   "label": "ꭳ"
+  },
+  {
+   "pattern": "‌ꭴ",
+   "text": "ꭴ",
+   "label": "ꭴ"
+  },
+  {
+   "pattern": "‌ꭵ",
+   "text": "ꭵ",
+   "label": "ꭵ"
+  }
+ ]
+}

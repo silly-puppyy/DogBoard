@@ -1,0 +1,71 @@
+{
+ "script": "syloti_nagri",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠀ",
+   "text": "$1ꠣ",
+   "label": "$1ꠣ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠣ",
+   "text": "$1ꠀ",
+   "label": "ꠀ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠁ",
+   "text": "$1ꠤ",
+   "label": "$1ꠤ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠤ",
+   "text": "$1ꠁ",
+   "label": "ꠁ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠃ",
+   "text": "$1ꠥ",
+   "label": "$1ꠥ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠥ",
+   "text": "$1ꠃ",
+   "label": "ꠃ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠄ",
+   "text": "$1ꠦ",
+   "label": "$1ꠦ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠦ",
+   "text": "$1ꠄ",
+   "label": "ꠄ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠅ",
+   "text": "$1ꠧ",
+   "label": "$1ꠧ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])ꠧ",
+   "text": "$1ꠅ",
+   "label": "ꠅ"
+  },
+  {
+   "pattern": "([ꠇ-ꠊꠌ-ꠢ])꠆",
+   "text": "$1꠆",
+   "label": "$1꠆"
+  },
+  {
+   "pattern": "(([ꠀꠁꠃ-ꠅ])|([ꠇ-ꠊꠌ-ꠢ])([ꠣ-ꠧ])?)ꠂ",
+   "text": "$1ꠂ",
+   "label": "$1ꠂ"
+  },
+  {
+   "pattern": "((([ꠀꠁꠃ-ꠅ])|([ꠇ-ꠊꠌ-ꠢ])([ꠣ-ꠧ])?)ꠂ?)ꠋ",
+   "text": "$1ꠋ",
+   "label": "$1ꠋ"
+  }
+ ]
+}

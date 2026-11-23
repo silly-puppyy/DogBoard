@@ -1111,8 +1111,15 @@ class ImeController(
          * keeps the keys for the decoder (the loaded pack's rules: a downloaded pack's are not among the built-in ones
          * languageRules() reads). Other languages: the letters as typed.
          */
-        /** Languages whose layouts type Indic independent vowels as signs after a consonant (DevanagariComposer). */
-        private val INDIC_LANGUAGES = setOf("hi", "mr", "ne", "bn", "as", "ta", "te", "kn", "ml", "gu", "pa", "or", "sa")
+        /** Each script's typing rules (Gboard's dynamic layouts), read once: null when the asset is missing. */
+        private val ruleComposers = HashMap<String, io.github.sillypuppyy.dogboard.engine.RuleComposer?>()
+
+        private fun ruleComposer(script: String) = ruleComposers.getOrPut(script) {
+            runCatching {
+                dev.patrickgold.florisboard.FlorisApplication.getHack().assets.open("dogboard/dynamic_rules/$script.json")
+                    .bufferedReader().use { io.github.sillypuppyy.dogboard.engine.RuleComposer.parse(it.readText()) }
+            }.getOrNull()
+        }
 
         private fun withTypedMarks(word: CurrentWord): CurrentWord {
             // Korean: jamo keys drawn as Hangul syllables (by the language: Korean has no pack whose rules could say so)
@@ -1122,16 +1129,18 @@ class ImeController(
                 word.decomposer = io.github.sillypuppyy.dogboard.engine.HangulComposer::decompose
                 return word
             }
-            // Indic keyboards: a vowel key after a consonant writes its sign (क + आ -> का, ক + আ -> কা)
-            if (language.substringBefore('-') in INDIC_LANGUAGES) {
-                word.composer = io.github.sillypuppyy.dogboard.engine.DevanagariComposer::compose
-                word.decomposer = io.github.sillypuppyy.dogboard.engine.DevanagariComposer::decompose
+            // Indic keyboards: the script's rules (a vowel key after a consonant writes its sign: क + आ -> का)
+            val script = io.github.sillypuppyy.dogboard.engine.RuleComposer.SCRIPT_OF[language.substringBefore('-')]
+            val rules = script?.let(::ruleComposer)
+            if (rules != null) {
+                word.composer = rules::compose
+                word.decomposer = rules::decompose
                 return word
             }
-            val rules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
-            val telex = rules.typedMarks
+            val packRules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
+            val telex = packRules.typedMarks
             word.composer = if (telex) { k -> io.github.sillypuppyy.dogboard.engine.TelexComposer.compose(k) } else null
-            word.decomposer = if (telex) rules.typedSpellings::spelled else null
+            word.decomposer = if (telex) packRules.typedSpellings::spelled else null
             return word
         }
 

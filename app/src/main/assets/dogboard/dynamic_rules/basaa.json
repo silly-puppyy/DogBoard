@@ -1,0 +1,471 @@
+{
+ "script": "basaa",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "a",
+   "text": "à",
+   "label": "à"
+  },
+  {
+   "pattern": "A",
+   "text": "À",
+   "label": "À"
+  },
+  {
+   "pattern": "e",
+   "text": "è",
+   "label": "è"
+  },
+  {
+   "pattern": "E",
+   "text": "È",
+   "label": "È"
+  },
+  {
+   "pattern": "i",
+   "text": "ì",
+   "label": "ì"
+  },
+  {
+   "pattern": "I",
+   "text": "Ì",
+   "label": "Ì"
+  },
+  {
+   "pattern": "o",
+   "text": "ò",
+   "label": "ò"
+  },
+  {
+   "pattern": "O",
+   "text": "Ò",
+   "label": "Ò"
+  },
+  {
+   "pattern": "u",
+   "text": "ù",
+   "label": "ù"
+  },
+  {
+   "pattern": "U",
+   "text": "Ù",
+   "label": "Ù"
+  },
+  {
+   "pattern": "ɔ",
+   "text": "ɔ̀",
+   "label": "ɔ̀"
+  },
+  {
+   "pattern": "Ɔ",
+   "text": "Ɔ̀",
+   "label": "Ɔ̀"
+  },
+  {
+   "pattern": "ɛ",
+   "text": "ɛ̀",
+   "label": "ɛ̀"
+  },
+  {
+   "pattern": "Ɛ",
+   "text": "Ɛ̀",
+   "label": "Ɛ̀"
+  },
+  {
+   "pattern": "n",
+   "text": "ǹ",
+   "label": "ǹ"
+  },
+  {
+   "pattern": "N",
+   "text": "Ǹ",
+   "label": "Ǹ"
+  },
+  {
+   "pattern": "m",
+   "text": "m̀",
+   "label": "m̀"
+  },
+  {
+   "pattern": "M",
+   "text": "M̀",
+   "label": "M̀"
+  },
+  {
+   "pattern": "ŋ",
+   "text": "ŋ̀",
+   "label": "ŋ̀"
+  },
+  {
+   "pattern": "Ŋ",
+   "text": "Ŋ̀",
+   "label": "Ŋ̀"
+  },
+  {
+   "pattern": "b",
+   "text": "ɓ",
+   "label": "ɓ"
+  },
+  {
+   "pattern": "B",
+   "text": "Ɓ",
+   "label": "Ɓ"
+  },
+  {
+   "pattern": "a",
+   "text": "á",
+   "label": "á"
+  },
+  {
+   "pattern": "A",
+   "text": "Á",
+   "label": "Á"
+  },
+  {
+   "pattern": "e",
+   "text": "é",
+   "label": "é"
+  },
+  {
+   "pattern": "E",
+   "text": "É",
+   "label": "É"
+  },
+  {
+   "pattern": "i",
+   "text": "í",
+   "label": "í"
+  },
+  {
+   "pattern": "I",
+   "text": "Í",
+   "label": "Í"
+  },
+  {
+   "pattern": "o",
+   "text": "ó",
+   "label": "ó"
+  },
+  {
+   "pattern": "O",
+   "text": "Ó",
+   "label": "Ó"
+  },
+  {
+   "pattern": "u",
+   "text": "ú",
+   "label": "ú"
+  },
+  {
+   "pattern": "U",
+   "text": "Ú",
+   "label": "Ú"
+  },
+  {
+   "pattern": "ɔ",
+   "text": "ɔ́",
+   "label": "ɔ́"
+  },
+  {
+   "pattern": "Ɔ",
+   "text": "Ɔ́",
+   "label": "Ɔ́"
+  },
+  {
+   "pattern": "ɛ",
+   "text": "ɛ́",
+   "label": "ɛ́"
+  },
+  {
+   "pattern": "Ɛ",
+   "text": "Ɛ́",
+   "label": "Ɛ́"
+  },
+  {
+   "pattern": "n",
+   "text": "ń",
+   "label": "ń"
+  },
+  {
+   "pattern": "N",
+   "text": "Ń",
+   "label": "Ń"
+  },
+  {
+   "pattern": "m",
+   "text": "ḿ",
+   "label": "ḿ"
+  },
+  {
+   "pattern": "M",
+   "text": "Ḿ",
+   "label": "Ḿ"
+  },
+  {
+   "pattern": "ŋ",
+   "text": "ŋ́",
+   "label": "ŋ́"
+  },
+  {
+   "pattern": "Ŋ",
+   "text": "Ŋ́",
+   "label": "Ŋ́"
+  },
+  {
+   "pattern": "a",
+   "text": "â",
+   "label": "â"
+  },
+  {
+   "pattern": "A",
+   "text": "Â",
+   "label": "Â"
+  },
+  {
+   "pattern": "e",
+   "text": "ê",
+   "label": "ê"
+  },
+  {
+   "pattern": "E",
+   "text": "Ê",
+   "label": "Ê"
+  },
+  {
+   "pattern": "i",
+   "text": "î",
+   "label": "î"
+  },
+  {
+   "pattern": "I",
+   "text": "Î",
+   "label": "Î"
+  },
+  {
+   "pattern": "o",
+   "text": "ô",
+   "label": "ô"
+  },
+  {
+   "pattern": "O",
+   "text": "Ô",
+   "label": "Ô"
+  },
+  {
+   "pattern": "u",
+   "text": "û",
+   "label": "û"
+  },
+  {
+   "pattern": "U",
+   "text": "Û",
+   "label": "Û"
+  },
+  {
+   "pattern": "ɔ",
+   "text": "ɔ̂",
+   "label": "ɔ̂"
+  },
+  {
+   "pattern": "Ɔ",
+   "text": "Ɔ̂",
+   "label": "Ɔ̂"
+  },
+  {
+   "pattern": "ɛ",
+   "text": "ɛ̂",
+   "label": "ɛ̂"
+  },
+  {
+   "pattern": "Ɛ",
+   "text": "Ɛ̂",
+   "label": "Ɛ̂"
+  },
+  {
+   "pattern": "a",
+   "text": "ā",
+   "label": "ā"
+  },
+  {
+   "pattern": "A",
+   "text": "Ā",
+   "label": "Ā"
+  },
+  {
+   "pattern": "e",
+   "text": "ē",
+   "label": "ē"
+  },
+  {
+   "pattern": "E",
+   "text": "Ē",
+   "label": "Ē"
+  },
+  {
+   "pattern": "i",
+   "text": "ī",
+   "label": "ī"
+  },
+  {
+   "pattern": "I",
+   "text": "Ī",
+   "label": "Ī"
+  },
+  {
+   "pattern": "o",
+   "text": "ō",
+   "label": "ō"
+  },
+  {
+   "pattern": "O",
+   "text": "Ō",
+   "label": "Ō"
+  },
+  {
+   "pattern": "u",
+   "text": "ū",
+   "label": "ū"
+  },
+  {
+   "pattern": "U",
+   "text": "Ū",
+   "label": "Ū"
+  },
+  {
+   "pattern": "ɔ",
+   "text": "ɔ̄",
+   "label": "ɔ̄"
+  },
+  {
+   "pattern": "Ɔ",
+   "text": "Ɔ̄",
+   "label": "Ɔ̄"
+  },
+  {
+   "pattern": "ɛ",
+   "text": "ɛ̄",
+   "label": "ɛ̄"
+  },
+  {
+   "pattern": "Ɛ",
+   "text": "Ɛ̄",
+   "label": "Ɛ̄"
+  },
+  {
+   "pattern": "n",
+   "text": "ñ",
+   "label": "ñ"
+  },
+  {
+   "pattern": "N",
+   "text": "Ñ",
+   "label": "Ñ"
+  },
+  {
+   "pattern": "a",
+   "text": "ǎ",
+   "label": "ǎ"
+  },
+  {
+   "pattern": "A",
+   "text": "Ǎ",
+   "label": "Ǎ"
+  },
+  {
+   "pattern": "e",
+   "text": "ě",
+   "label": "ě"
+  },
+  {
+   "pattern": "E",
+   "text": "Ě",
+   "label": "Ě"
+  },
+  {
+   "pattern": "i",
+   "text": "ǐ",
+   "label": "ǐ"
+  },
+  {
+   "pattern": "I",
+   "text": "Ǐ",
+   "label": "Ǐ"
+  },
+  {
+   "pattern": "o",
+   "text": "ǒ",
+   "label": "ǒ"
+  },
+  {
+   "pattern": "O",
+   "text": "Ǒ",
+   "label": "Ǒ"
+  },
+  {
+   "pattern": "u",
+   "text": "ǔ",
+   "label": "ǔ"
+  },
+  {
+   "pattern": "U",
+   "text": "Ǔ",
+   "label": "Ǔ"
+  },
+  {
+   "pattern": "ɔ",
+   "text": "ɔ̌",
+   "label": "ɔ̌"
+  },
+  {
+   "pattern": "Ɔ",
+   "text": "Ɔ̌",
+   "label": "Ɔ̌"
+  },
+  {
+   "pattern": "ɛ",
+   "text": "ɛ̌",
+   "label": "ɛ̌"
+  },
+  {
+   "pattern": "Ɛ",
+   "text": "Ɛ̌",
+   "label": "Ɛ̌"
+  },
+  {
+   "pattern": "n",
+   "text": "ň",
+   "label": "ň"
+  },
+  {
+   "pattern": "N",
+   "text": "Ň",
+   "label": "Ň"
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

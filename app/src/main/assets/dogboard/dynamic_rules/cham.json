@@ -1,0 +1,141 @@
+{
+ "script": "cham",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([ꨆ-ꨨ])([ꨴꨵ])",
+   "text": "$1$2",
+   "label": "$1$2"
+  },
+  {
+   "pattern": "(([ꨆ-ꨨ])([ꨴꨵ])?)([ꨳꨶ])",
+   "text": "$1$4",
+   "label": "$1$4"
+  },
+  {
+   "pattern": "([ꨀ-ꨅ]|[ꨆ-ꨨ][ꨴꨵ]?[ꨳꨶ]?)([ꨯ-ꨰ])",
+   "text": "$1$2",
+   "label": "$1$2"
+  },
+  {
+   "pattern": "(([ꨀ-ꨅ]|[ꨆ-ꨨ][ꨴꨵ]?[ꨳꨶ]?)([ꨯ-ꨰ])?)([ꨪ-ꨮꨱꨲ])",
+   "text": "$1$4",
+   "label": "$1$4"
+  },
+  {
+   "pattern": "(([ꨀ-ꨅ]|[ꨆ-ꨨ][ꨴꨵ]?[ꨳꨶ]?)([ꨯ-ꨰ])?([ꨪ-ꨮꨱꨲ])?)ꨩ",
+   "text": "$1ꨩ",
+   "label": "$1ꨩ"
+  },
+  {
+   "pattern": "(([ꨀ-ꨅ]|[ꨆ-ꨨ][ꨴꨵ]?[ꨳꨶ]?)([ꨯ-ꨰ])?([ꨪ-ꨮꨱꨲ])?(ꨩ)?)([ꩃꩌꩍ])",
+   "text": "$1$6",
+   "label": "$1$6"
+  },
+  {
+   "pattern": "ꨊ",
+   "text": "ꨋ",
+   "label": "ꨋ"
+  },
+  {
+   "pattern": "ꨐ",
+   "text": "ꨑ",
+   "label": "ꨑ"
+  },
+  {
+   "pattern": "ꨗ",
+   "text": "ꨘ",
+   "label": "ꨘ"
+  },
+  {
+   "pattern": "ꨟ",
+   "text": "ꨠ",
+   "label": "ꨠ"
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꨐ",
+   "text": "ꨒ",
+   "label": "ꨒ"
+  },
+  {
+   "pattern": "ꨗ",
+   "text": "ꨙ",
+   "label": "ꨙ"
+  },
+  {
+   "pattern": "ꨟ",
+   "text": "ꨡ",
+   "label": "ꨡ"
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ꨆ",
+   "text": "ꩀ",
+   "label": "ꩀ"
+  },
+  {
+   "pattern": "ꨈ",
+   "text": "ꩁ",
+   "label": "ꩁ"
+  },
+  {
+   "pattern": "ꨊ",
+   "text": "ꩂ",
+   "label": "ꩂ"
+  },
+  {
+   "pattern": "ꨌ",
+   "text": "ꩄ",
+   "label": "ꩄ"
+  },
+  {
+   "pattern": "ꨓ",
+   "text": "ꩅ",
+   "label": "ꩅ"
+  },
+  {
+   "pattern": "ꨗ",
+   "text": "ꩆ",
+   "label": "ꩆ"
+  },
+  {
+   "pattern": "ꨚ",
+   "text": "ꩇ",
+   "label": "ꩇ"
+  },
+  {
+   "pattern": "ꨢ",
+   "text": "ꩈ",
+   "label": "ꩈ"
+  },
+  {
+   "pattern": "ꨣ",
+   "text": "ꩉ",
+   "label": "ꩉ"
+  },
+  {
+   "pattern": "ꨤ",
+   "text": "ꩊ",
+   "label": "ꩊ"
+  },
+  {
+   "pattern": "ꨦ",
+   "text": "ꩋ",
+   "label": "ꩋ"
+  },
+  {
+   "pattern": "",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

@@ -1,0 +1,56 @@
+{
+ "script": "buginese",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([ᨀ-ᨖ])ᨗ",
+   "text": "$1ᨗ",
+   "label": "$1ᨗ"
+  },
+  {
+   "pattern": "([ᨀ-ᨖ])ᨘ",
+   "text": "$1ᨘ",
+   "label": "$1ᨘ"
+  },
+  {
+   "pattern": "([ᨀ-ᨖ])ᨙ",
+   "text": "$1ᨙ",
+   "label": "$1ᨙ"
+  },
+  {
+   "pattern": "([ᨀ-ᨖ])ᨚ",
+   "text": "$1ᨚ",
+   "label": "$1ᨚ"
+  },
+  {
+   "pattern": "([ᨀ-ᨖ])ᨛ",
+   "text": "$1ᨛ",
+   "label": "$1ᨛ"
+  },
+  {
+   "pattern": "ᨗ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ᨘ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ᨙ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ᨚ",
+   "text": "",
+   "label": " "
+  },
+  {
+   "pattern": "ᨛ",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

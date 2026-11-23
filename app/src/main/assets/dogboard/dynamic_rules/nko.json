@@ -1,0 +1,76 @@
+{
+ "script": "nko",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "([ߊ-ߏߐ])߭",
+   "text": "$1߭",
+   "label": "$1߭"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߳",
+   "text": "$1߳",
+   "label": "$1߳"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߲",
+   "text": "$1߲",
+   "label": "$1߲"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߱",
+   "text": "$1߱",
+   "label": "$1߱"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߮",
+   "text": "$1߮",
+   "label": "$1߮"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߬",
+   "text": "$1߬",
+   "label": "$1߬"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߰",
+   "text": "$1߰",
+   "label": "$1߰"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߫",
+   "text": "$1߫",
+   "label": "$1߫"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])߯",
+   "text": "$1߯",
+   "label": "$1߯"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])ߵ",
+   "text": "$1ߵ",
+   "label": "$1ߵ"
+  },
+  {
+   "pattern": "([ߊ-ߏߐ])ߴ",
+   "text": "$1ߴ",
+   "label": "$1ߴ"
+  },
+  {
+   "pattern": "([ߓߖߗߙߛ-ߞߡߢߦ])߭",
+   "text": "$1߭",
+   "label": "$1߭"
+  },
+  {
+   "pattern": "ߜ߳",
+   "text": "ߜ߳",
+   "label": "ߜ߳"
+  },
+  {
+   "pattern": "ߜ߫",
+   "text": "ߜ߫",
+   "label": "ߜ߫"
+  }
+ ]
+}

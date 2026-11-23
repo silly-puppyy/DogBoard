@@ -1,0 +1,51 @@
+{
+ "script": "ibibio",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "ị",
+   "text": "ị",
+   "label": "ị"
+  },
+  {
+   "pattern": "Ị",
+   "text": "Ị",
+   "label": "Ị"
+  },
+  {
+   "pattern": "ọ",
+   "text": "ọ",
+   "label": "ọ"
+  },
+  {
+   "pattern": "Ọ",
+   "text": "Ọ",
+   "label": "Ọ"
+  },
+  {
+   "pattern": "ụ",
+   "text": "ụ",
+   "label": "ụ"
+  },
+  {
+   "pattern": "Ụ",
+   "text": "Ụ",
+   "label": "Ụ"
+  },
+  {
+   "pattern": "ṇ",
+   "text": "ñ",
+   "label": "ñ"
+  },
+  {
+   "pattern": "Ṇ",
+   "text": "Ñ",
+   "label": "Ñ"
+  },
+  {
+   "pattern": "̣",
+   "text": "",
+   "label": " "
+  }
+ ]
+}

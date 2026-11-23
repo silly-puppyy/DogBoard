@@ -1,0 +1,71 @@
+{
+ "script": "faroese",
+ "source": "Gboard dynamic layout rules (derived)",
+ "rules": [
+  {
+   "pattern": "a´",
+   "text": "á",
+   "label": "á"
+  },
+  {
+   "pattern": "A´",
+   "text": "Á",
+   "label": "Á"
+  },
+  {
+   "pattern": "e´",
+   "text": "é",
+   "label": "é"
+  },
+  {
+   "pattern": "E´",
+   "text": "É",
+   "label": "É"
+  },
+  {
+   "pattern": "i´",
+   "text": "í",
+   "label": "í"
+  },
+  {
+   "pattern": "I´",
+   "text": "Í",
+   "label": "Í"
+  },
+  {
+   "pattern": "o´",
+   "text": "ó",
+   "label": "ó"
+  },
+  {
+   "pattern": "O´",
+   "text": "Ó",
+   "label": "Ó"
+  },
+  {
+   "pattern": "u´",
+   "text": "ú",
+   "label": "ú"
+  },
+  {
+   "pattern": "U´",
+   "text": "Ú",
+   "label": "Ú"
+  },
+  {
+   "pattern": "y´",
+   "text": "ý",
+   "label": "ý"
+  },
+  {
+   "pattern": "Y´",
+   "text": "Ý",
+   "label": "Ý"
+  },
+  {
+   "pattern": "´",
+   "text": "",
+   "label": " "
+  }
+ ]
+}
