@@ -207,10 +207,12 @@ class TouchKeyboard(
         keyboardWidthDp: Float,
         keyboardHeightDp: Float,
         typingInterval: Double,
+        /** The finger's contact radius in dp (TouchSize), 0 when the screen doesn't report it. */
+        touchRadius: Double = 0.0,
     ): Pair<Map<Char, KeyTarget>, GaussianTouch.Params?> {
         val t = targetsFor(layerId, keyboardWidthDp, keyboardHeightDp)
         if (t.letters.isEmpty()) return t.letters to null
-        return t.letters to GaussianTouch.params(t.letterMedianHalfWidth, typingInterval)
+        return t.letters to GaussianTouch.params(t.letterMedianHalfWidth, typingInterval, touchRadius)
     }
 
     companion object {

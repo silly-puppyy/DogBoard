@@ -280,7 +280,7 @@ class PointerTracker(
             io.github.sillypuppyy.dogboard.ime.BarTapGuard.lastKeyDownUptime = down.uptimeMillis
             val widthDp = size.width / density
             val heightDp = size.height / density
-            val (letterKeys, params) = touchKeyboard.letterTargets(downLayerId, widthDp, heightDp, typingSpeed.interval)
+            val (letterKeys, params) = touchKeyboard.letterTargets(downLayerId, widthDp, heightDp, typingSpeed.interval, io.github.sillypuppyy.dogboard.touch.TouchSize.radiusDp)
             val normalized = down.position.normalized(size)
             val tap = Tap(normalized.x * widthDp, normalized.y * heightDp, down.uptimeMillis)
             imeController.notePendingTap(tap, letterKeys, params)
@@ -854,6 +854,13 @@ fun Modifier.trackPointerInput(
                         pointerTracker.mutateLocked {
                             cancelNonPresent(event.changes)
                         }
+                    }
+                    // DogBoard: the finger's contact size (iOS ForTouch radius term; Compose changes don't carry it, the
+                    // MotionEvent does, the pointer going down at actionIndex)
+                    event.motionEvent?.let { me ->
+                        val action = me.actionMasked
+                        if (action == android.view.MotionEvent.ACTION_DOWN || action == android.view.MotionEvent.ACTION_POINTER_DOWN)
+                            io.github.sillypuppyy.dogboard.touch.TouchSize.note(me.getTouchMajor(me.actionIndex) / density)
                     }
                     event.changes.fastForEach { change ->
                         if (change.changedToDown()) {
