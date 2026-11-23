@@ -310,6 +310,7 @@ class Pack:
         report = [f'# {self.cfg["name"]} pack ({self.lang}), built by tools/i18n/auto_pack.py {time.strftime("%Y-%m-%d %H:%M")}', '',
                   f'Letter rows: {" / ".join(rows["letter_rows"]["rows"])}; distinct letters: {rows["distinct_letters"] or "none"}', '',
                   '| set | cases | fixed | left | wrong | broken |', '|---|---|---|---|---|---|']
+        broken_high = None
         for s in ('typos', 'accents-clear', 'accents-twin', 'controls'):
             f = self.p(f'{self.lang}-{s}.tsv')
             if not os.path.exists(f) or os.path.getsize(f) == 0: continue
@@ -328,8 +329,13 @@ class Pack:
             if m:
                 report.append(f'| {s} | {m.group(1) if m.group(1) != "0" else m.group(5)} | {m.group(2)} | {m.group(3)} | {m.group(4)} | {m.group(6)} |')
                 log(s, m.group(0))
+                if s == 'controls' and m.group(6) != 'NaN' and float(m.group(6)) > 0.5: broken_high = float(m.group(6))
             else:
                 report.append(f'| {s} | eval failed | | | | |'); log(s, 'eval failed', r.stdout[-500:])
+        if broken_high:
+            # Basque at a quarter of its text broke 1.2 % of correct words (full text 0.2 %, like the other packs): too little
+            # text; a stricter correction threshold barely helped (1.0 %, two points of fixed typos lost), 2026-11-23
+            report += ['', f'NOT READY TO SHIP: {broken_high} % of correct words broken (at most 0.5 %): more text needed']
         sizes = {k: v['size'] for k, v in json.load(open(self.p('manifest.json')))['files'].items()}
         report += ['', 'Download size without the text lists: %.1f MB' % (sum(v for k, v in sizes.items() if k not in ('lexicon', 'bigrams')) / 1e6)]
         open(self.p('report.md'), 'w').write('\n'.join(report) + '\n')
