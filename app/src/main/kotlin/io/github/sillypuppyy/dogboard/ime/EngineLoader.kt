@@ -237,9 +237,14 @@ object EngineLoader {
         android.util.Log.i("DogBoardPerf", "swipe recogniser loaded again")
     }
 
-    private fun nativeMark(what: String) =
-        android.util.Log.i("DogBoardPerf", "memory after $what: native ${android.os.Debug.getNativeHeapAllocatedSize() / 1048576} MB, " +
-            "java ${(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576} MB")
+    private fun nativeMark(what: String) {
+        val rt = Runtime.getRuntime()
+        val used = (rt.totalMemory() - rt.freeMemory()) / 1048576
+        // debug builds: what is live, after a collection (the used heap includes garbage: the phone's "java 200 MB"
+        // after the engine load was mostly the parse's, 2026-11-23); release builds skip the collection's time
+        val live = if (dev.patrickgold.florisboard.BuildConfig.DEBUG) { rt.gc(); ", live ${(rt.totalMemory() - rt.freeMemory()) / 1048576} MB" } else ""
+        android.util.Log.i("DogBoardPerf", "memory after $what: native ${android.os.Debug.getNativeHeapAllocatedSize() / 1048576} MB, java $used MB$live")
+    }
 
     // one load at a time, and a language switch waits for it: a switch during the first load attached English's
     // trigram to Spanish and held both languages in memory (emulator OOM at 192 MB, 2026-11-22)
