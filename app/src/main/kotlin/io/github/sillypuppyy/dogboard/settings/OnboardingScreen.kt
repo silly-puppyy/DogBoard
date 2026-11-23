@@ -177,9 +177,9 @@ private val TITLES = mapOf(
     "layout" to ("Pick a layout" to "Both type the same letters. You can mix the details later in Settings › Layout."),
     "elements" to ("Fine-tune the layout" to "Each of these can be set on its own. The preview follows."),
     "theme" to ("Theme" to "Colours, sound and vibration. More themes, gradients and photo themes are in Settings › Look."),
-    "typing" to ("Typing and correction" to "How much DogBoard fixes for you."),
+    "typing" to ("Typing and correction" to "What DogBoard fixes for you."),
     "clipboard" to ("Clipboard" to "DogBoard can keep what you copy so you can paste it again later."),
-    "privacy" to ("Privacy" to "What DogBoard may learn and read. Everything stays on this phone."),
+    "privacy" to ("Privacy" to "What DogBoard may read, and what it does with links you copy."),
     "done" to ("You’re set" to "Type anything to try it. Every choice can be changed in Settings."),
 )
 
@@ -541,21 +541,29 @@ private fun LayoutStep() {
     Preview()
 }
 
-/** Onboarding S.elements: number row, long-press hints, action key; the keyboard. */
+/**
+ * Onboarding S.elements as the user set it (2026-11-23): number row, what the space bar shows and what holding it does
+ * (not long-press hints), action key; the keyboard.
+ */
 @Composable
 private fun ElementsStep() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
     val numRow by prefs.keyboard.numberRow.collectAsState()
     val numLong by prefs.keyboard.numberRowLongPress.collectAsState()
-    val hints by prefs.keyboard.hintKind.collectAsState()
+    val space by prefs.keyboard.spaceLabel.collectAsState()
+    val hold by prefs.typing.spaceHold.collectAsState()
     val words by prefs.keyboard.actionKeyWords.collectAsState()
     Choice("numrow", "Number row", options = listOf("Off", "On", "Long-press"), selected = if (numRow) 1 else if (numLong) 2 else 0) { n ->
         scope.launch { prefs.keyboard.numberRow.set(n == 1); prefs.keyboard.numberRowLongPress.set(n == 2) }
     }
-    val kinds = listOf("off", "accents", "symbols")
-    Choice("hints", "Long-press hints", options = listOf("Off", "Accents", "Symbols"), selected = kinds.indexOf(hints).coerceAtLeast(0)) { n ->
-        scope.launch { prefs.keyboard.hintKind.set(kinds[n]) }
+    val labels = listOf("blank", "space", "lang")
+    Choice("space", "Space bar shows", options = listOf("Nothing", "“space”", "Languages"), selected = labels.indexOf(space).let { if (it < 0) 2 else it }) { n ->
+        scope.launch { prefs.keyboard.spaceLabel.set(labels[n]) }
+    }
+    val holds = listOf("nothing", "cursor", "language")
+    Choice("hold", "Holding the space bar", options = listOf("Nothing", "Moves the cursor", "Languages"), selected = holds.indexOf(hold).coerceAtLeast(0)) { n ->
+        scope.launch { prefs.typing.spaceHold.set(holds[n]) }
     }
     Choice("action", "Action key", options = listOf("Icon", "Word"), selected = if (words) 1 else 0) { n ->
         scope.launch { prefs.keyboard.actionKeyWords.set(n == 1) }
@@ -563,61 +571,72 @@ private fun ElementsStep() {
     Preview()
 }
 
-/** Onboarding S.look + S.feel (one Theme page, user 2026-11-23): three themes, dark mode, vibration and key sounds. */
+/**
+ * Onboarding S.look + S.feel as the user set it (2026-11-23): day and night or one look always, the themes list,
+ * vibration, the key sound and playing it on silent; the keyboard.
+ */
 @Composable
 private fun ThemeStep() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
-    val day by prefs.keyboard.themeDay.collectAsState()
+    val nav = LocalNavController.current
     val follow by prefs.keyboard.themeFollow.collectAsState()
     val fixedNight by prefs.keyboard.themeFixedNight.collectAsState()
-    val ids = listOf("dogboard", "brand", "ink")
-    Cards(
-        listOf(
-            Triple("DogBoard", "Follows your wallpaper", listOf("#ededf4", "#ffffff", "#dbe2f9", "#435e91")),
-            Triple("Warm", "The DogBoard palette, always", listOf("#fbebe1", "#ffffff", "#efe0d6", "#88521c")),
-            Triple("Ink", "True black, easy on OLED batteries", listOf("#000000", "#1a1b1f", "#111216", "#2a4678")),
-        ),
-        ids.indexOf(day),
-    ) { n -> scope.launch { prefs.keyboard.themeDay.set(ids[n]); prefs.keyboard.themeNight.set(ids[n]); prefs.keyboard.glassEnabled.set(false) } }
-    Choice("dark", "Dark mode", options = listOf("Follow system", "Light", "Dark"), selected = if (follow) 0 else if (fixedNight) 2 else 1) { n ->
-        scope.launch { prefs.keyboard.themeFollow.set(n == 0); prefs.keyboard.themeFixedNight.set(n == 2) }
+    val vib by prefs.inputFeedback.hapticEnabled.collectAsState()
+    val sound by prefs.inputFeedback.audioEnabled.collectAsState()
+    val style by prefs.inputFeedback.audioStyle.collectAsState()
+    val silent by prefs.inputFeedback.audioBypassSilent.collectAsState()
+    Choice("dark", "Day and night", "Follows your phone’s dark mode, or keeps one look all the time.", listOf("Follow the system", "Ignore the system"), if (follow) 0 else 1) { n ->
+        scope.launch { prefs.keyboard.themeFollow.set(n == 0) }
+    }
+    if (!follow) Choice("fixed", "Always use", options = listOf("Bright", "Dark"), selected = if (fixedNight) 1 else 0) { n ->
+        scope.launch { prefs.keyboard.themeFixedNight.set(n == 1) }
+    }
+    Row(
+        Modifier.card().heightIn(min = 60.dp).clickable { nav.navigate(Routes.Settings.Themes) }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DText("Themes", style = setText(15f))
+            DText("Pick a theme, or make one from a colour, a gradient or a photo.", style = setText(12.5f, color = SetColors.onSurfaceVariant), maxLines = 3)
+        }
+        Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
     }
     Preview()
-    FeelRows()
+    Toggle("Vibration", "A short tap on each key.", vib) { scope.launch { prefs.inputFeedback.hapticEnabled.set(it) } }
+    // the sounds of Settings › Sound and vibration
+    val sounds = listOf(null to "Off", "system" to "Phone", "tick" to "Tick", "drop" to "Drop", "glass" to "Glass", "thock" to "Thock", "classic" to "Classic",
+        "clack" to "Clack", "pen" to "Pen", "mouse" to "Mouse", "mechkeys" to "Mech keys")
+    var menu by remember { mutableStateOf(false) }
+    Row(
+        Modifier.card().heightIn(min = 60.dp).clickable { menu = true }.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DText("Key sound", style = setText(15f))
+            DText(if (!sound) "Off" else sounds.firstOrNull { it.first == style }?.second ?: "Phone", style = setText(12.5f, color = SetColors.onSurfaceVariant))
+        }
+        Symbol("arrow_drop_down", 24.sp, SetColors.onSurfaceVariant)
+        io.github.sillypuppyy.dogboard.design.settings.SetMenu(menu, { menu = false }, sounds.map { (id, name) ->
+            name to { scope.launch { if (id == null) prefs.inputFeedback.audioEnabled.set(false) else { prefs.inputFeedback.audioStyle.set(id); prefs.inputFeedback.audioEnabled.set(true) } }; menu = false }
+        })
+    }
+    if (sound) Toggle("Play on silent", "Key sounds even when the phone is on silent or vibrate.", silent) { scope.launch { prefs.inputFeedback.audioBypassSilent.set(it) } }
 }
 
-/** Onboarding S.typing: autocorrect strength, capitals, double-space full stop. */
+/** Onboarding S.typing as the user set it (2026-11-23): autocorrect on or off, the general rules, smart quotes. */
 @Composable
 private fun TypingStep() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
     val on by prefs.correction.autocorrect.collectAsState()
-    val level by prefs.correction.autocorrectLevel.collectAsState()
     val caps by prefs.typing.autoCapitalization.collectAsState()
-    val dbl by prefs.correction.doubleSpacePeriod.collectAsState()
-    val levels = AutocorrectLevel.entries
-    val sel = if (!on) 0 else when (level) { levels.first() -> 1; levels.last() -> 3; else -> 2 }
-    Choice("ac", "Autocorrect", "Fixes typos when you press space. Delete right after undoes it.", listOf("Off", "Gentle", "Standard", "Strong"), sel) { n ->
-        scope.launch {
-            prefs.correction.autocorrect.set(n != 0)
-            if (n != 0) prefs.correction.autocorrectLevel.set(when (n) { 1 -> levels.first(); 3 -> levels.last(); else -> levels[levels.size / 2] })
-        }
-    }
+    val retro by prefs.correction.fixPreviousWord.collectAsState()
+    val quotes by prefs.typing.smartQuotes.collectAsState()
+    Toggle("Autocorrect", "Fixes typos when you press space. Delete right after undoes it.", on) { scope.launch { prefs.correction.autocorrect.set(it) } }
     Toggle("Capitalise sentences", "Starts each sentence with a capital.", caps) { scope.launch { prefs.typing.autoCapitalization.set(it) } }
-    Toggle("Double-space for a full stop", "Two quick spaces type “. ”.", dbl) { scope.launch { prefs.correction.doubleSpacePeriod.set(it) } }
-}
-
-/** Onboarding S.feel: vibration and key sounds, and a field to try them (no invented presets: on / off as the Sound and vibration page). */
-@Composable
-private fun FeelRows() {
-    val prefs by FlorisPreferenceStore
-    val scope = rememberCoroutineScope()
-    val vib by prefs.inputFeedback.hapticEnabled.collectAsState()
-    val sound by prefs.inputFeedback.audioEnabled.collectAsState()
-    Toggle("Vibration", "A short tap on each key. More options in Settings › Sound and vibration.", vib) { scope.launch { prefs.inputFeedback.hapticEnabled.set(it) } }
-    Toggle("Key sounds", "A soft click on each key. Silent mode always wins.", sound) { scope.launch { prefs.inputFeedback.audioEnabled.set(it) } }
-    TryField()
+    Toggle("Fix the previous word", "When the next word shows a typo was in the word before, that one is fixed too.", retro, enabled = on) { scope.launch { prefs.correction.fixPreviousWord.set(it) } }
+    Toggle("Smart quotes", "Curly quotes and apostrophes (“like this”) instead of straight ones.", quotes) { scope.launch { prefs.typing.smartQuotes.set(it) } }
 }
 
 /** Onboarding S.clipboard: history (off by default), how long clips stay, what is never kept; smart chips. */
@@ -638,7 +657,11 @@ private fun ClipboardStep() {
             if (n != 3) prefs.clipboard.historyAutoCleanOldAfter.set(minutes[n])
         }
     }
-    Info("shield", "Passwords and one-time codes are never kept.")
+    // the user (2026-11-23): passwords as a choice, cleared after a minute or kept like other clips
+    val sens by prefs.clipboard.historyAutoCleanSensitiveEnabled.collectAsState()
+    Choice("pw", "Copied passwords", "Passwords and codes you copy, in the history and on the phone’s clipboard.", listOf("Clear after a minute", "Never clear"), if (sens) 0 else 1, enabled = clip) { n ->
+        scope.launch { prefs.clipboard.historyAutoCleanSensitiveEnabled.set(n == 0) }
+    }
     // CHANGED (port map): the canvas's "Suggest your last copy" has no setting; DogBoard's chips for what's in a copy
     Toggle("Clipboard chips", "Phone numbers, links and addresses in what you copy show as chips in the bar.", chips) { scope.launch { prefs.clipboard.smartChips.set(it) } }
 }
@@ -657,17 +680,18 @@ private fun ContactsRow() {
     }
 }
 
-/** Onboarding S.privacy + S.smart (one page, user 2026-11-23): incognito and contacts (tips and developer keys aren't built). */
+/** Onboarding S.privacy as the user set it (2026-11-23): contacts, and what DogBoard does with copied links. */
 @Composable
 private fun PrivacyStep() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
-    val mode by prefs.suggestion.incognitoMode.collectAsState()
-    val modes = listOf(dev.patrickgold.florisboard.ime.keyboard.IncognitoMode.DYNAMIC_ON_OFF, dev.patrickgold.florisboard.ime.keyboard.IncognitoMode.FORCE_ON, dev.patrickgold.florisboard.ime.keyboard.IncognitoMode.FORCE_OFF)
-    Choice("incog", "Incognito typing", "Nothing you type is learned or kept. Automatic: in passwords and private browsing.", listOf("Automatic", "Always", "Never"), modes.indexOf(mode).coerceAtLeast(0)) { n ->
-        scope.launch { prefs.suggestion.incognitoMode.set(modes[n]) }
-    }
+    val expand by prefs.clipboard.expandShortLinks.collectAsState()
+    val previews by prefs.clipboard.linkPreviews.collectAsState()
+    val trackers by prefs.clipboard.stripTrackers.collectAsState()
     ContactsRow()
+    Toggle("Remove trackers from links", "Pasted links lose their tracking tags (utm_source and the like).", trackers) { scope.launch { prefs.clipboard.stripTrackers.set(it) } }
+    Toggle("Expand short links", "Asks a link shortener (bit.ly, t.co…) where a copied short link leads, so you paste the full link. Uses the internet.", expand) { scope.launch { prefs.clipboard.expandShortLinks.set(it) } }
+    Toggle("Link previews", "Shows a copied link’s title and picture in the clipboard. Fetches the page once.", previews) { scope.launch { prefs.clipboard.linkPreviews.set(it) } }
 }
 
 /** Onboarding S.done: the try field, what is on and off, the keyboard. */

@@ -277,6 +277,52 @@ object ThemeModel {
     /** The keyboard tokens of an editor theme for the mode (a photo background is drawn by the photo layer). */
     fun tokensOf(t: Theme, darkMode: Boolean): Map<String, String> { val v = t.version(darkMode); return toRoles(v, t.shape, bgCss(v.bg)) }
 
+    // ---- the colour picker (lib: toHsv, fromHsv)
+
+    data class Hsv(val h: Double, val s: Double, val v: Double, val a: Double = 1.0)
+
+    fun toHsv(c: String?): Hsv {
+        val o = parse(if (c != null && c != "none") c else "#888888")
+        val r = o.r / 255; val g = o.g / 255; val b = o.b / 255
+        val mx = maxOf(r, g, b); val mn = minOf(r, g, b); val d = mx - mn
+        var h = 0.0
+        if (d != 0.0) {
+            h = when (mx) { r -> ((g - b) / d) % 6; g -> (b - r) / d + 2; else -> (r - g) / d + 4 }
+            h = (h * 60 + 360) % 360
+        }
+        return Hsv(h, if (mx != 0.0) d / mx else 0.0, mx, o.a)
+    }
+
+    fun fromHsv(k: Hsv): String {
+        fun f(n: Int): Double { val q = (n + k.h / 60) % 6; return k.v - k.v * k.s * max(0.0, minOf(q, 4 - q, 1.0)) }
+        return str(Rgba(f(5) * 255, f(3) * 255, f(1) * 255, k.a))
+    }
+
+    /**
+     * A built-in theme as an editor theme (Copy and edit, TEHold): its bright and dark colours as yours on its
+     * background, its corners and label weight kept.
+     */
+    fun fromBuiltIn(name: String, light: Map<String, String>?, dark: Map<String, String>?): Theme {
+        fun ver(m: Map<String, String>?): Version? = m?.let { t ->
+            val bg = t["bg"] ?: return@let null
+            val g = CssGradient.parse(bg)
+            val back = if (g != null) Bg(type = "gradient", stops = g.stops.mapIndexed { i, (c, p) -> Stop(cssHex(c), (p * 100).roundToInt()) }, angle = g.angleDeg.toInt())
+                else Bg(color = bg)
+            Version(back, tint = false, ov = ROLES.filter { !it.endsWith("Line") }.mapNotNull { r -> t[r]?.let { r to it } }.toMap())
+        }
+        val l = ver(light); val d = ver(dark)
+        val any = light ?: dark ?: emptyMap()
+        return Theme(
+            name, versions = if (l != null && d != null) "both" else if (d != null) "dark" else "light", light = l, dark = d,
+            shape = Shape(radius = any["radius"]?.toDoubleOrNull() ?: 10.0, weight = any["fw"]?.toIntOrNull() ?: 400),
+        )
+    }
+
+    private fun cssHex(c: androidx.compose.ui.graphics.Color): String {
+        val a = c.alpha; val r = (c.red * 255); val g = (c.green * 255); val b = (c.blue * 255)
+        return str(Rgba(r.toDouble(), g.toDouble(), b.toDouble(), a.toDouble()))
+    }
+
     private fun num(d: Double) = if (d == d.toLong().toDouble()) d.toLong().toString() else d.toString()
 
     /** lib bgCss for solid and gradient backgrounds (a photo is drawn by the photo theme's own layer). */

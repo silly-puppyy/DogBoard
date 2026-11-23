@@ -142,4 +142,8 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "arrow_drop_down" to 0xE5C5,
     "shield" to 0xE9E0,
     "contacts" to 0xE0BA,
+    "horizontal_distribute" to 0xE014,
+    "volume_up" to 0xE050,
+    "arrow_drop_up" to 0xE5C7,
+    "photo_camera" to 0xE412,
 )

@@ -96,7 +96,7 @@ object UserThemes {
 
     fun theme(context: Context, id: String): Theme? = runCatching {
         val j = JSONObject(File(dir(context, id), "theme.json").readText())
-        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.valid(it) },
+        Theme(id, j.getString("name"), j.getString("kind"), j.optJSONObject("params")?.optString("spec")?.takeIf { GradientSpec.valid(it) || ThemeModel.decode(it) != null },
             j.optString("credit").takeIf { it.isNotEmpty() })
     }.getOrNull()
 
@@ -187,7 +187,16 @@ object UserThemes {
         return id
     }
 
-    /** Gradient theme [id] given new colours ([spec]) and [name]. */
+    /** A theme made in the theme editor ([spec]: its "te:" theme id) as a new theme in [pack]. */
+    fun createEditor(context: Context, name: String, spec: String, pack: String? = null): String {
+        val id = "e" + System.currentTimeMillis().toString(36)
+        dir(context, id).apply { mkdirs() }.resolve("theme.json").writeText(JSONObject().put("name", name).put("kind", "editor")
+            .put("created", System.currentTimeMillis()).put("params", JSONObject().put("spec", spec)).toString(1))
+        addToPack(context, id, pack)
+        return id
+    }
+
+    /** Gradient (or editor) theme [id] given new colours ([spec]) and [name]. */
     @Synchronized
     fun updateGradient(context: Context, id: String, name: String, spec: String) {
         val f = File(dir(context, id), "theme.json")

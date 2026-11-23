@@ -139,3 +139,7 @@ check_box_outline_blank
 arrow_drop_down
 shield
 contacts
+horizontal_distribute
+volume_up
+arrow_drop_up
+photo_camera

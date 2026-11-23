@@ -180,6 +180,12 @@ object KbThemes {
         ),
     )
 
+    /** A built-in theme's own light or dark tokens over the defaults (the theme editor's Copy and edit); null if it has none. */
+    fun raw(themeId: String, dark: Boolean): Map<String, String>? = T[themeId]?.get(if (dark) "dark" else "light")?.let { DEF + it }
+
+    /** A built-in theme's name on the Themes page. */
+    fun nameOf(themeId: String): String = ThemeChoice.THEMES.firstOrNull { it.id == themeId }?.name ?: themeId
+
     /**
      * Kb:399-412: the theme's light or dark set (falling back to the one it has), merged over
      * DEF; `linkFg` defaults to `act`, or `actFg` when `act` is transparent. Glass: [glass].
