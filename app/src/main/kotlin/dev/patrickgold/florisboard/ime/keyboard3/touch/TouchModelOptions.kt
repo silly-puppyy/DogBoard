@@ -40,6 +40,8 @@ data class TouchModelOptions(
     val bottomRowClassic: Boolean = false,
     // DogBoard: Gboard's ?123 / =\< symbol pages instead of iOS's 123 / #+= (Settings > Layout > Symbols)
     val symbolsAndroid: Boolean = false,
+    /** DogBoard: letters a language typed together with this one needs (ExtraLetters): host letter -> long-press letters. */
+    val extraLetters: Map<String, List<String>> = emptyMap(),
 ) {
     companion object {
         val Default = TouchModelOptions(

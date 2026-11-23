@@ -344,6 +344,8 @@ class ImeController(
         prefs.keyboard.bottomRow.asFlow(),
         prefs.keyboard.symbolPages.asFlow(),
         prefs.localization.subtypes.asFlow(),
+        prefs.keyboard.layoutId.asFlow(),
+        prefs.localization.activeSubtypeId.asFlow(),
     ) { values ->
         // more than one language and the key as it comes: the globe (FnKeyArrangement.Multilingual)
         val languages = Regex("\"id\"").findAll(values[12] as String).count()
@@ -361,6 +363,11 @@ class ImeController(
             symbolLongPress = values[9] == "symbols",
             bottomRowClassic = values[10] == "classic",
             symbolsAndroid = values[11] == "android",
+            // the entry's second language: its letters this layout lacks on long-presses
+            extraLetters = runCatching {
+                dev.patrickgold.florisboard.ime.core.SubtypeJsonConfig.decodeFromString<List<dev.patrickgold.florisboard.ime.core.Subtype>>(values[12] as String)
+                    .firstOrNull { it.id == values[14] as Long }?.secondaryLocales?.firstOrNull()?.language
+            }.getOrNull().let { io.github.sillypuppyy.dogboard.ime.ExtraLetters.forEntry(values[13] as String, it) },
         )
     }.stateIn(scope, SharingStarted.Eagerly, TouchModelOptions.Default)
 

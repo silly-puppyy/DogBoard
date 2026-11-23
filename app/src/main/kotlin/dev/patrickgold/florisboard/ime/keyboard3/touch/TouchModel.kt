@@ -330,6 +330,17 @@ private data object TouchModelComputeRef : SourceFileRef {
         return "TouchModelComputeRef"
     }
 }
+/** One letter however it's cased or composed (a popup's "ñ" and an added "Ñ"). */
+private fun sameLetter(a: String, b: String): Boolean =
+    java.text.Normalizer.normalize(a, java.text.Normalizer.Form.NFC).equals(java.text.Normalizer.normalize(b, java.text.Normalizer.Form.NFC), ignoreCase = true)
+
+/** The keys of [ExtraLetters]' letters, made once per letter (they aren't in the layout's model). */
+private val extraKeys = java.util.concurrent.ConcurrentHashMap<K3KeyId, K3Key>()
+
+private fun extraKey(letter: String): K3Key = K3KeyId("dogboard-extra-$letter").let { id ->
+    extraKeys.getOrPut(id) { K3Key(id = id, output = letter.asK3String(), origin = TouchModelComputeRef) }
+}
+
 private fun FnKeyAction.asK3Key(): K3Key {
     return K3Key(
         id = K3KeyId(hashCode().toString()),
@@ -470,14 +481,20 @@ private fun computeTouchKeyboard(
                             val symbol = place?.takeIf { options.symbolLongPress }
                                 ?.let { (r, j) -> io.github.sillypuppyy.dogboard.design.KbSpec.positionalHint(r, j) }
                                 ?.let { sym -> symbolKeyIds(model)[sym] }
-                            listOfNotNull(digit ?: symbol) + ids to (digit ?: symbol)
+                            // a second language's letters the layout lacks (ExtraLetters), after the key's own
+                            val letter = (key.output as? K3String)?.toText()?.takeIf { it.length == 1 && it[0].isLetter() }
+                            val extra = letter?.let { l -> options.extraLetters[l.lowercase()] }.orEmpty()
+                                .map { e -> if (letter!![0].isUpperCase()) e.uppercase() else e }
+                                .filter { e -> ids.none { id -> (model.keys.byKeyId[id]?.output as? K3String)?.toText()?.let { o -> sameLetter(o, e) } == true } }
+                                .map { e -> extraKey(e) }
+                            listOfNotNull(digit ?: symbol) + ids + extra.map { it.id } to (digit ?: symbol)
                         }.takeIf { it.first.isNotEmpty() }?.let { (longPressKeyIds, added) ->
                             // an added digit or symbol is the default (it is what the hint shows)
                             val defaultKeyId = added ?: key.longPressDefaultKeyId?.takeIf { it in longPressKeyIds } ?: longPressKeyIds.first()
                             val defaultKeyIndex = longPressKeyIds.indexOf(defaultKeyId)
                             buildList {
                                 longPressKeyIds.forEach { keyId ->
-                                    val key = model.keys.byKeyId[keyId]!!
+                                    val key = model.keys.byKeyId[keyId] ?: extraKeys[keyId]!!
                                     val popupKey = TouchPopupKey(
                                         bounds = Rect.Zero,
                                         display = computeKeyDisplay(model, key),
