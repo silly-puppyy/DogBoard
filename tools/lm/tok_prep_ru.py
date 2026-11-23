@@ -3,14 +3,16 @@
   R1  the same, with each split word (ru_morph.py: ru-endings.tsv) cut into stem + ending: SentencePiece sees the
       stem, and the ending's own token ('<-ов>', a user-defined symbol) goes after the stem's last piece, as
       clitics.py does for English clitics. The word's text is stem + ending, so the encoding is exact.
-Usage: tok_prep_ru.py R0|R1  ->  lm-text/ru-<variant>/{sp16k.model, train.bin, val.bin}
+Usage: [TOK_LANG=es] tok_prep_ru.py R0|R1  ->  lm-text/<lang>-<variant>/{sp16k.model, train.bin, val.bin}
 Importable (RU_VARIANT=R0|R1): sp, encode(line)."""
 import os, re, sys, numpy as np, sentencepiece as spm
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import caps
 
 VARIANT = os.environ.get('RU_VARIANT') or sys.argv[1]
-L = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/lm-text/ru'
+# TOK_LANG: the same recipe for another language's lm-text/<lang> (R0 only: the endings are Russian's)
+LANG = os.environ.get('TOK_LANG', 'ru')
+L = f'/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/lm-text/{LANG}'
 OUT = f'{L}-{VARIANT}'; os.makedirs(OUT, exist_ok=True)
 THREADS = int(os.environ.get('THREADS', '4'))
 ENDINGS = {}
