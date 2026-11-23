@@ -717,7 +717,9 @@ object KbSpec {
                     bg = if (c.luminance() > 0.8f) androidx.compose.ui.graphics.lerp(c, Color(0xFF1A1B20), 0.1f)
                         else androidx.compose.ui.graphics.lerp(c, Color.White, t.keyUnder)
                     bgG = null
-                    fg = if (bg.luminance() > 0.4f) Color(0xFF1A1B20) else Color.White
+                    // the label that reads better on it (a brightness cut-off left grey and salmon keys hard to read)
+                    val l = bg.luminance()
+                    fg = if ((l + 0.05f) / (0.0135f + 0.05f) >= (1.05f) / (l + 0.05f)) Color(0xFF1A1B20) else Color.White
                 }
                 if (k.id == pressed && !(k.kind == "ret" && RET[ret] != null)) {
                     val fnPress = isFnTone || k.kind == "ret"

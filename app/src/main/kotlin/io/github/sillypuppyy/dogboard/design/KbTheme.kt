@@ -70,7 +70,8 @@ object KbThemes {
     /**
      * The Pride pack ("a pack of pride flag gradient themes to really test the keyboard ... keys
      * switch colour depending on what's underneath them"): each flag's stripes top to bottom, hard-edged, in the flags'
-     * published colours; keys take the stripe under them (keyUnder), the return key the flag's darkest stripe.
+     * published colours, blended and tilted; keys take the colour under them (keyUnder), the return key the flag's darkest
+ * stripe.
      */
     val PRIDE: List<Triple<String, String, List<String>>> = listOf(
         Triple("pride", "Pride", listOf("#e40303", "#ff8c00", "#ffed00", "#008026", "#24408e", "#732982")),
@@ -86,14 +87,18 @@ object KbThemes {
 
     private fun prideTheme(stripes: List<String>): Map<String, Map<String, String>> {
         val n = stripes.size
-        fun pct(i: Int) = "%.2f".format(java.util.Locale.ROOT, i * 100.0 / n)
-        val bg = "linear-gradient(180deg, " + stripes.indices.joinToString(", ") { i -> "${stripes[i]} ${pct(i)}%, ${stripes[i]} ${pct(i + 1)}%" } + ")"
+        // smooth and tilted: each stripe's colour at the middle of its band, blending into the next (hard edges are a
+        // theme editor option)
+        fun pct(i: Int) = "%.2f".format(java.util.Locale.ROOT, (i + 0.5) * 100.0 / n)
+        val bg = "linear-gradient(160deg, " + stripes.indices.joinToString(", ") { i -> "${stripes[i]} ${pct(i)}%" } + ")"
         val act = stripes.minBy { ThemeModel.lum(it) }
+        // the suggestion bar sits on the top colour: its words and icons in whichever reads there (black on Asexual's top)
+        val barFg = if (ThemeModel.cr(stripes.first(), "#ffffff") > ThemeModel.cr(stripes.first(), "#1a1b20")) "#ffffff" else "#1a1b20"
         val actFg = if (ThemeModel.cr(act, "#ffffff") >= 4.5) "#ffffff" else "#1a1b20"
         return mapOf("light" to m(
             "bg" to bg, "keyUnder" to "0.55", "key" to "#ffffff", "keyFg" to "#1a1b20", "fn" to "#ffffff", "fnFg" to "#1a1b20",
             "act" to act, "actFg" to actFg, "chip" to "rgba(255,255,255,0.85)", "chipFg" to "#1a1b20", "pop" to "#ffffff", "popFg" to "#1a1b20",
-            "sel" to act, "selFg" to actFg, "lock" to act, "lockFg" to actFg, "hint" to "#3a3b40", "barFg" to "#1a1b20", "barMuted" to "#1a1b20",
+            "sel" to act, "selFg" to actFg, "lock" to act, "lockFg" to actFg, "hint" to "#3a3b40", "barFg" to barFg, "barMuted" to barFg,
             "div" to "rgba(26,27,32,0.25)", "tile" to "#ffffff", "tileFg" to "#1a1b20", "pressKey" to "rgba(255,255,255,0.6)", "pressFn" to "rgba(255,255,255,0.6)",
             "radius" to "8",
         ))
