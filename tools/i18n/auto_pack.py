@@ -420,6 +420,7 @@ class Pack:
                        DOGBOARD_CHARLM='1', DOGBOARD_MISSPELLINGS='1', DOGBOARD_REAL_TYPOS=f, DOGBOARD_REAL_TYPOS_N=str(self.n),
                        DOGBOARD_NGRAMS=self.p(f'{self.lang}.ngrams.bin'), DOGBOARD_EVAL_THREADS='5',
                        DOGBOARD_COMPOUNDS='1' if self.cfg.get('compounds') else '0',
+                       DOGBOARD_EVAL_ERRORS=self.p(f'{self.lang}-{s}.errors.tsv'),
                        ANDROID_USER_HOME=os.path.expanduser('~/.config/.android'))
             # only the eval (other probe tests switch on with the same variables: NgramFileProbeTest is English-only)
             r = subprocess.run(['taskset', '-c', '10-15', 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
@@ -430,18 +431,31 @@ class Pack:
             if m:
                 report.append(f'| {s} | {m.group(1) if m.group(1) != "0" else m.group(5)} | {m.group(2)} | {m.group(3)} | {m.group(4)} | {m.group(6)} |')
                 log(s, m.group(0))
-                if s == 'controls' and m.group(6) != 'NaN' and float(m.group(6)) > 0.5: broken_high = float(m.group(6))
+                if s == 'controls' and m.group(6) != 'NaN':
+                    # a correct word given its accents or hamza back is standard spelling restored, not broken
+                    # (language-families.md, 2026-11-23): only the other changes count against the gate
+                    errs = [l.rstrip('\n').split('\t') for l in open(self.p(f'{self.lang}-controls.errors.tsv'), encoding='utf-8')]
+                    real = [e for e in errs if e[0] == 'broken' and fold_marks(e[3]) != fold_marks(e[2])]
+                    pct = 100.0 * len(real) / int(m.group(5))
+                    report[-1] += f' (restored accents / hamza: {len(errs) - len(real)}; other changes {pct:.2f} %)'
+                    if pct > 0.5: broken_high = round(pct, 2)
             else:
                 report.append(f'| {s} | eval failed | | | | |'); log(s, 'eval failed', r.stdout[-500:])
         if broken_high:
             # Basque at a quarter of its text broke 1.2 % of correct words (full text 0.2 %, like the other packs): too little
             # text; a stricter correction threshold barely helped (1.0 %, two points of fixed typos lost), 2026-11-23
-            report += ['', f'NOT READY TO SHIP: {broken_high} % of correct words broken (at most 0.5 %): read the list (DOGBOARD_EVAL_ERRORS); '
-                       'unknown real words want more text, restored accents (Greek tonos, Arabic hamza) are a policy question']
+            report += ['', f'NOT READY TO SHIP: {broken_high} % of correct words changed into other words (at most 0.5 %; restored '
+                       f'accents and hamza not counted): read {self.lang}-controls.errors.tsv; unknown real words want more text']
         sizes = {k: v['size'] for k, v in json.load(open(self.p('manifest.json')))['files'].items()}
         report += ['', 'Download size without the text lists: %.1f MB' % (sum(v for k, v in sizes.items() if k not in ('lexicon', 'bigrams')) / 1e6)]
         open(self.p('report.md'), 'w').write('\n'.join(report) + '\n')
         print('\n'.join(report))
+
+
+def fold_marks(w):
+    """A word without its accents and hamza: what someone typing without them would type."""
+    w = w.translate(str.maketrans({'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ؤ': 'و', 'ئ': 'ي'}))
+    return ''.join(c for c in unicodedata.normalize('NFD', w) if not unicodedata.combining(c))
 
 
 def main():
