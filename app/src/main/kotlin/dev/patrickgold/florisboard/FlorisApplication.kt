@@ -148,6 +148,9 @@ class FlorisApplication : Application() {
             )
             Log.i("PREFS", resultNoBackupPrefs.toString())
             preferenceStoreLoaded.value = true
+            // DogBoard: a first start in another language adds the phone's languages (once per install)
+            runCatching { io.github.sillypuppyy.dogboard.ime.FirstLanguages.run(this@FlorisApplication) }
+                .onFailure { Log.w("DogBoardPerf", "first languages: ${it.message}") }
         }
         clipboardManager.value.initializeForContext(this)
         DictionaryManager.init(this)
