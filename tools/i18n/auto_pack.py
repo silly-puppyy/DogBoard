@@ -49,7 +49,7 @@ LANGS = {
     # 2026-11-23 language families (user: "perfecting a few languages across families to see what issues arise"):
     # German (capitalised nouns, ß, umlauts by long-press on Gboard's QWERTZ, compounds), Turkish (i / İ, ı / I;
     # agglutination), Polish (ą ę ł ż ... by long-press), Greek (final ς, tonos), Hebrew (final letters, RTL)
-    'de': dict(name='German', leipzig=['deu_news_2024_1M', 'deu_news_2023_1M', 'deu_wikipedia_2021_1M'], tatoeba='deu',
+    'de': dict(name='German', digraphs={'ä': 'ae', 'ö': 'oe', 'ü': 'ue'}, leipzig=['deu_news_2024_1M', 'deu_news_2023_1M', 'deu_wikipedia_2021_1M'], tatoeba='deu',
                layout=('gboard', 'qwertz'), gboard_tag='de-DE', script='Latn', compounds=True),
     'tr': dict(name='Turkish', leipzig=['tur_news_2024_1M', 'tur_news_2022_1M', 'tur_wikipedia_2021_1M'], tatoeba='tur',
                layout=('gboard', 'qwerty'), gboard_tag='tr-TR', script='Latn', compounds=False),
@@ -271,6 +271,8 @@ class Pack:
         rules = {'sentence_end': '.!?' + ('؟' if self.cfg.get('rtl') else ''), 'compounds': self.cfg.get('compounds', False),
                  'letter_rows': {'rows': letters, 'offsets': [round((w - len(r)) / 2 * 2) / 2 for r in letters]},
                  'distinct_letters': distinct}
+        # letters also typed as two (German "fuer" for "für", TypingEngine.digraphCandidates)
+        if self.cfg.get('digraphs'): rules['digraphs'] = self.cfg['digraphs']
         json.dump(rules, open(out, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
         log('rows', letters, 'distinct', distinct or '-')
 

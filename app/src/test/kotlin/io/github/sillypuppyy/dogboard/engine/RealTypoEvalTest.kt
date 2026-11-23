@@ -46,6 +46,11 @@ class RealTypoEvalTest : FunSpec({
                 openAbbreviations = { packReader("abbreviations.txt") },
                 openNoSuggest = { packReader("nosuggest.txt") },
                 openMisspellings = { packReader("misspellings.txt") },
+                // DOGBOARD_DIGRAPHS=1: the pack's rules.json digraphs (German ae / oe / ue) on the English default rules
+                rules = if (System.getenv("DOGBOARD_DIGRAPHS") == "1")
+                    LanguageRules.ENGLISH.copy(digraphs = File("${packDir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()).digraphs }
+                        ?.takeIf { it.isNotEmpty() } ?: mapOf("ä" to "ae", "ö" to "oe", "ü" to "ue"))
+                else LanguageRules.ENGLISH,
             )
             packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         }
@@ -225,7 +230,11 @@ class RealTypoEvalTest : FunSpec({
                     // DOGBOARD_TYPED_CASE=1: the typed capitals as written (shifted letters: "CKM", "iPhone"); else all lowercase
                     val asWritten = row[3].takeIf { typedCase && it.length == typed.length } ?: typed
                     val word = CurrentWord().apply { typed.forEachIndexed { i, c -> addLetter(asWritten[i], taps[i], keys, params) } }
-                    TypingEngine.correction(word, candidates, level = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD")) ?: typed
+                    // the language's digraph spellings ("fuer"), as TypingEngine.candidates adds them, with this decoder
+                    val withDigraphs = TypingEngine.withDigraphs(word, candidates) { shortTaps, shortTyped ->
+                        decoders.get().decode(shortTaps, keys, params, previous = ctxId(prev), typed = shortTyped, previous2 = prev2?.let { ctxId(it) } ?: -1)
+                    }
+                    TypingEngine.correction(word, withDigraphs, level = AutocorrectLevel.valueOf(System.getenv("DOGBOARD_LEVEL") ?: "STANDARD")) ?: typed
                 } else autocorrect.correction(typed, candidates) ?: typed
                 val next = if (retro) nextTyped["${row[0]}\t${row[1].toInt() + 1}"] else null
                 if (next != null) {

@@ -69,6 +69,11 @@ data class LanguageRules(
      * vs 0.6 % kept distinct, 2026-11-22). Empty: every accented letter folds to its base.
      */
     @SerialName("distinct_letters") val distinctLetters: String = "",
+    /**
+     * Letters people also type as two letters (German "ä": "ae", "fuer" for "für"): a word typed that way is also decoded
+     * with the second letter's taps left out (TypingEngine.digraphCandidates). Empty: none.
+     */
+    @SerialName("digraphs") val digraphs: Map<String, String> = emptyMap(),
 ) {
     /** The closing quotes of [quotes] (right double and right single: German "“‘", French "»›"). */
     val closingQuotes: String
