@@ -96,7 +96,8 @@ LANGS = {
                layout=('gboard', 'qwerty'), gboard_tag='in', script='Latn', compounds=False),
     # Iranian (Indo-European) in Arabic script, RTL; words carry a zero-width non-joiner (ZWNJ, U+200C: می‌خواهم)
     'fa': dict(name='Persian', leipzig=['fas_news_2022_1M', 'fas_newscrawl_2019_1M', 'pes_wikipedia_2021_1M'], tatoeba='pes',
-               layout=('gboard', 'persian'), gboard_tag='fa-IR', script='Arab', compounds=False, rtl=True),
+               layout=('gboard', 'persian'), gboard_tag='fa-IR', script='Arab', compounds=False, rtl=True,
+               normalize={'ي': 'ی', 'ى': 'ی', 'ك': 'ک'}),
     'ar': dict(name='Arabic', leipzig=['ara_news_2022_1M', 'ara_wikipedia_2021_1M'], tatoeba='ara',
                layout=('gboard', 'arabic'), script='Arab', compounds=False, rtl=True),
 }
@@ -175,12 +176,16 @@ class Pack:
         assert files, 'no corpus'
         # sentences with letters foreign to the language dropped (mis-encoding, other languages), into the pack dir
         ok = letters_of(self.lang); cleaned = []
+        # letters written with another language's code point (Persian news in Arabic ي / ك for ی / ک: 20 % of one corpus
+        # was dropped as foreign, 2026-11-23) replaced first
+        norm = str.maketrans(self.cfg.get('normalize', {}))
         for f in files:
             out = self.p('clean-' + os.path.basename(f))
             if not os.path.exists(out):
                 kept = dropped = 0
                 with open(f, encoding='utf-8', errors='replace') as src, open(out + '.tmp', 'w', encoding='utf-8') as dst:
                     for line in src:
+                        line = line.translate(norm)
                         text = line.rstrip('\n').split('\t')[-1]
                         if all(c in ok for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
                         else: dropped += 1

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Packs a built language pack (tools/i18n/auto_pack.py's folder) for download: dist/<tag>/ with the files the phone
-reads and a manifest of their sizes and SHA-256 (PackInstaller checks both), and dist/index.json listing every pack.
+reads and a manifest of their sizes and SHA-256 (PackInstaller checks both), dist/<tag>.tar.xz (the same, one archive
+for a release host), and dist/index.json listing every pack.
 
     tools/i18n/dist_pack.py PACK_DIR [PACK_DIR ...] --out DIST [--tag TAG]
 
@@ -13,6 +14,7 @@ import hashlib
 import json
 import os
 import shutil
+import tarfile
 
 # read only when the snapshot is missing (LanguagePack.hasWords, EngineLoader)
 TEXT_ONLY = {'lexicon': 'snapshot_lexicon', 'bigrams': 'snapshot_bigrams'}
@@ -45,8 +47,17 @@ def dist(pack_dir, out, tag=None):
     man = dict(man, tag=tag, files=files)
     with open(os.path.join(dest, 'manifest.json'), 'w', encoding='utf-8') as f:
         json.dump(man, f, ensure_ascii=False, indent=1)
-    return {'tag': tag, 'name': man['name'], 'script': man.get('script', ''), 'version': man['version'],
-            'size': sum(v['size'] for v in files.values()), 'manifest_sha256': sha256(os.path.join(dest, 'manifest.json'))}
+    entry = {'tag': tag, 'name': man['name'], 'script': man.get('script', ''), 'version': man['version'],
+             'size': sum(v['size'] for v in files.values()), 'manifest_sha256': sha256(os.path.join(dest, 'manifest.json'))}
+    # one archive per language for release hosts (user 2026-11-23): xz takes the n-grams to a third (Spanish 56.4 ->
+    # 22.0 MB); manifest first, so the phone reads the checksums before the files stream past
+    archive = os.path.join(out, f'{tag}.tar.xz')
+    with tarfile.open(archive + '.tmp', 'w:xz', preset=9) as t:
+        for name in ['manifest.json'] + sorted(v['path'] for v in files.values()):
+            t.add(os.path.join(dest, name), arcname=name)
+    os.replace(archive + '.tmp', archive)
+    entry['archive'] = {'file': os.path.basename(archive), 'size': os.path.getsize(archive), 'sha256': sha256(archive)}
+    return entry
 
 
 def main():
@@ -61,7 +72,7 @@ def main():
     for p in args.packs:
         entry = dist(p, args.out, args.tag)
         index['packs'] = [e for e in index['packs'] if e['tag'] != entry['tag']] + [entry]
-        print(f"{entry['tag']}: {entry['size'] / 1e6:.1f} MB, version {entry['version']}")
+        print(f"{entry['tag']}: {entry['size'] / 1e6:.1f} MB, archive {entry['archive']['size'] / 1e6:.1f} MB, version {entry['version']}")
     index['packs'].sort(key=lambda e: e['tag'])
     with open(index_path, 'w', encoding='utf-8') as f:
         json.dump(index, f, ensure_ascii=False, indent=1)
