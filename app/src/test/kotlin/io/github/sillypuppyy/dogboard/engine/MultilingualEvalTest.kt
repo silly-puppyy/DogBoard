@@ -88,6 +88,28 @@ class MultilingualEvalTest : FunSpec({
             }
             return best.values.sortedByDescending { it.score }
         }
+        // DOGBOARD_ML_PRIOR=b1,b2: the matrix language of the sentence so far (each word before: the language that lists it
+        // more often), smoothed share p, each candidate shifted by b * ln p(its language) on top of plain merging (M1)
+        val priorWeights = System.getenv("DOGBOARD_ML_PRIOR")?.split(',')?.map { it.toDouble() }.orEmpty()
+        fun matrixShare(x: Lang, o: Lang, before: List<String>): Double {
+            var nx = 1.0; var no = 1.0
+            for (t in before) {
+                val px = x.lexicon.logProb(t.lowercase()) ?: -22.0; val po = o.lexicon.logProb(t.lowercase()) ?: -22.0
+                if (px > po) nx++ else if (po > px) no++
+            }
+            return nx / (nx + no)
+        }
+        fun withPrior(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, beta: Double): List<Candidate> {
+            val sa = kotlin.math.ln(matrixShare(la, lb, before)); val sb = kotlin.math.ln(matrixShare(lb, la, before))
+            val best = LinkedHashMap<String, Candidate>()
+            for ((c, sh) in ca.map { it to beta * sa } + cb.map { it to beta * sb }) {
+                val x = c.copy(score = c.score + sh)
+                val k = x.word.lowercase(); val old = best[k]
+                if (old == null || x.score > old.score) best[k] = x.copy(isTypedString = x.isTypedString || old?.isTypedString == true)
+                else if (x.isTypedString && !old.isTypedString) best[k] = old.copy(isTypedString = true)
+            }
+            return best.values.sortedByDescending { it.score }
+        }
         /** Both languages' candidates, each shifted by ln p(its language). */
         fun classified(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, withWord: Boolean): List<Candidate> {
             val best = LinkedHashMap<String, Candidate>()
@@ -120,7 +142,8 @@ class MultilingualEvalTest : FunSpec({
         // DOGBOARD_ML_ERRORS=<file>: the merged mode's wrong and broken cases (typed, intended, got, language, context)
         val errors = System.getenv("DOGBOARD_ML_ERRORS")?.let { File(it).printWriter() }
         val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
-            (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList())
+            (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList()) +
+            priorWeights.map { "matrix prior b=$it" }
         val results = modes.associateWith { mutableListOf<Out>() }
         for (kind in listOf("typos", "controls")) {
             val rowsIn = File(set, "mixed-$kind.tsv").readLines().map { it.split('\t') }.filter { it.size >= 7 }.take(n)
@@ -148,6 +171,7 @@ class MultilingualEvalTest : FunSpec({
                     if (i == 0 && (res == "wrong" || res == "broken")) errors?.println(listOf(res, typed, intended, got, lang, since, r[2].takeLast(40),
                         "en:" + ca.take(3).joinToString("/") { it.word }, "es:" + cb.take(3).joinToString("/") { it.word }).joinToString("\t"))
                 }
+                for (bt in priorWeights) results.getValue("matrix prior b=$bt").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, withPrior(ca, cb, before, bt)) ?: typed)))
                 if (langid != null) {
                     results.getValue("classified").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, true)) ?: typed)))
                     results.getValue("context only").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, false)) ?: typed)))
