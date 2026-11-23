@@ -117,6 +117,8 @@ class MultilingualEvalTest : FunSpec({
         }
 
         data class Out(val lang: String, val since: Int, val typo: Boolean, val result: String)
+        // DOGBOARD_ML_ERRORS=<file>: the merged mode's wrong and broken cases (typed, intended, got, language, context)
+        val errors = System.getenv("DOGBOARD_ML_ERRORS")?.let { File(it).printWriter() }
         val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
             (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList())
         val results = modes.associateWith { mutableListOf<Out>() }
@@ -139,8 +141,13 @@ class MultilingualEvalTest : FunSpec({
                 val typo = kind == "typos"
                 results.getValue(modes[0]).add(Out(lang, since, typo, judge(Autocorrect(la.lexicon).correction(typed, ca) ?: typed)))
                 results.getValue(modes[1]).add(Out(lang, since, typo, judge(Autocorrect(lb.lexicon).correction(typed, cb) ?: typed)))
-                for ((i, w) in weights.withIndex())
-                    results.getValue(modes[2 + i]).add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, merged(ca, cb, w)) ?: typed)))
+                for ((i, w) in weights.withIndex()) {
+                    val got = Autocorrect(union).correction(typed, merged(ca, cb, w)) ?: typed
+                    val res = judge(got)
+                    results.getValue(modes[2 + i]).add(Out(lang, since, typo, res))
+                    if (i == 0 && (res == "wrong" || res == "broken")) errors?.println(listOf(res, typed, intended, got, lang, since, r[2].takeLast(40),
+                        "en:" + ca.take(3).joinToString("/") { it.word }, "es:" + cb.take(3).joinToString("/") { it.word }).joinToString("\t"))
+                }
                 if (langid != null) {
                     results.getValue("classified").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, true)) ?: typed)))
                     results.getValue("context only").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, false)) ?: typed)))
@@ -148,6 +155,7 @@ class MultilingualEvalTest : FunSpec({
                 }
             }
         }
+        errors?.close()
         fun pct(xs: List<Out>, what: String) = if (xs.isEmpty()) Double.NaN else 100.0 * xs.count { it.result == what } / xs.size
         for ((mode, outs) in results) {
             val parts = listOf(la.tag, lb.tag).map { l ->
