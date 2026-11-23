@@ -138,7 +138,7 @@ fun KbView(r: KbRender, modifier: Modifier = Modifier) {
                         for (k in row.keys) if (!k.gap) KbKeyCap(frame, t, k, ri)
                     }
                     // Kb:193-195 trackpad puck: drawn in the design gallery only; on the live keyboard the
-                    // user asked for it to go (2026-11-14: "remove the blue circle, it clips")
+                    // no blue circle under the finger: it clipped (2026-11-14)
                     if (r.trackpad && r.only != "live") {
                         Box(
                             Modifier.offset(r.tpX.dp, r.tpY.dp).size(56.dp).alpha(0.85f)
@@ -336,14 +336,14 @@ fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
     for (l in layers.filter { !it.inset }.reversed()) {
         // a hard outer ring (`0 0 0 3px`, selection rings): the shape grown by the spread with its corners grown too,
         // as CSS draws it; the drop shadow kept the corner radius, so a ring around a circle came out squarish
-        // (user 2026-11-19: "rounded corners look weird on the photo theme page")
+        // ("rounded corners look weird on the photo theme page")
         m = if (l.blur == 0f && l.x == 0f && l.y == 0f && l.spread > 0f && shape is androidx.compose.foundation.shape.CornerBasedShape) m.ring(shape, l.spread.dp, l.color)
             else m.dropShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
     }
     for (l in layers.filter { it.inset }) {
         // a hard ring (`inset 0 0 0 1px`, the design's outline) is a border: Compose's inner shadow keeps the full
         // corner radius on its inner edge where CSS shrinks it by the spread, so the ring grew thick at rounded
-        // corners (user 2026-11-19: "the border seems thicker at the rounded portion")
+        // corners ("the border seems thicker at the rounded portion")
         m = if (l.blur == 0f && l.x == 0f && l.y == 0f && l.spread > 0f) m.border(l.spread.dp, l.color, shape)
             else m.innerShadow(shape, Shadow(radius = l.blur.dp, spread = l.spread.dp, color = l.color, offset = DpOffset(l.x.dp, l.y.dp)))
     }
@@ -395,7 +395,7 @@ private class PlaceAtNode(var rect: Rect) : Modifier.Node(), androidx.compose.ui
 
 /**
  * Kb:83-89 slots, with DogBoard's setting for words that don't fit, [KbRender.slotOverflow]
- * (user, 2026-11-13): "squash" narrows, then cuts in the middle, and, like LatinIME, lets the
+ *: "squash" narrows, then cuts in the middle, and, like LatinIME, lets the
  * centre (best) suggestion take the whole slot area when it can't fit even at [SQUASH_MIN_SCALE];
  * "fade" clips with a fading end.
  */

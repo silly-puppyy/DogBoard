@@ -6,7 +6,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * Settings › Clipboard › "Strip trackers from links" (opt-in, user 2026-11-17): the tracking tags in
+ * Settings › Clipboard › "Strip trackers from links" (opt-in): the tracking tags in
  * the links of a text DogBoard pastes are removed. The rules are Brave's "Copy clean link" list
  * (assets/dogboard/clean-urls.json, MPL-2.0, tools/links/fetch_clean_urls.py; research in
  * notes/design/link-cleaning.md), plus DogBoard's own below for what it lacks. Only tags that
@@ -82,7 +82,7 @@ object LinkCleaner {
     /**
      * Pages that work without any query: all of it goes. Instagram posts and reels; TikTok videos and
      * photos, whose share links carry a long, changing set of tags (_r, _t, share_link_id, u_code,
-     * user_id, sender_device...; user 2026-11-17: "it expands to even more tracking parameters").
+     * user_id, sender_device...; "it expands to even more tracking parameters").
      * Other pages of these sites (a search's ?q=) keep their query.
      */
     private val NO_QUERY = mapOf(

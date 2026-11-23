@@ -77,15 +77,15 @@ open class ImeEditor(
         val ic = ic.get() ?: return
         val replaced = range.last + 1 - range.first
         // Terminals (Termux, SSH clients) keep no text: a replacement there is appended ("dir" arrived as
-        // "ddidir", user 2026-11-18). Such a field types plainly: raw-input fields from the start, others
+        // "ddidir"). Such a field types plainly: raw-input fields from the start, others
         // once we are about to replace text the field says it doesn't have, or a replacement was appended.
         // Only the first few replacements of a field are checked, and never inside a batch: reading the field in
         // the middle of the keyboard's batched edit made the app draw every step of it (a picked suggestion
-        // erased the typed word letter by letter before the new one appeared, user 2026-11-18)
+        // erased the typed word letter by letter before the new one appeared)
         // Not over a selection: the text replaced is then the selection, not the text before the cursor, and a paste
         // over a selected word looked like an appended replacement ("hello [world]" + paste "hello world": the field read
         // "hello hello world", which ends with what was before plus the new text; it was "repaired" with 16 deletes and
-        // the field set to plain typing, user 2026-11-23)
+        // the field set to plain typing)
         if (!plainMode && replaced > 0 && checksLeft > 0 && batchDepth == 0 && ic.getSelectedText(0).isNullOrEmpty()) {
             val before = ic.getTextBeforeCursor(replaced + CHECK_CONTEXT, 0)?.toString()
             if (before.isNullOrEmpty()) {

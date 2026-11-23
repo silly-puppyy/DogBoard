@@ -10,7 +10,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 /**
- * Every typing bug the user reported, typed on the real keyboard (shift, symbols page, punctuation included): each
+ * Every reported typing bug, typed on the real keyboard (shift, symbols page, punctuation included): each
  * must keep passing. Add a case with each new report. '|' separates acceptable results (a typo iOS leaves alone may
  * also be fixed). Typed: '^' shift, '{123}' the symbols page; the field autocapitalises its start.
  */
@@ -44,9 +44,9 @@ class RegressionUiTest(private val typed: String, private val expected: String, 
             arrayOf("x ^di^t y", "X DiT y", "DiT kept (11-20, DiT -> Dit -> Fit)"),
             arrayOf("thankyou x", "Thank you x", "thankyou split (11-20 iPhone check)"),
             arrayOf("teh{123}-", "The-", "teh before a hyphen (11-20 iPhone check)"),
-            arrayOf("aldo anything x", "Also anything x", "autocapitalised Aldo at a sentence start (user 11-21: Also -> Aldo)"),
-            arrayOf("shouldn{123}'t this also show x", "Shouldn't this also show x", "shouldn't with the apostrophe key (user 11-21: became Shoulder)"),
-            arrayOf("shouldnt this also show x", "Shouldn't this also show x", "shouldnt without the apostrophe (user 11-21: became Shoulder)"),
+            arrayOf("aldo anything x", "Also anything x", "autocapitalised Aldo at a sentence start (Also -> Aldo)"),
+            arrayOf("shouldn{123}'t this also show x", "Shouldn't this also show x", "shouldn't with the apostrophe key (became Shoulder)"),
+            arrayOf("shouldnt this also show x", "Shouldn't this also show x", "shouldnt without the apostrophe (became Shoulder)"),
             arrayOf("nonbnglish x", "Nonbnglish x|Non-English x", "no garbage split (11-20, bomb flush)"),
             arrayOf("hm x", "Hm x", "Hm not HM (11-19)"),
             // the report's fix: "hm" reaches H&M (decoder steps over '&'); a typed '&' ends the word, as iOS's word-ending

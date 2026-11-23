@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 
 /**
  * The system keyboard picker with DogBoard's entry, as a screenshot (files/uitest/picker.png): how the picker draws
- * our subtype icon (user 2026-11-20: a plain circle, then a blank spot, where FUTO shows its icon). The test runs in
+ * our subtype icon (a plain circle, then a blank spot, where FUTO shows its icon). The test runs in
  * the keyboard's process, and the current keyboard may open the picker. Only with `-e picker 1`.
  */
 @RunWith(AndroidJUnit4::class)

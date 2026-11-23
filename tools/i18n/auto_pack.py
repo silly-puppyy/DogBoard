@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Bootstraps a NEW language's pack from its code, end to end, into packs-work/<lang> (never the app's assets; the
 spec-driven tools/i18n/build_pack.py stays the tool for shipped packs and their hand-tuned files). Builds a DogBoard
-language pack from a language code (user 2026-11-22: "a script that just gets a
+language pack from a language code ("a script that just gets a
 language and computes a language pack, e.g. Czech, Arabic or Georgian"). The steps the es / fr / fi / ru packs were
 built with by hand (notes/design/i18n-pipeline.md "Tools to add a language"), in order, each skipped when its output
 exists (re-run after a failure; delete a file to redo its step):
@@ -115,7 +115,7 @@ LANGS = {
     'fa': dict(name='Persian', leipzig=['fas_news_2022_1M', 'fas_newscrawl_2019_1M', 'pes_wikipedia_2021_1M'], tatoeba='pes',
                layout=('gboard', 'persian'), gboard_tag='fa-IR', script='Arab', compounds=False, rtl=True,
                normalize={'ي': 'ی', 'ى': 'ی', 'ك': 'ک'}),
-    # Slavic in Cyrillic; the phonetic layout (user 2026-11-23: Russian x Bulgarian on a Bulgarian phonetic keyboard): no
+    # Slavic in Cyrillic; the phonetic layout (Russian x Bulgarian on a Bulgarian phonetic keyboard): no
     # ы э ё keys, which Russian needs (the multilingual pass)
     'bg': dict(name='Bulgarian', leipzig=['bul_news_2022_1M', 'bul_wikipedia_2021_1M'], tatoeba='bul',
                layout=('gboard', 'bulgarian_phonetic'), gboard_tag='bg-BG', script='Cyrl', compounds=False),

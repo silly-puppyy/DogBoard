@@ -1,4 +1,4 @@
-"""English clitics as tokens of their own (tokenizer A/B, user 2026-11-22: "put <possessive> as a token, then depending
+"""English clitics as tokens of their own (tokenizer A/B, "put <possessive> as a token, then depending
 on the word add s' or 's: do they help or is it more code for nothing"). Applied after caps.fold, at the id level as
 caps.CAP is: a word's clitic is cut off before SentencePiece sees the text, and its id goes after the word's last piece.
 

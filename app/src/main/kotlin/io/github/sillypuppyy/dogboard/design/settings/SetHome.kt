@@ -46,7 +46,7 @@ object SetHomeSpec {
     private fun s(icon: String, title: String, sub: String, c: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>, target: String = "") =
         Section(icon, title, sub, c.first, c.second, target)
 
-    // settings tree v3 (user, 2026-11-17: "remove the main section and sort everything Gboard style";
+    // settings tree v3 ("remove the main section and sort everything Gboard style";
     // notes/design/settings-tree-v3.md): one list in Gboard's order, pages a few levels deep
     val sections = listOf(
         s("translate", "Languages", "English (US), QWERTY", P),
@@ -55,7 +55,7 @@ object SetHomeSpec {
         s("spellcheck", "Autocorrect and typing", "Autocorrect, suggestions, your words", P),
         s("vibration", "Sound and vibration", "Vibration style, volume, when they play", S),
         s("swipe", "Gestures", "Swipe typing, delete and space-bar slides", T),
-        // user 2026-11-19: "a timing and feel section in the settings? Something like delete speed"
+        // "a timing and feel section in the settings? Something like delete speed"
         s("schedule", "Timing and feel", "Delete speed, hold times, double taps", P),
         s("mood", "Emoji and GIFs", "Skin tone, recent emoji", S),
         s("content_paste", "Clipboard", "History, how long clips are kept", T),
@@ -65,7 +65,7 @@ object SetHomeSpec {
     )
 
     /**
-     * The home page's cards, Gboard style (user 2026-11-21: "split out sections in the main settings page like gboard,
+     * The home page's cards, Gboard style ("split out sections in the main settings page like gboard,
      * to make it easier to find what you're looking for"): setup, typing, your data, the app; no headers, as Gboard.
      */
     val groups: List<List<Section>> = listOf(
@@ -144,7 +144,7 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 for (group in SetHomeSpec.groups) SetRows(Modifier.fillMaxWidth()) {
                     for (s in group) {
                         val (bg, fg) = SetColors.container(s.bg, s.fg)
-                        // a status, not a description (user 2026-11-22: drop the descriptions to avoid clutter, as Gboard,
+                        // a status, not a description (drop the descriptions to avoid clutter, as Gboard,
                         // whose home shows only the language under Languages)
                         val sub = if (s.title == "Languages") s.sub else ""
                         SetSectionRow(s.icon, s.title, sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })

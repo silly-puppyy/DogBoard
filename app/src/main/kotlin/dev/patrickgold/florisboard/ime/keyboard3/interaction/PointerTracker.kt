@@ -79,7 +79,7 @@ private const val GLIDE_START_KEYS = 0.6f
 // DogBoard: a swipe lasts at least this long (Gboard's min_gesture_time_threshold) and its path is at least
 // this long (key widths); shorter or quicker slides are taps
 private const val GLIDE_MIN_MS = 150L
-// 0.8 (was 1.2): a two-letter word on neighbouring keys ("we", one key apart) is a swipe too (user 2026-11-19, after the
+// 0.8 (was 1.2): a two-letter word on neighbouring keys ("we", one key apart) is a swipe too (after the
 // How We Swipe replay typed "w" for "we"; FUTO Keyboard reads it); the 150 ms minimum still keeps quick taps taps
 private const val GLIDE_MIN_PATH_KEYS = 0.8f
 
@@ -88,14 +88,14 @@ private const val GLIDE_MIN_PATH_KEYS = 0.8f
 // widths) from where it went down and outside the popup, the popup closes and the whole path is a swipe
 private const val GLIDE_AFTER_POPUP_KEYS = 1.5f
 
-// DogBoard: a swipe may also start on Shift, Delete or the space bar (user 2026-11-19: yes; real swipes that start
+// DogBoard: a swipe may also start on Shift, Delete or the space bar (yes; real swipes that start
 // just off the letters were lost, Gboard has gesture_start_non_char_key_allowance_zone_size_mm). It becomes one
 // once it reaches a letter this far (key widths) away: from Shift any letter, from Delete or the space bar only a
 // letter in a row above, so Delete's sideways drag and the space bar's cursor drag stay what they are.
 private const val GLIDE_FROM_OTHER_KEY_KEYS = 1.0f
 
 // DogBoard: sliding left from Delete selects whole words back from the cursor, one more per this many dp after
-// the first; letting go deletes them (Gboard's delete swipe; user 2026-11-19: yes). Sliding back selects fewer.
+// the first; letting go deletes them (Gboard's delete swipe; yes). Sliding back selects fewer.
 private const val DELETE_DRAG_START_DP = 16f
 private const val DELETE_DRAG_WORD_DP = 28f
 
@@ -619,7 +619,7 @@ class PointerTracker(
                 val delta = move.position - trackedPointer.down.position
                 val movedDp = delta.getDistance() / density
                 if (movedDp > Trackpad.ALLOWABLE_MOVEMENT_DP) {
-                    // DogBoard: a quick sideways drag moves the cursor too (Gboard; user 2026-11-19: yes), without
+                    // DogBoard: a quick sideways drag moves the cursor too (Gboard; yes), without
                     // iOS's hold first; anything else (a drag up into the letters may become a swipe) ends it
                     if (abs(delta.x) < 2 * abs(delta.y) || !io.github.sillypuppyy.dogboard.feel.FeelSettings.spaceQuickDrag) {
                         trackedOutputPointer.value = trackedPointer.copy(trackpadCancelled = true)
@@ -659,7 +659,7 @@ class PointerTracker(
             if (g.active) {
                 glideTrail.value = null
                 g.xs.add(up.position.x / density); g.ys.add(up.position.y / density)
-                // a quick or short slide is a tap (user 2026-11-18: fast typing came out as swipes, the
+                // a quick or short slide is a tap (fast typing came out as swipes, the
                 // phone's log showed 4-5 point "swipes"): Gboard needs 150 ms (min_gesture_time_threshold)
                 val keyWidthDp = size.width / density / 10f
                 var pathDp = 0f

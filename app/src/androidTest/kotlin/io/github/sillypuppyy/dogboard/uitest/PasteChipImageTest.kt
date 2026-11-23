@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 
 /**
  * A copied image on the bar's paste chip, as a screenshot (files/uitest/paste-chip-image.png): the chip showed an
- * empty preview on the user's phone (2026-11-21). The image is drawn here (no user photo), saved to MediaStore and
+ * empty preview on a phone (2026-11-21). The image is drawn here (no user photo), saved to MediaStore and
  * copied as a content URI, as a gallery app copies one.
  */
 @RunWith(AndroidJUnit4::class)

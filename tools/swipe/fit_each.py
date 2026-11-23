@@ -141,7 +141,7 @@ def cmd_fit(a, keys, sx, sy):
 
 class Sampler:
     """prepare_synth.py's --human each:EACH.jsonl[,PARAMS.json]: new swipes drawn from the fitted space (the sample
-    space the user asked for). Per swipe, the motion numbers of one real fitted swipe (resampled whole, so any links
+    space asked for). Per swipe, the motion numbers of one real fitted swipe (resampled whole, so any links
     between them stay); per key its aim offset from real ones at the same position (first / middle / last); per
     stroke a bend from real strokes of similar length (in key widths, the measured size does not scale with length),
     a hesitation from real strokes (17.5 % > 40 ms in the first fits); the motor noise of the fitted finger on top

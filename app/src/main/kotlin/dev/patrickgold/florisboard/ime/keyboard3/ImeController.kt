@@ -249,7 +249,7 @@ class ImeController(
     /**
      * A word that ended before its decode (DogBoard): corrected when the decode lands, if the text still ends with
      * the word and its separator. Phone timing 2026-11-20: 2 of 21 word ends had no decode (the typed word stayed);
-     * waiting at the space is out (user 2026-11-17: no pause before autocorrect).
+     * waiting at the space is out (no pause before autocorrect).
      */
     private class LateWord(val key: String, val word: CurrentWord, val typed: String, val separator: String)
     @Volatile private var lateWord: LateWord? = null
@@ -624,7 +624,7 @@ class ImeController(
 
         private fun emitTextTracked(raw: K3String) {
             // composed, as other keyboards type it: the layout library keeps accented letters
-            // decomposed ("ǔ" = u + U+030C: two deletes for one letter, user 2026-11-17), which also
+            // decomposed ("ǔ" = u + U+030C: two deletes for one letter), which also
             // breaks apps' search and our word lookups
             val composed = java.text.Normalizer.normalize(raw.toText(), java.text.Normalizer.Form.NFC)
             val value = if (composed == raw.toText()) raw else composed.asK3String()
@@ -634,7 +634,7 @@ class ImeController(
             val text = value.toText()
             // DogBoard: punctuation right after the keyboard's own space (a picked suggestion) goes
             // before it: "word ," -> "word, "; closing quotes and brackets just take its place
-            // DogBoard (user, 2026-11-16, beyond iOS, which keeps a typed space: "hello ?" stays): a
+            // DogBoard (beyond iOS, which keeps a typed space: "hello ?" stays): a
             // sentence or clause mark typed right after a space the user typed at a word end goes
             // before it, "word ?" -> "word? " (only , . ? !: a typed space before ":)" or ";)" is kept);
             // not ? ! in France / Belgium French, whose typography keeps the space (iOS keeps it too)
@@ -747,7 +747,7 @@ class ImeController(
                 lastSpaceUptime = null
             }
             expectedContentQueue.push(state.content)
-            // Settings › Layout › Back to letters (user 2026-11-21): after any key, after a space (iOS: on the 123 and
+            // Settings › Layout › Back to letters: after any key, after a space (iOS: on the 123 and
             // #+= planes, space or an apostrophe returns to the letters; the default) or never
             val backToLetters = when (prefs.keyboard.symbolsReturn.get()) {
                 "any" -> true
@@ -792,7 +792,7 @@ class ImeController(
         /**
          * A copied text as DogBoard pastes it: short links expanded ("Expand short links", once the link
          * service has answered) and trackers removed ("Strip trackers from links"); two separate opt-ins
-         * (user, 2026-11-17). Unchanged when both are off.
+         *. Unchanged when both are off.
          */
         fun cleanedPaste(text: String, keepShortLink: Boolean = false, keepTrackers: Boolean = false): String =
             io.github.sillypuppyy.dogboard.ime.ClipLinkSteps.of(
@@ -898,7 +898,7 @@ class ImeController(
                 }
                 val waitedMs = android.os.SystemClock.uptimeMillis() - tWait
                 // iOS never computes at the word end ("avoided autocorrect deadlock"), so a word typed faster than its
-                // decode stayed uncorrected (emulator with a 400 ms decode: 7 of 14 regression cases; the user's phone
+                // decode stayed uncorrected (emulator with a 400 ms decode: 7 of 14 regression cases; a phone
                 // 2 of 21 word ends). The decoder alone takes a few ms, so it runs here when nothing is ready; the
                 // neural refinement (~110 ms on the phone) is what made the background decode late
                 val t0 = android.os.SystemClock.uptimeMillis()
@@ -1218,7 +1218,7 @@ class ImeController(
             val gap = if (textBefore.isEmpty() || textBefore.last().isWhitespace() || textBefore.last() in "([{\"'“‘¿¡") "" else " "
             val previous = wordContext()
             if (state.content.selection.isNotCollapsed()) {
-                // a swipe over selected text replaces it, as typing does (user 2026-11-18: swiping did
+                // a swipe over selected text replaces it, as typing does (swiping did
                 // nothing while text was selected)
                 state.editor.batch { rawText("$gap$word ") }
             } else if (!replaceBeforeCursor("", "$gap$word ")) return
@@ -1591,7 +1591,7 @@ class ImeController(
             suggestionJob = scope.launch {
                 val key = decodeKey(word.text, context, context2)
                 // stage 1: the decoder's candidates, published at once (the word end uses them: it never
-                // waits for the neural model, user 2026-11-17: "pausing right before it autocorrects")
+                // waits for the neural model, "pausing right before it autocorrects")
                 // debug builds: `setprop debug.dogboard.slowdecode <ms>` delays this decode, so word ends come before it
                 // (tests the late correction on an emulator, which is otherwise too fast)
                 if (BuildConfig.DEBUG) slowDecodeMs().takeIf { it > 0 }?.let { kotlinx.coroutines.delay(it) }
@@ -2135,7 +2135,7 @@ private val SPACE = " ".asK3String()
 /**
  * iOS applies the correction on every character that ends a word except `@ # $ % ^ * _ ( [ ] \ |`
  * (terminatorsPreventingAutocorrection, spec 1; audit 2026-11-20: we had only space and . , ! ? ; :).
- * Digits don't end a word here; the hyphen does, as on the iPhone ('teh-' -> 'the-', user 2026-11-20).
+ * Digits don't end a word here; the hyphen does, as on the iPhone ('teh-' -> 'the-').
  */
 private fun isTerminator(text: String): Boolean {
     val c = text.singleOrNull() ?: return false

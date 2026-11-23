@@ -10,7 +10,7 @@ output is missing or older than an input (or with --force / --stage); --dry-run 
 the stages, every component is checked against its size budget ("budget_bytes"), "validate" commands run
 (the evaluations), and the manifest is written (write_manifest.py). notes/design/i18n-pipeline.md.
 
-Hand-made and hand-tuned files are never overwritten (user 2026-11-18: "some manual tweaking per
+Hand-made and hand-tuned files are never overwritten ("some manual tweaking per
 localization is fine and expected, so don't auto-generate things that shouldn't be"):
   - components marked "curated" (rules.json, hand-written lists) have no stage at all;
   - the pipeline records the SHA-256 of every file it writes (tools/i18n/packs/<tag>.built.json); a stage

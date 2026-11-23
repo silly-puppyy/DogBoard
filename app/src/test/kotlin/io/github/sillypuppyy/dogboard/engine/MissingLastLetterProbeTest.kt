@@ -6,7 +6,7 @@ import java.io.File
 
 /**
  * A word missing its last letter ("going hom" -> home) against a one-key substitution that is also a word ("him"):
- * what the space gives, with the context (user 2026-11-19: "going hom" became "going him"). DOGBOARD_PROBE=1 runs it;
+ * what the space gives, with the context ("going hom" became "going him"). DOGBOARD_PROBE=1 runs it;
  * DOGBOARD_NGRAMS optional (the trigram file).
  */
 class MissingLastLetterProbeTest : FunSpec({
@@ -38,7 +38,7 @@ class MissingLastLetterProbeTest : FunSpec({
                 val top = candidates.take(5).joinToString { it.word }
                 println("MISSING ${if (out == wanted) "ok  " else "MISS"} $p2 $p1 [$typed] -> $out (wanted $wanted; candidates: $top)")
             }
-            // a missed space read as the letter under it (user 2026-11-19: "later andnwaited" kept, the bar offered "and waited")
+            // a missed space read as the letter under it ("later andnwaited" kept, the bar offered "and waited")
             for ((p1, typed) in listOf("later" to "andnwaited", "the" to "nonbnglish", "i" to "wentnhome", "to" to "thebstore")) {
                 val word = CurrentWord().apply { for (c in typed) addLetter(c, keys[c]?.let { Tap(it.centerX, it.centerY) }, keys, params) }
                 val candidates = TypingEngine.candidates(word, p1)
@@ -46,7 +46,7 @@ class MissingLastLetterProbeTest : FunSpec({
                 val atSpace = TypingEngine.correction(word, candidates, commit = true) ?: typed
                 println("SPLIT $p1 [$typed] -> $out (word end: $atSpace); " + candidates.take(4).joinToString { "%s %.2f w%d sup %.2f".format(it.word, it.score, it.words, it.contextSupport) })
             }
-            // the look back (user 2026-11-19: "word later andnwaited": "later" was retro-corrected to "layer")
+            // the look back ("word later andnwaited": "later" was retro-corrected to "layer")
             fun typedWord(t: String) = CurrentWord().apply { for (c in t) addLetter(c, keys[c]?.let { Tap(it.centerX, it.centerY) }, keys, params) }
             for ((before, prev, next) in listOf(Triple("word", "later", "andnwaited"), Triple("word", "later", "and"), Triple("word", "later", "an"),
                 Triple("see", "later", "andnwaited"), Triple("the", "later", "andnwaited"))) {

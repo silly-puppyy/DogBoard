@@ -13,7 +13,7 @@ import kotlin.math.min
  *
  * iOS ramps d in over the first 1000 words, but fills its counts from the user's sent messages
  * first, so it is at full weight from day one; we can't read messages, and Gboard has no ramp
- * either: full weight from the start (user 2026-11-18). Counts decay by exp(−0.007 · days)
+ * either: full weight from the start. Counts decay by exp(−0.007 · days)
  * (half-life 99 days). P_personal, as iOS's dynamic model (decompile 2026-11-18): each order n
  * the context allows (word, pair, triple; iOS goes to 5) adds min(1, c(n-gram) / c(its context))
  * at weight 1/n_orders, but only once that n-gram was used twice (count ≥ 1.01, so one use, or
@@ -225,7 +225,7 @@ class PersonalModel(private val file: File? = null, private val now: () -> Long 
     /**
      * The whole model as text, built under the lock (in memory, quick) and written on the background
      * writer: saving every [SAVE_EVERY] words on the typing thread rewrote the file there and grew with
-     * it (short freezes at word ends, user 2026-11-16).
+     * it (short freezes at word ends).
      */
     @Synchronized
     fun save() {

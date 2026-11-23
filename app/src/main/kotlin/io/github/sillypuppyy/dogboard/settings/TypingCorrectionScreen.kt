@@ -55,15 +55,15 @@ internal fun SetPage(title: String, content: @Composable ColumnScope.() -> Unit)
 internal fun SetPageLink(id: String, title: String, sub: String, icon: String = "chevron_right", onClick: () -> Unit) {
     SetLinkRow(id, onClick) {
         TitleSub(title, sub, Modifier.weight(1f))
-        // chevron: another page; content_copy / open_in_new: what a tap does instead (About, user 2026-11-22)
+        // chevron: another page; content_copy / open_in_new: what a tap does instead (About)
         Symbol(icon, if (icon == "chevron_right") 24.sp else 20.sp, SetColors.onSurfaceVariant)
     }
 }
 
 /**
  * Autocorrect and typing (settings tree v3, notes/design/settings-tree-v3.md): the hub, one row per
- * page, as "Autocorrect and typing › Smart punctuation › Smart dashes" (user, 2026-11-17). Your words
- * lives here too (user: "words should be under autocorrect").
+ * page, as "Autocorrect and typing › Smart punctuation › Smart dashes". Your words
+ * lives here too.
  */
 @Composable
 fun TypingCorrectionScreen() {
@@ -77,7 +77,7 @@ fun TypingCorrectionScreen() {
         else -> "Standard"
     }
     SetPage("Autocorrect and typing") {
-        // icon rows as on the home page (user, 2026-11-17: "maybe add icons to the autocorrect menu")
+        // icon rows as on the home page ("maybe add icons to the autocorrect menu")
         val primary = SetColors.container(css("#d8e2ff"), css("#2a4678"))
         val secondary = SetColors.container(css("#dbe2f9"), css("#3f4759"))
         val tertiary = SetColors.container(css("#fbd7fc"), css("#583e5b"))
@@ -112,7 +112,7 @@ fun AutocorrectScreen() {
             }
         }
         // the rarely changed settings sit below the common ones, no switch to reveal them
-        // (user, 2026-11-17: "show the complicated settings just below the common ones")
+        // ("show the complicated settings just below the common ones")
         SetGroup("Looking back") {
             SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too, as on an iPhone.", fixPrevious) { v ->
                 scope.launch { prefs.correction.fixPreviousWord.set(v) }
@@ -128,7 +128,7 @@ fun AutocorrectScreen() {
 }
 
 /**
- * The Autocorrect group of Autocorrect and typing › Autocorrect, shared with the setup's typing page (user 2026-11-23:
+ * The Autocorrect group of Autocorrect and typing › Autocorrect, shared with the setup's typing page (
  * the setup shows the settings themselves); [lookBack] adds "Fix the previous word".
  */
 @Composable
@@ -180,7 +180,7 @@ fun SuggestionsScreen() {
                     scope.launch { prefs.suggestion.emojiMode.set(modes[i]) }
                 }
             }
-            // user 2026-11-19: "an option to show the tools vs first word suggestions by default"
+            // "an option to show the tools vs first word suggestions by default"
             Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TitleSub("Before you type", "In an empty text box, show likely first words, or your tools (undo, clipboard, selection and more), as Gboard does.")
                 val choices = listOf("suggestions", "tools")

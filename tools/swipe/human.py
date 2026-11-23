@@ -1,5 +1,5 @@
 """A model of how people swipe (tools/swipe/human.py): human-like paths for any word, to benchmark swipe
-decoders the way the tap benchmarks use a model of tap error (user, 2026-11-17: "make a human swipe
+decoders the way the tap benchmarks use a model of tap error ("make a human swipe
 model to benchmark against").
 
 Fitted to real swipes (FUTO dev split; key units: x = key widths across, y = rows down). Measured on

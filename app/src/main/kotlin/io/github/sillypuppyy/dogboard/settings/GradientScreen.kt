@@ -31,7 +31,7 @@ fun GradientScreen(id: String, pack: String, solid: Boolean = false) {
     val context = LocalContext.current
     io.github.sillypuppyy.dogboard.design.MaterialYouTheme.Remember()
     var name by remember { mutableStateOf("") }
-    // a bright and a dark version (user 2026-11-19), each its own colours and labels; the direction is shared
+    // a bright and a dark version, each its own colours and labels; the direction is shared
     var versions by remember { mutableStateOf("both") }
     var tabDark by remember { mutableStateOf(false) }
     var darkColors by remember { mutableStateOf(listOf("#2b2350", "#9e3b56")) }
@@ -58,7 +58,7 @@ fun GradientScreen(id: String, pack: String, solid: Boolean = false) {
                 else { versions = "bright"; brightColors = g.colors; brightLabels = labelsOf(g, false); darkColors = GradientSpec.derive(g.colors, true) }
                 tabDark = versions == "dark"
             } else if (solid) {
-                // a solid colour theme (user 2026-11-19): one colour, its bright and dark versions
+                // a solid colour theme: one colour, its bright and dark versions
                 darkColors = listOf("#2b2350"); brightColors = GradientSpec.derive(darkColors, toDark = false)
                 name = "Colour ${UserThemes.gradientCount(context) + 1}"
             } else name = "Gradient ${UserThemes.gradientCount(context) + 1}"

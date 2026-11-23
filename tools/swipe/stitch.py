@@ -1,5 +1,5 @@
 """Human swipes stitched from real motion (tools/swipe/stitch.py): a human model for any layout and
-language (user 2026-11-17: "a good enough human model to port to unseen keyboard layouts and
+language ("a good enough human model to port to unseen keyboard layouts and
 languages"). The parametric model (human.py) trained a decoder to ~80% top-1 on real swipes, level
 with a geometric decoder, 11 points behind real data: averages don't carry people's hooks, loops,
 double-letter wiggles and uneven curves. This keeps them.

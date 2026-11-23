@@ -1,4 +1,4 @@
-"""Russian training text for the student A/B (private study; user 2026-11-22: "Russian's LLM learning cases ... maybe
+"""Russian training text for the student A/B (private study; "Russian's LLM learning cases ... maybe
 tokenize the case endings differently on purpose"): Leipzig's three Russian 1M-sentence corpora (news 2024, web 2019,
 Wikipedia 2021; CC BY) minus every line of the pack's held-out file (ru.heldout.txt: the case test set and the
 next-word sets come from it), plus WildChat-1M Russian user sentences (ODC-By) minus the next-word benchmark lines

@@ -87,7 +87,7 @@ object CaseAdapt {
             }
             // a capital the user shifted after the first letter was meant ("DiT", "iPhone": on a phone the shift
             // lets go after one letter, so it took a shift tap mid-word): only a candidate that keeps the typed
-            // letters as they are goes (iOS's fallback test; user 2026-11-20 "DiT" -> "Dit" -> "Fit"). The first
+            // letters as they are goes (iOS's fallback test; "DiT" -> "Dit" -> "Fit"). The first
             // letter takes the capital when the user or the keyboard shifted it (it was dropped when autoshifted)
             Type.MIXED -> if (!acceptsForMixedCase(candidate, input, flags, allowOneCapital = !shiftedInside(flags))) null
                 else if (flags[0] and (SHIFTED or AUTOSHIFTED) != 0 && !casing.keepsLowercaseStart(candidate)) capitaliseFirst(candidate)

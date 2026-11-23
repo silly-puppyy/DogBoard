@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Whether a copied text is a phone number, an address or a one-time code, as Android's own on-device text
- * classifier sees it (user 2026-11-20: "should we not include a clip type if it can't be 100% reliable?"): a
+ * classifier sees it ("should we not include a clip type if it can't be 100% reliable?"): a
  * clip gets the type only when the classifier gives it to the whole text with [MIN_CONFIDENCE]; numbers alone
  * are never guessed to be a code. Asked off the main thread, once per text.
  */

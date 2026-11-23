@@ -32,7 +32,7 @@ fun FineTuningScreen() {
     val capsDefault = Timings.CapsLockDoubleTap.inWholeMilliseconds.toFloat()
     val ms = { v: Float -> "${v.toInt()} ms" }
 
-    // user 2026-11-19: its own section on the settings home ("a timing and feel section ... delete speed"),
+    // its own section on the settings home ("a timing and feel section ... delete speed"),
     // the delete key first (what people tune), then holding keys, double taps, the space-bar cursor
     SetPage("Timing and feel") {
         SetGroup("Delete key") {

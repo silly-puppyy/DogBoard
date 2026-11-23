@@ -6,7 +6,7 @@ import android.util.Log
 /**
  * Garbage-collection pressure per typed word (ART's runtime stats), logged under `DogBoardPerf`:
  * bytes allocated since the last word, and the blocking collections so far with their total time.
- * A blocking collection stalls the typing thread (the short freezes, user 2026-11-16).
+ * A blocking collection stalls the typing thread (the short freezes).
  */
 object GcStats {
     private var lastAllocated = -1L

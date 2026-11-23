@@ -37,7 +37,7 @@ import io.github.sillypuppyy.dogboard.design.UserThemes
 private val START = TextAlign.Start
 
 /**
- * Settings › Themes › Manage packs (user 2026-11-19: replaces the show / hide switches at the bottom of Themes):
+ * Settings › Themes › Manage packs (replaces the show / hide switches at the bottom of Themes):
  * your packs in order (move, show or hide, rename, share, copy, delete), the built-in packs (show or hide), a new
  * pack and importing one. [onPackAction] takes ThemesScreen's actions ("up", "down", "hide", "show", "rename",
  * "share", "copy", "delete"); [onBuiltIn] shows (false) or hides (true) a built-in pack.

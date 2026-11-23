@@ -12,7 +12,7 @@ import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
 import java.io.File
 
 /**
- * A clip as a file, for the hold menu's "Paste as file" and "Share as file" (user 2026-11-20): text as a .txt
+ * A clip as a file, for the hold menu's "Paste as file" and "Share as file": text as a .txt
  * (as it would be pasted, links cleaned per the clip's settings), a colour as a .png swatch, a picture or
  * video as the file it already is. Made files go to the cache folder the file provider serves (`shared/`).
  */

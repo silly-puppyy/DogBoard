@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Contact names reach the keyboard (user 2026-11-22: "add contacts to our emulator and see if the keyboard can use
+ * Contact names reach the keyboard ("add contacts to our emulator and see if the keyboard can use
  * them"): with contacts access granted and Settings › Suggestions › Contact names on, a name that only a contact holds
  * is corrected to and capitalised. Needs the contact Saoirse Quinlan on the device (added to dogboard-test by adb).
  */

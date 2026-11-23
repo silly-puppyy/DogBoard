@@ -27,7 +27,7 @@ class CaseAdaptTest : FunSpec({
     fun adapt(candidate: String, typed: String, auto: Boolean = false, context: Context = Context.NONE, capsLock: Boolean = false) =
         CaseAdapt.apply(candidate, typed, flags(typed, auto, capsLock), if (capsLock) Context.CAPS_LOCK else context, casing)
 
-    test("a capital shifted inside a word is kept (user 2026-11-20: DiT -> Dit -> Fit)") {
+    test("a capital shifted inside a word is kept (DiT -> Dit -> Fit)") {
         adapt("fit", "DiT", auto = true, context = Context.AUTOSHIFT) shouldBe null
         adapt("dit", "DiT", auto = true, context = Context.AUTOSHIFT) shouldBe null
         adapt("fit", "DiT") shouldBe null

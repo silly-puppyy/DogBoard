@@ -40,7 +40,7 @@ private fun nativeName(tag: String, fallback: String): String {
     return if (n.isBlank() || n.equals(l.language, true)) fallback else n.replaceFirstChar { it.titlecase(l) }
 }
 
-/** Settings › Languages, live (DogBoard's page in place of FlorisBoard's subtypes page; user 2026-11-19). */
+/** Settings › Languages, live (DogBoard's page in place of FlorisBoard's subtypes page). */
 @Composable
 fun LanguagesScreen() {
     val prefs by FlorisPreferenceStore

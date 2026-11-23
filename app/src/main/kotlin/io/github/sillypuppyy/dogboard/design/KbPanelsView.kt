@@ -90,7 +90,7 @@ fun KbPanelHeader(r: KbRender) {
                         DText("Search emoji", style = text(15, 400, t.barMuted), overflow = TextOverflow.Visible)
                     }
                     // the canvas's skin-tone dot (a static circle) is left out: as Gboard, a tone is picked by
-                    // long press on each emoji and stays with it (user 2026-11-18)
+                    // long press on each emoji and stays with it
                 }
             }
             x.pTools -> {
@@ -170,7 +170,7 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                 Modifier.height(36.dp).tap(LocalKbActions.current?.onRecentClip).background(t.chip, PILL).padding(start = 4.dp, end = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
-                // the copied image itself (user 2026-11-21: the chip showed an empty preview); the placeholder until it loads
+                // the copied image itself (the chip showed an empty preview); the placeholder until it loads
                 if (x.clipMedia && x.clipThumb != null) androidx.compose.foundation.Image(x.clipThumb, null, Modifier.size(28.dp).clip(PILL),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop)
                 else if (x.clipMedia) Box(Modifier.size(28.dp).clip(PILL).stripes(t.fn, t.key, 4f).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
@@ -244,7 +244,7 @@ fun KbPanelBody(r: KbRender) {
     val t = r.t; val x = r.x
     Box(Modifier.fillMaxWidth().height(r.keyAreaH.dp)) {
         if (x.clipList) {
-            // the clipboard as rows (KbClipRows.kt; canvas "Clipboard: columns vs rows", user 2026-11-20); a tap
+            // the clipboard as rows (KbClipRows.kt; canvas "Clipboard: columns vs rows"); a tap
             // pastes through the panel's actions when the live keyboard gives no row actions of its own
             val kb = LocalKbActions.current
             val rowActions = LocalKbClipActions.current ?: androidx.compose.runtime.remember(kb) { KbClipActions(onPaste = { i -> kb?.onClip?.invoke(i) }) }

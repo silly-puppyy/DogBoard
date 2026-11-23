@@ -1,11 +1,11 @@
-"""Group-chat style text from the teacher (private study, GPU; user 2026-11-15 instead of Discord
+"""Group-chat style text from the teacher (private study, GPU; instead of Discord
 data): the base model sees a short made-up group chat (2-4 people with random first names, a random
 everyday topic, 3 seed lines written here) and writes the next messages. Kept: the generated lines
 of the form "Name: message", the name stripped. Every example is invented: no real messages.
 Resumable: appends; the first column is the prompt index.
 Usage: gen_groupchat.py MODEL_ID n_prompts out.tsv [batch]
 SEEDS=seeds/<lang>.json: another language's names, topics, seed lines and headings (texting style of that
-language; 2026-11-22, user: "we can always make our own synthetic data" for languages short of chat text)."""
+language; 2026-11-22: "we can always make our own synthetic data" for languages short of chat text)."""
 import os, re, sys, random, time, torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 

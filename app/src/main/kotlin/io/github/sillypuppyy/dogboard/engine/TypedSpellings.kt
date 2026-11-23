@@ -4,7 +4,7 @@ import java.text.Normalizer
 
 /**
  * A language's typed spellings (rules.json "spellings", and "digraphs" as letter rules): letters people type as other
- * letters, one table for every such method (user 2026-11-23, "generalise all these transliteration methods as simple
+ * letters, one table for every such method ("generalise all these transliteration methods as simple
  * replacement rules"). German ä as "ae" (fuer -> für); Vietnamese Telex: â as "aa", đ as "dd", the tone mark as a
  * letter at the syllable's end (vieetj -> việt). TypingEngine.withSpellings decodes the typed taps without the extra
  * letters ([extraLetters]) and accepts a word whose [spelled] form is exactly what was typed.

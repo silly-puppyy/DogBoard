@@ -6,7 +6,7 @@
 
 DGN2 (arpa_to_dogboard.py --compact) keeps pairs grouped by their first word (i32 second word + 2 x u8 codes) but
 stores every triple as a full i64 key (a << 42 | b << 21 | c) + u8 code: 9 bytes, the first two words repeated in
-each. DGN3 groups the triples under their pair, so a triple stores only its third word (user 2026-11-22: "sorting all
+each. DGN3 groups the triples under their pair, so a triple stores only its third word ("sorting all
 trigrams and then starting a word block where you define the word only once"), and word ids take 3 bytes (u24):
 
     magic "DGN3", V, P (pairs incl. placeholders), T                        i32 x 4

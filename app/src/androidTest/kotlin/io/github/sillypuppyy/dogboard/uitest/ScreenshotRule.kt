@@ -6,7 +6,7 @@ import java.io.File
 
 /**
  * A screenshot of the screen as every test left it (files/uitest/<Class>-<test>.png), renamed FAIL-... when the test
- * failed, so a Test Lab run shows what each device drew, not only the few fixed shots (user 2026-11-20: "capture
+ * failed, so a Test Lab run shows what each device drew, not only the few fixed shots ("capture
  * screenshots properly"). Call [end] from @After before the keyboard closes: a rule's own hooks run after @After.
  */
 class ScreenshotRule(private val kb: KeyboardDriver) : TestWatcher() {

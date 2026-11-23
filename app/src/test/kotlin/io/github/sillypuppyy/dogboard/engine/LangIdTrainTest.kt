@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import java.io.File
 
 /**
- * Trains the per-word language model with both kinds of evidence (user 2026-11-23: "recognise words/characters in
+ * Trains the per-word language model with both kinds of evidence ("recognise words/characters in
  * context individually? Best of both worlds"): for "this language" against "the other", the word's listed / ln P / letter
  * shape, each of the two words before it individually (listed / ln P), and the last [WINDOW] characters under each
  * language's letter model. One logistic model for every pair, trained on mixed text with switches; held-out pairs report

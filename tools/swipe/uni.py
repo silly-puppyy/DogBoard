@@ -128,7 +128,7 @@ def load_training(per_layout, futo_shards, random_share=0.0):
             items.add(x, w, lay, 10 * asp)
         del syn
         if n_rand:
-            # random letter strings (user 2026-11-19: so the network reads the path, not English spelling habits)
+            # random letter strings (so the network reads the path, not English spelling habits)
             rnd = [it for f in sorted(glob.glob(f"{D}/swipe/synth-random-{lay}/train-*.pt")) for it in torch.load(f)]
             for x, w in rnd[:n_rand]:
                 items.add(x, w, lay, 10 * asp)

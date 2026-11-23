@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Tells the user each time adaptive autocorrect moves to another step (more careful, bolder, back
- * to their setting; user, 2026-11-16: "every time we change their autocorrection level (we should do
+ * to their setting; "every time we change their autocorrection level (we should do
  * it rarely) and give them the option to disable it"). The step's hysteresis keeps it rare
  * (AutocorrectStrength.NOTIFY_AT). "Stop adjusting" turns adaptive autocorrect off; the switch
  * "Tell me when it adapts" (typing settings) turns the notifications off. Needs POST_NOTIFICATIONS

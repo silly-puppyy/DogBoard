@@ -11,17 +11,17 @@ import kotlin.math.round
 object PhotoReadability {
     /**
      * One version of a photo theme; [labels] auto / white / dark, [accent] = which of the photo's colours.
-     * [bright]: the photo's brightness, 1 as shot, 0 black, 2 the brightest (user 2026-11-19: "0% - 200%"): below 1
+     * [bright]: the photo's brightness, 1 as shot, 0 black, 2 the brightest ("0% - 200%"): below 1
      * a black veil ([dim]), above it a white wash ([wash], at most [WASH] at 2) so highlights don't burn out.
      */
     data class Look(
         val bright: Double = 1.0, val tint: Double = 0.0, val blur: Float = 0f,
         val labels: String = "auto", val halo: Boolean = true, val accent: Int = 0,
-        /** Saturation (0 grey, 1 as shot, 2 vivid) and contrast (0.5..1.5, 1 as shot) of the photo (user 2026-11-19). */
+        /** Saturation (0 grey, 1 as shot, 2 vivid) and contrast (0.5..1.5, 1 as shot) of the photo. */
         val sat: Double = 1.0, val contrast: Double = 1.0,
         /** A return-key colour the user picked (#rrggbb), in place of the photo's colour [accent]. */
         val actColor: String? = null,
-        /** The key background [tint] is black rather than white (dark versions; user 2026-11-19). */
+        /** The key background [tint] is black rather than white (dark versions). */
         val keyDark: Boolean = false,
     ) {
         val dim: Double get() = (1 - bright).coerceIn(0.0, 1.0)
@@ -67,7 +67,7 @@ object PhotoReadability {
     private fun r2(x: Double) = round(x * 100) / 100
 
     /**
-     * :137-142 the automatic look, now per version (user 2026-11-19: a bright and a dark version of a photo):
+     * :137-142 the automatic look, now per version (a bright and a dark version of a photo):
      * dark, the least darkening that makes white labels readable (the design's rule); bright, dark labels, the photo
      * brightened up to 150 %, then milky keys as needed.
      */
@@ -109,7 +109,7 @@ object PhotoReadability {
 }
 
 /**
- * A photo theme's versions (user 2026-11-19): "bright", "dark" or "both", each its own look; the dark version may
+ * A photo theme's versions: "bright", "dark" or "both", each its own look; the dark version may
  * have its own photo ([darkPhoto], its brightness [darkLuminance], 0..1 linear). Stored as JSON (the keyboard's
  * photo slot pref, and a saved theme's params).
  */

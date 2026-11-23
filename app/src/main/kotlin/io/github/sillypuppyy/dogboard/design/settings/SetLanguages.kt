@@ -71,8 +71,8 @@ data class LangPack(
 data class LayoutChoice(val id: String, val label: String, val rows: List<String>, val added: Boolean)
 
 /**
- * Settings › Languages, in DogBoard's style (user 2026-11-19, replacing FlorisBoard's subtypes page): your languages as
- * cards; Add a language as Gboard does it (user 2026-11-23, design canvas "Add a language"): a full page (your phone's
+ * Settings › Languages, in DogBoard's style (replacing FlorisBoard's subtypes page): your languages as
+ * cards; Add a language as Gboard does it (design canvas "Add a language"): a full page (your phone's
  * languages first), then the language's layouts as previews, several can be ticked (each becomes its own language
  * entry), Done adds them at once and the dictionary arrives in the background.
  */

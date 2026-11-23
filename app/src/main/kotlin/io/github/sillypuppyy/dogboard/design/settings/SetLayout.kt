@@ -53,10 +53,10 @@ data class LayoutElements(
     val space: String = "auto", // auto, lang, space, blank
     val action: String = "icon", // icon, word
     val caseMode: String = "shift", // shift, caps
-    // user 2026-11-17, mix and match: the symbol pages and ?123 / action keys as pills
+    // mix and match: the symbol pages and ?123 / action keys as pills
     val symbols: String = "iphone", // iphone (123 / #+=), android (?123 / =\<)
     val pill: Boolean = false,
-    /** When the symbols page goes back to the letters (user 2026-11-21): any, space (default, as on an iPhone), none. */
+    /** When the symbols page goes back to the letters: any, space (default, as on an iPhone), none. */
     val symbolsReturn: String = "space",
 ) {
     companion object {
@@ -106,7 +106,7 @@ fun SetLayout(state: SetLayoutState) {
     var field by remember { mutableStateOf("text") } // :98 the preview's field, not stored
     var plane by remember { mutableStateOf("base") } // the preview's page: letters or a symbols page, not stored
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
-        // user 2026-11-18: the header sits below the real status bar (the canvas's fixed 40 dp let the
+        // the header sits below the real status bar (the canvas's fixed 40 dp let the
         // status band cover it), and the preview stays in view, at the keyboard's real size, while the
         // options scroll under it (round keys, hold for symbols, space label, action key showed nothing)
         Column(Modifier.fillMaxSize().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars)) {
@@ -139,7 +139,7 @@ fun SetLayout(state: SetLayoutState) {
                         ) { DText(label, style = setText(13f, 500, if (on) SetColors.onSecondaryContainer else SetColors.onSurfaceVariant)) }
                     }
                 }
-                // user 2026-11-19: "The symbols page isn't previewed in the settings": which page the preview shows
+                // "The symbols page isn't previewed in the settings": which page the preview shows
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     for ((id, label) in listOf("base" to "Letters", "symbol-1" to "Symbols", "symbol-2" to "More symbols")) {
                         val on = plane == id
@@ -175,7 +175,7 @@ fun SetLayout(state: SetLayoutState) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
             // DogBoard: the letter layout (moved here from the old Typing screen, 2026-11-17)
-            // user 2026-11-19: "a good interface for picking a keyboard layout": Gboard's variant thumbnails, as
+            // "a good interface for picking a keyboard layout": Gboard's variant thumbnails, as
             // cards with each layout's letter rows drawn small
             state.layoutId?.let { id ->
                 SetGroup("Letters") {
@@ -212,7 +212,7 @@ fun SetLayout(state: SetLayoutState) {
                 }
             }
             // :43-78 Mix and match
-            // 16 dp side margins as every other settings page (it ran edge to edge; user 2026-11-19 borders audit)
+            // 16 dp side margins as every other settings page (it ran edge to edge; borders audit)
             SetGroup("Mix and match", Modifier.padding(horizontal = 16.dp)) {
                 ElementRow("Number row", "A row of digits above the letters, or each digit when you hold its top-row letter.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
                     ElementSeg("numrow", listOf("off" to "Off", "on" to "Always", "hints" to "On hold"), st.numRow) { state.onChange(st.copy(numRow = it)) }
@@ -307,7 +307,7 @@ private fun BottomRowCard(selected: Boolean, label: String, keys: List<Mk>, onPi
         Modifier.fillMaxWidth().padding(bottom = 8.dp)
             .cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, if (selected) 2f else 1f, if (selected) SetColors.primary else SetColors.outlineVariant)), shape)
             // the chosen card keeps the card colour with a 2 dp accent outline (the page colour behind it
-            // looked like a hole in the page, user 2026-11-18)
+            // looked like a hole in the page)
             .background(SetColors.row, shape).clip(shape).clickable(onClick = onPick).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Clipboard (settings tree v3): the common settings first, the rarely needed ones below them
- * (user, 2026-11-17: no "show all" switch). Every row is read by the keyboard (ClipboardManager,
+ * (no "show all" switch). Every row is read by the keyboard (ClipboardManager,
  * the recent-copy chip in TextInputLayout).
  */
 @Composable

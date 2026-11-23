@@ -63,7 +63,7 @@ class MultilingualEvalTest : FunSpec({
             return -kotlin.math.ln(1 + kotlin.math.exp(-z))
         }
         // DOGBOARD_ML_CHAR=c1,c2: the context as the last DOGBOARD_ML_WINDOW characters (default 30) scored by each language's
-        // letter model (user 2026-11-23: "feed it the last 20-30 characters"), weight c per mode, with the word's own evidence
+        // letter model ("feed it the last 20-30 characters"), weight c per mode, with the word's own evidence
         val charWeights = System.getenv("DOGBOARD_ML_CHAR")?.split(',')?.map { it.toDouble() }.orEmpty()
         val window = System.getenv("DOGBOARD_ML_WINDOW")?.toInt() ?: 30
         /** (ln P in [x] - ln P in [o]) per letter of the last [window] characters before the word (letter models; 0 when none). */
@@ -107,7 +107,7 @@ class MultilingualEvalTest : FunSpec({
             val pa = la.lexicon.logProb(t.lowercase()) ?: -22.0; val pb = lb.lexicon.logProb(t.lowercase()) ?: -22.0
             return if (pa > pb) la else if (pb > pa) lb else null
         }
-        // DOGBOARD_ML_PRIOR_MODE: "pause" (user 2026-11-23: after a word in the other language, no weighting for the next
+        // DOGBOARD_ML_PRIOR_MODE: "pause" (after a word in the other language, no weighting for the next
         // word) or "follow" (the prior is the last word's language)
         val priorMode = System.getenv("DOGBOARD_ML_PRIOR_MODE") ?: "sentence"
         fun withPrior(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, beta: Double): List<Candidate> {

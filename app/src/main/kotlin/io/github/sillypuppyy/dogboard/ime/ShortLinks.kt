@@ -1,7 +1,7 @@
 package io.github.sillypuppyy.dogboard.ime
 
 /**
- * Settings › Clipboard › "Expand short links" (opt-in, user 2026-11-17): a short link (vm.tiktok.com,
+ * Settings › Clipboard › "Expand short links" (opt-in): a short link (vm.tiktok.com,
  * pin.it, a.co...) carries the share in its code, which ties it to the sharer's account; only the
  * shortener knows where it leads. When a copied text holds one, DogBoard asks that shortener once for
  * the address it points to (HEAD, redirects not followed into the site, no cookies), so the paste can

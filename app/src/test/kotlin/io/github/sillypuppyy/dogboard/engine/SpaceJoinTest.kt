@@ -29,7 +29,7 @@ class SpaceJoinTest : FunSpec({
     }
 
     test("probe: an extra space tap inside a word, by typing speed").config(enabled = System.getenv("DOGBOARD_PROBE") != null) {
-        // user 2026-11-19 (emulator, adb taps ~0.5 s apart): "going hom e" joined to "bombe"
+        // (emulator, adb taps ~0.5 s apart): "going hom e" joined to "bombe"
         for (gap in listOf(120L, 250L, 450L)) for ((a, b, before) in listOf(Triple("hom", "e", "going"), Triple("goin", "g", "i'm"), Triple("th", "e", "of"))) {
             fun t(w: String, t0: Long) = w.mapIndexed { i, c -> keys.getValue(c).let { Tap(it.centerX, it.centerY, t0 + gap * i) } }
             val ta = t(a, 0); val tb = t(b, gap * (a.length + 1))

@@ -4,14 +4,14 @@ import java.io.File
 import kotlin.math.exp
 
 /**
- * Autocorrect that adapts to the user (user's design, 2026-11-15): it grows more careful when the
+ * Autocorrect that adapts to the person typing (2026-11-15): it grows more careful when the
  * user undoes its corrections and bolder when they keep them or fix, from the suggestion bar, typos
  * it left alone. (Gboard has a learned per-user threshold, built but switched off on the device we
  * studied; this is a simple, explainable stand-in.)
  *
  * A score moves with each event: +1 for a reverted correction, +0.5 for a correction deleted right
  * away, -1/9 for a kept one (so a steady 10 % revert rate holds it still), -1 for a fix picked from
- * the bar. Clamped to ±[SCORE_LIMIT]; nothing changes inside ±[DEAD_ZONE] (user, 2026-11-15: "don't
+ * the bar. Clamped to ±[SCORE_LIMIT]; nothing changes inside ±[DEAD_ZONE] ("don't
  * make it overly sensitive, we want a clear signal that the user is being over corrected"): past it
  * the chosen level's "lead over the typed letters" scales linearly up to e^±[MAX_SHIFT] (±19 %):
  * Standard 1.39 moves within 1.17 - 1.65, always between Strong (1.0) and Gentle (2.0). With 30 %
@@ -25,7 +25,7 @@ class AutocorrectStrength(private val file: File? = null) {
         private set
 
     /**
-     * The adjustment the user is told about (user, 2026-11-16: a notification on every change, rarely):
+     * The adjustment the user is told about (a notification on every change, rarely):
      * +1 more careful, -1 bolder, 0 their setting as chosen. It enters a side halfway to full effect
      * (±[NOTIFY_AT]) and comes back only when the adjustment has stopped (inside ±[DEAD_ZONE]), so it
      * cannot flicker; [onStepChange] hears each change.

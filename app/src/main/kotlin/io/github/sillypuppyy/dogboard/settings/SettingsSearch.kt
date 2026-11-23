@@ -48,6 +48,7 @@ object SettingsSearch {
         Entry("Swipe to move the cursor", "Gestures", "gestures", "space bar swipe slide cursor quick"),
         Entry("Emoji", "Emoji and GIFs", "emoji", "skin tone recent gif"),
         Entry("Clipboard history", "Clipboard", "clipboard", "copy paste clips keep history"),
+        Entry("Bring repeats to the top", "Clipboard", "clipboard", "duplicate repeat copy again dedupe merge"),
         Entry("Suggest what you copied", "Clipboard", "clipboard", "paste chip copy recent bar"),
         Entry("Passwords clear themselves", "Clipboard", "clipboard", "password sensitive clear auto delete"),
         Entry("Delete old clips", "Clipboard", "clipboard", "clean expire minutes"),
@@ -67,7 +68,7 @@ object SettingsSearch {
         Entry("Neural model", "Advanced", "advanced", "battery memory ai language model"),
         Entry("Show the app icon", "Advanced", "advanced", "launcher hide icon"),
         Entry("About", "About", "about", "version licenses credits"),
-        // rows added after the first index (user 2026-11-21: "settings search only searches the top level pages");
+        // rows added after the first index ("settings search only searches the top level pages");
         // SettingsSearchCoverageTest fails when a settings row has no entry
         Entry("Back to letters", "Layout", "layout", "symbols page return letters after space key comma"),
         Entry("Key sound", "Sound and vibration", "feedback", "click sound pack style pen mouse clack mech keys tick drop glass thock classic"),

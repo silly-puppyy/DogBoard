@@ -31,8 +31,8 @@ def w(dp: float) -> str:
     return f"{dp / UNIT:.4f}".rstrip("0").rstrip(".")
 
 
-SHIFT = "1.5"  # Gboard: shift and delete take what the 7 letters leave, no gaps (user 2026-11-17)
-# the iOS bottom row keeps iOS's widths (user 2026-11-17): 123 46.5 | emoji 47 | space 188 | return 93.5
+SHIFT = "1.5"  # Gboard: shift and delete take what the 7 letters leave, no gaps
+# the iOS bottom row keeps iOS's widths: 123 46.5 | emoji 47 | space 188 | return 93.5
 MODE = w(46.5)       # 123 / ABC
 FN = w(47)           # emoji / language key
 SPACE = w(188)       # space absorbs the 37.5 dp a dictation key would take
@@ -187,7 +187,7 @@ def no_capitals(lay: Layout) -> Layout:
     return lay
 
 
-# English variants Gboard offers (user 2026-11-19: "a good interface for picking a keyboard layout"). Dvorak as
+# English variants Gboard offers ("a good interface for picking a keyboard layout"). Dvorak as
 # Gboard draws it on phones (FlorisBoard's dvorak.json lacks q and z); Colemak from FlorisBoard's data
 DVORAK = Layout("dvorak-en", "en", "English (Dvorak)", "Dvorak", "EN",
                 [list("',.pyfgcrl"), list("aoeuidhtns"), list("qjkxbmwvz")])
@@ -665,7 +665,7 @@ def long_press(lp: dict[str, str]) -> dict[str, str]:
 def all_layouts() -> list[Layout]:
     """Every plain three-row layout of every language Gboard covers (one per distinct keyboard: a grid shared by many
     languages is one file), and iOS's where its letters differ from all of Gboard's for that language, named
-    '... (iPhone)' (user 2026-11-22). Languages LAYOUTS defines by hand keep those; their other variants are added."""
+    '... (iPhone)'. Languages LAYOUTS defines by hand keep those; their other variants are added."""
     langs, territories = cldr_names()
     g_langs = json.loads((GBOARD_DATA / "languages.json").read_text(encoding="utf-8"))
     g_lays = json.loads((GBOARD_DATA / "layouts.json").read_text(encoding="utf-8"))
@@ -720,7 +720,7 @@ def all_layouts() -> list[Layout]:
         if base == "ka":
             lay = no_capitals(lay)
             # the phonetic layout's Shift plane: iOS's Georgian-Phonetic Capital-Letters (ტ -> თ, წ -> ჭ, რ -> ღ, ს -> შ,
-            # ჯ -> ჟ, ზ -> ძ, ც -> ჩ; Gboard's data has them only on long-press, kept too), user 2026-11-23 "implement
+            # ჯ -> ჟ, ზ -> ძ, ც -> ჩ; Gboard's data has them only on long-press, kept too), "implement
             # both layouts". Auto-shift is off for Georgian (FlorisLocale.supportsCapitalization), so only a tap on Shift
             ph = i_lays.get("Georgian-Phonetic", {})
             caps = next((pl["rows"] for pl in ph.get("planes", {}).get("Capital-Letters", []) if pl.get("keylayout") == "iPhone-Letters-Keylayout"), None)

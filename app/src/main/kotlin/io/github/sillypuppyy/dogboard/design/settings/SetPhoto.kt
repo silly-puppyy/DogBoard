@@ -51,7 +51,7 @@ class SetPhotoState(
     val analysis: GlassPhoto.Analysis?,
     val darkPhoto: ImageBitmap?,
     val darkAnalysis: GlassPhoto.Analysis?,
-    /** The theme's versions (user 2026-11-19: a bright and a dark version, or one of them). */
+    /** The theme's versions (a bright and a dark version, or one of them). */
     val versions: PhotoVersions,
     /** The version being edited. */
     val tabDark: Boolean,
@@ -94,7 +94,7 @@ fun SetPhoto(state: SetPhotoState) {
             Row(Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable { state.onBack() }, contentAlignment = Alignment.Center) { Symbol("arrow_back", 24.sp, SetColors.onSurface) }
                 DText("Photo theme", Modifier.weight(1f), style = setText(22f).copy(textAlign = START), maxLines = 2)
-                // no Save button: every change is kept as it is made (user 2026-11-19: autosave)
+                // no Save button: every change is kept as it is made (autosave)
             }
 
             // versions: bright, dark or both (a day-and-night pair); with both, which one is being edited
@@ -120,7 +120,7 @@ fun SetPhoto(state: SetPhotoState) {
 
             // :24-26 the keyboard on the photo, as set
             // the keyboard inset 16 dp on every side, its corners 24 - 16 = 8 dp so the two curves are concentric (the
-            // keyboard ran flush to the bottom with 16 dp top corners, cut by the card's 24 dp ones; user 2026-11-19)
+            // keyboard ran flush to the bottom with 16 dp top corners, cut by the card's 24 dp ones)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SetColors.row).padding(16.dp), contentAlignment = Alignment.TopCenter) {
                 val kbWidth = maxWidth.value
                 val props = KbProps(
@@ -165,7 +165,7 @@ fun SetPhoto(state: SetPhotoState) {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Photo", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
                 Column(Modifier.fillMaxWidth().background(SetColors.row, RoundedCornerShape(20.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // the dark version of a two-version theme may have its own photo (user 2026-11-19)
+                    // the dark version of a two-version theme may have its own photo
                     val darkTab = state.editingDark && state.versions.hasBright
                     if (darkTab) {
                         val own = state.versions.darkPhoto
@@ -207,7 +207,7 @@ fun SetPhoto(state: SetPhotoState) {
                     // :155-157 return key colour from the photo
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         TitleSub("Return key colour", if (st.actColor != null) "Your colour" else "Picked from the photo")
-                        // a colour of your own (user 2026-11-19): the gradient creator's palette and sliders
+                        // a colour of your own: the gradient creator's palette and sliders
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             accents.forEachIndexed { i, c ->
                                 val sel = i == st.accent && st.actColor == null
@@ -252,7 +252,7 @@ fun SetPhoto(state: SetPhotoState) {
                     }
                     // :159-162 dimming, key background, blur
                     fun pc(v: Float) = "${(v * 100).roundToInt()}%"
-                    // brightness, 0-200 % (user 2026-11-19): below 100 % darker, above it a soft white wash
+                    // brightness, 0-200 %: below 100 % darker, above it a soft white wash
                     SetSliderRow("photo:bright", "Brightness", if (st.bright > 1.0) "Brightened with a soft white wash" else if (st.bright < 1.0) "Darkened" else "As shot",
                         st.bright.toFloat(), auto.bright.toFloat(), 0f..2f, 0.05f, ::pc) { state.onLook(st.copy(bright = it.toDouble())) }
                     SetSliderRow("photo:contrast", "Contrast", "", st.contrast.toFloat(), 1f, 0.5f..1.5f, 0.05f, ::pc) { state.onLook(st.copy(contrast = it.toDouble())) }

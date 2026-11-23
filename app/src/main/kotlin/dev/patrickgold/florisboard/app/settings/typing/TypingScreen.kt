@@ -223,7 +223,7 @@ fun TypingScreen() {
                 )
             }
 
-            // DogBoard: punctuation helpers in one place (user, 2026-11-14)
+            // DogBoard: punctuation helpers in one place
             SegmentedListColumn(title = stringRes(R.string.pref__typing__punctuation_group__title)) {
                 val count = 3
                 SwitchPreference(

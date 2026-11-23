@@ -1,5 +1,5 @@
 #!/bin/bash
-# next training / test text (2026-11-15, user: "put the big datasets to download now"); each in its own dir
+# next training / test text (2026-11-15: "put the big datasets to download now"); each in its own dir
 D=/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data
 P=$D/venv-llm/bin/python
 dl() { HF_HUB_DISABLE_PROGRESS_BARS=1 $P -c "from huggingface_hub import snapshot_download as s; s('$1', repo_type='dataset', local_dir='$2', allow_patterns=$3, max_workers=4)" && echo "done $1 $(du -sh $2 | cut -f1)"; }

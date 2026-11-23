@@ -145,7 +145,7 @@ fun ImeKeyboardBox(
     val displayLanguageNamesIn by prefs.localization.displayLanguageNamesIn.collectAsState()
     // DogBoard: the language name for the design's space-bar label (Layout element "Space-bar label")
     // the language entry in use (not the layout's locale: English on AZERTY said French), and the languages typed
-    // together with it: "English + French" in their short names (user 2026-11-23: it showed only one)
+    // together with it: "English + French" in their short names (it showed only one)
     val activeSubtype by androidx.compose.ui.platform.LocalContext.current.subtypeManager().value.activeSubtypeFlow.collectAsState()
     val languageName = remember(model, displayLanguageNamesIn, activeSubtype) {
         fun name(locale: FlorisLocale, short: Boolean): String {
@@ -248,7 +248,7 @@ fun ImeKeyboardBox(
         // DogBoard: the swipe trail, in the theme's accent, newest part opaque, the tail fading
         val glideTrail by pointerTracker.glideTrail.collectAsState()
         // the theme's accent at Gboard's tones (measured 2026-11-18: light #566791, dark #a6b3d7, i.e.
-        // Material's primary tone 40 / 80): it always stands out from the keys (user: the return key's
+        // Material's primary tone 40 / 80): it always stands out from the keys (the return key's
         // own colour hardly showed on dark themes)
         val accent = io.github.sillypuppyy.dogboard.design.liveAccent()
         val darkKeys = io.github.sillypuppyy.dogboard.design.liveDark()
@@ -297,7 +297,7 @@ fun ImeKeyboardBox(
                         val now = maxOf(trailNow, all.last().t)
                         val raw = all.filter { now - it.t <= dev.patrickgold.florisboard.ime.keyboard3.interaction.TRAIL_MS }
                         // a smooth curve through the touch points every ~3 px (Catmull-Rom): a fast swipe
-                        // reports points 30-50 px apart, which showed as facets in the taper (user 2026-11-18)
+                        // reports points 30-50 px apart, which showed as facets in the taper
                         val pts = ArrayList<dev.patrickgold.florisboard.ime.keyboard3.interaction.TrailPoint>(raw.size * 4)
                         for (i in 0 until raw.size - 1) {
                             val p0 = raw[maxOf(i - 1, 0)]; val p1 = raw[i]; val p2 = raw[i + 1]; val p3 = raw[minOf(i + 2, raw.size - 1)]
@@ -339,7 +339,7 @@ fun ImeKeyboardBox(
                                     start = androidx.compose.ui.geometry.Offset(tail.x, tail.y), end = androidx.compose.ui.geometry.Offset(head.x, head.y),
                                 ),
                             )
-                            // opaque where the head meets the ribbon: no darker overlap (user 2026-11-18); the
+                            // opaque where the head meets the ribbon: no darker overlap; the
                             // ribbon is one filled shape, so crossings don't darken either
                             drawCircle(trailColor, trailWidthPx / 2f, androidx.compose.ui.geometry.Offset(head.x, head.y))
                         }

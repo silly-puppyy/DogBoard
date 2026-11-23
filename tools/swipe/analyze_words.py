@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """How people vary when swiping the same word (tools/swipe/analyze_words.py): the facts a physical human
-swipe model has to reproduce (user 2026-11-17: no stitching of real paths; use the data to see how
+swipe model has to reproduce (no stitching of real paths; use the data to see how
 humans vary over hundreds of swipes of one word, then simulate).
 
     analyze_words.py --futo DIR [--min 200] [--words 40] [--out stats.json]

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Synthetic-only swipe models on QWERTY, tested on real swipes (user 2026-11-18: "try getting simulated accuracy
+# Synthetic-only swipe models on QWERTY, tested on real swipes ("try getting simulated accuracy
 # (against real data, unseen) higher"). Each variant: N synthetic swipes from a generator, a model trained on
 # them alone, top-1 on swipe-5's 3,000 real QWERTY swipes (never used to fit anything). Baselines on the same
 # test: real-trained 82.8, pursuit-v1 73.8, stitched (real pieces) 76.9.

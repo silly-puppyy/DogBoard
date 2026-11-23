@@ -233,7 +233,7 @@ class DictionaryListsTest : FunSpec({
     }
 
     test("texting words stay as typed, not recased to an acronym (Hm, bc, rn)") {
-        // user 2026-11-19: "Hm" at a sentence start became "HM" (the lexicon held only the acronym casing)
+        // "Hm" at a sentence start became "HM" (the lexicon held only the acronym casing)
         TypingEngine.unloadForTest()
         TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
         try {

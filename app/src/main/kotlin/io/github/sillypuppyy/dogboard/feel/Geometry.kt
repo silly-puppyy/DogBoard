@@ -18,7 +18,7 @@ object Geometry {
     val KeyAreaHeightLandscape: Dp = 162.dp
 
     /**
-     * Portrait key area: four rows at Gboard's row height for the screen width (user, 2026-11-14: "fit to
+     * Portrait key area: four rows at Gboard's row height for the screen width ("fit to
      * Gboard"; measured on the emulator with tools/test/keyboard_sizes.py: 48.0 dp below 350 dp,
      * 50.3 dp up to 400 dp, 59.0 dp from 400 dp, whatever the screen height). Replaces the designer's
      * fixed 216 / 226 dp (iOS's). [heightScale] is the user's height setting (100 % = Gboard's).
@@ -41,8 +41,7 @@ object Geometry {
 
     /**
      * Row heights with the number row on, as Gboard draws them (measured 2026-11-15 at 411 dp: number
-     * row 49.9 dp, letter rows 53.7, bottom row 59, against 58.9 per row without it; user: "we listen to
-     * Gboard"), as shares of one plain row: the keyboard grows by 0.58 of a row instead of a whole one.
+     * row 49.9 dp, letter rows 53.7, bottom row 59, against 58.9 per row without it), as shares of one plain row: the keyboard grows by 0.58 of a row instead of a whole one.
      * Without the number row every row is 1.
      */
     fun rowWeights(rows: Int, numberRow: Boolean): FloatArray = FloatArray(rows) { i ->

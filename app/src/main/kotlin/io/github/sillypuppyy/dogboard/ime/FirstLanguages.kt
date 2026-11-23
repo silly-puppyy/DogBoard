@@ -7,7 +7,7 @@ import dev.patrickgold.florisboard.lib.FlorisLocale
 import java.io.File
 
 /**
- * The first start in another language (user 2026-11-23: "maybe the user is not English"): as Gboard does, the phone's
+ * The first start in another language ("maybe the user is not English"): as Gboard does, the phone's
  * own languages become the keyboard's, each with its default layout (built in for ~300 languages), and their dictionaries
  * download in the background (PackDownloadQueue). Once per install; a user with saved languages is never changed.
  */

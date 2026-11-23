@@ -12,7 +12,7 @@ Sources are public lists on the data drive (never the user's text):
 
 With a sentences file (Leipzig eng_wikipedia_2016_1M, not in the neural model's training mix): each word inside a
 real sentence that contains it, with the words before it as context (files leave-ctx-*.tsv): a name alone tells the
-language models nothing; in a sentence they can see a name is likely (user 2026-11-20: "put words in context, it's
+language models nothing; in a sentence they can see a name is likely ("put words in context, it's
 unlikely someone will just type random words")."""
 import csv, os, random, sys
 

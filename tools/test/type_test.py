@@ -41,14 +41,14 @@ CASES = [
     ("the quick brown fox", "The quick brown fox"),
     ("jumps over the lazy dog", "Jumps over the lazy dog"),
     ("see you  soon", "See you. Soon"),  # double-space period, then auto-shift
-    ("hello {123}?x", "Hello? X"),  # a mark typed after a typed space goes before it, and the space returns to letters (user, 2026-11-16)
+    ("hello {123}?x", "Hello? X"),  # a mark typed after a typed space goes before it, and the space returns to letters
     ("ok {123},x", "OK, x"),
     ("teh x", "The x"),  # classic misspellings at the start of a field are corrected
     ("i think seperate x", "I think separate x"),
     # neighbouring-key typos: adb taps are slow (0.4+ s apart), and iOS-rule edit costs such as a
     # swapped pair grow with the time between taps, so timing-dependent typos are unit-tested instead
     ("thw dog", "The dog"),  # autocorrect on space keeps the auto-shift capital
-    ("i dont know", "I don't know"),  # smart quotes off by default (user): a straight apostrophe
+    ("i dont know", "I don't know"),  # smart quotes off by default: a straight apostrophe
     # "<" is backspace: right after an autocorrection it restores the typed word. Undoing also
     # rejects a correction (iOS rule: blocked for under a day after one undo, see Rejections.kt),
     # so smoke.sh clears the learned files before each run.
@@ -67,7 +67,7 @@ CASES = [
     ("teh{123}/", "The/"),
     ("teh{123}\"", "The\""),
     ("teh{123}@", "Teh@"),
-    ("teh{123}-", "The-"),  # the hyphen ends a word, as on the iPhone (user 2026-11-20)
+    ("teh{123}-", "The-"),  # the hyphen ends a word, as on the iPhone
     ("hey {123}12 x", "Hey 12 x"),  # {123} = mode key; space on the 123 plane returns to letters  # {L} = cursor left: typing then space inside a word must not autocorrect the part before the cursor
 ]
 

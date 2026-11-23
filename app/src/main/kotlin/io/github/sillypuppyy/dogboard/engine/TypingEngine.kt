@@ -890,7 +890,7 @@ object TypingEngine {
         val power = if (engine.bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM
         // Rule 3's inputs for splits (debug, the emulator's checks): the neural ln P and the words' static ln P
         // typed text: debug builds only, and only with `setprop log.tag.DogBoardAc DEBUG` (it logged in every build until
-        // 2026-11-22, typed words and the text before them; the user's phone must never log what is typed)
+        // 2026-11-22, typed words and the text before them; a phone must never log what is typed)
         if (dev.patrickgold.florisboard.BuildConfig.DEBUG && android.util.Log.isLoggable("DogBoardAc", android.util.Log.DEBUG))
         for (c in decoded) if (c.words > 1) scores[c.word]?.let { n ->
             android.util.Log.d("DogBoardAc", "split '${c.word}' after '${textBefore.takeLast(24)}': " +
@@ -940,7 +940,7 @@ object TypingEngine {
     @Volatile var lastNeuralUnscoredMulti = 0
 
     /**
-     * Hindsight retrocorrection (user 2026-11-18: one general mechanism, as iOS's retrocorrection: the
+     * Hindsight retrocorrection (one general mechanism, as iOS's retrocorrection: the
      * language model judges word sequences, no hand lists). A finished word kept as typed is read again
      * once [HINDSIGHT_WORDS] more words follow: its alternatives come from the lexicon alone (apostrophe
      * twins: its/it's; real words one typo away: form/from), each read with the words after it by the

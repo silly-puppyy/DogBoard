@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""English noun plurals for a plural token (LM tokenizer A/B, user 2026-11-22: "the CPU must form plurals before the
+"""English noun plurals for a plural token (LM tokenizer A/B, "the CPU must form plurals before the
 keyboard suggests 'fishs' or 'skys'"): every plural comes from a table, never from an add-s rule.
 
 Source: AGID infl.txt (Kevin Atkinson, SCOWL; permissive licence, see its README): "child N: children",

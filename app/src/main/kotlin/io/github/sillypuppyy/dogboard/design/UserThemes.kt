@@ -8,7 +8,7 @@ import kotlin.math.roundToInt
 import java.io.File
 
 /**
- * The user's own themes, kept in the user's own packs (notes/design/user-themes.md; user 2026-11-19: photo themes
+ * The user's own themes, kept in the user's own packs (notes/design/user-themes.md; photo themes
  * become saved themes, and "packs, they become easily shareable"). Each theme is a folder under
  * files/dogboard/themes/<id> (theme.json, and photo.jpg + analysis.txt for a photo theme); packs.json keeps the
  * packs and their themes in order.
@@ -29,7 +29,7 @@ object UserThemes {
     private fun dir(context: Context, id: String) = File(root(context), id)
     private fun packsFile(context: Context) = File(root(context), "packs.json")
 
-    // packs' flags beside packs.json (user 2026-11-19: shared packs read-only, packs hidden from the Themes page)
+    // packs' flags beside packs.json (shared packs read-only, packs hidden from the Themes page)
     private fun flagsFile(context: Context) = File(root(context), "packflags.json")
     private fun flags(context: Context): JSONObject = runCatching { JSONObject(flagsFile(context).readText()) }.getOrDefault(JSONObject())
     private fun setFlag(context: Context, id: String, key: String, on: Boolean) {
@@ -308,7 +308,7 @@ object UserThemes {
         writePacks(context, rawPacks(context).map { (pid, p) -> pid to (p.first to p.second.filter { it != id }) })
     }
 
-    // sharing (user 2026-11-19: packs "become easily shareable"): a pack is one .dogtheme file, a zip of pack.json
+    // sharing (packs "become easily shareable"): a pack is one .dogtheme file, a zip of pack.json
     // (format, name, its themes in order) and each theme's folder (theme.json, photo.jpg, analysis.txt)
     private const val FORMAT = 1
     private val ENTRY = Regex("^[a-z0-9]{1,24}/(theme\\.json|photo(-dark)?\\.jpg|analysis(-dark)?\\.txt)$")
@@ -411,7 +411,7 @@ object UserThemes {
     }
 
     /**
-     * The built-in photos (assets dogboard/photos, chosen with the user 2026-11-19) as a pack "Photos", once: each
+     * The built-in photos (assets dogboard/photos, chosen with ) as a pack "Photos", once: each
      * analysed and matched for readability as a picked photo is, so they edit, move and share like the user's
      * own. A marker keeps a deleted pack deleted.
      */
@@ -425,7 +425,7 @@ object UserThemes {
             val p = list.getJSONObject(i)
             val bmp = context.assets.open("dogboard/photos/${p.getString("slug")}.jpg").use { android.graphics.BitmapFactory.decodeStream(it) } ?: continue
             val a = GlassPhoto.analyse(bmp)
-            // the look tuned by hand (photos.json "looks", pulled from the user's phone), else matched to the photo
+            // the look tuned by hand (photos.json "looks", pulled from a phone), else matched to the photo
             val v = p.optJSONObject("looks")?.let { PhotoVersions.decode(it.toString()) } ?: PhotoVersions.auto(a)
             val id = "p" + System.currentTimeMillis().toString(36) + i
             val d = dir(context, id).apply { mkdirs() }

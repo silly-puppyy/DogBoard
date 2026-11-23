@@ -25,8 +25,8 @@ import kotlinx.coroutines.launch
  * Only what DogBoard's keyboard does: FlorisBoard's swipe settings (key swipes, space-bar swipes, swipe
  * on delete, glide typing) belong to its old keyboard view, which DogBoard doesn't use, so they did
  * nothing and aren't shown (found 2026-11-17). Swipe typing here is DogBoard's own (engine/swipe, on by
- * default with its trail, user 2026-11-17); the delete-key slide and the space bar's quick swipe are
- * Gboard's (user 2026-11-19). How long to hold and how fast things go: Timing and feel.
+ * default with its trail); the delete-key slide and the space bar's quick swipe are
+ * Gboard's. How long to hold and how fast things go: Timing and feel.
  */
 @Composable
 fun DogGesturesScreen() {
@@ -39,7 +39,7 @@ fun DogGesturesScreen() {
     val spaceHold by prefs.typing.spaceHold.collectAsState()
     var holdMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     SetPage("Gestures") {
-        // user 2026-11-19: "What's gestures for?"
+        // "What's gestures for?"
         DText(
             "What happens when you slide your finger across the keyboard instead of tapping.",
             Modifier.padding(horizontal = 16.dp), style = setText(14f, 400, SetColors.onSurfaceVariant), maxLines = 3,
@@ -61,7 +61,7 @@ fun DogGesturesScreen() {
             SetSwitchRow("gs:quickdrag", "Swipe to move the cursor", "Swipe sideways along the space bar to move the cursor.", quickDrag) { v ->
                 scope.launch { prefs.typing.spaceQuickDrag.set(v) }
             }
-            // user 2026-11-23: holding space can move the cursor (iPhone), show your languages (Gboard), or do nothing
+            // holding space can move the cursor (iPhone), show your languages (Gboard), or do nothing
             val holdChoices = listOf(
                 Triple("cursor", "Move the cursor", "Hold, then slide anywhere to move the cursor, as on an iPhone."),
                 Triple("language", "Change language", "Hold to pick one of your languages."),

@@ -45,7 +45,7 @@ data class KbTokens(
     /** Kb:516: Dalmatian's spots (seed, then the spotted keys' colours); null = no spots. */
     val spots: KbSpots? = null,
     /**
-     * Keys coloured by what's under them (user 2026-11-23, the Pride pack): each letter and function key takes the
+     * Keys coloured by what's under them (the Pride pack): each letter and function key takes the
      * gradient background's colour at its centre, mixed this far towards white, its label black or white to read on
      * it; 0 = off.
      */
@@ -68,7 +68,7 @@ object KbThemes {
     val moreIds: List<String> get() = listOf("gloss", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach") + PRIDE.map { it.first }
 
     /**
-     * The Pride pack (user 2026-11-23: "a pack of pride flag gradient themes to really test the keyboard ... keys
+     * The Pride pack ("a pack of pride flag gradient themes to really test the keyboard ... keys
      * switch colour depending on what's underneath them"): each flag's stripes top to bottom, hard-edged, in the flags'
      * published colours; keys take the stripe under them (keyUnder), the return key the flag's darkest stripe.
      */
@@ -239,7 +239,7 @@ object KbThemes {
         else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light")
         // a theme made in the theme editor (ThemeModel): its version for now, as tokens
         else if (ThemeModel.isSpec(themeId)) ThemeModel.decode(themeId)?.let { ThemeModel.tokensOf(it, dark) } ?: T.getValue("dogboard").getValue("light")
-        // a gradient with a bright and a dark version: the one for now (user 2026-11-19)
+        // a gradient with a bright and a dark version: the one for now
         else if (GradientSpec.isPair(themeId)) GradientSpec.parsePair(themeId)?.let { gradient(if (dark) it.second else it.first) } ?: T.getValue("dogboard").getValue("light") else {
             val th = T[themeId] ?: T.getValue("dogboard")
             // the default theme in the system's Material You colours, when the live keyboard set them
@@ -250,8 +250,7 @@ object KbThemes {
         fun c(k: String) = t.getValue(k).let { v -> CssGradient.parse(v)?.stops?.first()?.first ?: css(v) }
         val linkFg = t["linkFg"]?.let { css(it) } ?: if (t["act"] == "transparent") c("actFg") else c("act")
         return KbTokens(
-            // a gradient's plain colour is the one at the bottom middle: what the navigation bar area under the keys continues
-            bg = CssGradient.parse(t.getValue("bg"))?.colorAt(0.5f, 1f, 1f, 1f) ?: c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
+            bg = c("bg"), key = c("key"), keyFg = c("keyFg"), fn = c("fn"), fnFg = c("fnFg"),
             act = c("act"), actFg = c("actFg"), chip = c("chip"), chipFg = c("chipFg"), pop = c("pop"),
             popFg = c("popFg"), sel = c("sel"), selFg = c("selFg"), hint = c("hint"), div = c("div"),
             barFg = c("barFg"), barMuted = c("barMuted"), tile = c("tile"), tileFg = c("tileFg"),
@@ -293,7 +292,7 @@ object KbThemes {
         // Kb:541 labels: white or dark as asked, else whichever reads better
         val light = when (glassFg) { "white" -> true; "dark" -> false; else -> cW >= cB }
         val fgc = if (light) "#ffffff" else "#1b1c1e"
-        // the key background: a white tint, or a black one for dark keys (dark versions, user 2026-11-19)
+        // the key background: a white tint, or a black one for dark keys (dark versions)
         fun a(x: Double) = if (keyDark) "rgba(0,0,0,$x)" else "rgba(255,255,255,$x)"
         return mapOf(
             "bg" to "transparent", "key" to a(kop.toDouble()), "keyFg" to fgc, "fn" to a(String.format(java.util.Locale.ROOT, "%.3f", kop * 0.55).toDouble()), "fnFg" to fgc,
@@ -389,7 +388,7 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
      * CSS geometry: the line runs through the centre at the angle (0 = up, clockwise), long enough that the corners get the end colours.
      * One brush per gradient, its shaders kept per size: a ShaderBrush remembers only the last size,
      * and keys of different widths share a gradient, so each key drawn made a new native shader per
-     * frame (native-allocation garbage collections that stall typing, user 2026-11-16).
+     * frame (native-allocation garbage collections that stall typing).
      */
     fun brush(): androidx.compose.ui.graphics.Brush = cachedBrush
 
@@ -518,7 +517,7 @@ data class GradientSpec(val colors: List<String>, val angle: Int, val white: Boo
     val id: String get() = "grad_" + colors.joinToString("_") { it.removePrefix("#").lowercase() } + "_${angle}_" + if (white) "w" else "d"
 
     companion object {
-        // one colour (a solid colour theme, user 2026-11-19) to three
+        // one colour (a solid colour theme) to three
         private val RE = Regex("^grad_((?:[0-9a-f]{6}_){1,3})(\\d{1,3})_([wd])$")
         fun isSpec(id: String) = id.startsWith("grad_")
         /** A gradient theme with a bright and a dark version: `gpair_<bright spec>__<dark spec>`. */

@@ -25,7 +25,7 @@ object SpaceJoin {
 
     /**
      * A join's word must be among the [minRank] most frequent words: a stray space is rejoined into a word people
-     * use, not a rare one the web counts hold (user 2026-11-19: "going hom e" joined to "bombe", 832 uses, and
+     * use, not a rare one the web counts hold ("going hom e" joined to "bombe", 832 uses, and
      * "Gombe"). Int.MAX_VALUE: no floor.
      */
     @Volatile

@@ -186,7 +186,7 @@ private val TITLES = mapOf(
 /** Onboarding:22-33: the paw, the wordmark, one line, the two promises and the two paths. */
 @Composable
 private fun Welcome(onQuick: () -> Unit, onFull: () -> Unit) {
-    // centred and simple, in the app's own type, as FlorisBoard's welcome (user feedback 2026-11-23, B)
+    // centred and simple, in the app's own type, as FlorisBoard's welcome
     Column(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars).padding(start = 24.dp, end = 24.dp, top = 96.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -406,7 +406,7 @@ private fun LanguagesStep() {
         val l = android.os.LocaleList.getDefault()
         (0 until l.size()).map { l[it] }
     }
-    // a first setup (no languages saved yet): the phone's own language, with its usual layout (user 2026-11-23)
+    // a first setup (no languages saved yet): the phone's own language, with its usual layout
     LaunchedEffect(Unit) {
         if (subtypeManager.subtypesFlow.value.isNotEmpty()) return@LaunchedEffect
         val loc = phone.firstOrNull { l -> GeneratedLayouts.all.any { it.language == l.language } } ?: return@LaunchedEffect

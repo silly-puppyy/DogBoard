@@ -77,7 +77,7 @@ fun SoundVibrationScreen() {
             SetGroup("Sound") {
                 SetSwitchRow("sv:sound", "Sound", "A click on each key.", sound) { v -> scope.launch { fb.audioEnabled.set(v) } }
                 if (sound) {
-                    // a dropdown: six sounds were cramped as a segmented row (user 2026-11-21)
+                    // a dropdown: six sounds were cramped as a segmented row
                     val names = listOf(
                         "system" to "Phone" to "Your phone’s own key click.",
                         "tick" to "Tick" to "Short and bright, closest to an iPhone.",

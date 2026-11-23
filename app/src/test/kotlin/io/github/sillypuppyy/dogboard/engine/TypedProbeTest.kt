@@ -6,7 +6,7 @@ import java.io.File
 
 /**
  * Prints what the full engine makes of typed strings (key-centre taps), one "previous words<TAB>typed" per line of
- * DOGBOARD_PROBE_CASES. A probe for user reports: DOGBOARD_PROBE=1 DOGBOARD_PROBE_CASES=... DOGBOARD_NGRAMS=... gradle test.
+ * DOGBOARD_PROBE_CASES. A probe for reported cases: DOGBOARD_PROBE=1 DOGBOARD_PROBE_CASES=... DOGBOARD_NGRAMS=... gradle test.
  */
 class TypedProbeTest : FunSpec({
     test("typed strings through the full engine").config(enabled = System.getenv("DOGBOARD_PROBE") == "1") {

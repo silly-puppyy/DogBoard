@@ -152,7 +152,7 @@ fun LiveEmojiPanel(
 }
 
 /**
- * Emoji search, as Gboard (measured 2026-11-15; user: "we listen to Gboard"): a rounded card with two
+ * Emoji search, as Gboard (measured 2026-11-15): a rounded card with two
  * rows of results that scroll sideways and, at its bottom, the search field (magnifier, the query
  * with a caret, clear once something is typed); the full keyboard below types into the field.
  * Drawn with the theme's tile tokens; an empty query shows [recents].

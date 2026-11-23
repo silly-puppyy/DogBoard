@@ -12,7 +12,7 @@ import kotlin.random.Random
 /**
  * Drives DogBoard on a device the way a person does (the instrumented twin of tools/test/type_test.py): selects
  * it as the keyboard, opens the debug test screen, and types by injecting touches at the keys' centres with real
- * timings (measured on the user's phone 2026-11-20: ~140 ms from key to key, ~60 ms down). Runs on emulators
+ * timings (measured on a phone 2026-11-20: ~140 ms from key to key, ~60 ms down). Runs on emulators
  * and on Firebase Test Lab devices; screenshots go to the app's files dir (`uitest/`), which Test Lab can pull.
  */
 class KeyboardDriver(

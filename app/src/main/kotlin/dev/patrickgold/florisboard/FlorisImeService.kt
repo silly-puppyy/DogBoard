@@ -293,7 +293,7 @@ class FlorisImeService : LifecycleInputMethodService() {
         systemLocalesFlow.value = resources.configuration.locales
         // DogBoard: debug builds log main-thread stalls (DogBoardJank) and disk access on it (StrictMode)
         if (dev.patrickgold.florisboard.BuildConfig.DEBUG) io.github.sillypuppyy.dogboard.perf.JankWatch.install()
-        // DogBoard: a notification when adaptive autocorrect changes step (user, 2026-11-16)
+        // DogBoard: a notification when adaptive autocorrect changes step
         io.github.sillypuppyy.dogboard.ime.AdaptiveNotifier.install(this)
 
         // DogBoard: word engine feeding the suggestion strip; the dictionary loads in the background
@@ -514,7 +514,7 @@ class FlorisImeService : LifecycleInputMethodService() {
         super.onWindowShown()
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onWindowShown") // DogBoard: startup timing
         io.github.sillypuppyy.dogboard.ime.LiveUi.shown.value++ // DogBoard: a new Dalmatian coat per opening
-        // DogBoard: key sounds ready before the first key (user 2026-11-21: "when I open the keyboard, for a bit the keys
+        // DogBoard: key sounds ready before the first key ("when I open the keyboard, for a bit the keys
         // don't make sounds"): built off the UI thread, and the audio output woken (it sleeps after a few idle seconds;
         // a Bluetooth link takes up to a second to resume and drops clicks meanwhile)
         val fb = prefs.inputFeedback

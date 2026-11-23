@@ -11,7 +11,7 @@ enum class AutocorrectLevel(val level: Autocorrect.Level) {
     STANDARD(Autocorrect.Level.STANDARD),
     /**
      * No keep-the-typed-word margin and more weight on context: fixes the most for very sloppy typing
-     * (eval: 2.5 mm scatter; real phone typos: language power 0.40, user 2026-11-16 "that's the point of
+     * (eval: 2.5 mm scatter; real phone typos: language power 0.40, "that's the point of
      * the autocorrect strengths").
      */
     STRONG(Autocorrect.Level.STANDARD.copy(leadOverTyped = 1.0, languagePower = 0.40)),

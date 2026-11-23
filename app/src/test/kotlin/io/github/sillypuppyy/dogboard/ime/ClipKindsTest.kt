@@ -11,7 +11,7 @@ class ClipKindsTest : FunSpec({
         ClipKinds.color("rgb(75, 110, 175)")?.hex shouldBe "#4B6EAF"
         ClipKinds.color("rgb(75 110 175)")?.hsl shouldBe "hsl(219 40% 49%)"
         ClipKinds.color("hsl(219 40% 49%)")?.hex shouldBe "#4B6EAF"
-        // not colours: false positives are worse than misses (user, 2026-11-17)
+        // not colours: false positives are worse than misses
         ClipKinds.color("#hashtag") shouldBe null
         ClipKinds.color("#1234") shouldBe null
         ClipKinds.color("Use #4B6EAF for the button") shouldBe null

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Dictionaries that arrive in the background (Gboard's way, user 2026-11-23: adding a language never waits on a download).
+ * Dictionaries that arrive in the background (Gboard's way, adding a language never waits on a download).
  * A language is added at once and types with its layout; its pack downloads here, outliving the settings screen, and
  * loads into the engine when that language is in use. A failed download tries again after a while, and again whenever
  * the Languages page is opened ([ensure]); there is no error screen.

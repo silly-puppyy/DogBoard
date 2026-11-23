@@ -170,7 +170,9 @@ fun liveWindowBg(): androidx.compose.ui.graphics.Color {
     remember(context) { if (MaterialYouTheme.override == null) MaterialYouTheme.override = MaterialYouTheme.forDevice(context); 0 }
     // the chosen theme's body colour (Themes page), in its day or night version
     val p = liveTheme().apply(KbProps(dark = liveDark()))
-    return KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance).bg
+    val t = KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance)
+    // a gradient: the colour at its bottom, where Android's icons under the keys sit (it picks light or dark icons)
+    return t.bgGradient?.colorAt(0.5f, 1f, 1f, 1f) ?: t.bg
 }
 
 /** The window's background as a gradient brush, when the theme's background is one (it continues under the keys). */

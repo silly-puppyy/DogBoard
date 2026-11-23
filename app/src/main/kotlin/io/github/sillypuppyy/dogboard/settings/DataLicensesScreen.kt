@@ -27,7 +27,7 @@ private val FINEWEB = Source("FineWeb, Hugging Face", "ODC-By 1.0, built from Co
 private val CLDR = Source("Unicode CLDR", "Unicode License v3", "https://github.com/unicode-org/cldr")
 
 /**
- * About › Word data (user 2026-11-22: "word data could use a revamp"): the shipped data by kind, each source with
+ * About › Word data ("word data could use a revamp"): the shipped data by kind, each source with
  * its licence and a link; the complete attribution (assets/dogboard/ATTRIBUTION.txt) stays one tap away. Keep this
  * list in step with ATTRIBUTION.txt when data is added.
  */

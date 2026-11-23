@@ -8,7 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * How smoothly the keyboard draws while typing (user 2026-11-21: sounds bunch up, typing feels late): types sentences
+ * How smoothly the keyboard draws while typing (sounds bunch up, typing feels late): types sentences
  * through the real keyboard at the driver's realistic tap timing, then logs the keyboard process's frame statistics
  * (dumpsys gfxinfo: frames, janky share, 50th/90th/99th percentile) as FRAMETIME lines. Meant for slow phones
  * (Test Lab, Galaxy A10); the emulator renders in software and is slow by itself.

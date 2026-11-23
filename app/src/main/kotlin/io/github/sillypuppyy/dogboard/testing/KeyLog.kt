@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * The Testing page's keystroke log (user 2026-11-23: "a dedicated test typing field where you can log all my
+ * The Testing page's keystroke log ("a dedicated test typing field where you can log all my
  * keystrokes without any privacy issues"). Filled only while the keyboard types into DogBoard's own test field (its
  * private IME options carry [MARK]), never in any other app or field; kept in memory only, until cleared or the app
  * stops; nothing is written or sent. The Testing page shows it and can copy it.

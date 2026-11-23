@@ -197,7 +197,7 @@ private fun LayoutCoordinates.unclippedDp(density: Float): Rect {
 }
 
 /**
- * DogBoard rule for suggestion slots (user, 2026-11-13, replaces the design's end ellipsis,
+ * DogBoard rule for suggestion slots (replaces the design's end ellipsis,
  * Kb:87), as Gboard does it: a word that doesn't fit is first narrowed (horizontal scale down to
  * [SQUASH_MIN_SCALE]), and only then shortened in the middle ("On… way!"), so the start and the
  * end of the word stay readable.

@@ -42,7 +42,7 @@ fun getColorScheme(
     val prefs by FlorisPreferenceStore
     val accentColor by prefs.other.accentColor.collectAsState()
     val isDark = theme.isDark || theme.isAuto && isSystemInDarkTheme()
-    // DogBoard: the app takes its colours from the keyboard theme (user 2026-11-17): the default
+    // DogBoard: the app takes its colours from the keyboard theme: the default
     // theme keeps the wallpaper's (system) accent, any other theme seeds the palette with its return key
     val themeDay by prefs.keyboard.themeDay.collectAsState()
     val themeNight by prefs.keyboard.themeNight.collectAsState()
@@ -51,7 +51,7 @@ fun getColorScheme(
     val (kbTheme, kbDark) = io.github.sillypuppyy.dogboard.design.ThemeChoice.resolve(
         io.github.sillypuppyy.dogboard.design.ThemeChoice.Choice(themeDay, themeNight, themeFollow, themeFixedNight), isDark,
     )
-    // Themes › App colours (user 2026-11-19): from the keyboard theme (a photo theme's return-key colour), the
+    // Themes › App colours: from the keyboard theme (a photo theme's return-key colour), the
     // wallpaper, or none (DogBoard's own colours)
     val colours by prefs.other.settingsColours.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -70,7 +70,7 @@ fun getColorScheme(
         "none" -> io.github.sillypuppyy.dogboard.design.css("#435e91") // the design canvas's seed
         "wallpaper" -> null
         // the theme's main colour, its background (a gradient's middle colour), not its return key: Greyhound's
-        // fawn key made the app fawn on a slate keyboard (user 2026-11-19); photo themes: their return-key colour
+        // fawn key made the app fawn on a slate keyboard; photo themes: their return-key colour
         else -> if (kbTheme == "dogboard") null else if (kbTheme == "glass") photoSeed else {
             val t = io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark)
             (t.bgGradient?.stops?.let { it[it.size / 2].first } ?: t.bg).takeIf { it.alpha > 0.5f } ?: t.act.takeIf { it.alpha > 0.5f }

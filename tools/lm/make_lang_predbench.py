@@ -1,5 +1,5 @@
 """Next-word benchmark sets for other languages, as the English ones (predbench human.txt: lowercased sentences,
-one per line, 200 of them), for the teacher bake-off against Apple / Gboard (private study; user 2026-11-22:
+one per line, 200 of them), for the teacher bake-off against Apple / Gboard (private study; 
 "assemble a few benchmarks like we did for English").
   human-<lang>.txt  sentences from WildChat-1M user turns in that language (ODC-By; not redacted, not toxic),
                     5-25 words, no links / code / digits-heavy lines, lowercased, deduplicated

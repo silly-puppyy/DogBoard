@@ -44,7 +44,7 @@ data class KbProps(
     /** Kb:428, 730: the action key greyed, "unavailable until you type" (an empty field that can't be sent). */
     val actionOff: Boolean = false,
     /** The return key in the accent colour on plain fields too (Gboard), not only for an action (Send, Go: iPhone);
-     *  the user's choice per theme (user 2026-11-19), off unless set. */
+     *  the user's choice per theme, off unless set. */
     val retAlways: Boolean = false,
     val devAlt: String = "off",
     val dev: Boolean = false,
@@ -130,7 +130,7 @@ data class KbProps(
     val langMenu: Boolean = false,
     val fnKey: String = "emoji", // emoji, globe
     val only: String = "", // "", keys, bar, live (the live keyboard's key area: no bar, no nav area)
-    // DogBoard options (user, 2026-11-13; notes/research/suggestion-overflow.md), not in the design:
+    // DogBoard options (notes/research/suggestion-overflow.md), not in the design:
     /**
      * A word too long for its slot, one setting with two choices:
      * "squash" (default, like Gboard/LatinIME): narrow to 70%, then cut in the middle; a centre
@@ -529,7 +529,7 @@ object KbSpec {
         val bottom = when {
             // Kb:620-622: comma slot (@ for email, / for URLs), 1.5 · 1 · 1 · 4 · 1 · 1.5
             kstyle == "android" -> listOf(mode(firstMode, 1.5f), when (field) { "email" -> ch("@", 1f); "url" -> ch("/", 1f); else -> sym(",", 1f) }, fnK(1f), space(4f), sym(".", 1f), retK(1.5f))
-            // iOS's bottom row keeps iOS's widths (user 2026-11-17)
+            // iOS's bottom row keeps iOS's widths
             field == "email" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("@", 1.25f), ch(".", 1.25f), retK())
             // a space bar in URL fields too (address bars take searches; Gboard keeps one), .com etc. on a long press of .
             field == "url" -> listOf(mode(firstMode, 1.24f), fnK(), space(2.5133f), ch("/", 1.25f), K(".", "char", 1.25f, label = ".", base = URL_DOT), retK())
@@ -671,7 +671,7 @@ object KbSpec {
                     label = when {
                         P.spaceLabel == "space" -> "space"
                         P.spaceLabel == "lang" || (P.spaceLabel == "auto" && fnKeyKind == "globe") -> P.langName
-                        // Auto with one language: the word "space" (user 2026-11-23)
+                        // Auto with one language: the word "space"
                         P.spaceLabel == "auto" && t.spaceText.isEmpty() -> "space"
                         P.spaceLabel == "auto" && t.spaceText.isNotEmpty() -> t.spaceText
                         else -> ""
@@ -724,9 +724,9 @@ object KbSpec {
                     bg = if (spot != null) spot.press else if (fnPress) t.pressFn else t.pressKey
                     bgG = if (spot != null) null else t.grad[if (fnPress) "pressFn" else "pressKey"]
                 }
-                // the bottom row: only function keys take the accent; comma and period keep the letters' colours (user 2026-11-17)
+                // the bottom row: only function keys take the accent; comma and period keep the letters' colours
                 val bottomRow = ri == spec.size - 1 && plane != "numeric" && plane != "numpad" && plane != "telpad" && plane != "telpad2"
-                // the emoji / globe key stays a function key (user 2026-11-19; was in the letter tone after Gboard 17.2,
+                // the emoji / globe key stays a function key (was in the letter tone after Gboard 17.2,
                 // iOS draws it as a function key)
                 val capX = kx + mh; val capW = w - mh * 2; val capTop = keyTop0 + rowTops[ri] + mv
                 pos[k.id] = KbCapPos(capX, capW, capTop, label, k.base.ifEmpty { k.id })
@@ -802,7 +802,7 @@ object KbSpec {
             leftBg = if (toolsOpen && !t.seg) t.fn else Color.Transparent, leftFg = if (toolsOpen && !t.seg) t.fnFg else t.barMuted,
             // Kb:966-967
             // the bar's icons and words take the keys' label shadow (photo themes: the halo, so they read on a busy
-            // photo; user 2026-11-19 "a bit of background shadow on the ... icons in the top bar"); none elsewhere
+            // photo; "a bit of background shadow on the ... icons in the top bar"); none elsewhere
             bv = if (!t.seg) KbBarView(ts = t.keyTs) else KbBarView(
                 bg = CLASSIC_BAR_BG,
                 shadow = CssShadow.parse("inset 0 1px 0 #ffffff, inset 0 -1px 0 #737985, 0 1px 2px rgba(0,0,0,0.35)"),

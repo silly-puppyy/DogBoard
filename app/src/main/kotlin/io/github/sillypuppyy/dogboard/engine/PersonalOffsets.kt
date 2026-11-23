@@ -5,7 +5,7 @@ import java.io.File
 
 /**
  * Personal key-centre offsets, as in "Spatial model personalization in Gboard" (Google, arXiv
- * 2209.11311; user, 2026-11-15: "build them that way"): where this user actually taps each key,
+ * 2209.11311; "build them that way"): where this user actually taps each key,
  * learned on the phone from words they typed and kept.
  *
  * - Data: for each letter of a word typed by tapping and kept as typed, the tap's offset from the

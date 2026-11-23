@@ -6,7 +6,7 @@ such case (its intended column holds single words), so Rule 3 and the missed-spa
 
     tools/test/make_missed_space.py <aalto-words-clean.tsv> <out.tsv> [n=2000] [typo]
 
-With "typo": one of the two words also gets a slip on a neighbouring key (user 2026-11-20: "continuebwirh" for
+With "typo": one of the two words also gets a slip on a neighbouring key ("continuebwirh" for
 "continue with": the space typed as b AND r for t), the harder case the exact joins don't cover.
 """
 import random

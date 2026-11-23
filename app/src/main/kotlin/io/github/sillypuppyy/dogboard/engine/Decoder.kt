@@ -719,7 +719,7 @@ class Decoder(
             // Keys the user did not tap (and apostrophes) consume no tap, so they extend this layer:
             // one skipped key per position, optionally after an apostrophe (iOS compares words by
             // a sort key without apostrophes, so "dont" reaches "don't" at no cost; a hyphen too, so "tshirt" reaches
-            // "T-shirt", as iOS's hyphenated words are reached; user report 'nonbnglish' 2026-11-19); an ampersand
+            // "T-shirt", as iOS's hyphenated words are reached; reported 'nonbnglish' 2026-11-19); an ampersand
             // likewise ("hm" reaches "H&M", "att" "AT&T": the sort key has letters only), and a full stop ("ie" -> "i.e.")
             fun insertAfter(sPrefix: Int, sNode: Int, sGeometry: Double, sEdits: Int, allowApostrophe: Boolean) {
                 // an insertion makes the node one deeper: at most MAX_EXTRA_LETTERS beyond the i taps (iOS 2;
@@ -727,7 +727,7 @@ class Decoder(
                 if (lexicon.depth(sNode) >= i + MAX_EXTRA_LETTERS) return
                 lexicon.forEachChild(sNode) { c, child ->
                     // a full stop too: iOS folds it out of the sort key like the others, so "ie" reaches "i.e." (its
-                    // share of the key "ie" decides, as iOS's does; user 2026-11-21: "ie" became "or")
+                    // share of the key "ie" decides, as iOS's does; "ie" became "or")
                     if (c == '\'' || c == '’' || c == '&' || c == '-' || c == '.') {
                         if (allowApostrophe) {
                             offer(layer, child, sGeometry, sEdits, sPrefix)
@@ -887,7 +887,7 @@ class Decoder(
 
     /**
      * A skipped hyphen is free (so "tshirt" reaches "T-shirt") and a skipped space is not, so "thankyou" went to
-     * "thank-you" though "thank you" is the likelier reading (user 2026-11-20; on the iPhone it is "thank you").
+     * "thank-you" though "thank you" is the likelier reading (on the iPhone it is "thank you").
      * When the same letters are a candidate with spaces too, the hyphenated one pays the same as the spaced one,
      * and the language model decides ("well-known" keeps its lead over "well known").
      */

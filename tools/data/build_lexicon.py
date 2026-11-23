@@ -587,7 +587,7 @@ def main():
             lexicon[c] = math.log10(10 ** lexicon.get(c, -9) + 10 ** z)
     lexicon["I"] = lexicon.pop("i", zipf.get("i", 7.0))
 
-    # short words (user, 2026-11-17: "Th is certainly unexpected... cut down the up to 4-5 letter words,
+    # short words ("Th is certainly unexpected... cut down the up to 4-5 letter words,
     # and even harsher on 1-3 letter words"): a short entry is a cheap target for a slip and shows up
     # as a completion ("ofth" -> "of Th"), so it must be a real word, a name or a common word, not a
     # fragment or an abbreviation the web counts happen to hold
@@ -645,7 +645,7 @@ def main():
                     recased.append((w, form))
                     continue
             # its usual written form is already stored: this lowercase copy is a duplicate. Nothing is cut
-            # for being rare (user, 2026-11-17: "don't cut important words"): chat words like mhm, cya
+            # for being rare ("don't cut important words"): chat words like mhm, cya
             # and omw are rare in web text and often capitalised at a sentence start
             web_only_rare = web_only and lowercase_share(w) < SHORT_MIN_LOWERCASE_SHARE
             if capital_only or web_only_rare:

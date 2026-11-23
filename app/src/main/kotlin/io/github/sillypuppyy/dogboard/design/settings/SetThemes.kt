@@ -66,7 +66,7 @@ class SetThemesState(
     val onHidePack: (String, Boolean) -> Unit,
     val onEditPhoto: () -> Unit,
     val onBack: () -> Unit,
-    /** The settings follow the keyboard theme's light or dark (user 2026-11-19), else the system's. */
+    /** The settings follow the keyboard theme's light or dark, else the system's. */
     /** The settings app's colours: "keyboard", "wallpaper" or "none". */
     val appColours: String = "keyboard",
     val onAppColours: (String) -> Unit = {},
@@ -105,7 +105,7 @@ fun SetThemes(state: SetThemesState) {
     var filter by remember { mutableStateOf("all") } // :136 the page's filter, not stored
     var msg by remember { mutableStateOf("") } // :36 the status line
     val primary = SetColors.primary
-    // New theme (user 2026-11-19: one button for photo, gradient and solid colour): the pack it goes in, "" the default
+    // New theme (one button for photo, gradient and solid colour): the pack it goes in, "" the default
     var newIn by remember { mutableStateOf<String?>(null) }
     // press and hold a theme: its sheet, the keyboard test-driving it meanwhile
     var sheetFor by remember { mutableStateOf<String?>(null) }
@@ -137,14 +137,14 @@ fun SetThemes(state: SetThemesState) {
             Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(SetColors.row, RoundedCornerShape(24.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     // :201-203
-                    // both slots always (user 2026-11-22): following the system switches between them, else one is used
+                    // both slots always: following the system switches between them, else one is used
                     val slots = listOf(Triple(c.day, "light_mode", "Day"), Triple(c.night, "dark_mode", "Night"))
                     for ((id, icon, label) in slots) {
                         val t = ThemeChoice.theme(id)
                         val dark = if (label == "Night") t.mode != "light" else t.mode == "dark"
                         val name = if (label == "Night" && t.mode == "pair") t.nightName ?: (t.name + " dark") else t.name
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            // the slot's half of the card, edge to edge (a fixed 162 dp left a gap; user 2026-11-19)
+                            // the slot's half of the card, edge to edge (a fixed 162 dp left a gap)
                             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
                                 val w = maxWidth.value
                                 Preview(id, dark, state.seed, w, w * 128f / 162f, w / 375f, CssShadow(true, 0f, 0f, 0f, 1f, SetColors.surfaceContainerHighest))
@@ -166,12 +166,12 @@ fun SetThemes(state: SetThemesState) {
                 Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
                 Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     DText("Which theme", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                    // user 2026-11-22: "ignore system theme, then pick which one is chosen" (was a Follow switch that dropped Night)
+                    // "ignore system theme, then pick which one is chosen" (was a Follow switch that dropped Night)
                     val modes = listOf("system", "day", "night")
                     Segmented("th:follow", listOf("Follow system", "Always day", "Always night"), modes.indexOf(if (c.follow) "system" else if (c.fixedNight) "night" else "day")) { i -> state.onFollow(modes[i]); msg = "" }
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(SetColors.surfaceContainerHighest))
-                // App colours (user 2026-11-19: "match keyboard | match wallpaper | none", keyboard by default)
+                // App colours ("match keyboard | match wallpaper | none", keyboard by default)
                 Column(Modifier.fillMaxWidth().padding(horizontal = 2.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     DText("App colours", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                     DText(
@@ -187,7 +187,7 @@ fun SetThemes(state: SetThemesState) {
                 }
             }
 
-            // user 2026-11-19: the return key's colour, a choice per theme in use
+            // the return key's colour, a choice per theme in use
             for (id in (if (c.follow) listOf(c.day, c.night) else listOf(c.day)).distinct().filter { it != "dalmatian" }) {
                 val always = ThemeChoice.retAlways(state.retPref, id)
                 Column(Modifier.padding(horizontal = 16.dp).fillMaxWidth().background(SetColors.row, RoundedCornerShape(24.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -216,7 +216,7 @@ fun SetThemes(state: SetThemesState) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DText("New spots", style = setText(14f, color = SetColors.onSurfaceVariant))
                         // the shared control: its divider sat inside the second cell, beside "Keep these", leaving an
-                        // empty band after the selected fill (user 2026-11-19)
+                        // empty band after the selected fill
                         val rerolls = listOf("open", "keep")
                         Segmented("th:reroll", listOf("Every time it opens", "Keep these"), rerolls.indexOf(state.reroll).coerceAtLeast(0), listOf(1.45f, 1f)) { k ->
                             state.onReroll(rerolls[k])
@@ -269,7 +269,7 @@ fun SetThemes(state: SetThemesState) {
                 }
             }
 
-            // user 2026-11-22: "add a hold to preview [hint] before the themes listing"
+            // "add a hold to preview [hint] before the themes listing"
             Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Symbol("info", 18.sp, SetColors.onSurfaceVariant)
                 DText("Press and hold a theme to try it", style = setText(14f, color = SetColors.onSurfaceVariant))
@@ -304,7 +304,7 @@ fun SetThemes(state: SetThemesState) {
             // your own packs, after your themes (all, or the Yours filter)
             if (filter == "all" || filter == "yours") UserPackSections(state, primary, { !it.isBuiltInPhotos() }) { newIn = it }
 
-            // theme packs: one place to order, show or hide, share and import them (user 2026-11-19: the show / hide
+            // theme packs: one place to order, show or hide, share and import them (the show / hide
             // switches here "seem a bit pointless"; chose a Manage packs page)
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 DText("Theme packs", Modifier.padding(start = 4.dp, top = 8.dp), style = setText(14f, 500, primary))
@@ -349,7 +349,7 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
             if (!sel) TileOutline()
             if (sel) InUseBadge(primary, Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp))
         }
-        // the name only (user 2026-11-22: no day/night icon, the tile shows it; the description moved into the press-and-hold
+        // the name only (no day/night icon, the tile shows it; the description moved into the press-and-hold
         // sheet); a status line only for the theme in use
         DText(t.name, Modifier.padding(horizontal = 2.dp), style = setText(15f, if (sel) 600 else 400).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 1)
         if (sel) DText(where, Modifier.padding(horizontal = 2.dp),
@@ -357,7 +357,7 @@ private fun ThemeTile(id: String, c: ThemeChoice.Choice, seed: Int, primary: Col
     }
 }
 
-/** Theme tiles' corners (user 2026-11-19: 12 dp, Material's card shape; were the canvas's 14). */
+/** Theme tiles' corners (12 dp, Material's card shape; were the canvas's 14). */
 private val TILE_R = 12.dp
 
 /** A tile's 1 dp outline, drawn over its content. */
@@ -367,7 +367,7 @@ private fun androidx.compose.foundation.layout.BoxScope.TileOutline() {
 }
 
 /**
- * A tile's width: two to a row across the screen, 16 dp margins, 12 dp apart (user 2026-11-19: previews to the
+ * A tile's width: two to a row across the screen, 16 dp margins, 12 dp apart (previews to the
  * screen's width, "even just a little bit bigger provides a better view"; were a fixed 173 dp). Height keeps the
  * canvas's 173 x 137 shape; the keyboard (drawn 375 wide) scales to the width.
  */
@@ -384,7 +384,7 @@ private fun InUseBadge(primary: Color, modifier: Modifier = Modifier) {
 }
 
 /**
- * Press and hold a theme (user 2026-11-22: "tap and hold to test drive a theme + title, description, credits"): the
+ * Press and hold a theme ("tap and hold to test drive a theme + title, description, credits"): the
  * keyboard draws it while this sheet is open (LiveUi.themePreview), a field to try it in, what it is, where it comes from.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -396,12 +396,12 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
         onDispose { io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = null }
     }
     val from = ThemeChoice.SECTIONS.firstOrNull { id in it.ids }?.let { if (it.pack) "${it.title} pack, built in" else "Built into DogBoard" } ?: "Your theme"
-    // always fully open: half-open, the sheet snapped back down once the keyboard came up (user 2026-11-22)
+    // always fully open: half-open, the sheet snapped back down once the keyboard came up
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = SetColors.screen) {
         // above the keyboard while trying the theme (the field and the buttons were under it)
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            // no picture of the keyboard: the real one opens below in this theme (user 2026-11-22: "putting the image twice is
+            // no picture of the keyboard: the real one opens below in this theme ("putting the image twice is
             // useless, just make it a card + the height needed for title and explanation")
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 DText(t.name, style = setText(24f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
@@ -442,7 +442,7 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
     }
 }
 
-/** New theme: a photo, a gradient or a solid colour (user 2026-11-19), as a bottom sheet in the page's colours. */
+/** New theme: a photo, a gradient or a solid colour, as a bottom sheet in the page's colours. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun NewThemeSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
@@ -585,7 +585,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color, which: (io.g
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { open = true }, contentAlignment = Alignment.Center) {
                         Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant)
                     }
-                    // a shared pack is read-only: copy it to change it (user 2026-11-19)
+                    // a shared pack is read-only: copy it to change it
                     val items = if (pack.shared) listOf("copy" to "Copy to my themes", "share" to "Share pack", "hide" to "Hide", "delete" to "Remove pack")
                     else listOfNotNull("rename" to "Rename", ("up" to "Move up").takeIf { pi > 0 },
                         ("down" to "Move down").takeIf { pi < state.userPacks.size - 1 }, "share" to "Share pack", "hide" to "Hide", "delete" to "Delete pack")
@@ -620,7 +620,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color, which: (io.g
                             ) {
                                 Box(
                                     // the built-in tile's size, selection ring and corners (the saved tiles were 162 x 128 with a
-                                    // thicker inner frame, out of line with the "new" tiles beside them; user 2026-11-19 borders)
+                                    // thicker inner frame, out of line with the "new" tiles beside them; borders)
                                     Modifier.size(tw.dp, tileH(tw).dp)
                                         .then(if (sel) Modifier.cssShadow(listOf(CssShadow(false, 0f, 0f, 0f, 3f, SetColors.screen), CssShadow(false, 0f, 0f, 0f, 5f, primary)), RoundedCornerShape(TILE_R)) else Modifier)
                                         .clip(RoundedCornerShape(TILE_R)).background(SetColors.surfaceContainerHighest),
@@ -662,7 +662,7 @@ private fun UserPackSections(state: SetThemesState, primary: Color, which: (io.g
             }
         }
     }
-    // "New pack" lives with Manage packs at the end of the page (user 2026-11-22: a button before Built in was confusing)
+    // "New pack" lives with Manage packs at the end of the page (a button before Built in was confusing)
 }
 
 /** The built-in photos' pack (UserThemes.installPhotos makes it once, its id ending "ph"): built in, not the user's. */

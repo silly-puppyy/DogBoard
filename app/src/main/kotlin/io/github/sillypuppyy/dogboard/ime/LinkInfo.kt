@@ -11,7 +11,7 @@ import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * What DogBoard learns about a copied link (user 2026-11-20: "request a page, if it redirects use that, then
+ * What DogBoard learns about a copied link ("request a page, if it redirects use that, then
  * remove trackers; pull the SEO off the website"): where it really leads (redirects followed, Settings ›
  * Clipboard › Expand links) and, with Settings › Clipboard › Link previews, its title, site name, banner,
  * site icon and a video's length. One fetch per link, no cookies, nothing sent but the request; kept in

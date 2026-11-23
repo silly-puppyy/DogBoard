@@ -46,7 +46,7 @@ import io.github.sillypuppyy.dogboard.design.cssShadow
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-/** The gradient creator (user 2026-11-19, "a creator like with gradients"): what it shows; the screen saves. */
+/** The gradient creator ("a creator like with gradients"): what it shows; the screen saves. */
 class SetGradientState(
     val name: String,
     val colors: List<String>,

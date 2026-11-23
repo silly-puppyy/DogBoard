@@ -95,13 +95,13 @@ object KeySounds {
     // (low-latency) path; 44.1 kHz was fixed before 2026-11-21
     private var SR = 48000
     // Low-latency static AudioTracks, built once per style: a press only rewinds a ready buffer (SoundPool has no
-    // low-latency path and the sound came noticeably after the touch on a Pixel 10, user 2026-11-21: "a bit of
+    // low-latency path and the sound came noticeably after the touch on a Pixel 10, "a bit of
     // latency, disorienting"). Two tracks per voice, used in turn, so fast presses overlap instead of cutting off.
     // Typing sounds use the sonification stream (silent on silent, as Gboard's and an iPhone's); the settings'
     // previews and Play on silent use the media stream (a phone on vibrate previewed nothing).
     // Four variants per voice, played in turn (round-robin, as game audio does with several recordings of one action):
     // each with its own pitch and decay, and each press its own volume. Volume alone (+-6 %) was barely audible and typing
-    // sounded mechanical (user 2026-11-21); recorded key sounds vary because every take differs (Kenney's UI Audio).
+    // sounded mechanical; recorded key sounds vary because every take differs (Kenney's UI Audio).
     // How much is Settings › Key sound › Variation (0-100): at 100 pitch +-7 %, decay +-24 %, volume +-20 %.
     private const val COPIES = 4
     private var tracks: Array<Array<android.media.AudioTrack?>> = emptyArray()

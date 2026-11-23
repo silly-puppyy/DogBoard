@@ -4,8 +4,7 @@ import dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem
 import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
 
 /**
- * The recent-copy chip (designer, Panels:103; lifetime as Gboard, measured 2026-11-15, user: "we
- * listen to Gboard"): for 2 min after a copy, while
+ * The recent-copy chip (designer, Panels:103; lifetime as Gboard, measured 2026-11-15): for 2 min after a copy, while
  * nothing is being typed, the bar offers to paste it instead of predictions; a clip marked sensitive
  * (passwords) says "Paste password" without showing it; none in incognito. Once pasted (or dismissed)
  * that clip isn't offered again.
@@ -79,7 +78,7 @@ object RecentClip {
         item.isSensitive -> "Paste password"
         item.type == ItemType.IMAGE -> "Paste copied image"
         item.type == ItemType.VIDEO -> "Paste copied video"
-        // a copied link reads as its page's title once Link previews has read it (user 2026-11-21: the chip showed the raw link)
+        // a copied link reads as its page's title once Link previews has read it (the chip showed the raw link)
         else -> item.text.orEmpty().replace(Regex("\\s+"), " ").trim().let { t -> LinkInfo.linkIn(t)?.takeIf { it == t }?.let { LinkInfo.get(it)?.title } ?: t }
             .let { if (it.length > 28) it.take(27) + "…" else it }
     }

@@ -1,5 +1,5 @@
 """A physical model of a swiping finger (tools/swipe/physics.py): human-like swipes for any layout, from a
-handful of parameters (user 2026-11-17: physics simulation, as little from the real data as possible,
+handful of parameters (physics simulation, as little from the real data as possible,
 no stitching of real paths).
 
 What hundreds of real swipes per word show (analyze_words.py, FUTO, physical units): corners are
@@ -45,7 +45,7 @@ class FingerParams:
     dwell: float = 0.0           # ms resting on the first key before moving (recordings include it)
     dt: float = 8.0              # ms per step (a touch screen's sampling)
     max_ms: float = 4000.0
-    # per-person spread of any other parameter (user 2026-11-17: "sample all parameters on a
+    # per-person spread of any other parameter ("sample all parameters on a
     # gaussian"): name -> sd of a Gaussian in log space (log-normal: stays positive, spread relative)
     spreads: dict = field(default_factory=dict)
     # mode "pursuit" (2026-11-17, after mean paths showed the spring swinging outside corners where
@@ -57,7 +57,7 @@ class FingerParams:
     drift: float = 0.25          # sideways drift of the guide (sd, key widths): bows on long strokes
     drift_tau: float = 250.0     # ms, how slowly it drifts
     follow: float = 0.3          # the guide runs on straight past the last key this far (lift while moving)
-    # mode "stroke" (2026-11-18, user: "simulate a physical finger"; tools/swipe/phenomena.py measured what the
+    # mode "stroke" (2026-11-18: "simulate a physical finger"; tools/swipe/phenomena.py measured what the
     # pursuit model lacks: corner slowing 0.62 vs 0.76 of median speed, longer strokes faster (+0.22 vs -0.10),
     # 231 vs 180 ms a key, mid-stroke hesitations on 6.2 % of strokes vs 0.2 %). Each key-to-key stroke is an
     # aimed movement: duration fitts_a + fitts_b * log2(1 + L / 0.5) ms, a minimum-jerk profile (bell-shaped

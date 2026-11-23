@@ -64,7 +64,7 @@ object SetColors {
     /**
      * The app's Material scheme (set by FlorisAppTheme), seeded from the keyboard theme (user
      * 2026-11-17: "change the app to match the keyboard theme"); null in previews: the canvas's
-     * light colours. Dark uses the palette's own dark roles (user, 2026-11-14: "isn't there
+     * light colours. Dark uses the palette's own dark roles ("isn't there
      * already a factory default dark? why not just use it").
      */
     var scheme: androidx.compose.material3.ColorScheme? by androidx.compose.runtime.mutableStateOf(null)
@@ -163,7 +163,7 @@ fun SetRows(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
 
 /** SetHome:36: a row's title (16) and sub (14, onSurfaceVariant). */
 @Composable
-fun TitleSub(title: String, sub: String, modifier: Modifier = Modifier, subLines: Int = 12) { // CSS: subs wrap (3 cut the Neural model row, user 2026-11-19)
+fun TitleSub(title: String, sub: String, modifier: Modifier = Modifier, subLines: Int = 12) { // CSS: subs wrap (3 cut the Neural model row)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         DText(title, style = setText(16f), maxLines = 3)
         DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = subLines)
@@ -225,7 +225,7 @@ fun SetSwitchRow(id: String, title: String, sub: String, checked: Boolean, onCha
 fun SetSliderRow(
     id: String, title: String, explain: String, value: Float, default: Float, range: ClosedFloatingPointRange<Float>, step: Float,
     format: (Float) -> String,
-    /** False: greyed and not draggable, as Android Settings shows a value whose switch is off (user, 2026-11-17). */
+    /** False: greyed and not draggable, as Android Settings shows a value whose switch is off. */
     enabled: Boolean = true,
     onChange: (Float) -> Unit,
 ) {
@@ -288,7 +288,7 @@ fun Segmented(
 ) {
     val shape = RoundedCornerShape(20.dp)
     // without given widths each cell is as wide as its label plus the check's room (equal cells cut "Day and night",
-    // user 2026-11-19); the room is the same for every cell, so the cells don't move when the selection does
+    // ); the room is the same for every cell, so the cells don't move when the selection does
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val cellWeights = weights ?: androidx.compose.runtime.remember(options, density) {
@@ -331,7 +331,7 @@ fun SetSectionRow(icon: String, title: String, sub: String, bg: Color, fg: Color
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 DText(title, style = setText(16f), maxLines = 3)
                 // white-space: nowrap; text-overflow: ellipsis (the lint reports a cut)
-                // no line at all without one (home rows show a status only, as Gboard's: user 2026-11-22)
+                // no line at all without one (home rows show a status only, as Gboard's: )
                 if (sub.isNotEmpty()) DText(sub, style = setText(14f, color = SetColors.onSurfaceVariant), overflow = TextOverflow.Ellipsis)
             }
         }
@@ -373,7 +373,7 @@ fun TryItDock(modifier: Modifier = Modifier, live: Boolean = false) {
 @Composable
 fun PawLogo(sizeDp: Float = 36f) {
     val paw = remember { PathParser().parsePathString(PAW_PATH).toPath() }
-    // the live app: the paw in the scheme's colours (user 2026-11-18: the logo follows the colour
+    // the live app: the paw in the scheme's colours (the logo follows the colour
     // scheme); the design gallery keeps the brand's Fur and Ink
     val fur = SetColors.scheme?.primary ?: SetColors.brandFur
     val ink = SetColors.scheme?.onPrimary ?: SetColors.brandInk

@@ -75,7 +75,7 @@ fun ThemesScreen() {
             val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 val lum = io.github.sillypuppyy.dogboard.design.GlassPhoto.save(context, uri) ?: return@withContext null
                 prefs.keyboard.glassPhotoLuminance.set((lum * 1000).toInt())
-                // a new photo theme starts with both versions matched to the photo (user 2026-11-19); no dark photo of its own
+                // a new photo theme starts with both versions matched to the photo; no dark photo of its own
                 io.github.sillypuppyy.dogboard.design.GlassPhoto.file(context, true).delete()
                 io.github.sillypuppyy.dogboard.design.GlassPhoto.analysisFile(context, true).delete()
                 io.github.sillypuppyy.dogboard.design.GlassPhoto.analysis(context)?.let { a ->
@@ -123,7 +123,7 @@ fun ThemesScreen() {
         },
         onEditUser = { tid ->
             scope.launch {
-                // a theme from a shared pack is read-only: editing it makes your own copy (user 2026-11-19)
+                // a theme from a shared pack is read-only: editing it makes your own copy
                 val id = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     if (io.github.sillypuppyy.dogboard.design.UserThemes.isShared(context, tid)) io.github.sillypuppyy.dogboard.design.UserThemes.copyToMine(context, tid) ?: tid else tid
                 }

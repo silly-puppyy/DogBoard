@@ -1,4 +1,4 @@
-"""Minimal-pair fine-tune for the student (private study, GPU; user 2026-11-22: "push the model to be more decisive
+"""Minimal-pair fine-tune for the student (private study, GPU; "push the model to be more decisive
 (and correct) on English examples like plural vs possessive"). The tokenizer A/B showed it is not a token problem
 (eval_tok_ab.py: plural / possessive ~66 % right from the left context, a quarter confidently wrong, whatever the
 clitic tokens), so this changes the training signal instead.

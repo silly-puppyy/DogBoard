@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Settings › Look › Themes › Photo theme, live (design SetPhoto.dc.html): saved as it changes. A photo theme has a
- * bright version, a dark one, or both (user 2026-11-19), each its own look; the dark one may have its own photo.
+ * bright version, a dark one, or both, each its own look; the dark one may have its own photo.
  */
 @Composable
 fun PhotoScreen() {

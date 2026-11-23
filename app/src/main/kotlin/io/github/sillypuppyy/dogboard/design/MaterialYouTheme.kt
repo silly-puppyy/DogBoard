@@ -41,7 +41,7 @@ object MaterialYouTheme {
 
     /**
      * Before Android 14 (no system colour roles): neutral greys in the same roles, not the old
-     * blue palette (user 2026-11-17: Gboard reads neutral, ours had an obvious blue tint).
+     * blue palette (Gboard reads neutral, ours had an obvious blue tint).
      */
     val NEUTRAL_LIGHT = mapOf(
         "bg" to "#eeeeee", "key" to "#ffffff", "keyFg" to "#1f1f1f", "fn" to "#d9d9d9", "fnFg" to "#1f1f1f",

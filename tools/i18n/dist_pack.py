@@ -49,7 +49,7 @@ def dist(pack_dir, out, tag=None, base_url=''):
         json.dump(man, f, ensure_ascii=False, indent=1)
     entry = {'tag': tag, 'name': man['name'], 'script': man.get('script', ''), 'version': man['version'],
              'size': sum(v['size'] for v in files.values()), 'manifest_sha256': sha256(os.path.join(dest, 'manifest.json'))}
-    # one archive per language for release hosts (user 2026-11-23): xz takes the n-grams to a third (Spanish 56.4 ->
+    # one archive per language for release hosts: xz takes the n-grams to a third (Spanish 56.4 ->
     # 22.0 MB); manifest first, so the phone reads the checksums before the files stream past
     archive = os.path.join(out, f'{tag}.tar.xz')
     with tarfile.open(archive + '.tmp', 'w:xz', preset=9) as t:

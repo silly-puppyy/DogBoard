@@ -92,7 +92,7 @@ data class KbClipRow(
     /** H:38: the hold menu's item for this kind (Open link, Open in Maps, Call, Send email, Show), or "". */
     val action: String = "",
     val actionIcon: String = "",
-    /** The hold menu's "Paste as file" (the app takes this kind of file) and "Share as file" (settings, user 2026-11-20). */
+    /** The hold menu's "Paste as file" (the app takes this kind of file) and "Share as file" (settings). */
     val pasteFile: Boolean = false,
     val shareFile: Boolean = false,
 )
@@ -186,7 +186,7 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
                         value = r.leadImage?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { 32.dp.roundToPx() }) } }
                     }
                     val i = icon
-                    // the site's icon fills the whole 32 dp lead, 8 dp corners (user 2026-11-21: it sat small in a circle;
+                    // the site's icon fills the whole 32 dp lead, 8 dp corners (it sat small in a circle;
                     // the canvas had 18 dp inside the pill); the pill with a symbol or letter until it loads
                     if (i != null) Image(i, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)))
                     else Box(Modifier.size(32.dp).background(t.fn, PILL), contentAlignment = Alignment.Center) {
@@ -204,7 +204,7 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
 /**
  * P:157-158: the image fills the row's width at its own height, and the row is a window onto it: as the row travels
  * up the list the visible slice moves through the whole picture, from its bottom (row at the list's bottom) to its
- * top (user 2026-11-21: "the image segment ... scroll with the user's scrolling"; the first version slid at a third
+ * top ("the image segment ... scroll with the user's scrolling"; the first version slid at a third
  * of the scroll inside a 1.4x zoom, about 11 dp of travel, which read as still).
  */
 @Composable
@@ -277,7 +277,7 @@ private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean
     val circle = if (window) t.key else t.fn
     // An unpinned pin is a bare icon in an unfilled circle: after filled marks or chips its gap looks 5 dp wider
     // than theirs (8 dp + the circle's empty 5 dp), so they move 5 dp towards it; the pin stays in line with
-    // the other rows' pins (user 2026-11-20: equal, but not optically)
+    // the other rows' pins (equal, but not optically)
     val bare = !r.pinned && !window && (r.expanded != null || r.cleaned != null || r.formats.isNotEmpty() || r.reveal)
     Row(Modifier.fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
       Row(Modifier.fillMaxHeight().offset(x = if (bare) 5.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -425,7 +425,7 @@ private fun clipRowKind(d: KbClipData): KbClipRow {
             else KbClipRow(title, sub, leadLetter = host.take(1), leadImage = d.linkIcon,
                 expanded = d.expanded, cleaned = d.cleaned, pinned = d.pinned, action = "Open link", actionIcon = "open_in_new")
         } ?: when {
-            // a type only where it is certain (user 2026-11-20): an email by its form; phone numbers, addresses
+            // a type only where it is certain: an email by its form; phone numbers, addresses
             // and one-time codes only when Android's classifier gives the whole clip that type (ClipTypes)
             EMAIL.matches(s) -> KbClipRow(s, "Email address", leadIcon = "mail", pinned = d.pinned, action = "Send email", actionIcon = "mail")
             d.systemType == "otp" -> KbClipRow(s, "One-time code", titleWeight = 500, titleSpacing = 1f, leadIcon = "pin", pinned = d.pinned)

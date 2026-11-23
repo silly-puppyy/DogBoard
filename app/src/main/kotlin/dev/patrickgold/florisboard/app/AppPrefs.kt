@@ -127,7 +127,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         )
         val historyAutoCleanSensitiveAfter = int(
             key = "clipboard__history_auto_clean_sensitive_after",
-            // DogBoard: a minute (the designer's password tile counts down from it; user: off by default)
+            // DogBoard: a minute (the designer's password tile counts down from it; off by default)
             default = 60,
         )
         val historySizeLimitEnabled = boolean(
@@ -146,21 +146,21 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "clipboard__history_hide_on_next_text_field",
             default = true,
         )
-        // DogBoard (user, 2026-11-17): Gboard's smart clipboard chips (phone, link, email, address in a
+        // DogBoard: Gboard's smart clipboard chips (phone, link, email, address in a
         // copied text) on a switch, and opt-in removal of tracking tags from pasted links (LinkCleaner)
         val smartChips = boolean(key = "clipboard__smart_chips", default = true)
-        // on by default (user 2026-11-23)
+        // on by default
         val stripTrackers = boolean(key = "clipboard__strip_trackers", default = true)
-        // DogBoard (user 2026-11-23): copying something already in the history brings it to the top (Gboard) instead of
+        // DogBoard: copying something already in the history brings it to the top (Gboard) instead of
         // adding it again; on by default
         val mergeRepeats = boolean(key = "clipboard__merge_repeats", default = true)
         // with it: short links (vm.tiktok.com, pin.it...) asked once for their target (ShortLinks; network)
         val expandShortLinks = boolean(key = "clipboard__expand_short_links", default = false)
         /** DogBoard: a copied link's title, site, banner, icon and a video's length, from the page (LinkInfo; network, opt-in). */
         val linkPreviews = boolean(key = "clipboard__link_previews", default = false)
-        /** DogBoard, the clipboard's hold menu: "Paste as file" where the app takes that file type (user 2026-11-20). */
+        /** DogBoard, the clipboard's hold menu: "Paste as file" where the app takes that file type. */
         val pasteAsFile = boolean(key = "clipboard__paste_as_file", default = true)
-        /** DogBoard, the clipboard's hold menu: "Share as file" through the share sheet (user 2026-11-20). */
+        /** DogBoard, the clipboard's hold menu: "Share as file" through the share sheet. */
         val shareAsFile = boolean(key = "clipboard__share_as_file", default = true)
         val clearPrimaryClipAffectsHistoryIfUnpinned = boolean(
             key = "clipboard__clear_primary_clip_affects_history_if_unpinned",
@@ -189,26 +189,26 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             default = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.STANDARD,
         )
         // DogBoard: backspace right after an autocorrection puts the typed word back (iOS); a feature
-        // with its own switch (user, 2026-11-17)
+        // with its own switch
         val undoOnBackspace = boolean(key = "correction__undo_on_backspace", default = true)
         // DogBoard: Advanced > Neural model (only phones with room run it: EngineLoader.neuralTier)
         val neuralModel = boolean(key = "correction__neural_model", default = true)
-        // DogBoard, below the common rows on the Autocorrect page (user, 2026-11-17): iOS's look back (the previous
+        // DogBoard, below the common rows on the Autocorrect page: iOS's look back (the previous
         // word changes when the next one reads much better) and rejoining a word split by a stray space
         val fixPreviousWord = boolean(key = "correction__fix_previous_word", default = true)
         val joinSplitWords = boolean(key = "correction__join_split_words", default = true)
-        // DogBoard: autocorrect adapts to what the user keeps and undoes (AutocorrectStrength; user, 2026-11-15: on)
+        // DogBoard: autocorrect adapts to what the user keeps and undoes (AutocorrectStrength; on)
         val adaptiveStrength = boolean(
             key = "correction__adaptive_strength",
             default = true,
         )
-        // DogBoard (experimental, user 2026-11-17): the neural model also scores the look back at the
+        // DogBoard (experimental): the neural model also scores the look back at the
         // previous word (iOS: its transformer is part of the model that scores retrocorrections)
         val neuralRetro = boolean(
             key = "correction__neural_retro",
             default = false,
         )
-        // DogBoard: a notification each time the adaptive strength changes step (user, 2026-11-16)
+        // DogBoard: a notification each time the adaptive strength changes step
         val adaptiveNotify = boolean(
             key = "correction__adaptive_notify",
             default = true,
@@ -453,17 +453,17 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             default = true,
         )
         // DogBoard: the key sound: "system" (Android's own click, the default) or one of DogBoard's own
-        // (feel/KeySounds: tick, drop, glass, thock, classic; user 2026-11-21: 3-5 options)
+        // (feel/KeySounds: tick, drop, glass, thock, classic; 3-5 options)
         val audioStyle = string(key = "input_feedback__audio_style", default = "system")
-        // DogBoard: DogBoard's key sounds also on silent (the media stream; user 2026-11-21), off by default
+        // DogBoard: DogBoard's key sounds also on silent (the media stream), off by default
         val audioBypassSilent = boolean(key = "input_feedback__audio_bypass_silent", default = false)
-        // DogBoard: how much DogBoard's key sounds vary from press to press, 0-100 (user 2026-11-21: "maybe even too little
+        // DogBoard: how much DogBoard's key sounds vary from press to press, 0-100 ("maybe even too little
         // variation, there could be settings for that"); 60 is a little more than the first version (50)
         val audioVariation = int(key = "input_feedback__audio_variation", default = 60)
-        // DogBoard: the phone's key click by default (user, 2026-11-14: the soft tap felt weak and flat)
+        // DogBoard: the phone's key click by default (the soft tap felt weak and flat)
         val hapticStyle = enum(
             key = "input_feedback__haptic_style",
-            // DogBoard: Rich (iPhone-like) by default; Plain = Gboard's (user 2026-11-17)
+            // DogBoard: Rich (iPhone-like) by default; Plain = Gboard's
             default = io.github.sillypuppyy.dogboard.feel.HapticStyle.CRISP,
         )
         val hapticFeatKeyPress = boolean(
@@ -525,13 +525,13 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "keyboard__bottom_row",
             default = "classic",
         )
-        // DogBoard Layout elements (user 2026-11-17, mix and match): the symbol pages ("iphone" / "android")
+        // DogBoard Layout elements (mix and match): the symbol pages ("iphone" / "android")
         // and ?123 / action keys drawn as pills
         val symbolPages = string(key = "keyboard__symbol_pages", default = "android")
-        // DogBoard (user 2026-11-21): when the symbols page returns to the letters: "any" key, "space" (and an
+        // DogBoard: when the symbols page returns to the letters: "any" key, "space" (and an
         // apostrophe, as on an iPhone; the default) or "none"
         val symbolsReturn = string(key = "keyboard__symbols_return", default = "space")
-        // Classic (Android-style) is the default layout (user 2026-11-23)
+        // Classic (Android-style) is the default layout
         val pillKeys = boolean(key = "keyboard__pill_keys", default = true)
         // DogBoard: the letter layout (tools/layouts/gen_layouts.py ids); autocorrection and
         // suggestions are English-only until the internationalisation pass
@@ -618,12 +618,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val themeDay = string(key = "keyboard__theme_day", default = "dogboard")
         val themeNight = string(key = "keyboard__theme_night", default = "dogboard")
         val themeFollow = boolean(key = "keyboard__theme_follow", default = true)
-        // DogBoard: with themeFollow off, which slot is used all the time (user 2026-11-22: "ignore system theme, then pick
+        // DogBoard: with themeFollow off, which slot is used all the time ("ignore system theme, then pick
         // which one is chosen"; before, turning follow off just dropped the night theme)
         val themeFixedNight = boolean(key = "keyboard__theme_fixed_night", default = false)
         // Dalmatian: "open" = new spots each time the keyboard opens, "keep" = until shuffled; the kept coat
         val spotReroll = string(key = "keyboard__spot_reroll", default = "open")
-        // DogBoard: Themes › Return key per theme (user 2026-11-19), "id=always;id=actions" (ThemeChoice.retAlways)
+        // DogBoard: Themes › Return key per theme, "id=always;id=actions" (ThemeChoice.retAlways)
         val retColour = string(key = "keyboard__ret_colour", default = "")
         // DogBoard: the saved photo theme the photo slot holds (UserThemes; "" = none)
         val userTheme = string(key = "keyboard__user_theme", default = "")
@@ -705,10 +705,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
     inner class Other {
         // DogBoard: Developer options appear in Advanced after tapping the version in About 7 times
         val devOptionsUnlocked = boolean(key = "other__dev_options_unlocked", default = false)
-        // DogBoard (user 2026-11-19): the settings take the keyboard theme's light or dark (Dalmatian in dark mode
+        // DogBoard: the settings take the keyboard theme's light or dark (Dalmatian in dark mode
         // -> bright settings), else the system's; colours stay Material either way
         val settingsFollowKeyboard = boolean(key = "other__settings_follow_keyboard", default = true)
-        // DogBoard: the settings app's colours (user 2026-11-19): "keyboard" (light or dark and colours from the
+        // DogBoard: the settings app's colours: "keyboard" (light or dark and colours from the
         // keyboard theme, the default), "wallpaper" (Material You), "none" (DogBoard's default colours)
         val settingsColours = string(key = "other__settings_colours", default = "keyboard")
         val settingsTheme = enum(
@@ -799,7 +799,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
 
     val suggestion = Suggestion()
     inner class Suggestion {
-        // DogBoard (user 2026-11-19): what the bar shows in an empty field: "suggestions" (iOS: predicted first
+        // DogBoard: what the bar shows in an empty field: "suggestions" (iOS: predicted first
         // words) or "tools" (Gboard: the tool row until you type)
         val beforeTyping = string(key = "suggestion__before_typing", default = "suggestions")
         val api30InlineSuggestionsEnabled = boolean(
@@ -893,7 +893,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             default = ShiftKeyBehavior.CAPSLOCK_BY_DOUBLE_TAP,
         )
         // DogBoard: iOS Smart Punctuation, two switches as in iOS (smartQuotesEnabled, smartDashesEnabled)
-        // default off (user, 2026-11-14), unlike iOS
+        // default off, unlike iOS
         val smartQuotes = boolean(
             key = "typing__smart_quotes",
             default = false,
@@ -902,7 +902,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "typing__smart_dashes",
             default = true,
         )
-        // DogBoard: names and "I" take the dictionary's capitals (user, 2026-11-14: separate from sentence starts)
+        // DogBoard: names and "I" take the dictionary's capitals (separate from sentence starts)
         val dictionaryCapitals = boolean(
             key = "typing__dictionary_capitals",
             default = true,
@@ -917,11 +917,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val trackpadEnabled = boolean(key = "feel__trackpad_enabled", default = true)
         /** DogBoard: holding the space bar: "cursor" (the trackpad, iOS), "language" (the language list, Gboard), "nothing". */
         val spaceHold = string(key = "feel__space_hold", default = "cursor")
-        // DogBoard: Settings › Gestures, the Gboard gestures (user 2026-11-19): slide left from delete to delete
+        // DogBoard: Settings › Gestures, the Gboard gestures: slide left from delete to delete
         // words; a quick sideways swipe on the space bar moves the cursor without the hold; on by default
         val deleteSlide = boolean(key = "feel__delete_slide", default = true)
         val spaceQuickDrag = boolean(key = "feel__space_quick_drag", default = true)
-        // DogBoard: swipe typing and its trail (user 2026-11-17: on by default, draw the trail)
+        // DogBoard: swipe typing and its trail (on by default, draw the trail)
         val swipeEnabled = boolean(key = "feel__swipe_enabled", default = true)
         val swipeTrail = boolean(key = "feel__swipe_trail", default = true)
         // DogBoard: Advanced > Timings: a bar tap this soon after a key is read as a top-row key (BarTapGuard)

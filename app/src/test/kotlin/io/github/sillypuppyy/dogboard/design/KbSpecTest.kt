@@ -95,9 +95,10 @@ class KbSpecTest : FunSpec({
     }
     test("Android-style bottom row (Kb:471) and labels") {
         KbSpec.render(KbProps(kstyle = "android")).rows[3].keys.map { it.id } shouldContainExactly listOf("mode-?123", ",", "fn", "space", ".", "ret")
-        key(KbProps(kstyle = "android"), "space").label shouldBe ""
-        // Kb:757 (current canvas): Auto is blank with one language, the language name with the globe key
-        key(KbProps(), "space").let { it.label shouldBe ""; it.fs shouldBe 14f; it.fg shouldBe KbThemes.tokens("dogboard", false).hint } // Kb:757: spaceFg, else hint
+        // Auto: "space" with one language, the language name with the globe key (the canvas had blank with one language)
+        key(KbProps(kstyle = "android"), "space").label shouldBe "space"
+        key(KbProps(spaceLabel = "blank"), "space").label shouldBe ""
+        key(KbProps(), "space").let { it.label shouldBe "space"; it.fs shouldBe 14f; it.fg shouldBe KbThemes.tokens("dogboard", false).hint } // Kb:757: spaceFg, else hint
         key(KbProps(spaceLabel = "space"), "space").label shouldBe "space"
         key(KbProps(spaceLabel = "lang", langName = "Deutsch"), "space").label shouldBe "Deutsch"
         key(KbProps(fnKey = "globe", langName = "English (US)"), "space").label shouldBe "English (US)"

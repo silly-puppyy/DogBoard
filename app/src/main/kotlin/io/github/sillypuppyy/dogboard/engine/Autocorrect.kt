@@ -14,7 +14,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     /**
      * A word typed in lowercase that the lexicon has only capitalised (a name: "hom" for "Hom") counts as the
      * typed word, kept and not read as a skipped last letter, only when that name is among the [nameAsTypedRank]
-     * most frequent words ("john", "mr" are; user 2026-11-19: "going hom" was kept, rare web-text names block
+     * most frequent words ("john", "mr" are; "going hom" was kept, rare web-text names block
      * corrections). Int.MAX_VALUE: every name counts.
      */
     var nameAsTypedRank: Int = Int.MAX_VALUE
@@ -22,7 +22,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     /**
      * A word one letter short of the correction may be read as a skipped last key even when the typed letters are
      * themselves a word, if the context already ruled that word out (it lost to the correction by the keep-the-typed
-     * -word margin, filter 20 above) rather than only when the lexicon lacks it (user 2026-11-19: "it's the LLM's job
+     * -word margin, filter 20 above) rather than only when the lexicon lacks it ("it's the LLM's job
      * to give context-aware probabilities"; "going hom" kept because the lexicon has the name "Hom").
      */
     var contextEndOmission: Boolean = true
@@ -153,7 +153,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         val languagePower: Double? = null,
     ) {
         companion object {
-            // minStemEndOmission 3 (user 2026-11-16: "that counts as a typo"): real phone typos fixed 47.5 -> 47.9 %,
+            // minStemEndOmission 3 ("that counts as a typo"): real phone typos fixed 47.5 -> 47.9 %,
             // correct words broken unchanged (0.6 %), control 98.5 % / unknown 95.8 % unchanged
             val STANDARD = Level(MIN_DOMINANCE_RATIO, 8, 6, 4, minStemEndOmission = 3)
         }
@@ -315,7 +315,7 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      * A typed NON-word that is exactly two or more dictionary words with the spaces missing: the best real
      * candidate, when it is that split, goes ahead of the typed string (and skips the typed-word margin below).
      * The split explains every letter; the letter model rates a run-together of common words ("thankyou",
-     * "ofthe") as a plausible unknown word and kept it ahead by a hair (user 2026-11-20: "the keyboard can
+     * "ofthe") as a plausible unknown word and kept it ahead by a hair ("the keyboard can
      * correctly split words apart but just doesn't do it"). iOS never ranks a typed non-word at all (spec 2.6); this
      * takes that rule only where the alternative is an exact split. A learned word is a dictionary word: kept.
      */

@@ -84,7 +84,7 @@ fun liveTheme(): LiveTheme {
         p to (mode == "dark" || (mode != "light" && liveDark()))
     } ?: ThemeChoice.resolve(ThemeChoice.Choice(day, night, follow, fixedNight), liveDark())
     // Dalmatian "every time it opens": a new coat each time the keyboard is shown, else the kept one (the view
-    // lives on between showings, so remembering per view gave one coat for good; user 2026-11-19)
+    // lives on between showings, so remembering per view gave one coat for good)
     val shown by io.github.sillypuppyy.dogboard.ime.LiveUi.shown.collectAsState()
     val openSeed = androidx.compose.runtime.remember(shown) { (1..96).random() }
     // the Photo theme draws the glass photo when one is set, else the default look

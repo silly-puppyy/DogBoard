@@ -37,7 +37,7 @@ import io.github.sillypuppyy.dogboard.design.settings.setText
 import kotlinx.coroutines.launch
 
 /**
- * Settings › Advanced › Testing (user 2026-11-23: "a debug menu ... replay the onboarding ... a dedicated test typing
+ * Settings › Advanced › Testing ("a debug menu ... replay the onboarding ... a dedicated test typing
  * field where you can log all my keystrokes without any privacy issues"). Shown in debug builds and with developer
  * options. The key log covers only the field on this page (KeyLog): each tap's position, each suggestion picked, and
  * every change to the field's text (typed, corrected, deleted), in memory until cleared.

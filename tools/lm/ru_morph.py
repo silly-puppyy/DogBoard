@@ -1,4 +1,4 @@
-"""Russian stem + ending split for the R1 tokenizer (private study; user 2026-11-22: "tokenize the case endings
+"""Russian stem + ending split for the R1 tokenizer (private study; "tokenize the case endings
 differently on purpose"). For each word type of the training text (seen at least twice), pymorphy3 (MIT; OpenCorpora
 dictionaries, CC BY-SA) gives the lexeme of its most likely parse; the stem is the longest prefix every form of that
 lexeme shares ("километров" -> километр + ов), the ending the rest. Only inflecting parts of speech; a split is kept

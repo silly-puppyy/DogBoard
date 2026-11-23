@@ -1,5 +1,5 @@
 """Experiment tracking for DogBoard's models (tools/track.py): one wandb setup for every model family,
-so language models and swipe models in every language sit side by side (user 2026-11-17).
+so language models and swipe models in every language sit side by side.
 
 Projects: dogboard-llm (language models), dogboard-swipe (swipe recognisers); later others the same
 way. Every run carries the same fields, so runs group and filter by language, layout and data:
