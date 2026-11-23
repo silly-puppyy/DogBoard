@@ -465,9 +465,13 @@ object TypingEngine {
 
     fun loadSecondary(lexicon: Lexicon, bigrams: Bigrams?, rules: LanguageRules, ngrams: NgramModel?, letters: CharModel?) {
         val sec = Loaded(lexicon, bigrams, rules)
-        if (ngrams != null && bigrams != null) sec.decoder.context = NgramScorer(ngrams, lexicon, bigrams.sentenceStart)
-        sec.decoder.unknownWords = letters
-        sec.decoder.beamWidth = beam
+        // its look back and its rejoining of split words run in its own words and context too
+        val scorer = if (ngrams != null && bigrams != null) NgramScorer(ngrams, lexicon, bigrams.sentenceStart) else null
+        for (d in listOf(sec.decoder, sec.retroDecoder, sec.joinDecoder)) {
+            if (scorer != null) d.context = scorer
+            d.unknownWords = letters
+            d.beamWidth = beam
+        }
         lock.write {
             secondaries = secondaries + sec
             loaded?.autocorrect?.otherLexicons = secondaries.map { it.lexicon }
@@ -1072,7 +1076,14 @@ object TypingEngine {
          */
         neuralPairs: Map<String, Double>? = null,
     ): String? {
-        val engine = loaded ?: return null
+        val first = loaded ?: return null
+        // languages typed together: the look back runs in the one language that knows both words (its words, pairs and
+        // context), and only its words can replace the previous one; across languages it stays out
+        val secs = secondaries
+        val engine = if (secs.isEmpty()) first else {
+            val top = currentCandidates?.firstOrNull { !it.isCompletion && it.words == 1 }?.word
+            (listOf(first) + secs).firstOrNull { l -> l.lexicon.contains(previousCommitted) && (top == null || l.lexicon.contains(top)) } ?: return null
+        }
         val bigrams = engine.bigrams ?: return null // the look back needs a context model
         val prevTaps = previous.tapsOrNull() ?: return null
         val curTaps = current.tapsOrNull() ?: return null
@@ -1081,11 +1092,8 @@ object TypingEngine {
         if (rejections.isBlocked(previous.text, previousCommitted)) return null
         return lock.read {
             val d = engine.retroDecoder
-            // the look back weighs words with the first language's pairs: around a word only the second language knows
-            // it would turn that word into the first's, so it stays out (until it has both languages' context)
-            val secs = secondaries
-            fun secondOnly(w: String?) = w != null && !engine.lexicon.contains(w) && secs.any { it.lexicon.contains(w) }
-            if (secondOnly(previousCommitted) || secondOnly(previous.text) || secondOnly(currentCandidates?.firstOrNull()?.word)) return@read null
+            // with other languages loaded, only this language's words take the previous word's place
+            fun otherLanguage(w: String) = secs.isNotEmpty() && !engine.lexicon.contains(w)
             // a typed word the lexicon knows isn't turned into itself plus a letter ("the" -> "they"):
             // the decoder reads a skipped last key as a typo fix for autocorrect's missing-last-letter fix
             val typedIsWord = engine.lexicon.contains(previous.text)
@@ -1093,7 +1101,7 @@ object TypingEngine {
             val prevCandidates = (previousCandidates?.filter { !it.isCompletion && !extendsTyped(it.word) }?.take(4) ?: d.decode(
                 prevTaps, personalOffsets.apply(previous.keys), previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
-            )).filter { it.words == 1 && !secondOnly(it.word) && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word, previous.keys.keys) }
+            )).filter { it.words == 1 && !otherLanguage(it.word) && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word, previous.keys.keys) }
                 .let { respectingContactNames(previous.text, it) }
             val curReadings = currentCandidates?.filter { !it.isCompletion && it.words == 1 }
             val pairs = if (neuralPairs != null && currentCandidates != null) retroPairs(prevCandidates, currentCandidates) else emptyList()
@@ -1141,7 +1149,18 @@ object TypingEngine {
         previous: CurrentWord, previousCommitted: String, beforeContext: String?, spaceTap: Tap,
         current: CurrentWord, previousCandidates: List<Candidate>, currentCandidates: List<Candidate>, curly: Boolean = false,
     ): String? {
-        val engine = loaded ?: return null
+        val first = loaded ?: return null
+        // languages typed together: the joined word may be any one's ("deas yuno" -> desayuno): each tried in turn
+        for (engine in listOf(first) + secondaries) {
+            spaceJoinIn(engine, previous, previousCommitted, beforeContext, spaceTap, current, previousCandidates, currentCandidates, curly)?.let { return it }
+        }
+        return null
+    }
+
+    private fun spaceJoinIn(
+        engine: Loaded, previous: CurrentWord, previousCommitted: String, beforeContext: String?, spaceTap: Tap,
+        current: CurrentWord, previousCandidates: List<Candidate>, currentCandidates: List<Candidate>, curly: Boolean,
+    ): String? {
         val bigrams = engine.bigrams ?: return null
         val prevTaps = previous.tapsOrNull() ?: return null
         val curTaps = current.tapsOrNull() ?: return null
