@@ -225,6 +225,12 @@ object KbThemes {
         ),
     )
 
+    /**
+     * One-off themes the editor can't remake (Gloss: gradient keys, glows, text shadows; Dalmatian: its spot pattern).
+     * A copy is meant to be editable in every part, so these offer no Copy and edit.
+     */
+    val NOT_COPYABLE = setOf("gloss", "dalmatian")
+
     /** A built-in theme's own light or dark tokens over the defaults (the theme editor's Copy and edit); null if it has none. */
     fun raw(themeId: String, dark: Boolean): Map<String, String>? = T[themeId]?.get(if (dark) "dark" else "light")?.let { DEF + it }
 

@@ -110,7 +110,7 @@ fun SetThemes(state: SetThemesState) {
     // press and hold a theme: its sheet, the keyboard test-driving it meanwhile
     var sheetFor by remember { mutableStateOf<String?>(null) }
     sheetFor?.let { id -> ThemeSheet(id, state.seed, primary, onUse = { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m },
-        onCopyEdit = if (io.github.sillypuppyy.dogboard.design.KbThemes.raw(id, false) != null || io.github.sillypuppyy.dogboard.design.KbThemes.raw(id, true) != null) ({ state.onCopyEdit(id) }) else null) { sheetFor = null } }
+        onCopyEdit = if (id !in io.github.sillypuppyy.dogboard.design.KbThemes.NOT_COPYABLE && (io.github.sillypuppyy.dogboard.design.KbThemes.raw(id, false) != null || io.github.sillypuppyy.dogboard.design.KbThemes.raw(id, true) != null)) ({ state.onCopyEdit(id) }) else null) { sheetFor = null } }
     newIn?.let { pack -> NewThemeSheet({ newIn = null }) { kind ->
         val p = pack.ifEmpty { null }
         when (kind) {
