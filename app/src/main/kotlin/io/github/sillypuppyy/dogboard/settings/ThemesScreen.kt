@@ -129,12 +129,15 @@ fun ThemesScreen() {
                 }
                 val spec = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.theme(context, id)?.spec }
                 if (id != tid) { version++; android.widget.Toast.makeText(context, "Copied to My themes to edit", android.widget.Toast.LENGTH_SHORT).show() }
-                if (spec != null) navController.navigate(Routes.Settings.Gradient(id = id))
+                // a theme made in the theme editor opens there; an older gradient in the gradient editor
+                if (spec != null && io.github.sillypuppyy.dogboard.design.ThemeModel.isSpec(spec)) navController.navigate(Routes.Settings.ThemeEditor(id = id))
+                else if (spec != null) navController.navigate(Routes.Settings.Gradient(id = id))
                 else { io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id); navController.navigate(Routes.Settings.Photo) }
             }
         },
-        onNewGradientIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty())) },
-        onNewSolidIn = { packId -> navController.navigate(Routes.Settings.Gradient(pack = packId.orEmpty(), solid = true)) },
+        // new themes are made in the theme editor (ThemeEditor.dc.html: one editor for every background)
+        onNewGradientIn = { packId -> navController.navigate(Routes.Settings.ThemeEditor(start = "gradient", pack = packId.orEmpty())) },
+        onNewSolidIn = { packId -> navController.navigate(Routes.Settings.ThemeEditor(start = "solid", pack = packId.orEmpty())) },
         inUse = if (follow) setOf(day, night) else setOf(day),
         onNewPhotoIn = { packId ->
             targetPack = packId
@@ -169,6 +172,7 @@ fun ThemesScreen() {
                 a.startsWith("move:") -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.moveTheme(context, id, a.removePrefix("move:")); version++ }
             }
         },
+        onCopyEdit = { bid -> navController.navigate(Routes.Settings.ThemeEditor(start = "copy:$bid")) },
         onBack = { navController.popBackStack() },
         onManagePacks = { managing = true },
     )

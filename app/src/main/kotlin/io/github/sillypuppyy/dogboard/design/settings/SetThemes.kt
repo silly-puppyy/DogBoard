@@ -78,6 +78,8 @@ class SetThemesState(
     val userTheme: String? = null,
     val onPickUser: (String) -> Unit = {},
     val onEditUser: (String) -> Unit = {},
+    /** TEHold: a built-in theme copied into the theme editor. */
+    val onCopyEdit: (String) -> Unit = {},
     /** A pack's menu: "rename", "up", "down", "delete"; a theme's: "rename", "delete", "move:<pack id>". */
     val onPackAction: (String, String) -> Unit = { _, _ -> },
     val onThemeAction: (String, String) -> Unit = { _, _ -> },
@@ -107,7 +109,8 @@ fun SetThemes(state: SetThemesState) {
     var newIn by remember { mutableStateOf<String?>(null) }
     // press and hold a theme: its sheet, the keyboard test-driving it meanwhile
     var sheetFor by remember { mutableStateOf<String?>(null) }
-    sheetFor?.let { id -> ThemeSheet(id, state.seed, primary, onUse = { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m }) { sheetFor = null } }
+    sheetFor?.let { id -> ThemeSheet(id, state.seed, primary, onUse = { val (_, m) = ThemeChoice.pick(c, id); state.onPick(id); msg = m },
+        onCopyEdit = if (io.github.sillypuppyy.dogboard.design.KbThemes.raw(id, false) != null || io.github.sillypuppyy.dogboard.design.KbThemes.raw(id, true) != null) ({ state.onCopyEdit(id) }) else null) { sheetFor = null } }
     newIn?.let { pack -> NewThemeSheet({ newIn = null }) { kind ->
         val p = pack.ifEmpty { null }
         when (kind) {
@@ -386,7 +389,7 @@ private fun InUseBadge(primary: Color, modifier: Modifier = Modifier) {
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit, onDismiss: () -> Unit) {
+private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit, onCopyEdit: (() -> Unit)? = null, onDismiss: () -> Unit) {
     val t = ThemeChoice.theme(id)
     androidx.compose.runtime.DisposableEffect(id) {
         io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = id
@@ -426,6 +429,10 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                 Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).clickable(onClick = onDismiss).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
                     DText("Close", style = setText(14f, 500, primary))
+                }
+                // TEHold: copy a built-in theme into the theme editor
+                if (onCopyEdit != null) Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).clickable { onDismiss(); onCopyEdit() }.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                    DText("Copy and edit", style = setText(14f, 500, primary))
                 }
                 Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).background(primary).clickable { onUse(); onDismiss() }.padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
                     DText("Use this theme", style = setText(14f, 500, SetColors.screen))
