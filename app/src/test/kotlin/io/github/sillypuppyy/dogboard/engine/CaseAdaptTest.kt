@@ -90,4 +90,17 @@ class CaseAdaptTest : FunSpec({
             CaseAdapt.locale = java.util.Locale.ROOT
         }
     }
+
+    test("Greek capitals drop the tonos, keep the dialytika; a first capital keeps it") {
+        try {
+            CaseAdapt.locale = java.util.Locale.forLanguageTag("el")
+            CaseAdapt.allCaps("τελικό") shouldBe "ΤΕΛΙΚΟ"
+            CaseAdapt.allCaps("πρωτεϊνη") shouldBe "ΠΡΩΤΕΪΝΗ"
+            CaseAdapt.capitaliseFirst("ένωση") shouldBe "Ένωση"
+            CaseAdapt.locale = java.util.Locale.ROOT
+            CaseAdapt.allCaps("café") shouldBe "CAFÉ"
+        } finally {
+            CaseAdapt.locale = java.util.Locale.ROOT
+        }
+    }
 })

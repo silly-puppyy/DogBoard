@@ -74,7 +74,7 @@ object CaseAdapt {
         when (classify(input, flags, context)) {
             Type.NONE -> candidate
             Type.AUTOSHIFT -> if (casing.keepsLowercaseStart(candidate)) candidate else capitaliseFirst(candidate)
-            Type.AUTOSHIFT_ALL, Type.ALL_CAPS -> candidate.uppercase(locale)
+            Type.AUTOSHIFT_ALL, Type.ALL_CAPS -> allCaps(candidate)
             Type.EXPLICIT_SHIFT -> {
                 val capitalised = candidate.firstOrNull()?.isUpperCase() == true || casing.hasCapitalisedForm(candidate)
                 if (capitalised && candidate.length >= input.length - 1 && sameLetter(candidate.firstOrNull(), input.firstOrNull())) {
@@ -114,6 +114,19 @@ object CaseAdapt {
     private fun sameLetter(a: Char?, b: Char?): Boolean =
         a != null && b != null && java.text.Normalizer.normalize(a.toString(), java.text.Normalizer.Form.NFD)[0]
             .equals(java.text.Normalizer.normalize(b.toString(), java.text.Normalizer.Form.NFD)[0], ignoreCase = true)
+
+    /**
+     * [word] in capitals. Greek writes all capitals without the tonos (ΤΕΛΙΚΟ, not ΤΕΛΙΚΌ; the dialytika stays:
+     * ΠΡΩΤΕΪΝΗ); Java's uppercase keeps it even for the Greek locale (checked 2026-11-23), so a corrected word typed
+     * in capitals came out accented. A tonos that marked a vowel pair as two sounds leaves a dialytika on the ι / υ
+     * (άι -> ΑΪ) is not handled: rare in typed caps.
+     */
+    fun allCaps(word: String): String {
+        val up = word.uppercase(locale)
+        if (locale.language != "el") return up
+        val nfd = java.text.Normalizer.normalize(up, java.text.Normalizer.Form.NFD)
+        return java.text.Normalizer.normalize(nfd.replace("\u0301", ""), java.text.Normalizer.Form.NFC)
+    }
 
     /** Capitalises the first letter (the second when the word starts with an apostrophe: "'tis"); keeps other capitals. */
     fun capitaliseFirst(word: String): String {
