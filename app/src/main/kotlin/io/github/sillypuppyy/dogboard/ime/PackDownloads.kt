@@ -83,8 +83,11 @@ class PackDownloads(private val baseUrl: String, private val packsDir: File, pri
     }
 
     companion object {
-        /** The download host's base URL; empty until one is chosen (then packs show in Languages). */
-        const val BASE_URL = ""
+        /**
+         * The download host: the DogBoard-packs repository's fixed `index` release (index.json + index.json.sig; each
+         * pack's archive link is in the index, in whichever packs-<format>.<content>.<fix> release holds it), 2026-11-23.
+         */
+        const val BASE_URL = "https://github.com/silly-puppyy/DogBoard-packs/releases/download/index/"
 
         /**
          * The host to use: [BASE_URL], or in a debug build the URL in files/dogboard/pack_host.txt (a test host, or a
