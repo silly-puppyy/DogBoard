@@ -238,6 +238,10 @@ LAYOUTS = [
     # Thai Kedmanee from iOS (both planes: Gboard's extracted data lacks the shifted half); typed in logical order
     ios_two_planes("kedmanee-th", "th", "ไทย", "เกษมณี", "TH", "Thai", "เกษมณี"),
     ios_two_planes("lao-lo", "lo", "ລາວ", "ລາວ", "LO", "Lao", "ລາວ"),
+    # Burmese and Sinhala from iOS: vowel signs on their own keys, typed in logical order (no composer); iOS's
+    # several-character keys (Sinhala ්‍ර, Burmese င်္) are left out (one character a key), typed from their parts
+    ios_two_planes("burmese-my", "my", "မြန်မာ", "မြန်မာ", "MY", "Burmese", "မြန်မာ"),
+    ios_two_planes("sinhala-si", "si", "සිංහල", "සිංහල", "SI", "Sinhala", "සිංහල"),
 ]
 
 SYMBOL_1 = [
