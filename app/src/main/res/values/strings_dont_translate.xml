@@ -1,11 +1,11 @@
 <resources>
     <item name="floris_app_name" translatable="false" type="string">@string/app_name</item>
 
-    <string name="florisboard__repo_url" translatable="false">https://github.com/florisboard/florisboard</string>
-    <string name="florisboard__issue_tracker_url" translatable="false">https://github.com/florisboard/florisboard/issues</string>
-    <string name="florisboard__privacy_policy_url" translatable="false">https://florisboard.org/legal/privacy/</string>
-    <string name="florisboard__changelog_url" translatable="false">https://github.com/florisboard/florisboard/releases/v{version}</string>
-    <string name="florisboard__commit_by_hash_url" translatable="false">https://github.com/florisboard/florisboard/commit/{hash}</string>
+    <string name="florisboard__repo_url" translatable="false">https://github.com/silly-puppyy/DogBoard</string>
+    <string name="florisboard__issue_tracker_url" translatable="false">https://github.com/silly-puppyy/DogBoard/issues</string>
+    <string name="florisboard__privacy_policy_url" translatable="false">https://github.com/silly-puppyy/DogBoard/blob/main/PRIVACY.md</string>
+    <string name="florisboard__changelog_url" translatable="false">https://github.com/silly-puppyy/DogBoard/releases/tag/v{version}</string>
+    <string name="florisboard__commit_by_hash_url" translatable="false">https://github.com/silly-puppyy/DogBoard/commit/{hash}</string>
 
     <string name="general__system_string_placeholder" translatable="false">%s</string>
     <string name="general__empty_string" translatable="false"/>
