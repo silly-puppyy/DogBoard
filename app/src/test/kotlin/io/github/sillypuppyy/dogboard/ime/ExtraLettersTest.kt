@@ -16,3 +16,13 @@ class ExtraLettersTest : FunSpec({
         ExtraLetters.forEntry("qwerty-es", "en") shouldBe emptyMap()
     }
 })
+
+class LayoutRowsTest : FunSpec({
+    test("a layout's rows: marks hold their place, rows centred; Bulgarian ЯВЕРТЪ neighbours differ from Phonetic's") {
+        val azerty = io.github.sillypuppyy.dogboard.engine.LetterRows.ofLayout(GeneratedLayouts.all.first { it.id == "azerty-fr" }.rows)
+        azerty.centres.containsKey('\'') shouldBe false
+        azerty.centres['w'] shouldBe (2.0f to 2.5f) // the third row (7 keys) centred under 10
+        val yav = io.github.sillypuppyy.dogboard.engine.LetterRows.ofLayout(GeneratedLayouts.all.first { it.id == "bulgarian-bg" }.rows)
+        yav.neighbours('я').toSet() shouldBe setOf('в', 'а', 'с')
+    }
+})

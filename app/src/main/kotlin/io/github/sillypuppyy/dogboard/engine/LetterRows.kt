@@ -20,7 +20,8 @@ data class LetterRows(
     @kotlinx.serialization.Transient
     val centres: Map<Char, Pair<Float, Float>> = buildMap {
         for ((r, letters) in rows.withIndex()) {
-            for ((i, c) in letters.withIndex()) put(c, (offsets.getOrElse(r) { 0f } + i + 0.5f) to (r + 0.5f))
+            // a layout's marks (AZERTY's ', Colemak's ;) hold their place but aren't letters
+            for ((i, c) in letters.withIndex()) if (c.isLetter()) put(c, (offsets.getOrElse(r) { 0f } + i + 0.5f) to (r + 0.5f))
         }
     }
 
@@ -41,6 +42,14 @@ data class LetterRows(
     }
 
     /** Key targets for a key area [widthDp] x [heightDp] with [rowCount] equal rows, ten key widths across. */
+    companion object {
+        /** A layout's letter rows (GeneratedLayouts), each centred under the longest, as drawn. */
+        fun ofLayout(rows: List<String>): LetterRows {
+            val widest = rows.maxOf { it.length }
+            return LetterRows(rows, rows.map { (widest - it.length) / 2f })
+        }
+    }
+
     fun keyTargets(widthDp: Float, heightDp: Float, rowCount: Int): Map<Char, KeyTarget> {
         val unit = widthDp / 10f
         val rowHeight = heightDp / rowCount

@@ -86,6 +86,24 @@ object TypingEngine {
     @Volatile var rules: LanguageRules = LanguageRules.ENGLISH
         private set
 
+    /** The pack's rules as loaded; [rules] is them with the letter rows of the layout in use ([useLayoutRows]). */
+    @Volatile private var packRules: LanguageRules = LanguageRules.ENGLISH
+
+    /** The letter rows of the layout in use (null: the pack's own, which it was built for). */
+    @Volatile private var layoutRows: LetterRows? = null
+
+    private fun withLayoutRows(r: LanguageRules) = layoutRows?.let { r.copy(letterRows = it) } ?: r
+
+    /**
+     * The keyboard's layout [rows] (GeneratedLayouts), or null: neighbouring keys, the letters a missed key can be and
+     * the geometry before the first tap follow the keys in use, not the layout the pack was built for (Bulgarian's pack:
+     * Phonetic, its default layout ЯВЕРТЪ).
+     */
+    fun useLayoutRows(rows: List<String>?) {
+        layoutRows = rows?.takeIf { it.isNotEmpty() }?.let { LetterRows.ofLayout(it) }
+        rules = withLayoutRows(packRules)
+    }
+
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, val rules: LanguageRules) {
         val decoder = Decoder(
             lexicon,
@@ -197,7 +215,8 @@ object TypingEngine {
         val (lexicon, bigrams, cached) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped, ::mark)
         parsedAtLoad = !cached
         mark("bigrams")
-        this.rules = rules
+        packRules = rules
+        this.rules = withLayoutRows(rules)
         val engine = Loaded(lexicon, bigrams, rules)
         engine.decoder.unknownWords = charModel
         engine.retroDecoder.unknownWords = charModel

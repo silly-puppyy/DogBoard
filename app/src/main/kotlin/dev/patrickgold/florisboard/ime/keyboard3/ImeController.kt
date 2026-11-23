@@ -391,6 +391,10 @@ class ImeController(
         }
         prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { spaceHold() }
         prefs.typing.spaceHold.asFlow().collectIn(scope) { spaceHold() }
+        // the engine's letter rows follow the layout in use (a pack is built for one of its language's layouts)
+        prefs.keyboard.layoutId.asFlow().collectIn(scope) { id ->
+            io.github.sillypuppyy.dogboard.engine.TypingEngine.useLayoutRows(io.github.sillypuppyy.dogboard.ime.GeneratedLayouts.all.firstOrNull { it.id == id }?.rows)
+        }
         prefs.typing.deleteSlide.asFlow().collectIn(scope) { feel.deleteSlide = it }
         prefs.typing.spaceQuickDrag.asFlow().collectIn(scope) { feel.spaceQuickDrag = it }
         prefs.typing.swipeEnabled.asFlow().collectIn(scope) { feel.swipeEnabled = it }
