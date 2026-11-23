@@ -191,6 +191,8 @@ object KbThemes {
     ): KbTokens {
         val raw = if (themeId == "glass") glass(dim, keyOpacity, photoLuminance, glassFg, halo, actColor, actFg, wash, keyDark)
         else if (GradientSpec.isSpec(themeId)) GradientSpec.parse(themeId)?.let(::gradient) ?: T.getValue("dogboard").getValue("light")
+        // a theme made in the theme editor (ThemeModel): its version for now, as tokens
+        else if (ThemeModel.isSpec(themeId)) ThemeModel.decode(themeId)?.let { ThemeModel.tokensOf(it, dark) } ?: T.getValue("dogboard").getValue("light")
         // a gradient with a bright and a dark version: the one for now (user 2026-11-19)
         else if (GradientSpec.isPair(themeId)) GradientSpec.parsePair(themeId)?.let { gradient(if (dark) it.second else it.first) } ?: T.getValue("dogboard").getValue("light") else {
             val th = T[themeId] ?: T.getValue("dogboard")

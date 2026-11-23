@@ -66,6 +66,19 @@ class ThemeModelTest : FunSpec({
             }
         }
     }
+    test("an editor theme is its own theme id, and the keyboard draws its version for the mode") {
+        val t = ThemeModel.Theme(
+            "Labrador", "both", ThemeModel.Version(ThemeModel.Bg(color = "#e8dcc8"), tint = true),
+            ThemeModel.Version(ThemeModel.Bg(color = "#2b1d16"), tint = true), ThemeModel.Shape(radius = 12.0), sound = "clack",
+        )
+        val id = ThemeModel.encode(t)
+        ThemeModel.decode(id) shouldBe t
+        val light = KbThemes.tokens(id, dark = false); val dark = KbThemes.tokens(id, dark = true)
+        light.bg shouldBe css("#e8dcc8")
+        dark.bg shouldBe css("#2b1d16")
+        light.key shouldBe css(ThemeModel.resolve(t.light!!).vals.getValue("key"))
+        light.radius shouldBe 12f
+    }
 })
 
 private inline fun <T> withClue(clue: String, block: () -> T): T = io.kotest.assertions.withClue(clue, block)

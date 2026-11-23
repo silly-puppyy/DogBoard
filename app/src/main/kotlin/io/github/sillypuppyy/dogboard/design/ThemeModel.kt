@@ -96,9 +96,11 @@ object ThemeModel {
         "dark" to mapOf("bg" to "#1a1b20", "key" to "#33353a", "keyFg" to "#e2e2e9", "fn" to "#3f4759", "fnFg" to "#dbe2f9", "act" to "#adc7ff", "actFg" to "#0f2f60", "chip" to "#2a4678", "chipFg" to "#d8e2ff", "pop" to "#45474c", "popFg" to "#e2e2e9", "hint" to "#b4b7c0", "barFg" to "#e2e2e9", "keyLine" to "none", "fnLine" to "none", "actLine" to "none"),
     )
 
+    @kotlinx.serialization.Serializable
     data class Stop(val c: String, val p: Int)
 
     /** A version's background (lib: bgOf). For a photo: its main colours [photoCols] and accents [photoAcc], measured. */
+    @kotlinx.serialization.Serializable
     data class Bg(
         val type: String = "solid", val color: String = "#ededf4",
         val stops: List<Stop> = listOf(Stop("#ffe3d1", 0), Stop("#f4c4d8", 100)), val angle: Int = 180,
@@ -106,9 +108,11 @@ object ThemeModel {
         val photoCols: List<String> = emptyList(), val photoAcc: List<String> = emptyList(),
     )
 
+    @kotlinx.serialization.Serializable
     data class Version(val bg: Bg = Bg(), val tint: Boolean = false, val ov: Map<String, String> = emptyMap())
 
     /** lib SHAPE0: corner radius (dp), label weight, label size (%), border width (dp). */
+    @kotlinx.serialization.Serializable
     data class Shape(val radius: Double = 10.0, val weight: Int = 400, val size: Int = 100, val line: Double = 1.5)
 
     private fun dimc(c: String, d: Double) = if (d != 0.0) mix(c, "#000000", d) else c
@@ -248,6 +252,30 @@ object ThemeModel {
             "keyShadow" to line(x["keyLine"]), "fnShadow" to line(x["fnLine"]), "actShadow" to line(x["actLine"]), "linkFg" to x.getValue("act"),
         )
     }
+
+    /**
+     * A theme made in the editor (lib: theme()): a bright version, a dark one or both ([versions] "light", "dark",
+     * "both"), the shape, sound and credits shared. Stored as its own theme id: "te:" + JSON, as gradients are.
+     */
+    @kotlinx.serialization.Serializable
+    data class Theme(
+        val name: String, val versions: String = "light", val light: Version? = null, val dark: Version? = null,
+        val shape: Shape = Shape(), val sound: String? = null, val author: String = "", val desc: String = "",
+        val who: String = "", val link: String = "", val licence: String = "",
+    ) {
+        /** The version for now: the dark one in dark mode when there is one, else the one there is. */
+        fun version(darkMode: Boolean): Version = (if (darkMode) dark ?: light else light ?: dark) ?: Version()
+    }
+
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; encodeDefaults = false }
+    const val PREFIX = "te:"
+
+    fun isSpec(id: String) = id.startsWith(PREFIX)
+    fun encode(t: Theme): String = PREFIX + json.encodeToString(Theme.serializer(), t)
+    fun decode(id: String): Theme? = if (!isSpec(id)) null else runCatching { json.decodeFromString(Theme.serializer(), id.removePrefix(PREFIX)) }.getOrNull()
+
+    /** The keyboard tokens of an editor theme for the mode (a photo background is drawn by the photo layer). */
+    fun tokensOf(t: Theme, darkMode: Boolean): Map<String, String> { val v = t.version(darkMode); return toRoles(v, t.shape, bgCss(v.bg)) }
 
     private fun num(d: Double) = if (d == d.toLong().toDouble()) d.toLong().toString() else d.toString()
 
