@@ -1047,6 +1047,11 @@ object TypingEngine {
         if (rejections.isBlocked(previous.text, previousCommitted)) return null
         return lock.read {
             val d = engine.retroDecoder
+            // the look back weighs words with the first language's pairs: around a word only the second language knows
+            // it would turn that word into the first's, so it stays out (until it has both languages' context)
+            val sec = secondary
+            fun secondOnly(w: String?) = sec != null && w != null && !engine.lexicon.contains(w) && sec.lexicon.contains(w)
+            if (secondOnly(previousCommitted) || secondOnly(previous.text) || secondOnly(currentCandidates?.firstOrNull()?.word)) return@read null
             // a typed word the lexicon knows isn't turned into itself plus a letter ("the" -> "they"):
             // the decoder reads a skipped last key as a typo fix for autocorrect's missing-last-letter fix
             val typedIsWord = engine.lexicon.contains(previous.text)
@@ -1054,7 +1059,7 @@ object TypingEngine {
             val prevCandidates = (previousCandidates?.filter { !it.isCompletion && !extendsTyped(it.word) }?.take(4) ?: d.decode(
                 prevTaps, personalOffsets.apply(previous.keys), previous.params!!, 4, includeCompletions = false,
                 previous = engine.contextId(beforeContext), typed = previous.text,
-            )).filter { it.words == 1 && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word, previous.keys.keys) }
+            )).filter { it.words == 1 && !secondOnly(it.word) && !extendsTyped(it.word) && !isBlocked(it.word) && !isNotSuggestible(it.word) && keepsPopupLetters(previous.text, it.word, previous.keys.keys) }
                 .let { respectingContactNames(previous.text, it) }
             val curReadings = currentCandidates?.filter { !it.isCompletion && it.words == 1 }
             val pairs = if (neuralPairs != null && currentCandidates != null) retroPairs(prevCandidates, currentCandidates) else emptyList()

@@ -33,6 +33,9 @@ class SecondLanguageTest : FunSpec({
             finished("cuchara") shouldBe "cuchara"
             finished("desayubo") shouldBe "desayuno"
             finished("the") shouldBe "the" // the first language still types
+            // the look back leaves a word of the second language alone
+            val prev = typed("perro"); val cur = typed("is")
+            TypingEngine.retrocorrection(prev, "perro", null, cur, previousCandidates = TypingEngine.candidates(prev, null), currentCandidates = TypingEngine.candidates(cur, "perro")) shouldBe null
             TypingEngine.unloadSecondary()
             TypingEngine.hasSecondary shouldBe false
         } finally {
