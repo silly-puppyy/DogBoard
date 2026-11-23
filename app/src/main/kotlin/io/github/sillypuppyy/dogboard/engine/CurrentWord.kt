@@ -30,9 +30,25 @@ class CurrentWord {
     var params: GaussianTouch.Params? = null
         private set
 
-    val text: String get() = letters.toString()
+    /**
+     * A language whose marks are typed as keys (Vietnamese Telex): what the keys draw ([TelexComposer]), and the keys of
+     * a drawn word (seeding from the text). Null: the letters are the text. Set when a word starts.
+     */
+    var composer: ((String) -> String)? = null
+    var decomposer: ((String) -> String)? = null
 
-    /** The letters the decoder sees: [text] without the apostrophes that had no tap. */
+    /** What the field shows: the letters, or what [composer] draws of them, cased as the keys were. */
+    val text: String get() = composer?.let { c ->
+        val keys = letters.toString()
+        val drawn = c(keys.lowercase())
+        when {
+            keys.length > 1 && keys.all { !it.isLetter() || it.isUpperCase() } -> drawn.uppercase()
+            keys.firstOrNull()?.isUpperCase() == true -> drawn.replaceFirstChar { it.uppercaseChar() }
+            else -> drawn
+        }
+    } ?: letters.toString()
+
+    /** The letters the decoder sees (the keys): the letters without the apostrophes that had no tap. */
     val decoderText: String get() = buildString { for (i in letters.indices) if (!tapless[i]) append(letters[i]) }
 
     /** How many apostrophes were typed without a tap (from the symbol keys). */
@@ -94,7 +110,10 @@ class CurrentWord {
      */
     fun seedFrom(textBefore: CharSequence, keys: Map<Char, KeyTarget>, params: GaussianTouch.Params?) {
         clear()
-        for (c in trailingWord(textBefore)) addLetter(c, null, keys, params)
+        val word = trailingWord(textBefore)
+        // a drawn word ("việt") is tracked as its keys ("vieetj"), each on its key's centre
+        val typed = decomposer?.let { d -> d(word).let { k -> if (word.firstOrNull()?.isUpperCase() == true) k.replaceFirstChar { it.uppercaseChar() } else k } } ?: word
+        for (c in typed) addLetter(c, null, keys, params)
     }
 
     fun snapshot(): CurrentWord = CurrentWord().also {
@@ -106,6 +125,8 @@ class CurrentWord {
         it.decodable = decodable
         it.keys = keys
         it.params = params
+        it.composer = composer
+        it.decomposer = decomposer
     }
 }
 

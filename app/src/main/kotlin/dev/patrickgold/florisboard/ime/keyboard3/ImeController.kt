@@ -674,9 +674,19 @@ class ImeController(
                 scope.launch { TypingEngine.emojiUsed(text, app) }
             }
             val wordChar = text.singleOrNull()?.takeIf { isWordChar(it) }
+            // DogBoard: Vietnamese Telex draws the word its keys make as they are typed ("viee" shows viê, the tone key
+            // its mark): the field gets the redrawn word instead of the key's letter when they differ
+            var drawn: Pair<String, String>? = null
             when {
                 wordChar != null -> {
                     val tap = pendingTap
+                    if (currentWord.isEmpty) {
+                        // the loaded pack's rules (a downloaded pack's are not among the built-in ones languageRules() reads)
+                        val rules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
+                        val telex = rules.typedMarks
+                        currentWord.composer = if (telex) { k -> io.github.sillypuppyy.dogboard.engine.TelexComposer.compose(k) } else null
+                        currentWord.decomposer = if (telex) rules.typedSpellings::spelled else null
+                    }
                     if (currentWord.isEmpty && !state.content.selection.isNotCollapsed()) {
                         // typing on at the end of an existing word continues that word
                         currentWord.seedFrom(state.content.surroundingText.textBefore, tap?.keys ?: emptyMap(), tap?.params)
@@ -698,7 +708,10 @@ class ImeController(
                         }
                         InputShiftState.UNSHIFTED -> io.github.sillypuppyy.dogboard.engine.CaseAdapt.Context.NONE
                     }
+                    val shownBefore = currentWord.text
                     currentWord.addLetter(wordChar, tap?.tap, tap?.keys ?: emptyMap(), tap?.params, shiftFlag, caseContext)
+                    val shown = currentWord.text
+                    if (currentWord.composer != null && shown != shownBefore + wordChar) drawn = shownBefore to shown
                     warmPrior(currentWord.text)
                     lastCorrection = null
                 }
@@ -726,7 +739,10 @@ class ImeController(
                     lastSpaceUptime = now
                 }
             } else {
-                super.emitText(value)
+                val d = drawn
+                // only what changed is replaced ("viee" -> "viê": the e, not the whole word)
+                val same = d?.let { (a, b) -> a.commonPrefixWith(b).length } ?: 0
+                if (d == null || !replaceBeforeCursor(d.first.substring(same), d.second.substring(same))) super.emitText(value)
                 lastSpaceUptime = null
             }
             expectedContentQueue.push(state.content)
