@@ -1119,6 +1119,12 @@ class ImeController(
                 word.decomposer = io.github.sillypuppyy.dogboard.engine.HangulComposer::decompose
                 return word
             }
+            // Hindi: a vowel key after a consonant writes its sign (क + आ -> का)
+            if (language.substringBefore('-') == "hi") {
+                word.composer = io.github.sillypuppyy.dogboard.engine.DevanagariComposer::compose
+                word.decomposer = io.github.sillypuppyy.dogboard.engine.DevanagariComposer::decompose
+                return word
+            }
             val rules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
             val telex = rules.typedMarks
             word.composer = if (telex) { k -> io.github.sillypuppyy.dogboard.engine.TelexComposer.compose(k) } else null

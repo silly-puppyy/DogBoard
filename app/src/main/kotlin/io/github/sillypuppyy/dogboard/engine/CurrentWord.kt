@@ -130,8 +130,12 @@ class CurrentWord {
     }
 }
 
-/** True for characters that belong to a word: letters and apostrophes. */
-fun isWordChar(c: Char): Boolean = c.isLetter() || c == '\'' || c == '’'
+/**
+ * True for characters that belong to a word: letters, apostrophes, and combining marks (Devanagari vowel signs and
+ * virama, Arabic harakat, a decomposed accent): a mark split its word in two.
+ */
+fun isWordChar(c: Char): Boolean = c.isLetter() || c == '\'' || c == '’' ||
+    Character.getType(c).let { it == Character.NON_SPACING_MARK.toInt() || it == Character.COMBINING_SPACING_MARK.toInt() }
 
 /** The word chars at the end of [textBefore], at most [maxLength] of them ("" if it ends otherwise). */
 fun trailingWord(textBefore: CharSequence, maxLength: Int = 48): String {

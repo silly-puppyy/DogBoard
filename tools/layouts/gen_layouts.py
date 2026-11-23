@@ -148,6 +148,17 @@ def gboard_layout(id: str, locale: str, name: str, layout: str, indicator: str, 
     return Layout(id, locale, name, layout, indicator, [r for r in rows if r])
 
 
+def hindi_compact() -> Layout:
+    """Gboard's hindi_compact: every key of its rows (the virama ् and anusvara ं, the comma and danda keys too) and
+    its long-press lists (comma-separated in the extracted data, digits and conjuncts like त्र included)."""
+    lays = json.loads((GBOARD_DATA / "layouts.json").read_text(encoding="utf-8"))
+    data = lays["FqU"]
+    rows = [[k for k in r if isinstance(k, str) and len(k) == 1] for r in data["rows"] if r]
+    accents = {k: " ".join(x for x in v.split(",") if x) for k, v in data.get("longpress", {}).items()}
+    return Layout("compact-hi", "hi", "हिन्दी (कॉम्पैक्ट)", "कॉम्पैक्ट", "HI", [r for r in rows if r], accents=accents,
+                  label="Compact")
+
+
 def no_capitals(lay: Layout) -> Layout:
     """Shift types the same letters: Georgian writes no sentence capitals (Mtavruli, what str.upper gives, is an
     all-caps style iOS offers only on long-press), so the shift layer must not turn ა into Ა."""
@@ -183,6 +194,10 @@ LAYOUTS = [
                    uppers={**{c: c for c in "ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔㅁㄴㅇㄹㅎㅗㅓㅏㅣㅋㅌㅊㅍㅠㅜㅡ"},
                            "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ"}),
             label="두벌식"),
+    # Hindi compact (Gboard's default Hindi layout): its rows and long-presses as extracted (aspirates, vowel signs,
+    # digits on long-press); a vowel key after a consonant types its sign (DevanagariComposer: Gboard's conditional
+    # mappings, not in the extracted data); no capitals
+    no_capitals(hindi_compact()),
 ]
 
 SYMBOL_1 = [
