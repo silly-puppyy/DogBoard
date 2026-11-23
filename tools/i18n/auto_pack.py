@@ -196,8 +196,11 @@ class Pack:
               f'Leipzig {self.cfg["name"]} corpora (CC BY 4.0)'
         # a Hunspell dictionary (wooorm/dictionaries layout: <dir>/index.dic + .aff) adds every inflection it accepts: the
         # hand-built French list (519k words) beat a corpus-only one (201k: more wrong corrections, rare forms missing)
-        if self.cfg.get('hunspell'):
-            hdir, licence = self.cfg['hunspell']
+        # HUNSPELL=<dir> tries one without it being in the config. Not a general win: German and Polish measured worse with
+        # theirs (wrong 6.1 -> 8.6 / 6.7 -> 7.0: rare forms catch typos, 2026-11-23); French better: per language only
+        hun = self.cfg.get('hunspell') or ((os.environ['HUNSPELL'], 'licence not checked') if os.environ.get('HUNSPELL') else None)
+        if hun:
+            hdir, licence = hun
             args += ['--hunspell', f'{DATA}/hunspell/{hdir}/index']
             src = f'Hunspell {hdir} ({licence}), ' + src
         # elided forms as words (French l', d', qu'...): from the training text's counts
