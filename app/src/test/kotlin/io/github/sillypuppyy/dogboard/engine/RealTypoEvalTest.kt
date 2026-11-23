@@ -106,6 +106,8 @@ class RealTypoEvalTest : FunSpec({
         autocorrect.allCapsShield = System.getenv("DOGBOARD_ALLCAPS_SHIELD") != "0"
         // DOGBOARD_TWIN_LEAD=<ratio>: Autocorrect.accentTwinLead (1 = no margin for accent twins of typed words)
         System.getenv("DOGBOARD_TWIN_LEAD")?.toDoubleOrNull()?.let { autocorrect.accentTwinLead = it }
+        // DOGBOARD_KEEP_TWINS=1: Autocorrect.keepAccentTwins (a typed word is never changed into its accent twin)
+        if (System.getenv("DOGBOARD_KEEP_TWINS") == "1") autocorrect.keepAccentTwins = true
         // DOGBOARD_COMPOUNDS=1: Autocorrect.keepCompounds (a compounding language: Finnish, German)
         autocorrect.keepCompounds = System.getenv("DOGBOARD_COMPOUNDS") == "1"
         System.getenv("DOGBOARD_MIN_TARGET")?.let { autocorrect.minTargetLogProb = it.toDouble() }

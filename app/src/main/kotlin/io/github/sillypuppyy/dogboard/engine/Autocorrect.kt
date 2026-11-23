@@ -104,6 +104,11 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
     var otherLexicons: List<Lexicon> = emptyList()
 
     /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
+    /** [typed] is a spelling of its own in a word list (not only a folding of another spelling onto its entry). */
+    private fun isListedForm(typed: String): Boolean = (listOf(lexicon) + otherLexicons).any { l ->
+        l.find(typed).let { n -> n != Lexicon.NONE && l.isWord(n) && l.forms(n).any { it.first.equals(typed, ignoreCase = true) } }
+    }
+
     private fun isWordAsTyped(typed: String): Boolean = isWordAsTypedIn(lexicon, typed) || otherLexicons.any { isWordAsTypedIn(it, typed) }
 
     private fun isWordAsTypedIn(lexicon: Lexicon, typed: String): Boolean {
@@ -251,7 +256,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
                 return keptAsTyped(typed, asTyped, case)
         }
         // an accent twin of a typed word needs the same lead as any other change of a typed word (see accentTwinLead)
-        if (keepAccentTwins && top.words == 1 && t != typed && isAccentTwin(t, typed) && isWordAsTyped(typed)) return null
+        // only a bare spelling the list has as a form of its own ("ngay"): one that merely folds onto a marked word's
+        // entry ("επειτα" onto έπειτα) is still restored
+        if (keepAccentTwins && top.words == 1 && t != typed && isAccentTwin(t, typed) && isListedForm(typed)) return null
         if (top.words == 1 && t != typed && isAccentTwin(t, typed) && isWordAsTyped(typed)) {
             val asTyped = ranked.firstOrNull { it.words == 1 && it.word.equals(typed, ignoreCase = true) }
             if (asTyped != null && top.score - asTyped.score < ln(accentTwinLead ?: level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)
