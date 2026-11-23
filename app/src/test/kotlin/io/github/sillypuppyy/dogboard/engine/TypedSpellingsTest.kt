@@ -52,6 +52,12 @@ class TypedSpellingsTest : FunSpec({
         lex.firstForm(lex.find("ngayf")) shouldBe "ngày"
         lex.firstForm(lex.find("ddi")) shouldBe "đi"
         lex.contains("viet") shouldBe false
+        // a word written with a marked word's keys can't be typed in Telex: the marked word keeps the path
+        val withForeign = Lexicon.parse("#dogboard-lexicon 1\nngày\t900\nngayf\t50\n".reader().buffered(), TypingEngine.pathOf(rules))
+        withForeign.formsOf("ngayf") shouldBe listOf("ngày")
+        // nor learned later as a casing (a learned "ddi" kept every later "ddi" unconverted)
+        lex.addCasing("ddi") shouldBe false
+        lex.formsOf("ddi") shouldBe listOf("đi")
     }
 
     test("no rules: nothing set aside") {

@@ -277,6 +277,9 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
         val node = find(form).takeIf { it != NONE && isWord(it) } ?: return false
         val current = forms(node)
         if (current.any { it.first == form }) return false
+        // along typed spellings, the keys of a marked word are not a casing of it ("ddi" for đi, learned while the
+        // keyboard was briefly English, kept every later "ddi" unconverted, 2026-11-23)
+        pathOf?.let { p -> if (p(form) == form.lowercase() && current.any { (w, _) -> p(w) != w.lowercase() }) return false }
         version++
         casings[node] = listOf(form to current.maxOf { it.second }.toFloat()) + current.map { (w, l) -> w to (l - ln(2.0)).toFloat() }
         hasCasings.set(node)
@@ -628,6 +631,12 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
                 var node = ROOT
                 for (lc in lexicon.path(word)) node = lexicon.child(node, lc).takeIf { it != NONE } ?: lexicon.newNode(node, lc)
                 byNode.getOrPut(node) { ArrayList(1) }.add(word to ln(count / total))
+            }
+            // along typed spellings (Telex) the keys of a marked word spell it, so a word written with those very keys
+            // ("sex" for sẽ, "teen" for tên: foreign words in the text) can't be typed: it would only keep the keys
+            // unconverted (typed "sex" stayed "sex", 2026-11-23)
+            if (pathOf != null) for (forms in byNode.values) {
+                if (forms.size > 1 && forms.any { (w, _) -> pathOf(w) != w.lowercase() }) forms.removeAll { (w, _) -> pathOf(w) == w.lowercase() }
             }
             // word ids follow the file (frequency) order of each node's first casing
             for ((node, forms) in byNode) {

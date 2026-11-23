@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard
 
+import kotlinx.coroutines.flow.first
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -302,7 +303,13 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             io.github.sillypuppyy.dogboard.perf.Perf.measure("lexicon load") {
-                io.github.sillypuppyy.dogboard.ime.EngineLoader.prefer(this@FlorisImeService, subtypeManager.activeSubtype.primaryLocale.languageTag())
+                // the saved language, not the default the subtype manager shows until its list is read: the first load
+                // was English, then switched, and the first words typed in another language went through English
+                // (emulator 2026-11-23: Telex "tooi ddi" unconverted, then "language: en-US -> vi")
+                val saved = kotlinx.coroutines.withTimeoutOrNull(1500) { subtypeManager.subtypesFlow.first { it.isNotEmpty() } }
+                val savedId = prefs.localization.activeSubtypeId.get()
+                val first = saved?.let { list -> list.firstOrNull { it.id == savedId } ?: list.first() } ?: subtypeManager.activeSubtype
+                io.github.sillypuppyy.dogboard.ime.EngineLoader.prefer(this@FlorisImeService, first.primaryLocale.languageTag())
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService)
             }
             // DogBoard: the names of the apps on the phone are words too (iOS does this)
