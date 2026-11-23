@@ -92,12 +92,19 @@ fun SelectSubtypePanel(modifier: Modifier = Modifier) {
                             currentlySelected == it.id -> Icons.Default.RadioButtonChecked
                             else -> Icons.Default.RadioButtonUnchecked
                         },
-                        // DogBoard: a language added with several layouts names its layout ("Portuguese (QWERTY (ç))")
-                        text = it.primaryLocale.displayName() + (it.layoutId?.takeIf { _ -> subtypes.count { s -> s.primaryLocale == it.primaryLocale } > 1 }
+                        // DogBoard: named as on the Languages page: a combined keyboard by its languages ("Spanish and
+                        // English"); a language added with several layouts names its layout ("Portuguese (QWERTY (ç))")
+                        text = kbName(it) + (it.layoutId?.takeIf { _ -> subtypes.count { s -> kbName(s) == kbName(it) } > 1 }
                             ?.let { id -> io.github.sillypuppyy.dogboard.ime.GeneratedLayouts.all.firstOrNull { l -> l.id == id }?.label }?.let { " ($it)" } ?: ""),
                     )
                 }
             }
         }
     }
+}
+
+/** A keyboard's name by its languages: "Spanish", "Spanish and English (United States)", "A, B and C". */
+private fun kbName(s: Subtype): String {
+    val names = (listOf(s.primaryLocale) + s.secondaryLocales).map { it.displayName() }
+    return if (names.size <= 1) names.joinToString() else names.dropLast(1).joinToString(", ") + " and " + names.last()
 }
