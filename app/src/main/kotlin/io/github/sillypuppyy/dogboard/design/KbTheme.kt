@@ -68,40 +68,26 @@ object KbThemes {
     val moreIds: List<String> get() = listOf("gloss", "keycap", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach") + PRIDE.map { it.first }
 
     /**
-     * The Pride pack ("a pack of pride flag gradient themes to really test the keyboard ... keys
-     * switch colour depending on what's underneath them"): each flag's stripes top to bottom, hard-edged, in the flags'
-     * published colours, blended and tilted; keys take the colour under them (keyUnder), the return key the flag's darkest
- * stripe.
+     * The Pride pack (canvas TEPride): eight flags made as the theme editor makes a gradient theme: the flag's colours
+     * as a smooth OKLab gradient at 150 deg, so the stripes cross every row; tinted to match (keys the least white that
+     * keeps dark labels readable on every stripe); the return key one flag colour. (id, name, colours, return key.)
      */
-    val PRIDE: List<Triple<String, String, List<String>>> = listOf(
-        Triple("pride", "Pride", listOf("#e40303", "#ff8c00", "#ffed00", "#008026", "#24408e", "#732982")),
-        Triple("trans", "Trans", listOf("#5bcefa", "#f5a9b8", "#ffffff", "#f5a9b8", "#5bcefa")),
-        Triple("bi", "Bi", listOf("#d60270", "#d60270", "#9b4f96", "#0038a8", "#0038a8")),
-        Triple("pan", "Pan", listOf("#ff218c", "#ffd800", "#21b1ff")),
-        Triple("lesbian", "Lesbian", listOf("#d52d00", "#ef7627", "#ff9a56", "#ffffff", "#d162a4", "#b55690", "#a30262")),
-        Triple("nonbinary", "Nonbinary", listOf("#fcf434", "#ffffff", "#9c59d1", "#2c2c2c")),
-        Triple("ace", "Asexual", listOf("#000000", "#a3a3a3", "#ffffff", "#800080")),
-        Triple("aro", "Aromantic", listOf("#3da542", "#a7d379", "#ffffff", "#a9a9a9", "#000000")),
-        Triple("genderfluid", "Genderfluid", listOf("#ff76a4", "#ffffff", "#c011d7", "#000000", "#2f3cbe")),
+    val PRIDE: List<Triple<String, String, Pair<List<String>, String>>> = listOf(
+        Triple("pride", "Rainbow", listOf("#e40303", "#ff8c00", "#ffed00", "#008026", "#24408e", "#732982") to "#732982"),
+        Triple("trans", "Trans", listOf("#5bcefa", "#f5a9b8", "#ffffff", "#f5a9b8", "#5bcefa") to "#f5a9b8"),
+        Triple("bi", "Bi", listOf("#d60270", "#9b4f96", "#0038a8") to "#d60270"),
+        Triple("pan", "Pan", listOf("#ff218c", "#ffd800", "#21b1ff") to "#21b1ff"),
+        Triple("lesbian", "Lesbian", listOf("#d52d00", "#ff9a56", "#ffffff", "#d362a4", "#a30262") to "#d362a4"),
+        Triple("nonbinary", "Nonbinary", listOf("#fcf434", "#ffffff", "#9c59d1", "#2c2c2c") to "#9c59d1"),
+        Triple("aroace", "Aroace", listOf("#e28c00", "#eccd00", "#ffffff", "#62aedc", "#203856") to "#e28c00"),
+        Triple("mlm", "MLM", listOf("#078d70", "#26ceaa", "#98e8c1", "#ffffff", "#7bade2", "#5049cc", "#3d1a78") to "#26ceaa"),
     )
 
-    private fun prideTheme(stripes: List<String>): Map<String, Map<String, String>> {
-        val n = stripes.size
-        // smooth and tilted: each stripe's colour at the middle of its band, blending into the next (hard edges are a
-        // theme editor option)
-        fun pct(i: Int) = "%.2f".format(java.util.Locale.ROOT, (i + 0.5) * 100.0 / n)
-        val bg = "linear-gradient(160deg, " + stripes.indices.joinToString(", ") { i -> "${stripes[i]} ${pct(i)}%" } + ")"
-        val act = stripes.minBy { ThemeModel.lum(it) }
-        // the suggestion bar sits on the top colour: its words and icons in whichever reads there (black on Asexual's top)
-        val barFg = if (ThemeModel.cr(stripes.first(), "#ffffff") > ThemeModel.cr(stripes.first(), "#1a1b20")) "#ffffff" else "#1a1b20"
-        val actFg = if (ThemeModel.cr(act, "#ffffff") >= 4.5) "#ffffff" else "#1a1b20"
-        return mapOf("light" to m(
-            "bg" to bg, "keyUnder" to "0.55", "key" to "#ffffff", "keyFg" to "#1a1b20", "fn" to "#ffffff", "fnFg" to "#1a1b20",
-            "act" to act, "actFg" to actFg, "chip" to "rgba(255,255,255,0.85)", "chipFg" to "#1a1b20", "pop" to "#ffffff", "popFg" to "#1a1b20",
-            "sel" to act, "selFg" to actFg, "lock" to act, "lockFg" to actFg, "hint" to "#3a3b40", "barFg" to barFg, "barMuted" to barFg,
-            "div" to "rgba(26,27,32,0.25)", "tile" to "#ffffff", "tileFg" to "#1a1b20", "pressKey" to "rgba(255,255,255,0.6)", "pressFn" to "rgba(255,255,255,0.6)",
-            "radius" to "8",
-        ))
+    /** A flag as the editor would make it (ThemeEditor:707 flag()). */
+    private fun prideTheme(cols: List<String>, act: String): Map<String, Map<String, String>> {
+        val bg = ThemeModel.Bg(type = "gradient", stops = cols.mapIndexed { i, c -> ThemeModel.Stop(c, Math.round(i * 100.0 / (cols.size - 1)).toInt()) }, angle = 150)
+        val v = ThemeModel.Version(bg, tint = true, ov = mapOf("act" to act))
+        return mapOf("light" to m(*ThemeModel.toRoles(v, ThemeModel.Shape(), ThemeModel.bgCss(bg)).toList().toTypedArray()))
     }
 
     // Kb:364
@@ -113,7 +99,7 @@ object KbThemes {
     private fun m(vararg p: Pair<String, String>) = mapOf(*p)
 
     // Kb:365-394, verbatim
-    private val T: Map<String, Map<String, Map<String, String>>> = PRIDE.associate { (id, _, stripes) -> id to prideTheme(stripes) } + mapOf(
+    private val T: Map<String, Map<String, Map<String, String>>> = PRIDE.associate { (id, _, f) -> id to prideTheme(f.first, f.second) } + mapOf(
         "dogboard" to mapOf(
             "light" to m("bg" to "#ededf4", "key" to "#ffffff", "keyFg" to "#1a1b20", "fn" to "#dbe2f9", "fnFg" to "#3f4759", "act" to "#435e91", "actFg" to "#ffffff", "chip" to "#d8e2ff", "chipFg" to "#2a4678", "pop" to "#ffffff", "popFg" to "#1a1b20", "sel" to "#435e91", "selFg" to "#ffffff", "hint" to "#6b6e76", "div" to "#c4c6d0", "barFg" to "#1a1b20", "barMuted" to "#44474f", "tile" to "#ffffff", "tileFg" to "#1a1b20", "pressKey" to "#e2e2e9", "pressFn" to "#c4cbe2", "lock" to "#435e91", "lockFg" to "#ffffff"),
             "dark" to m("bg" to "#1a1b20", "key" to "#33353a", "keyFg" to "#e2e2e9", "fn" to "#3f4759", "fnFg" to "#dbe2f9", "act" to "#adc7ff", "actFg" to "#0f2f60", "chip" to "#2a4678", "chipFg" to "#d8e2ff", "pop" to "#45474c", "popFg" to "#e2e2e9", "sel" to "#adc7ff", "selFg" to "#0f2f60", "hint" to "#b4b7c0", "div" to "#44474f", "barFg" to "#e2e2e9", "barMuted" to "#c4c6d0", "tile" to "#282a2f", "tileFg" to "#e2e2e9", "pressKey" to "#4a4c52", "pressFn" to "#545d72", "lock" to "#adc7ff", "lockFg" to "#0f2f60"),
