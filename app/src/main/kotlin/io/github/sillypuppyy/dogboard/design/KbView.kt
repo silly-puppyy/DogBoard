@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.translate
@@ -186,6 +187,7 @@ private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
     val capId = "cap:$ri:${k.id}"
     val expected = Rect(k.x + r.mh, capTop, k.x + k.w - r.mh, capTop + rowH - 2 * r.mv)
     val inArea = Rect(k.x + r.mh, rowTop + r.mv, k.x + k.w - r.mh, rowTop + rowH - r.mv)
+    k.face?.let { f -> SculptedCap(r, t, k, f, inArea, shape, capId, expected); return }
     // its own layer: a cap's drawing is recorded once and reused when something else in the keyboard changes (the
     // phone's slow frames redrew all 32 caps, text included, on every key press: 2026-11-21)
     Box(Modifier.placeAt(inArea).graphicsLayer()) {
@@ -223,6 +225,50 @@ private fun KbKeyCap(r: CapFrame, t: KbTokens, k: KbKey, ri: Int) {
                     style = designTextStyle(t.hintFs.sp, t.hintFw, k.hintFg),
                     overflow = TextOverflow.Visible,
                 )
+            }
+        } }
+    }
+}
+
+/**
+ * Canvas Kb mech: a sculpted cap. The cap's sides fill the key (its skirt gradient and contact shadow); four slopes run
+ * from the face's corners to the cap's (light from the back: back slope brightest, front in shade); the face sits on
+ * them, dished (its own gradient and inset shading), with the legends printed on it. A press sinks the cap.
+ */
+@Composable
+private fun SculptedCap(r: CapFrame, t: KbTokens, k: KbKey, f: KeyFace, inArea: Rect, shape: androidx.compose.ui.graphics.Shape, capId: String, expected: Rect) {
+    val faceShape = RoundedCornerShape(f.rad.dp)
+    Box(Modifier.placeAt(inArea).graphicsLayer { translationY = f.dy.dp.toPx() }) {
+        Box(
+            Modifier.fillMaxSize().alpha(r.capOp).cssShadow(k.shadow, shape)
+                .then(androidx.compose.ui.Modifier.clip(shape))
+                .then(k.bgGradient?.let { Modifier.background(it.brush()) } ?: Modifier.background(k.bg))
+                .drawBehind {
+                    val w = size.width; val h = size.height
+                    val L = f.l.dp.toPx(); val R = w - f.r.dp.toPx(); val T = f.t.dp.toPx(); val B = h - f.b.dp.toPx()
+                    fun poly(vararg p: Float) = androidx.compose.ui.graphics.Path().apply { moveTo(p[0], p[1]); var i = 2; while (i < p.size) { lineTo(p[i], p[i + 1]); i += 2 }; close() }
+                    drawPath(poly(0f, 0f, w, 0f, R, T, L, T), f.bevel[0])
+                    drawPath(poly(w, 0f, w, h, R, B, R, T), f.bevel[1])
+                    drawPath(poly(0f, 0f, L, T, L, B, 0f, h), f.bevel[3])
+                    drawPath(poly(L, B, R, B, w, h, 0f, h), androidx.compose.ui.graphics.Brush.verticalGradient(listOf(f.bevel[2], f.bevel[4]), startY = B, endY = h))
+                }
+                .lint(capId, DesignLint.Kind.CAP, expected),
+        ) { LintParent(capId) {
+            Box(
+                Modifier.padding(start = f.l.dp, end = f.r.dp, top = f.t.dp, bottom = f.b.dp).fillMaxSize()
+                    .cssShadow(f.sh.filter { !it.inset }, faceShape).clip(faceShape).background(f.bg.brush())
+                    .then(if (f.sheen > 0f) Modifier.background(Color.White.copy(alpha = f.sheen)) else Modifier)
+                    .cssShadow(f.sh.filter { it.inset }, faceShape).alpha(r.labelOp),
+            ) {
+                val ink = Modifier.alpha(1f)
+                if (f.tl.isNotEmpty()) DText(f.tl, ink.align(Alignment.TopStart).padding(start = 5.dp, top = 4.dp),
+                    style = designTextStyle(f.tlFs.sp, 500, k.fg).copy(shadow = androidx.compose.ui.graphics.Shadow(f.ink, blurRadius = 1f)), overflow = TextOverflow.Visible)
+                if (f.word.isNotEmpty()) DText(f.word, ink.align(Alignment.BottomStart).padding(start = 5.dp, bottom = 4.dp),
+                    style = designTextStyle(f.wordFs.sp, 500, k.fg), maxLines = 1, overflow = TextOverflow.Visible)
+                if (f.icon.isNotEmpty()) Symbol(f.icon, f.icFs.sp, k.fg, ink.align(Alignment.BottomStart).padding(start = 4.dp, bottom = 3.dp))
+                if (f.led != null) Box(Modifier.align(Alignment.TopEnd).padding(top = 5.dp, end = 5.dp).size(3.dp).cssShadow(f.ledGlow, CircleShape).background(f.led, CircleShape))
+                if (k.hint.isNotEmpty()) DText(k.hint, Modifier.align(Alignment.BottomEnd).padding(end = 5.dp, bottom = 4.dp),
+                    style = designTextStyle(10.sp, 500, k.hintFg), overflow = TextOverflow.Visible)
             }
         } }
     }

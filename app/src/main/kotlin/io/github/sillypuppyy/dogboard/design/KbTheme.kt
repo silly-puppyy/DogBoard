@@ -52,6 +52,24 @@ data class KbTokens(
     val keyUnder: Float = 0f,
     /** Android's icons under the keys (hide / switch keyboard): auto (by the colour there), light or dark. */
     val navIcons: String = "auto",
+    /** Sculpted caps (the Mechanical theme): each key a top face over four slopes; null = flat keys. */
+    val face: CapFace? = null,
+    /** The space between caps (dp), where a theme sets its own (Mechanical: caps 3 px apart, as on a real board). */
+    val gapH: Float? = null,
+    val gapV: Float? = null,
+)
+
+/**
+ * Canvas Kb "mech" face: the top face's fills (a dish lit from the back) for letter, function and accent caps, its
+ * inset shading, where it sits on the cap (top / side / bottom, dp), how far a press sinks it, the slopes' colours
+ * (back, right, front top, left, front bottom), the legend ink and the shift light's colours.
+ */
+data class CapFace(
+    val key: CssGradient, val fn: CssGradient, val act: CssGradient,
+    val sh: List<CssShadow>, val pressFace: List<CssShadow>, val pressShadow: List<CssShadow>,
+    val top: Float, val side: Float, val bottom: Float, val travel: Float, val rad: Float,
+    val bevel: Map<String, List<Color>>, val legend: Color,
+    val ledOff: Color, val ledOn: Color, val ledOnGlow: List<CssShadow>, val ledLock: Color, val ledLockGlow: List<CssShadow>,
 )
 
 data class KbSpots(val seed: Int, val bg: Color, val fg: Color, val hint: Color, val press: Color)
@@ -65,7 +83,7 @@ object KbThemes {
      * colours without its spots yet, Labrador / Chocolate Lab; Kb:522-530 the gradient Dusk, Lagoon and Peach), drawable in the gallery; not in the Look
      * list until the user decides the list (canvas 17 vs the designer's answer of nine).
      */
-    val moreIds: List<String> get() = listOf("gloss", "keycap", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach") + PRIDE.map { it.first }
+    val moreIds: List<String> get() = listOf("gloss", "mech", "husky", "greyhound", "dalmatian", "lab", "dusk", "lagoon", "peach") + PRIDE.map { it.first }
 
     /**
      * The Pride pack (canvas TEPride): eight flags made as the theme editor makes a gradient theme: the flag's colours
@@ -205,13 +223,15 @@ object KbThemes {
         "bold" to mapOf(
             "dark" to m("bg" to "#000000", "key" to "#1f1f1f", "keyFg" to "#ffffff", "fn" to "#ffe14d", "fnFg" to "#000000", "act" to "#ffe14d", "actFg" to "#000000", "chip" to "#ffe14d", "chipFg" to "#000000", "pop" to "#ffffff", "popFg" to "#000000", "sel" to "#ffe14d", "selFg" to "#000000", "hint" to "#ffe14d", "div" to "#7a7a7a", "barFg" to "#ffffff", "barMuted" to "#ffffff", "tile" to "#1f1f1f", "tileFg" to "#ffffff", "pressKey" to "#3d3d3d", "pressFn" to "#e0c200", "lock" to "#ffffff", "lockFg" to "#000000", "fw" to "600", "fsScale" to "1.08", "hintFs" to "12", "hintFw" to "700", "keyShadow" to "inset 0 0 0 1.5px #8a8a8a", "linkFg" to "#ffe14d"),
         ),
-        // Tactile: mechanical keycaps on a plate: a raised edge under each cap (a solid shadow), grey modifiers, an orange
-        // return key; offers the recorded mechanical-keyboard sound (SOUND_OF)
-        "keycap" to mapOf(
-            "light" to m("bg" to "#b9b3a6", "key" to "#f2ecdf", "keyFg" to "#2a261f", "fn" to "#8f8c85", "fnFg" to "#ffffff", "act" to "#e07a32", "actFg" to "#241307", "chip" to "#e4ddcd", "chipFg" to "#2a261f", "pop" to "#f2ecdf", "popFg" to "#2a261f", "sel" to "#e07a32", "selFg" to "#241307", "hint" to "#6d665a", "div" to "#a39c8e", "barFg" to "#2a261f", "barMuted" to "#4a453c", "tile" to "#f2ecdf", "tileFg" to "#2a261f", "pressKey" to "#ddd5c4", "pressFn" to "#7b7871", "lock" to "#e07a32", "lockFg" to "#241307", "radius" to "5", "fw" to "500",
-                "keyShadow" to "0 3px 0 #c4baa6, inset 0 1px 0 rgba(255,255,255,0.8)", "fnShadow" to "0 3px 0 #6c6963, inset 0 1px 0 rgba(255,255,255,0.25)", "actShadow" to "0 3px 0 #a8551d, inset 0 1px 0 rgba(255,255,255,0.35)"),
-            "dark" to m("bg" to "#16171a", "key" to "#383a40", "keyFg" to "#ece9e2", "fn" to "#26282c", "fnFg" to "#d6d3cc", "act" to "#e07a32", "actFg" to "#241307", "chip" to "#2e3035", "chipFg" to "#ece9e2", "pop" to "#45474e", "popFg" to "#ece9e2", "sel" to "#e07a32", "selFg" to "#241307", "hint" to "#a9a6a0", "div" to "#33353a", "barFg" to "#ece9e2", "barMuted" to "#c4c1ba", "tile" to "#2a2c31", "tileFg" to "#ece9e2", "pressKey" to "#2e3035", "pressFn" to "#1e2023", "lock" to "#e07a32", "lockFg" to "#241307", "radius" to "5", "fw" to "500",
-                "keyShadow" to "0 3px 0 #212226, inset 0 1px 0 rgba(255,255,255,0.12)", "fnShadow" to "0 3px 0 #0e0f11, inset 0 1px 0 rgba(255,255,255,0.08)", "actShadow" to "0 3px 0 #a8551d, inset 0 1px 0 rgba(255,255,255,0.35)"),
+        // Tactile, canvas Kb "mech": dark sculpted caps on a matte plate, an orange accent cap; the cap shapes are FACES
+        "mech" to mapOf(
+            "dark" to m("bg" to "linear-gradient(#18181a, #0f0f10)", "key" to "#2f2f32", "keyFg" to "#cdc9bf", "fn" to "#252528", "fnFg" to "#b5b1a8",
+                "act" to "#c65d2e", "actFg" to "#fff3ea", "chip" to "#2e2e31", "chipFg" to "#e6e2d8", "pop" to "#38383c", "popFg" to "#e6e2d8",
+                "sel" to "#c65d2e", "selFg" to "#fff3ea", "hint" to "#8a867e", "div" to "#2c2c2f", "barFg" to "#d9d5cb", "barMuted" to "#9a968d",
+                "tile" to "#2a2a2d", "tileFg" to "#d9d5cb", "pressKey" to "#2a2a2d", "pressFn" to "#202023", "lock" to "#c65d2e", "lockFg" to "#fff3ea",
+                "keyG" to "linear-gradient(#2c2c2f, #17171a)", "fnG" to "linear-gradient(#242427, #121214)", "actG" to "linear-gradient(#b4522b, #7c3415)",
+                "keyShadow" to CAP_SH, "fnShadow" to CAP_SH, "actShadow" to CAP_SH, "actOffFg" to "rgba(190,186,177,0.45)",
+                "retText" to "return", "forceWord" to "true", "radius" to "6", "fw" to "500", "gapH" to "1.5", "gapV" to "3.5"),
         ),
         "dog" to mapOf(
             "light" to m("bg" to "#fbebe0", "key" to "#ffffff", "keyFg" to "#221a14", "fn" to "#ffdcc0", "fnFg" to "#59422d", "act" to "#87521a", "actFg" to "#ffffff", "chip" to "#ffdcc0", "chipFg" to "#6a3b02", "pop" to "#ffffff", "popFg" to "#221a14", "sel" to "#87521a", "selFg" to "#ffffff", "hint" to "#7a6658", "div" to "#d5c3b6", "barFg" to "#221a14", "barMuted" to "#51443a", "tile" to "#fff8f5", "tileFg" to "#221a14", "pressKey" to "#f5e5db", "pressFn" to "#f0c8a4", "lock" to "#87521a", "lockFg" to "#ffffff", "radius" to "14", "retIcon" to "pets"),
@@ -223,10 +243,34 @@ object KbThemes {
      * One-off themes the editor can't remake (Gloss: gradient keys, glows, text shadows; Dalmatian: its spot pattern).
      * A copy is meant to be editable in every part, so these offer no Copy and edit.
      */
-    val NOT_COPYABLE = setOf("gloss", "dalmatian", "keycap")
+    val NOT_COPYABLE = setOf("gloss", "dalmatian", "mech")
 
     /** The sound a built-in theme suggests when it's picked (the person's own sound stays unless they say yes). */
-    val SOUND_OF = mapOf("keycap" to "mechkeys")
+    val SOUND_OF = mapOf("mech" to "mechkeys")
+
+    /** Kb: caps sit on the plate with a tight contact shadow at the base, no drop shadow. */
+    private const val CAP_SH = "0 0 0 0.5px rgba(0,0,0,0.9), 0 1px 1px rgba(0,0,0,0.6)"
+
+    /** Sculpted caps by theme (canvas Kb mech face). */
+    val FACES: Map<String, CapFace> by lazy {
+        mapOf("mech" to CapFace(
+            key = CssGradient.parse("linear-gradient(#29292c, #2f2f33 45%, #38383c)")!!,
+            fn = CssGradient.parse("linear-gradient(#202023, #26262a 45%, #2e2e32)")!!,
+            act = CssGradient.parse("linear-gradient(#b9562b, #c9602f 45%, #db6f3a)")!!,
+            sh = CssShadow.parse("inset 0 1.5px 2px rgba(0,0,0,0.38), inset 0 -0.5px 0 rgba(255,255,255,0.07), 0 -0.5px 0 rgba(255,255,255,0.10)"),
+            pressFace = CssShadow.parse("inset 0 1.5px 2.5px rgba(0,0,0,0.45), inset 0 -0.5px 0 rgba(255,255,255,0.05), 0 -0.5px 0 rgba(255,255,255,0.07)"),
+            pressShadow = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.9), 0 0.5px 0.5px rgba(0,0,0,0.7)"),
+            top = 3f, side = 4.5f, bottom = 7f, travel = 1.5f, rad = 4f,
+            bevel = mapOf(
+                "key" to listOf("#3d3d41", "#28282b", "#1f1f22", "#28282b", "#151517").map(::css),
+                "fn" to listOf("#343437", "#212124", "#19191c", "#212124", "#121214").map(::css),
+                "act" to listOf("#e88a5a", "#b3542b", "#9c4520", "#b3542b", "#7a3416").map(::css),
+            ),
+            legend = css("rgba(207,202,192,0.3)"),
+            ledOff = css("#3a3a3d"), ledOn = css("#f4f7ff"), ledOnGlow = CssShadow.parse("0 0 2px #ffffff, 0 0 5px rgba(220,235,255,0.7)"),
+            ledLock = css("#8ff07e"), ledLockGlow = CssShadow.parse("0 0 2px #b8ffae, 0 0 6px rgba(120,240,100,0.7)"),
+        ))
+    }
 
     /** A built-in theme's own light or dark tokens over the defaults (the theme editor's Copy and edit); null if it has none. */
     fun raw(themeId: String, dark: Boolean): Map<String, String>? = T[themeId]?.get(if (dark) "dark" else "light")?.let { DEF + it }
@@ -279,6 +323,7 @@ object KbThemes {
             glow = CssShadow.parse(t["glow"] ?: "none"), glowFg = t["glowFg"]?.let(::css),
             seg = t["seg"] == "true", segCellFg = t["segCellFg"]?.let(::css),
             spots = t["spotSeed"]?.let { KbSpots(it.toInt(), c("spotBg"), c("spotFg"), c("spotHint"), c("spotPress")) },
+            face = FACES[themeId], gapH = t["gapH"]?.toFloatOrNull(), gapV = t["gapV"]?.toFloatOrNull(),
         )
     }
 

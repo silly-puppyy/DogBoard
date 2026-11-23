@@ -178,6 +178,20 @@ data class KbKey(
     val base: String = "",
     /** Drawn as a pill (Gboard's ?123 and action keys) instead of the theme's corner radius. */
     val pill: Boolean = false,
+    /** A sculpted cap's face and legends (the Mechanical theme); null = a flat key. */
+    val face: KeyFace? = null,
+)
+
+/**
+ * Canvas Kb mech: the face's insets on the cap (dp), its fill, sheen and shading, the slopes' colours (back, right,
+ * front top, left, front bottom), how far it is sunk ([dy], pressed), and the legends printed on it: a letter top-left,
+ * a word or symbol bottom-left, the shift light top-right; the long-press character is the key's hint (bottom-right).
+ */
+data class KeyFace(
+    val l: Float, val r: Float, val t: Float, val b: Float, val rad: Float, val bg: CssGradient, val sheen: Float,
+    val sh: List<CssShadow>, val bevel: List<Color>, val dy: Float,
+    val tl: String, val tlFs: Float, val word: String, val wordFs: Float, val icon: String, val icFs: Float,
+    val led: Color?, val ledGlow: List<CssShadow>, val ink: Color,
 )
 
 data class KbRow(val keys: List<KbKey>)
@@ -483,7 +497,8 @@ object KbSpec {
         val hints = P.hints
         // Kb:569-573
         val numRow = P.numRow ?: if (P.numberRow) "on" else if (kstyle == "android") "hints" else "off"
-        val hintKind = P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
+        // sculpted caps always print the long-press character, like a second legend (canvas Kb mech)
+        val hintKind = if (t.face != null) "symbols" else P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
         val panel = P.panel
         val dev = P.dev && panel.isEmpty()
         // Kb:604-605: with Ctrl armed, letters show what Ctrl + letter does
@@ -512,8 +527,8 @@ object KbSpec {
             ))
             if (oneHanded == "right") stripL = s else stripR = s
         }
-        val mv = if (landscape) 4f else 6f
-        val mh = KEY_MH
+        val mv = t.gapV ?: if (landscape) 4f else 6f
+        val mh = t.gapH ?: KEY_MH
 
         // Kb:453-503 layouts
         val upper = shift != "off" || P.caseMode == "caps" // Kb:606
@@ -749,11 +764,58 @@ object KbSpec {
                     if (k.kind == "char" && label.length == 1 && label[0].isLetter()) fs = 27f
                     if (k.kind == "mode") { fs = 18f; fw = 500 }
                 }
+                // canvas Kb mech: the sculpted cap: its face on the slopes, legends placed as printed ones, a press sinks it
+                var face: KeyFace? = null
+                t.face?.let { F ->
+                    val down = k.id == pressed
+                    val isAct = k.kind == "ret" && RET[ret] != null && !P.actionOff
+                    val fnLike = isFnTone || k.kind == "ret" || k.kind == "fn"
+                    bgG = if (isAct) t.grad["actG"] else if (fnLike) t.grad["fnG"] else t.grad["keyG"]; ts = emptyList()
+                    if (down) shadow = F.pressShadow
+                    var word = ""; var ic = icon
+                    val tl = k.kind == "char" || k.kind == "pad" || (k.kind == "fnchar" && label.length == 1)
+                    if (k.kind == "shift") { word = "shift"; ic = "" }
+                    if (k.kind == "bksp") { word = "delete"; ic = "" }
+                    // a word has to fit the face: on a narrow cap it steps down a size, then becomes the classic symbol
+                    val faceW = w - mh * 2 - F.side * 2
+                    fun need(n: Int, f: Float) = n * f * 0.56f + 9
+                    var wordFs = 11.5f
+                    if (word.isNotEmpty()) {
+                        val n = if (k.kind == "shift") 6 else word.length
+                        if (need(n, 11.5f) > faceW) wordFs = if (need(n, 10.5f) <= faceW) 10.5f else 0f
+                        if (wordFs == 0f) { ic = if (k.kind == "bksp") "arrow_back" else "shift"; word = ""; wordFs = 10.5f }
+                    }
+                    if (k.kind == "ret" || k.kind == "mode" || (k.kind == "fnchar" && label.length > 1)) {
+                        word = if (k.kind == "ret") label.lowercase() else label
+                        if (word.isNotEmpty()) { ic = ""; wordFs = if (need(word.length, 11.5f) <= faceW) 11.5f else 10.5f }
+                    }
+                    val lab = if (k.kind == "space") "" else label
+                    val led = if (k.kind == "shift") (if (shift == "lock") F.ledLock to F.ledLockGlow else if (shift == "off") F.ledOff to emptyList() else F.ledOn to F.ledOnGlow) else null
+                    if (k.kind == "shift") fg = t.fnFg
+                    // sculpted rows: the top row shows more of its back slope, the bottom rows more of their front
+                    val sculpt = spec.size > 1; val pRow = if (sculpt) ri.toFloat() / (spec.size - 1) else 0f
+                    val ft = if (sculpt) F.top + (1 - pRow) * 2.5f - 0.5f else F.top
+                    val fbot = F.top + F.bottom - ft
+                    // no two caps quite the same: a hair of offset and sheen from the key's id
+                    var h = 0; for (ch in k.id) h = (h * 31 + ch.code) % 997
+                    val jx = if (sculpt) ((h % 7) - 3) * 0.12f else 0f
+                    face = KeyFace(
+                        l = F.side + jx, r = F.side - jx, t = ft, b = if (down) fbot - F.travel else fbot, rad = F.rad,
+                        bg = if (isAct) F.act else if (fnLike) F.fn else F.key, sheen = if (sculpt) (h % 5) * 0.006f else 0f,
+                        sh = if (down) F.pressFace else F.sh, bevel = F.bevel.getValue(if (isAct) "act" else if (fnLike) "fn" else "key"),
+                        dy = if (down) F.travel else 0f,
+                        tl = if (tl && word.isEmpty()) lab else "", tlFs = (if (lab.length > 1) 11f else 15.5f + if (lab.firstOrNull()?.isLowerCase() == true) 1.5f else 0f) * scale,
+                        word = word, wordFs = wordFs, icon = if (word.isEmpty() && !tl) ic else "", icFs = 18f,
+                        led = led?.first, ledGlow = led?.second ?: emptyList(), ink = F.legend,
+                    )
+                }
                 KbKey(
+                    face = face,
                     gap = false, id = k.id, kind = k.kind, x = kx, w = w, bg = bg, bgGradient = bgG, ts = ts, fg = fg, shadow = shadow, fs = fs * sizeScale, fw = fw,
                     icon = icon, fill = fill, iconSize = iconSize * sizeScale, label = label, aria = aria, hint = hint, hintFg = spot?.hint ?: t.hint, sub = sub,
                     base = k.base.ifEmpty { k.id },
-                    pill = P.pillKeys && bottomRow && (k.kind == "mode" || k.kind == "ret"),
+                    // sculpted caps keep their shape (a round cap has no slopes to draw)
+                    pill = P.pillKeys && bottomRow && (k.kind == "mode" || k.kind == "ret") && t.face == null,
                 )
             })
         }

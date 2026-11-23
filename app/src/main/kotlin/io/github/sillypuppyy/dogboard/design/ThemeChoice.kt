@@ -29,7 +29,7 @@ object ThemeChoice {
         Theme("lagoon", "Lagoon", "2 colours", "dark"),
         Theme("peach", "Peach", "2 colours", "light"),
         Theme("gloss", "Gloss", "Glossy caps, pressed-in labels", "light"),
-        Theme("keycap", "Keycap", "Mechanical keys, with their sound", "pair"),
+        Theme("mech", "Mechanical", "Sculpted keycaps, with their sound", "dark"),
     ) + KbThemes.PRIDE.map { (id, name, f) -> Theme(id, name, "${f.first.size} colours", "light") }
     private val byId = THEMES.associateBy { it.id }
     fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").copy(mode = glassMode) else byId[id] ?: GradientSpec.parse(id)?.let { g ->
@@ -58,7 +58,7 @@ object ThemeChoice {
         Section("breeds", "Breeds", "Pack, 5 themes", listOf("dog", "lab", "husky", "greyhound", "dalmatian"), pack = true),
         Section("photos", "Photos", "", emptyList()),
         // tactile looks (was "Retro")
-        Section("retro", "Tactile", "Pack, 2 themes", listOf("gloss", "keycap"), pack = true),
+        Section("retro", "Tactile", "Pack, 2 themes", listOf("gloss", "mech"), pack = true),
         Section("gradients", "Gradients", "Pack, 3 themes", listOf("dusk", "lagoon", "peach"), pack = true, add = "gradient" to "New gradient"),
         // flags as gradients, keys coloured by the stripe under them
         Section("pride", "Pride", "Pack, ${KbThemes.PRIDE.size} themes", KbThemes.PRIDE.map { it.first }, pack = true),
