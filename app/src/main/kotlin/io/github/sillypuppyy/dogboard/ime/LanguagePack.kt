@@ -134,7 +134,9 @@ class LanguagePack private constructor(val manifest: PackManifest, private val a
         fun all(context: android.content.Context): List<LanguagePack> {
             val byTag = LinkedHashMap<String, LanguagePack>()
             (context.assets.list("dogboard/packs") ?: emptyArray()).sorted().forEach { t -> open(context.assets, t)?.let { byTag[it.tag] = it } }
-            java.io.File(context.filesDir, "packs").listFiles()?.sortedBy { it.name }?.forEach { d -> openDir(d)?.let { byTag[it.tag] = it } }
+            // hidden folders are PackInstaller's staging / old copies, never packs
+            java.io.File(context.filesDir, "packs").listFiles()?.filter { !it.name.startsWith(".") }?.sortedBy { it.name }
+                ?.forEach { d -> openDir(d)?.let { byTag[it.tag] = it } }
             return byTag.values.sortedBy { it.tag }
         }
 
