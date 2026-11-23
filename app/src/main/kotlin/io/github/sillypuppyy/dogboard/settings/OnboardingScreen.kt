@@ -43,6 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
@@ -126,6 +128,12 @@ fun OnboardingScreen() {
             val id = steps[i.coerceIn(0, steps.size - 1)]
             val enabled by InputMethodUtils.observeIsFlorisboardEnabled()
             val selected by InputMethodUtils.observeIsFlorisboardSelected()
+            // Onboarding S.enable: when both system steps become done, the page moves on by itself
+            val wasDone = remember { mutableStateOf(enabled && selected) }
+            LaunchedEffect(enabled && selected) {
+                if (enabled && selected && !wasDone.value && id == "enable") i++
+                wasDone.value = enabled && selected
+            }
             StepFrame(
                 stepText = "Step ${i + 1} of ${steps.size}", pathName = if (p == "quick") "Quick setup" else "Full setup",
                 progress = (i + 1f) / steps.size, title = TITLES.getValue(id).first, body = TITLES.getValue(id).second,
@@ -307,7 +315,8 @@ private fun Choice(id: String, label: String, sub: String = "", options: List<St
             DText(label, style = setText(15f, color = SetColors.onSurface.copy(alpha = if (enabled) 1f else 0.38f)))
             if (sub.isNotEmpty()) DText(sub, style = setText(12.5f, color = SetColors.onSurfaceVariant), maxLines = 4)
         }
-        Box(Modifier.then(if (enabled) Modifier else Modifier.background(Color.Transparent))) {
+        // Onboarding:56: the whole control at 38 % while it doesn't apply
+        Box(Modifier.then(if (enabled) Modifier else Modifier.graphicsLayer { alpha = 0.38f })) {
             Segmented("onb:$id", options, selected, onSelect = if (enabled) onSelect else null)
         }
     }
@@ -699,7 +708,7 @@ private fun Summary(items: List<Triple<String, String, Boolean>>) {
                 horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
                 Symbol(icon, 16.sp, fg)
-                DText(label, style = setText(12f, 500, fg))
+                DText(label, Modifier.widthIn(max = 280.dp), style = setText(12f, 500, fg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
     }
