@@ -54,6 +54,8 @@ data class LangRow(
     val togetherChoices: List<Pair<String, String>> = emptyList(),
     /** How many languages can be typed at once, this one included. */
     val togetherMax: Int = 3,
+    /** Its language code for the badge ("BG", "EN"), as the keyboard's language indicator shows it. */
+    val code: String = "",
 )
 
 /**
@@ -83,16 +85,57 @@ fun SetLanguages(
     onBack: () -> Unit,
     /** Types the entry together with the languages [tags] (empty: alone). */
     onTogether: (id: Long, tags: List<String>) -> Unit = { _, _ -> },
+    /** The languages that can join keyboard [id] (a dictionary, the same alphabet, room left). */
+    combineChoices: (id: Long) -> List<LangPack> = { emptyList() },
+    /** The keyboards a new language [tag] can join: (id, name). */
+    combineTargets: (tag: String) -> List<Pair<Long, String>> = { emptyList() },
+    /** The layouts keyboard [id] can take once [tag] joins it: every layout of its languages. */
+    layoutsForAll: (id: Long, tag: String) -> List<LayoutChoice> = { _, _ -> emptyList() },
+    /** [tag] joins keyboard [id], which takes [layout]. */
+    onCombine: (id: Long, tag: String, layout: String) -> Unit = { _, _, _ -> },
+    /** Keyboard [id]'s joined languages become keyboards of their own. */
+    onSplit: (id: Long) -> Unit = {},
 ) {
-    // null: your languages; "": Add a language; a tag: that language's layouts
+    // null: your languages; "": Add a language; a tag: that language's layouts; "combine:<id>": a language to join
+    // keyboard id; "shared:<id>:<tag>": the layout the combined keyboard takes
     var page by remember { mutableStateOf<String?>(null) }
-    val picked = page?.takeIf { it.isNotEmpty() }?.let { t -> packs.firstOrNull { it.tag == t } }
-    if (picked != null) {
+    // a new language that can join a keyboard: asked first (tag, the keyboards it can join)
+    var ask by remember { mutableStateOf<Pair<String, List<Pair<Long, String>>>?>(null) }
+    val shared = page?.takeIf { it.startsWith("shared:") }?.split(':')
+    val combineId = page?.takeIf { it.startsWith("combine:") }?.removePrefix("combine:")?.toLongOrNull()
+    val picked = page?.takeIf { it.isNotEmpty() && shared == null && combineId == null }?.let { t -> packs.firstOrNull { it.tag == t } }
+    fun pickNew(tag: String) {
+        val targets = combineTargets(tag)
+        if (targets.isEmpty()) page = tag else ask = tag to targets
+    }
+    ask?.let { (tag, targets) ->
+        val name = packs.firstOrNull { it.tag == tag }?.native ?: tag
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { ask = null },
+            title = { androidx.compose.material3.Text("Combine $name?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    androidx.compose.material3.Text("Type $name and another language on one keyboard, without switching. You pick the layout they share.")
+                    for ((id, kb) in targets) androidx.compose.material3.TextButton({ ask = null; page = "shared:$id:$tag" }) { androidx.compose.material3.Text("Combine with $kb") }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton({ ask = null; page = tag }) { androidx.compose.material3.Text("Keep separate") } },
+        )
+    }
+    if (shared != null && shared.size == 3) {
+        val id = shared[1].toLong(); val tag = shared[2]
+        BackHandler { page = null }
+        val p = packs.firstOrNull { it.tag == tag } ?: LangPack(tag, tag, tag, dictionary = true)
+        PickLayoutPage(p, layoutsForAll(id, tag), single = true, title = "Shared layout", onBack = { page = null }, onDone = { ids -> ids.firstOrNull()?.let { onCombine(id, tag, it) }; page = null })
+    } else if (combineId != null) {
+        BackHandler { page = null }
+        AddLanguagePage(combineChoices(combineId), title = "Combine with…", onBack = { page = null }, onPick = { page = "shared:$combineId:$it" })
+    } else if (picked != null) {
         BackHandler { page = "" }
         PickLayoutPage(picked, layoutsFor(picked.tag), onBack = { page = "" }, onDone = { ids -> onAdd(picked.tag, ids); page = null })
     } else if (page != null) {
         BackHandler { page = null }
-        AddLanguagePage(packs, onBack = { page = null }, onPick = { page = it })
+        AddLanguagePage(packs, onBack = { page = null }, onPick = { pickNew(it) })
     } else Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -101,7 +144,8 @@ fun SetLanguages(
         ) {
             TitleBar("Languages", onBack)
             SetGroup("Your languages", Modifier.padding(horizontal = 16.dp)) {
-                for (l in langs) LanguageRow(l, langs.size > 1, onUse, onLayout, onRemove, onTogether)
+                for (l in langs) LanguageRow(l, langs.size > 1, onUse, onLayout, onRemove, canCombine = combineChoices(l.id).isNotEmpty(),
+                    onCombine = { page = "combine:${l.id}" }, onSplit = { onSplit(l.id) })
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).heightIn(min = 56.dp).clip(RoundedCornerShape(28.dp)).clickable { page = "" }.padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -127,18 +171,20 @@ private fun TitleBar(title: String, onBack: () -> Unit, subtitle: String? = null
 }
 
 @Composable
-private fun LanguageRow(l: LangRow, removable: Boolean, onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit, onTogether: (Long, List<String>) -> Unit) {
+private fun LanguageRow(
+    l: LangRow, removable: Boolean, onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit,
+    canCombine: Boolean, onCombine: () -> Unit, onSplit: () -> Unit,
+) {
     var menu by remember { mutableStateOf(false) }
-    var together by remember { mutableStateOf(false) }
     Row(
         Modifier.fillMaxWidth().heightIn(min = 80.dp).background(SetColors.row).clickable { if (l.active) onLayout() else onUse(l.id) }
             .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        // the language's first letters in a tonal circle; ticked when in use
+        // the language's code in a tonal circle; ticked when in use
         Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(if (l.active) SetColors.primary else SetColors.surfaceContainerHighest), contentAlignment = Alignment.Center) {
             if (l.active) Symbol("check", 22.sp, Color.White)
-            else DText(l.name.take(2), style = setText(15f, 500, SetColors.onSurfaceVariant))
+            else DText(l.code.ifEmpty { l.name.take(2) }, style = setText(14f, 500, SetColors.onSurfaceVariant))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DText(l.name + (l.native?.takeIf { it != l.name }?.let { " ($it)" } ?: ""), style = setText(16f).copy(textAlign = START), maxLines = 2)
@@ -147,25 +193,17 @@ private fun LanguageRow(l: LangRow, removable: Boolean, onUse: (Long) -> Unit, o
                 if (l.gettingDictionary) OutlineChip("Getting dictionary")
                 else Chip(if (l.swipe) "Swipe typing" else "Taps only")
             }
-            if (l.together.isNotEmpty()) DText("Typed together with " + l.together.joinToString(" and "), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
         }
         if (l.active) Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant, Modifier.padding(end = 12.dp))
-        if (removable) Box {
+        if (removable || canCombine || l.together.isNotEmpty()) Box {
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { menu = true }, contentAlignment = Alignment.Center) { Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant) }
+            // combining: languages typed on one keyboard without switching (up to three), with a layout they share
             SetMenu(menu, { menu = false }, listOfNotNull(
                 ("Use this language" to { onUse(l.id) }).takeIf { !l.active }, "Layout" to onLayout,
-                // Gboard's multilingual typing: words of both languages suggested and corrected without switching
-                ("Type together with…" to { together = true }).takeIf { l.togetherChoices.isNotEmpty() || l.together.isNotEmpty() },
-                "Remove" to { onRemove(l.id) },
+                ("Combine with…" to onCombine).takeIf { canCombine },
+                ("Split up" to onSplit).takeIf { l.together.isNotEmpty() },
+                ("Remove" to { onRemove(l.id) }).takeIf { removable },
             ))
-            // each choice adds or removes that language (ticked when on); a full set swaps out the one added first
-            SetMenu(together, { together = false },
-                listOf("${l.name} only" to { onTogether(l.id, emptyList()) }) + l.togetherChoices.map { (tag, name) ->
-                    val on = tag in l.togetherTags
-                    (if (on) "✓ $name" else name) to {
-                        onTogether(l.id, if (on) l.togetherTags - tag else (l.togetherTags + tag).takeLast(l.togetherMax - 1))
-                    }
-                })
         }
     }
 }
@@ -186,7 +224,7 @@ private fun OutlineChip(text: String) {
 
 /** Add a language: one search, the phone's languages first, then every language A to Z in its own name. */
 @Composable
-private fun AddLanguagePage(packs: List<LangPack>, onBack: () -> Unit, onPick: (String) -> Unit) {
+private fun AddLanguagePage(packs: List<LangPack>, title: String = "Add a language", onBack: () -> Unit, onPick: (String) -> Unit) {
     var q by remember { mutableStateOf("") }
     val query = q.trim()
     val matches = if (query.isEmpty()) packs else packs.filter {
@@ -198,7 +236,7 @@ private fun AddLanguagePage(packs: List<LangPack>, onBack: () -> Unit, onPick: (
             Modifier.fillMaxSize().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars).padding(top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            item { TitleBar("Add a language", onBack) }
+            item { TitleBar(title, onBack) }
             item {
                 androidx.compose.material3.OutlinedTextField(q, { q = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), singleLine = true,
                     shape = RoundedCornerShape(28.dp),
@@ -242,16 +280,19 @@ private fun LanguageChoiceRow(p: LangPack, onPick: (String) -> Unit) {
 
 /** A language's layouts as previews; several can be ticked (each becomes its own entry); Done adds them. */
 @Composable
-private fun PickLayoutPage(p: LangPack, layouts: List<LayoutChoice>, onBack: () -> Unit, onDone: (List<String>) -> Unit) {
+private fun PickLayoutPage(
+    p: LangPack, layouts: List<LayoutChoice>, single: Boolean = false, title: String? = null, onBack: () -> Unit, onDone: (List<String>) -> Unit,
+) {
     var chosen by remember(p.tag) { mutableStateOf(layouts.firstOrNull { !it.added }?.let { setOf(it.id) } ?: emptySet()) }
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars).padding(top = 8.dp)) {
-            TitleBar(p.native, onBack, subtitle = p.name.takeIf { it != p.native })
+            TitleBar(title ?: p.native, onBack, subtitle = if (title != null) "The layout all its languages type with" else p.name.takeIf { it != p.native })
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DText("Layout", Modifier.padding(start = 12.dp), style = setText(14f, 500, SetColors.primary).copy(textAlign = START))
                 for (pair in layouts.chunked(2)) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     for (l in pair) LayoutCard(l, l.id in chosen, Modifier.weight(1f)) {
-                        chosen = if (l.id in chosen) chosen - l.id else chosen + l.id
+                        // a combined keyboard has one layout: picking one replaces the other
+                        chosen = if (single) setOf(l.id) else if (l.id in chosen) chosen - l.id else chosen + l.id
                     }
                     if (pair.size == 1) Box(Modifier.weight(1f))
                 }

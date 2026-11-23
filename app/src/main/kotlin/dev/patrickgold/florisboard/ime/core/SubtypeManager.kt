@@ -106,6 +106,15 @@ class SubtypeManager(context: Context) {
         persistNewSubtypeList(list)
     }
 
+    /**
+     * DogBoard: several changes in one write ([transform] gets the list as stored now; new entries with id 0 get fresh
+     * ids). Separate modify / add calls each read the list before the other's write lands, so the last one wins.
+     */
+    fun updateSubtypes(transform: (List<Subtype>) -> List<Subtype>) {
+        var id = System.currentTimeMillis()
+        persistNewSubtypeList(transform(subtypes).map { if (it.id == 0L) it.copy(id = id++) else it })
+    }
+
     fun addSubtype(subtype: Subtype): Boolean {
         val subtypeToAdd = subtype.copy(id = System.currentTimeMillis())
         val subtypeList = subtypes

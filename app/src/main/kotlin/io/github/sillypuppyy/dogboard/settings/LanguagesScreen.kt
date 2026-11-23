@@ -70,12 +70,26 @@ fun LanguagesScreen() {
     fun script(s: Subtype) = GeneratedLayouts.all.firstOrNull { it.id == layoutOfEntry(s) }?.rows?.firstOrNull()?.firstOrNull { it.isLetter() }
         ?.let { Character.UnicodeScript.of(it.code) } ?: Character.UnicodeScript.LATIN
     fun packName(tag: String, s: Subtype) = packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName()
+    fun nameOfTag(tag: String) = packs.firstOrNull { it.tag == tag }?.manifest?.name ?: FlorisLocale.fromTag(tag).displayName()
+    // a combined keyboard is named by its languages: "English and French (France)", "A, B and C"
+    fun joined(names: List<String>) = if (names.size <= 1) names.joinToString() else names.dropLast(1).joinToString(", ") + " and " + names.last()
+    fun scriptOfTag(tag: String) = GeneratedLayouts.all.filter { it.language == tag.substringBefore('-') }.sortedByDescending { it.default }
+        .firstOrNull()?.rows?.firstOrNull()?.firstOrNull { it.isLetter() }?.let { Character.UnicodeScript.of(it.code) } ?: Character.UnicodeScript.LATIN
+    fun offersDictionary(tag: String) = hasDictionary(tag) || index?.packs.orEmpty().any { it.tag.equals(tag, true) || it.tag.equals(tag.substringBefore('-'), true) }
+    // a language can join a keyboard when both have a dictionary, share the alphabet and the keyboard has room
+    fun canCombine(tag: String, s: Subtype): Boolean {
+        val lang = tag.substringBefore('-')
+        val langs = listOf(s.primaryLocale.language) + s.secondaryLocales.map { it.language }
+        return lang !in langs && offersDictionary(tag) && hasDictionary(s.primaryLocale.languageTag()) && scriptOfTag(tag) == script(s) &&
+            langs.size < io.github.sillypuppyy.dogboard.ime.EngineLoader.MAX_TOGETHER
+    }
     val rows = list.map { s ->
         val tag = s.primaryLocale.languageTag()
         val layout = layoutOfEntry(s)
         LangRow(
             // the pack's own name (English (US)) where there is a pack, else the locale's
-            s.id, packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName(), s.primaryLocale.displayName(s.primaryLocale).takeIf { !tag.startsWith("en") },
+            s.id, joined(listOf(packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName()) + s.secondaryLocales.map { nameOfTag(it.languageTag()) }),
+            s.primaryLocale.displayName(s.primaryLocale).takeIf { !tag.startsWith("en") && s.secondaryLocales.isEmpty() },
             // each entry's own layout (a language can be added with several)
             layoutLabel(layout, s.primaryLocale.language),
             layout == "qwerty-en" && tag.startsWith("en"),
@@ -84,6 +98,7 @@ fun LanguagesScreen() {
             gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,
             together = s.secondaryLocales.map { second -> list.firstOrNull { it.primaryLocale == second }?.let { packName(second.languageTag(), it) } ?: second.displayName() },
             togetherTags = s.secondaryLocales.map { it.languageTag() },
+            code = (listOf(s.primaryLocale) + s.secondaryLocales).joinToString("+") { it.language.uppercase() }.let { if (it.length > 3) s.primaryLocale.language.uppercase() + "+" else it },
             togetherChoices = if (!hasDictionary(tag)) emptyList() else list
                 .filter { o -> o.primaryLocale.language != s.primaryLocale.language && hasDictionary(o.primaryLocale.languageTag()) && script(o) == script(s) }
                 .distinctBy { it.primaryLocale.language }
@@ -121,6 +136,41 @@ fun LanguagesScreen() {
         onBack = { navController.popBackStack() },
         onTogether = { id, tags ->
             subtypes.firstOrNull { it.id == id }?.let { s -> subtypeManager.modifySubtypeWithSameId(s.copy(secondaryLocales = tags.map { FlorisLocale.fromTag(it) })) }
+        },
+        combineChoices = { id -> list.firstOrNull { it.id == id }?.let { s -> choices.filter { canCombine(it.tag, s) } }.orEmpty() },
+        combineTargets = { tag ->
+            val targets = list.filter { canCombine(tag, it) }.map { it to joined(listOf(packName(it.primaryLocale.languageTag(), it)) + it.secondaryLocales.map { l -> nameOfTag(l.languageTag()) }) }
+            // a language added with two layouts: the layout tells the keyboards apart
+            targets.map { (s, name) -> s.id to if (targets.count { it.second == name } > 1) "$name, ${layoutLabel(layoutOfEntry(s), s.primaryLocale.language)}" else name }
+        },
+        layoutsForAll = { id, tag ->
+            val s = list.firstOrNull { it.id == id }
+            val langs = (listOfNotNull(s?.primaryLocale?.language) + s?.secondaryLocales.orEmpty().map { it.language } + tag.substringBefore('-')).distinct()
+            val current = s?.let { layoutOfEntry(it) }
+            langs.flatMap { lang -> GeneratedLayouts.all.filter { it.language == lang }.sortedByDescending { it.default } }.distinctBy { it.id }
+                .sortedByDescending { it.id == current }.map { LayoutChoice(it.id, it.label, it.rows, added = false) }
+        },
+        // combined: the language joins the keyboard, which takes the chosen layout; a keyboard of that language alone
+        // is folded in
+        onCombine = { id, tag, layout ->
+            val s = subtypes.firstOrNull { it.id == id } ?: list.firstOrNull { it.id == id }
+            if (s != null) {
+                val combined = s.copy(secondaryLocales = s.secondaryLocales + FlorisLocale.fromTag(tag), layoutId = layout)
+                subtypeManager.updateSubtypes { now ->
+                    // no languages stored yet: the default entry is the one being combined
+                    (now.ifEmpty { listOf(s) }).filter { it.id == id || it.primaryLocale.language != tag.substringBefore('-') || it.secondaryLocales.isNotEmpty() }
+                        .map { if (it.id == id) combined else it }
+                }
+                PackDownloadQueue.ensure(context, listOf(tag))
+            }
+        },
+        // split up: each joined language becomes a keyboard of its own again, with its usual layout
+        onSplit = { id ->
+            subtypes.firstOrNull { it.id == id }?.let { s ->
+                val alone = s.secondaryLocales.map { l -> Subtype(0, l, emptyList(), layoutId = LanguageLayouts.layoutOf(l.language, memory)) }
+                val single = s.copy(secondaryLocales = emptyList(), layoutId = LanguageLayouts.layoutOf(s.primaryLocale.language, memory) ?: s.layoutId)
+                subtypeManager.updateSubtypes { now -> now.flatMap { if (it.id == id) listOf(single) + alone else listOf(it) } }
+            }
         },
     )
 }
