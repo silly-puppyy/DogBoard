@@ -325,7 +325,7 @@
         <key id="M-alt0" output="M̀" />
         <key id="M-alt1" output="Ḿ" />
         <key id="gap2-ewondo-ewo" gap="true" width="0.455" />
-        <key id="gap3-ewondo-ewo" gap="true" width="0.3184" />
+        <key id="gaplast-ewondo-ewo" gap="true" width="0.3184" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -358,14 +358,14 @@
         <layer id="base">
             <row keys="u014b w e r t y u i o p u025b" />
             <row keys="gap2-ewondo-ewo a s d f g h u0259 k l u0254 gap2-ewondo-ewo" />
-            <row keys="base-to-shift gap3-ewondo-ewo z x c v b n m gap3-ewondo-ewo bksp" />
+            <row keys="base-to-shift gaplast-ewondo-ewo z x c v b n m gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="U014a W E R T Y U I O P U0190" />
             <row keys="gap2-ewondo-ewo A S D F G H U018f K L U0186 gap2-ewondo-ewo" />
-            <row keys="shift-to-base gap3-ewondo-ewo Z X C V B N M gap3-ewondo-ewo bksp" />
+            <row keys="shift-to-base gaplast-ewondo-ewo Z X C V B N M gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -400,70 +400,70 @@
         <layer id="base-email">
             <row keys="u014b w e r t y u i o p u025b" />
             <row keys="gap2-ewondo-ewo a s d f g h u0259 k l u0254 gap2-ewondo-ewo" />
-            <row keys="base-to-shift gap3-ewondo-ewo z x c v b n m gap3-ewondo-ewo bksp" />
+            <row keys="base-to-shift gaplast-ewondo-ewo z x c v b n m gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="U014a W E R T Y U I O P U0190" />
             <row keys="gap2-ewondo-ewo A S D F G H U018f K L U0186 gap2-ewondo-ewo" />
-            <row keys="shift-to-base gap3-ewondo-ewo Z X C V B N M gap3-ewondo-ewo bksp" />
+            <row keys="shift-to-base gaplast-ewondo-ewo Z X C V B N M gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="u014b w e r t y u i o p u025b" />
             <row keys="gap2-ewondo-ewo a s d f g h u0259 k l u0254 gap2-ewondo-ewo" />
-            <row keys="base-to-shift gap3-ewondo-ewo z x c v b n m gap3-ewondo-ewo bksp" />
+            <row keys="base-to-shift gaplast-ewondo-ewo z x c v b n m gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="U014a W E R T Y U I O P U0190" />
             <row keys="gap2-ewondo-ewo A S D F G H U018f K L U0186 gap2-ewondo-ewo" />
-            <row keys="shift-to-base gap3-ewondo-ewo Z X C V B N M gap3-ewondo-ewo bksp" />
+            <row keys="shift-to-base gaplast-ewondo-ewo Z X C V B N M gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="u014b w e r t y u i o p u025b" />
             <row keys="gap2-ewondo-ewo a s d f g h u0259 k l u0254 gap2-ewondo-ewo" />
-            <row keys="base-to-shift gap3-ewondo-ewo z x c v b n m gap3-ewondo-ewo bksp" />
+            <row keys="base-to-shift gaplast-ewondo-ewo z x c v b n m gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="U014a W E R T Y U I O P U0190" />
             <row keys="gap2-ewondo-ewo A S D F G H U018f K L U0186 gap2-ewondo-ewo" />
-            <row keys="shift-to-base gap3-ewondo-ewo Z X C V B N M gap3-ewondo-ewo bksp" />
+            <row keys="shift-to-base gaplast-ewondo-ewo Z X C V B N M gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="u014b w e r t y u i o p u025b" />
             <row keys="gap2-ewondo-ewo a s d f g h u0259 k l u0254 gap2-ewondo-ewo" />
-            <row keys="base-to-shift gap3-ewondo-ewo z x c v b n m gap3-ewondo-ewo bksp" />
+            <row keys="base-to-shift gaplast-ewondo-ewo z x c v b n m gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="U014a W E R T Y U I O P U0190" />
             <row keys="gap2-ewondo-ewo A S D F G H U018f K L U0186 gap2-ewondo-ewo" />
-            <row keys="shift-to-base gap3-ewondo-ewo Z X C V B N M gap3-ewondo-ewo bksp" />
+            <row keys="shift-to-base gaplast-ewondo-ewo Z X C V B N M gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="u014b w e r t y u i o p u025b" />
             <row keys="gap2-ewondo-ewo a s d f g h u0259 k l u0254 gap2-ewondo-ewo" />
-            <row keys="base-to-shift gap3-ewondo-ewo z x c v b n m gap3-ewondo-ewo bksp" />
+            <row keys="base-to-shift gaplast-ewondo-ewo z x c v b n m gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="U014a W E R T Y U I O P U0190" />
             <row keys="gap2-ewondo-ewo A S D F G H U018f K L U0186 gap2-ewondo-ewo" />
-            <row keys="shift-to-base gap3-ewondo-ewo Z X C V B N M gap3-ewondo-ewo bksp" />
+            <row keys="shift-to-base gaplast-ewondo-ewo Z X C V B N M gaplast-ewondo-ewo bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

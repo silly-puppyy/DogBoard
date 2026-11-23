@@ -14,6 +14,13 @@ class DevanagariComposerTest : FunSpec({
         DevanagariComposer.compose("कआइ") shouldBe "काइ"
         DevanagariComposer.compose("क्आ") shouldBe "क्आ"
     }
+    test("the same rule in other Indic scripts") {
+        DevanagariComposer.compose("কআম") shouldBe "কাম" // Bengali
+        DevanagariComposer.compose("கஆல") shouldBe "கால" // Tamil
+        DevanagariComposer.compose("కఆల") shouldBe "కాల" // Telugu
+        DevanagariComposer.compose("કઆમ") shouldBe "કામ" // Gujarati
+        for (w in listOf("বাংলা", "தமிழ்", "తెలుగు")) DevanagariComposer.compose(DevanagariComposer.decompose(w)) shouldBe w
+    }
     test("decompose gives the keys back; signs and marks are word letters") {
         for (w in listOf("नमस्ते", "भारत", "किताब")) DevanagariComposer.compose(DevanagariComposer.decompose(w)) shouldBe w
         trailingWord("मैं नमस्ते") shouldBe "नमस्ते"

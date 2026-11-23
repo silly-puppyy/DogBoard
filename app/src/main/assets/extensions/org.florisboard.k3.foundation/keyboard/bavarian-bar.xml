@@ -274,7 +274,7 @@
         <key id="N-alt0" output="Ń" />
         <key id="m" output="m" width="0.909" />
         <key id="M" output="M" width="0.909" />
-        <key id="gap3-bavarian-bar" gap="true" width="0.3184" />
+        <key id="gaplast-bavarian-bar" gap="true" width="0.3184" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -307,14 +307,14 @@
         <layer id="base">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-bavarian-bar y x c v b n m gap3-bavarian-bar bksp" />
+            <row keys="base-to-shift gaplast-bavarian-bar y x c v b n m gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-bavarian-bar Y X C V B N M gap3-bavarian-bar bksp" />
+            <row keys="shift-to-base gaplast-bavarian-bar Y X C V B N M gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -349,70 +349,70 @@
         <layer id="base-email">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-bavarian-bar y x c v b n m gap3-bavarian-bar bksp" />
+            <row keys="base-to-shift gaplast-bavarian-bar y x c v b n m gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-bavarian-bar Y X C V B N M gap3-bavarian-bar bksp" />
+            <row keys="shift-to-base gaplast-bavarian-bar Y X C V B N M gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-bavarian-bar y x c v b n m gap3-bavarian-bar bksp" />
+            <row keys="base-to-shift gaplast-bavarian-bar y x c v b n m gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-bavarian-bar Y X C V B N M gap3-bavarian-bar bksp" />
+            <row keys="shift-to-base gaplast-bavarian-bar Y X C V B N M gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-bavarian-bar y x c v b n m gap3-bavarian-bar bksp" />
+            <row keys="base-to-shift gaplast-bavarian-bar y x c v b n m gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-bavarian-bar Y X C V B N M gap3-bavarian-bar bksp" />
+            <row keys="shift-to-base gaplast-bavarian-bar Y X C V B N M gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-bavarian-bar y x c v b n m gap3-bavarian-bar bksp" />
+            <row keys="base-to-shift gaplast-bavarian-bar y x c v b n m gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-bavarian-bar Y X C V B N M gap3-bavarian-bar bksp" />
+            <row keys="shift-to-base gaplast-bavarian-bar Y X C V B N M gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="q w e r t z u i o p u00fc" />
             <row keys="a s d f g h j k l u00f6 u00e4" />
-            <row keys="base-to-shift gap3-bavarian-bar y x c v b n m gap3-bavarian-bar bksp" />
+            <row keys="base-to-shift gaplast-bavarian-bar y x c v b n m gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Z U I O P U00dc" />
             <row keys="A S D F G H J K L U00d6 U00c4" />
-            <row keys="shift-to-base gap3-bavarian-bar Y X C V B N M gap3-bavarian-bar bksp" />
+            <row keys="shift-to-base gaplast-bavarian-bar Y X C V B N M gaplast-bavarian-bar bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

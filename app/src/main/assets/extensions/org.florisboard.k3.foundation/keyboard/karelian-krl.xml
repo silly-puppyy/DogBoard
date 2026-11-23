@@ -233,7 +233,7 @@
         <key id="u017e" output="ž" width="0.8333" />
         <key id="U017d" output="Ž" width="0.8333" />
         <key id="gap2-karelian-krl" gap="true" width="0.4168" />
-        <key id="gap3-karelian-krl" gap="true" width="0.1667" />
+        <key id="gaplast-karelian-krl" gap="true" width="0.1667" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -266,14 +266,14 @@
         <layer id="base">
             <row keys="q w e r t y u i o p u0161 u010d" />
             <row keys="gap2-karelian-krl a s d f g h j k l u00e4 u00f6 gap2-karelian-krl" />
-            <row keys="base-to-shift gap3-karelian-krl z x c v b n m u017e gap3-karelian-krl bksp" />
+            <row keys="base-to-shift gaplast-karelian-krl z x c v b n m u017e gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="Q W E R T Y U I O P U0160 U010c" />
             <row keys="gap2-karelian-krl A S D F G H J K L U00c4 U00d6 gap2-karelian-krl" />
-            <row keys="shift-to-base gap3-karelian-krl Z X C V B N M U017d gap3-karelian-krl bksp" />
+            <row keys="shift-to-base gaplast-karelian-krl Z X C V B N M U017d gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -308,70 +308,70 @@
         <layer id="base-email">
             <row keys="q w e r t y u i o p u0161 u010d" />
             <row keys="gap2-karelian-krl a s d f g h j k l u00e4 u00f6 gap2-karelian-krl" />
-            <row keys="base-to-shift gap3-karelian-krl z x c v b n m u017e gap3-karelian-krl bksp" />
+            <row keys="base-to-shift gaplast-karelian-krl z x c v b n m u017e gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="Q W E R T Y U I O P U0160 U010c" />
             <row keys="gap2-karelian-krl A S D F G H J K L U00c4 U00d6 gap2-karelian-krl" />
-            <row keys="shift-to-base gap3-karelian-krl Z X C V B N M U017d gap3-karelian-krl bksp" />
+            <row keys="shift-to-base gaplast-karelian-krl Z X C V B N M U017d gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="q w e r t y u i o p u0161 u010d" />
             <row keys="gap2-karelian-krl a s d f g h j k l u00e4 u00f6 gap2-karelian-krl" />
-            <row keys="base-to-shift gap3-karelian-krl z x c v b n m u017e gap3-karelian-krl bksp" />
+            <row keys="base-to-shift gaplast-karelian-krl z x c v b n m u017e gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P U0160 U010c" />
             <row keys="gap2-karelian-krl A S D F G H J K L U00c4 U00d6 gap2-karelian-krl" />
-            <row keys="shift-to-base gap3-karelian-krl Z X C V B N M U017d gap3-karelian-krl bksp" />
+            <row keys="shift-to-base gaplast-karelian-krl Z X C V B N M U017d gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="q w e r t y u i o p u0161 u010d" />
             <row keys="gap2-karelian-krl a s d f g h j k l u00e4 u00f6 gap2-karelian-krl" />
-            <row keys="base-to-shift gap3-karelian-krl z x c v b n m u017e gap3-karelian-krl bksp" />
+            <row keys="base-to-shift gaplast-karelian-krl z x c v b n m u017e gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="Q W E R T Y U I O P U0160 U010c" />
             <row keys="gap2-karelian-krl A S D F G H J K L U00c4 U00d6 gap2-karelian-krl" />
-            <row keys="shift-to-base gap3-karelian-krl Z X C V B N M U017d gap3-karelian-krl bksp" />
+            <row keys="shift-to-base gaplast-karelian-krl Z X C V B N M U017d gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="q w e r t y u i o p u0161 u010d" />
             <row keys="gap2-karelian-krl a s d f g h j k l u00e4 u00f6 gap2-karelian-krl" />
-            <row keys="base-to-shift gap3-karelian-krl z x c v b n m u017e gap3-karelian-krl bksp" />
+            <row keys="base-to-shift gaplast-karelian-krl z x c v b n m u017e gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Y U I O P U0160 U010c" />
             <row keys="gap2-karelian-krl A S D F G H J K L U00c4 U00d6 gap2-karelian-krl" />
-            <row keys="shift-to-base gap3-karelian-krl Z X C V B N M U017d gap3-karelian-krl bksp" />
+            <row keys="shift-to-base gaplast-karelian-krl Z X C V B N M U017d gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="q w e r t y u i o p u0161 u010d" />
             <row keys="gap2-karelian-krl a s d f g h j k l u00e4 u00f6 gap2-karelian-krl" />
-            <row keys="base-to-shift gap3-karelian-krl z x c v b n m u017e gap3-karelian-krl bksp" />
+            <row keys="base-to-shift gaplast-karelian-krl z x c v b n m u017e gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Y U I O P U0160 U010c" />
             <row keys="gap2-karelian-krl A S D F G H J K L U00c4 U00d6 gap2-karelian-krl" />
-            <row keys="shift-to-base gap3-karelian-krl Z X C V B N M U017d gap3-karelian-krl bksp" />
+            <row keys="shift-to-base gaplast-karelian-krl Z X C V B N M U017d gaplast-karelian-krl bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

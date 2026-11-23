@@ -240,7 +240,7 @@
         <key id="N-alt0" output="Ŋ" />
         <key id="m" output="m" width="0.909" />
         <key id="M" output="M" width="0.909" />
-        <key id="gap3-farefare-gur" gap="true" width="0.3184" />
+        <key id="gaplast-farefare-gur" gap="true" width="0.3184" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -273,14 +273,14 @@
         <layer id="base">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="a s d f g h j k l u0254 u014b" />
-            <row keys="base-to-shift gap3-farefare-gur z x c v b n m gap3-farefare-gur bksp" />
+            <row keys="base-to-shift gaplast-farefare-gur z x c v b n m gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="A S D F G H J K L U0186 U014a" />
-            <row keys="shift-to-base gap3-farefare-gur Z X C V B N M gap3-farefare-gur bksp" />
+            <row keys="shift-to-base gaplast-farefare-gur Z X C V B N M gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -315,70 +315,70 @@
         <layer id="base-email">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="a s d f g h j k l u0254 u014b" />
-            <row keys="base-to-shift gap3-farefare-gur z x c v b n m gap3-farefare-gur bksp" />
+            <row keys="base-to-shift gaplast-farefare-gur z x c v b n m gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="A S D F G H J K L U0186 U014a" />
-            <row keys="shift-to-base gap3-farefare-gur Z X C V B N M gap3-farefare-gur bksp" />
+            <row keys="shift-to-base gaplast-farefare-gur Z X C V B N M gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="a s d f g h j k l u0254 u014b" />
-            <row keys="base-to-shift gap3-farefare-gur z x c v b n m gap3-farefare-gur bksp" />
+            <row keys="base-to-shift gaplast-farefare-gur z x c v b n m gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="A S D F G H J K L U0186 U014a" />
-            <row keys="shift-to-base gap3-farefare-gur Z X C V B N M gap3-farefare-gur bksp" />
+            <row keys="shift-to-base gaplast-farefare-gur Z X C V B N M gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="a s d f g h j k l u0254 u014b" />
-            <row keys="base-to-shift gap3-farefare-gur z x c v b n m gap3-farefare-gur bksp" />
+            <row keys="base-to-shift gaplast-farefare-gur z x c v b n m gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="A S D F G H J K L U0186 U014a" />
-            <row keys="shift-to-base gap3-farefare-gur Z X C V B N M gap3-farefare-gur bksp" />
+            <row keys="shift-to-base gaplast-farefare-gur Z X C V B N M gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="a s d f g h j k l u0254 u014b" />
-            <row keys="base-to-shift gap3-farefare-gur z x c v b n m gap3-farefare-gur bksp" />
+            <row keys="base-to-shift gaplast-farefare-gur z x c v b n m gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="A S D F G H J K L U0186 U014a" />
-            <row keys="shift-to-base gap3-farefare-gur Z X C V B N M gap3-farefare-gur bksp" />
+            <row keys="shift-to-base gaplast-farefare-gur Z X C V B N M gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="a s d f g h j k l u0254 u014b" />
-            <row keys="base-to-shift gap3-farefare-gur z x c v b n m gap3-farefare-gur bksp" />
+            <row keys="base-to-shift gaplast-farefare-gur z x c v b n m gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="A S D F G H J K L U0186 U014a" />
-            <row keys="shift-to-base gap3-farefare-gur Z X C V B N M gap3-farefare-gur bksp" />
+            <row keys="shift-to-base gaplast-farefare-gur Z X C V B N M gaplast-farefare-gur bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

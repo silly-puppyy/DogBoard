@@ -148,15 +148,21 @@ def gboard_layout(id: str, locale: str, name: str, layout: str, indicator: str, 
     return Layout(id, locale, name, layout, indicator, [r for r in rows if r])
 
 
-def hindi_compact() -> Layout:
-    """Gboard's hindi_compact: every key of its rows (the virama ् and anusvara ं, the comma and danda keys too) and
-    its long-press lists (comma-separated in the extracted data, digits and conjuncts like त्र included)."""
+def indic_layout(id: str, locale: str, name: str, layout: str, indicator: str, tag: str, variant: str, label: str) -> Layout:
+    """A Gboard Indic layout: every key of its rows (the virama, anusvara and nukta keys, punctuation keys too) and its
+    long-press lists (comma-separated in the extracted data; digits and conjuncts like त्र included). A vowel key after a
+    consonant types its sign (DevanagariComposer, for every Indic script); no capitals."""
+    langs = json.loads((GBOARD_DATA / "languages.json").read_text(encoding="utf-8"))
     lays = json.loads((GBOARD_DATA / "layouts.json").read_text(encoding="utf-8"))
-    data = lays["FqU"]
+    data = lays[next(v for v in langs[tag]["variants"] if v["variant"] == variant)["layout_id"]]
     rows = [[k for k in r if isinstance(k, str) and len(k) == 1] for r in data["rows"] if r]
     accents = {k: " ".join(x for x in v.split(",") if x) for k, v in data.get("longpress", {}).items()}
-    return Layout("compact-hi", "hi", "हिन्दी (कॉम्पैक्ट)", "कॉम्पैक्ट", "HI", [r for r in rows if r], accents=accents,
-                  label="Compact")
+    return no_capitals(Layout(id, locale, name, layout, indicator, [r for r in rows if r], accents=accents, label=label))
+
+
+def hindi_compact() -> Layout:
+    """Gboard's hindi_compact (its default Hindi layout)."""
+    return indic_layout("compact-hi", "hi", "हिन्दी (कॉम्पैक्ट)", "कॉम्पैक्ट", "HI", "hi", "hindi_compact", "Compact")
 
 
 def no_capitals(lay: Layout) -> Layout:
@@ -198,6 +204,12 @@ LAYOUTS = [
     # digits on long-press); a vowel key after a consonant types its sign (DevanagariComposer: Gboard's conditional
     # mappings, not in the extracted data); no capitals
     no_capitals(hindi_compact()),
+    # other Indic languages: Gboard's layouts (all letters on the keys, vowel signs by DevanagariComposer)
+    indic_layout("marathi-mr", "mr", "मराठी", "मराठी", "MR", "mr-IN", "marathi_india", "मराठी"),
+    indic_layout("bengali-bn", "bn", "বাংলা", "বাংলা", "BN", "bn-IN", "bengali_india", "বাংলা"),
+    indic_layout("tamil-ta", "ta", "தமிழ்", "தமிழ்", "TA", "ta-IN", "tamil", "தமிழ்"),
+    indic_layout("telugu-te", "te", "తెలుగు", "తెలుగు", "TE", "te-IN", "telugu_india", "తెలుగు"),
+    indic_layout("gujarati-gu", "gu", "ગુજરાતી", "ગુજરાતી", "GU", "gu", "gujarati", "ગુજરાતી"),
 ]
 
 SYMBOL_1 = [
@@ -292,7 +304,8 @@ def row3(lay: Layout, shift_id: str, shifted: bool) -> str:
     if rest < 0.01 and rest > -0.01:
         return f"{shift_id} {letters} bksp"
     if rest >= 0:
-        return f"{shift_id} gap3-{lay.id} {letters} gap3-{lay.id} bksp"
+        # its own name: a layout with more rows (Bengali, five) has a centred row 3 with a gap3 of its own
+        return f"{shift_id} gaplast-{lay.id} {letters} gaplast-{lay.id} bksp"
     return f"{shift_id}-narrow-{lay.id} {letters} bksp-narrow-{lay.id}"
 
 
@@ -319,7 +332,7 @@ def layout_gaps(lay: Layout) -> list[str]:
             out.append(f'<key id="gap{i + 1}-{lay.id}" gap="true" width="{fmt(side)}" />')
     rest = 10 - len(lay.rows[-1]) * w - 2 * float(SHIFT)
     if 0.01 <= rest:
-        out.append(f'<key id="gap3-{lay.id}" gap="true" width="{fmt(rest / 2)}" />')
+        out.append(f'<key id="gaplast-{lay.id}" gap="true" width="{fmt(rest / 2)}" />')
     elif rest > -0.01:
         pass
     else:

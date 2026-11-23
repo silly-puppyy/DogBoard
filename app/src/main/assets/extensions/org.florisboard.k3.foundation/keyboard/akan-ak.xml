@@ -305,7 +305,7 @@
         <key id="M" output="M" width="0.909" longPressKeyIds="M-alt0" longPressDefaultKeyId="M-alt0" />
         <key id="M-alt0" output="M̀" />
         <key id="gap2-akan-ak" gap="true" width="0.455" />
-        <key id="gap3-akan-ak" gap="true" width="0.3184" />
+        <key id="gaplast-akan-ak" gap="true" width="0.3184" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -338,14 +338,14 @@
         <layer id="base">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="gap2-akan-ak a s d f g h j k l u0254 gap2-akan-ak" />
-            <row keys="base-to-shift gap3-akan-ak z x c v b n m gap3-akan-ak bksp" />
+            <row keys="base-to-shift gaplast-akan-ak z x c v b n m gaplast-akan-ak bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="gap2-akan-ak A S D F G H J K L U0186 gap2-akan-ak" />
-            <row keys="shift-to-base gap3-akan-ak Z X C V B N M gap3-akan-ak bksp" />
+            <row keys="shift-to-base gaplast-akan-ak Z X C V B N M gaplast-akan-ak bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -380,70 +380,70 @@
         <layer id="base-email">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="gap2-akan-ak a s d f g h j k l u0254 gap2-akan-ak" />
-            <row keys="base-to-shift gap3-akan-ak z x c v b n m gap3-akan-ak bksp" />
+            <row keys="base-to-shift gaplast-akan-ak z x c v b n m gaplast-akan-ak bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="gap2-akan-ak A S D F G H J K L U0186 gap2-akan-ak" />
-            <row keys="shift-to-base gap3-akan-ak Z X C V B N M gap3-akan-ak bksp" />
+            <row keys="shift-to-base gaplast-akan-ak Z X C V B N M gaplast-akan-ak bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="gap2-akan-ak a s d f g h j k l u0254 gap2-akan-ak" />
-            <row keys="base-to-shift gap3-akan-ak z x c v b n m gap3-akan-ak bksp" />
+            <row keys="base-to-shift gaplast-akan-ak z x c v b n m gaplast-akan-ak bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="gap2-akan-ak A S D F G H J K L U0186 gap2-akan-ak" />
-            <row keys="shift-to-base gap3-akan-ak Z X C V B N M gap3-akan-ak bksp" />
+            <row keys="shift-to-base gaplast-akan-ak Z X C V B N M gaplast-akan-ak bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="gap2-akan-ak a s d f g h j k l u0254 gap2-akan-ak" />
-            <row keys="base-to-shift gap3-akan-ak z x c v b n m gap3-akan-ak bksp" />
+            <row keys="base-to-shift gaplast-akan-ak z x c v b n m gaplast-akan-ak bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="gap2-akan-ak A S D F G H J K L U0186 gap2-akan-ak" />
-            <row keys="shift-to-base gap3-akan-ak Z X C V B N M gap3-akan-ak bksp" />
+            <row keys="shift-to-base gaplast-akan-ak Z X C V B N M gaplast-akan-ak bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="gap2-akan-ak a s d f g h j k l u0254 gap2-akan-ak" />
-            <row keys="base-to-shift gap3-akan-ak z x c v b n m gap3-akan-ak bksp" />
+            <row keys="base-to-shift gaplast-akan-ak z x c v b n m gaplast-akan-ak bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="gap2-akan-ak A S D F G H J K L U0186 gap2-akan-ak" />
-            <row keys="shift-to-base gap3-akan-ak Z X C V B N M gap3-akan-ak bksp" />
+            <row keys="shift-to-base gaplast-akan-ak Z X C V B N M gaplast-akan-ak bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="q w e r t y u i o p u025b" />
             <row keys="gap2-akan-ak a s d f g h j k l u0254 gap2-akan-ak" />
-            <row keys="base-to-shift gap3-akan-ak z x c v b n m gap3-akan-ak bksp" />
+            <row keys="base-to-shift gaplast-akan-ak z x c v b n m gaplast-akan-ak bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="Q W E R T Y U I O P U0190" />
             <row keys="gap2-akan-ak A S D F G H J K L U0186 gap2-akan-ak" />
-            <row keys="shift-to-base gap3-akan-ak Z X C V B N M gap3-akan-ak bksp" />
+            <row keys="shift-to-base gaplast-akan-ak Z X C V B N M gaplast-akan-ak bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

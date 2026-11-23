@@ -271,7 +271,7 @@
         <key id="U13a5-alt0" output="‌Ꭵ" />
         <key id="gap1-cherokee-iphone-chr" gap="true" width="0.5" />
         <key id="gap2-cherokee-iphone-chr" gap="true" width="0.5" />
-        <key id="gap3-cherokee-iphone-chr" gap="true" width="0.5" />
+        <key id="gaplast-cherokee-iphone-chr" gap="true" width="0.5" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -304,14 +304,14 @@
         <layer id="base">
             <row keys="gap1-cherokee-iphone-chr uabb3 uaba4 uab77 uab8f uab90 uab9d uabac uabb9 uabbf gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr uab76 uab7d uab83 uab89 uab8e uab96 uab9c uaba3 uabad gap2-cherokee-iphone-chr" />
-            <row keys="base-to-shift gap3-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gap3-cherokee-iphone-chr bksp" />
+            <row keys="base-to-shift gaplast-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="gap1-cherokee-iphone-chr U13e3 U13d4 U13a7 U13bf U13c0 U13cd U13dc U13e9 U13ef gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr U13a6 U13ad U13b3 U13b9 U13be U13c6 U13cc U13d3 U13dd gap2-cherokee-iphone-chr" />
-            <row keys="shift-to-base gap3-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gap3-cherokee-iphone-chr bksp" />
+            <row keys="shift-to-base gaplast-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -346,70 +346,70 @@
         <layer id="base-email">
             <row keys="gap1-cherokee-iphone-chr uabb3 uaba4 uab77 uab8f uab90 uab9d uabac uabb9 uabbf gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr uab76 uab7d uab83 uab89 uab8e uab96 uab9c uaba3 uabad gap2-cherokee-iphone-chr" />
-            <row keys="base-to-shift gap3-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gap3-cherokee-iphone-chr bksp" />
+            <row keys="base-to-shift gaplast-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="gap1-cherokee-iphone-chr U13e3 U13d4 U13a7 U13bf U13c0 U13cd U13dc U13e9 U13ef gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr U13a6 U13ad U13b3 U13b9 U13be U13c6 U13cc U13d3 U13dd gap2-cherokee-iphone-chr" />
-            <row keys="shift-to-base gap3-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gap3-cherokee-iphone-chr bksp" />
+            <row keys="shift-to-base gaplast-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="gap1-cherokee-iphone-chr uabb3 uaba4 uab77 uab8f uab90 uab9d uabac uabb9 uabbf gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr uab76 uab7d uab83 uab89 uab8e uab96 uab9c uaba3 uabad gap2-cherokee-iphone-chr" />
-            <row keys="base-to-shift gap3-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gap3-cherokee-iphone-chr bksp" />
+            <row keys="base-to-shift gaplast-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="gap1-cherokee-iphone-chr U13e3 U13d4 U13a7 U13bf U13c0 U13cd U13dc U13e9 U13ef gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr U13a6 U13ad U13b3 U13b9 U13be U13c6 U13cc U13d3 U13dd gap2-cherokee-iphone-chr" />
-            <row keys="shift-to-base gap3-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gap3-cherokee-iphone-chr bksp" />
+            <row keys="shift-to-base gaplast-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="gap1-cherokee-iphone-chr uabb3 uaba4 uab77 uab8f uab90 uab9d uabac uabb9 uabbf gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr uab76 uab7d uab83 uab89 uab8e uab96 uab9c uaba3 uabad gap2-cherokee-iphone-chr" />
-            <row keys="base-to-shift gap3-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gap3-cherokee-iphone-chr bksp" />
+            <row keys="base-to-shift gaplast-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="gap1-cherokee-iphone-chr U13e3 U13d4 U13a7 U13bf U13c0 U13cd U13dc U13e9 U13ef gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr U13a6 U13ad U13b3 U13b9 U13be U13c6 U13cc U13d3 U13dd gap2-cherokee-iphone-chr" />
-            <row keys="shift-to-base gap3-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gap3-cherokee-iphone-chr bksp" />
+            <row keys="shift-to-base gaplast-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="gap1-cherokee-iphone-chr uabb3 uaba4 uab77 uab8f uab90 uab9d uabac uabb9 uabbf gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr uab76 uab7d uab83 uab89 uab8e uab96 uab9c uaba3 uabad gap2-cherokee-iphone-chr" />
-            <row keys="base-to-shift gap3-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gap3-cherokee-iphone-chr bksp" />
+            <row keys="base-to-shift gaplast-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="gap1-cherokee-iphone-chr U13e3 U13d4 U13a7 U13bf U13c0 U13cd U13dc U13e9 U13ef gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr U13a6 U13ad U13b3 U13b9 U13be U13c6 U13cc U13d3 U13dd gap2-cherokee-iphone-chr" />
-            <row keys="shift-to-base gap3-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gap3-cherokee-iphone-chr bksp" />
+            <row keys="shift-to-base gaplast-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="gap1-cherokee-iphone-chr uabb3 uaba4 uab77 uab8f uab90 uab9d uabac uabb9 uabbf gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr uab76 uab7d uab83 uab89 uab8e uab96 uab9c uaba3 uabad gap2-cherokee-iphone-chr" />
-            <row keys="base-to-shift gap3-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gap3-cherokee-iphone-chr bksp" />
+            <row keys="base-to-shift gaplast-cherokee-iphone-chr uab70 uab71 uab72 uab73 uab74 uab75 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="gap1-cherokee-iphone-chr U13e3 U13d4 U13a7 U13bf U13c0 U13cd U13dc U13e9 U13ef gap1-cherokee-iphone-chr" />
             <row keys="gap2-cherokee-iphone-chr U13a6 U13ad U13b3 U13b9 U13be U13c6 U13cc U13d3 U13dd gap2-cherokee-iphone-chr" />
-            <row keys="shift-to-base gap3-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gap3-cherokee-iphone-chr bksp" />
+            <row keys="shift-to-base gaplast-cherokee-iphone-chr U13a0 U13a1 U13a2 U13a3 U13a4 U13a5 gaplast-cherokee-iphone-chr bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

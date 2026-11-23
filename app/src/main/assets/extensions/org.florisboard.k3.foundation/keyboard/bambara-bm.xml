@@ -261,7 +261,7 @@
         <key id="U019d" output="Ɲ" width="0.909" longPressKeyIds="U019d-alt0" longPressDefaultKeyId="U019d-alt0" />
         <key id="U019d-alt0" output="Ŋ" />
         <key id="gap1-bambara-bm" gap="true" width="0.455" />
-        <key id="gap3-bambara-bm" gap="true" width="0.3184" />
+        <key id="gaplast-bambara-bm" gap="true" width="0.3184" />
 
         <!-- Numeric layer (number input fields), from FlorisBoard's foundation layout -->
         <key id="plus-numeric" output="+" width="1.8" longPressKeyIds="s-hyphen s-asterisk s-slash" />
@@ -294,14 +294,14 @@
         <layer id="base">
             <row keys="gap1-bambara-bm a z e r t y u i o p gap1-bambara-bm" />
             <row keys="q s d f g h j k l m u025b" />
-            <row keys="base-to-shift gap3-bambara-bm w x c v b n u0272 gap3-bambara-bm bksp" />
+            <row keys="base-to-shift gaplast-bambara-bm w x c v b n u0272 gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
         <layer id="shift">
             <row keys="gap1-bambara-bm A Z E R T Y U I O P gap1-bambara-bm" />
             <row keys="Q S D F G H J K L M U0190" />
-            <row keys="shift-to-base gap3-bambara-bm W X C V B N U019d gap3-bambara-bm bksp" />
+            <row keys="shift-to-base gaplast-bambara-bm W X C V B N U019d gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1 fn-key space enter" />
         </layer>
 
@@ -336,70 +336,70 @@
         <layer id="base-email">
             <row keys="gap1-bambara-bm a z e r t y u i o p gap1-bambara-bm" />
             <row keys="q s d f g h j k l m u025b" />
-            <row keys="base-to-shift gap3-bambara-bm w x c v b n u0272 gap3-bambara-bm bksp" />
+            <row keys="base-to-shift gaplast-bambara-bm w x c v b n u0272 gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="shift-email">
             <row keys="gap1-bambara-bm A Z E R T Y U I O P gap1-bambara-bm" />
             <row keys="Q S D F G H J K L M U0190" />
-            <row keys="shift-to-base gap3-bambara-bm W X C V B N U019d gap3-bambara-bm bksp" />
+            <row keys="shift-to-base gaplast-bambara-bm W X C V B N U019d gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
         <layer id="base-url">
             <row keys="gap1-bambara-bm a z e r t y u i o p gap1-bambara-bm" />
             <row keys="q s d f g h j k l m u025b" />
-            <row keys="base-to-shift gap3-bambara-bm w x c v b n u0272 gap3-bambara-bm bksp" />
+            <row keys="base-to-shift gaplast-bambara-bm w x c v b n u0272 gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="shift-url">
             <row keys="gap1-bambara-bm A Z E R T Y U I O P gap1-bambara-bm" />
             <row keys="Q S D F G H J K L M U0190" />
-            <row keys="shift-to-base gap3-bambara-bm W X C V B N U019d gap3-bambara-bm bksp" />
+            <row keys="shift-to-base gaplast-bambara-bm W X C V B N U019d gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
         <layer id="base-classic">
             <row keys="gap1-bambara-bm a z e r t y u i o p gap1-bambara-bm" />
             <row keys="q s d f g h j k l m u025b" />
-            <row keys="base-to-shift gap3-bambara-bm w x c v b n u0272 gap3-bambara-bm bksp" />
+            <row keys="base-to-shift gaplast-bambara-bm w x c v b n u0272 gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic">
             <row keys="gap1-bambara-bm A Z E R T Y U I O P gap1-bambara-bm" />
             <row keys="Q S D F G H J K L M U0190" />
-            <row keys="shift-to-base gap3-bambara-bm W X C V B N U019d gap3-bambara-bm bksp" />
+            <row keys="shift-to-base gaplast-bambara-bm W X C V B N U019d gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-email">
             <row keys="gap1-bambara-bm a z e r t y u i o p gap1-bambara-bm" />
             <row keys="q s d f g h j k l m u025b" />
-            <row keys="base-to-shift gap3-bambara-bm w x c v b n u0272 gap3-bambara-bm bksp" />
+            <row keys="base-to-shift gaplast-bambara-bm w x c v b n u0272 gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-email">
             <row keys="gap1-bambara-bm A Z E R T Y U I O P gap1-bambara-bm" />
             <row keys="Q S D F G H J K L M U0190" />
-            <row keys="shift-to-base gap3-bambara-bm W X C V B N U019d gap3-bambara-bm bksp" />
+            <row keys="shift-to-base gaplast-bambara-bm W X C V B N U019d gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="base-classic-url">
             <row keys="gap1-bambara-bm a z e r t y u i o p gap1-bambara-bm" />
             <row keys="q s d f g h j k l m u025b" />
-            <row keys="base-to-shift gap3-bambara-bm w x c v b n u0272 gap3-bambara-bm bksp" />
+            <row keys="base-to-shift gaplast-bambara-bm w x c v b n u0272 gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
         <layer id="shift-classic-url">
             <row keys="gap1-bambara-bm A Z E R T Y U I O P gap1-bambara-bm" />
             <row keys="Q S D F G H J K L M U0190" />
-            <row keys="shift-to-base gap3-bambara-bm W X C V B N U019d gap3-bambara-bm bksp" />
+            <row keys="shift-to-base gaplast-bambara-bm W X C V B N U019d gaplast-bambara-bm bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

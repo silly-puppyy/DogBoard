@@ -1111,6 +1111,9 @@ class ImeController(
          * keeps the keys for the decoder (the loaded pack's rules: a downloaded pack's are not among the built-in ones
          * languageRules() reads). Other languages: the letters as typed.
          */
+        /** Languages whose layouts type Indic independent vowels as signs after a consonant (DevanagariComposer). */
+        private val INDIC_LANGUAGES = setOf("hi", "mr", "ne", "bn", "as", "ta", "te", "kn", "ml", "gu", "pa", "or", "sa")
+
         private fun withTypedMarks(word: CurrentWord): CurrentWord {
             // Korean: jamo keys drawn as Hangul syllables (by the language: Korean has no pack whose rules could say so)
             val language = languageTag.ifEmpty { dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype.primaryLocale.languageTag() }
@@ -1119,8 +1122,8 @@ class ImeController(
                 word.decomposer = io.github.sillypuppyy.dogboard.engine.HangulComposer::decompose
                 return word
             }
-            // Hindi: a vowel key after a consonant writes its sign (क + आ -> का)
-            if (language.substringBefore('-') == "hi") {
+            // Indic keyboards: a vowel key after a consonant writes its sign (क + आ -> का, ক + আ -> কা)
+            if (language.substringBefore('-') in INDIC_LANGUAGES) {
                 word.composer = io.github.sillypuppyy.dogboard.engine.DevanagariComposer::compose
                 word.decomposer = io.github.sillypuppyy.dogboard.engine.DevanagariComposer::decompose
                 return word
