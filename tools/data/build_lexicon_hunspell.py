@@ -87,6 +87,8 @@ def casing_counts(paths):
                 for i, w in enumerate(words):
                     if i == 0:
                         continue
+                    # one apostrophe, as the keyboard types it: Italian had "c’è" and "c'è" as two words (2026-11-23)
+                    w = w.replace("’", "'")
                     out[w.lower()][w] += 1
     return out
 

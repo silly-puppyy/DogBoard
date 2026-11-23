@@ -45,7 +45,8 @@ def main():
     for c in lexchars:
         if c not in sim.pos and base(c) and base(c) in sim.pos: sim.pos[c] = sim.pos[base(c)]
     rnd = random.Random(7)
-    sents = [l.rstrip('\n') for l in open(held, encoding='utf-8')]
+    # the keyboard types the straight apostrophe: a target written "c’è" counted "c'è" as a miss (Italian, 2026-11-23)
+    sents = [l.rstrip('\n').replace('’', "'") for l in open(held, encoding='utf-8')]
     rnd.shuffle(sents)
     sets = {k: [] for k in ('typos', 'accents-clear', 'accents-twin', 'controls')}
     for sid, s in enumerate(sents):

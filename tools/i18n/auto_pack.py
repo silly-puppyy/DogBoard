@@ -54,6 +54,9 @@ LANGS = {
     # Romance with clitic pronouns (dá-me, fazê-lo) and ç / ã / õ by long-press; news mixes Brazil and Portugal
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
+    # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
+    'it': dict(name='Italian', leipzig=['ita_news_2024_1M', 'ita_news_2023_1M', 'ita_wikipedia_2021_1M'], tatoeba='ita',
+               layout=('gboard', 'qwerty'), gboard_tag='it-IT', script='Latn', compounds=False),
     'tr': dict(name='Turkish', leipzig=['tur_news_2024_1M', 'tur_news_2022_1M', 'tur_wikipedia_2021_1M'], tatoeba='tur',
                layout=('gboard', 'qwerty'), gboard_tag='tr-TR', script='Latn', compounds=False),
     'pl': dict(name='Polish', leipzig=['pol_news_2024_1M', 'pol_news_2022_1M', 'pol_wikipedia_2021_1M'], tatoeba='pol',
