@@ -96,30 +96,13 @@ fun TypingCorrectionScreen() {
 fun AutocorrectScreen() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
-    val autocorrectOn by prefs.correction.autocorrect.collectAsState()
-    val level by prefs.correction.autocorrectLevel.collectAsState()
-    val undo by prefs.correction.undoOnBackspace.collectAsState()
     val adaptive by prefs.correction.adaptiveStrength.collectAsState()
     val notify by prefs.correction.adaptiveNotify.collectAsState()
     val fixPrevious by prefs.correction.fixPreviousWord.collectAsState()
     val joinSplit by prefs.correction.joinSplitWords.collectAsState()
     val neuralRetro by prefs.correction.neuralRetro.collectAsState()
-    val L = AutocorrectLevel.entries
     SetPage("Autocorrect") {
-        SetGroup("Autocorrect") {
-            Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                TitleSub("How readily", "How readily typos are fixed when you press space.")
-                Segmented("ac:level", listOf("Off", "Gentle", "Standard", "Strong"), if (!autocorrectOn) 0 else 1 + L.indexOf(level)) { i ->
-                    scope.launch {
-                        prefs.correction.autocorrect.set(i > 0)
-                        if (i > 0) prefs.correction.autocorrectLevel.set(L[i - 1])
-                    }
-                }
-            }
-            SetSwitchRow("ac:undo", "Undo with backspace", "Backspace right after a fix puts back the word you typed.", undo) { v ->
-                scope.launch { prefs.correction.undoOnBackspace.set(v) }
-            }
-        }
+        AutocorrectGroup()
         SetGroup("Learning") {
             SetSwitchRow("ac:adapt", "Learn from your undos", "Autocorrect gets more careful when you often undo it, and bolder when you keep its fixes.", adaptive) { v ->
                 scope.launch { prefs.correction.adaptiveStrength.set(v) }
@@ -140,6 +123,38 @@ fun AutocorrectScreen() {
             SetSwitchRow("ac:neural", "Neural look-back (experimental)", "The neural model also judges the previous word. Slower, and not clearly better yet.", neuralRetro) { v ->
                 scope.launch { prefs.correction.neuralRetro.set(v) }
             }
+        }
+    }
+}
+
+/**
+ * The Autocorrect group of Autocorrect and typing › Autocorrect, shared with the setup's typing page (user 2026-11-23:
+ * the setup shows the settings themselves); [lookBack] adds "Fix the previous word".
+ */
+@Composable
+internal fun AutocorrectGroup(title: String = "Autocorrect", lookBack: Boolean = false) {
+    val prefs by FlorisPreferenceStore
+    val scope = rememberCoroutineScope()
+    val autocorrectOn by prefs.correction.autocorrect.collectAsState()
+    val level by prefs.correction.autocorrectLevel.collectAsState()
+    val undo by prefs.correction.undoOnBackspace.collectAsState()
+    val fixPrevious by prefs.correction.fixPreviousWord.collectAsState()
+    val L = AutocorrectLevel.entries
+    SetGroup(title) {
+        Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            TitleSub("How readily", "How readily typos are fixed when you press space. Off: only suggestions, nothing changed as you type.")
+            Segmented("ac:level", listOf("Off", "Gentle", "Standard", "Strong"), if (!autocorrectOn) 0 else 1 + L.indexOf(level)) { i ->
+                scope.launch {
+                    prefs.correction.autocorrect.set(i > 0)
+                    if (i > 0) prefs.correction.autocorrectLevel.set(L[i - 1])
+                }
+            }
+        }
+        SetSwitchRow("ac:undo", "Undo with backspace", "Backspace right after a fix puts back the word you typed.", undo) { v ->
+            scope.launch { prefs.correction.undoOnBackspace.set(v) }
+        }
+        if (lookBack) SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too, as on an iPhone.", fixPrevious) { v ->
+            scope.launch { prefs.correction.fixPreviousWord.set(v) }
         }
     }
 }
@@ -206,18 +221,9 @@ internal fun ContactNamesRow(id: String) {
 fun CapitalsScreen() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
-    val sentenceCaps by prefs.typing.autoCapitalization.collectAsState()
-    val nameCaps by prefs.typing.dictionaryCapitals.collectAsState()
     val capsLock by prefs.typing.capsLockEnabled.collectAsState()
     SetPage("Capitals") {
-        SetGroup("Automatic capitals") {
-            SetSwitchRow("cp:sentence", "Sentence starts", "A capital after a full stop, question mark or new line.", sentenceCaps) { v ->
-                scope.launch { prefs.typing.autoCapitalization.set(v) }
-            }
-            SetSwitchRow("cp:names", "Names and “I”", "Words the dictionary writes with a capital get one, like “I”, “Paris” and “Mr”.", nameCaps) { v ->
-                scope.launch { prefs.typing.dictionaryCapitals.set(v) }
-            }
-        }
+        CapitalsGroup()
         SetGroup("Shift key") {
             SetSwitchRow("cp:capslock", "Caps lock", "Double-tap shift to type in capitals until you tap it again.", capsLock) { v ->
                 scope.launch { prefs.typing.capsLockEnabled.set(v) }
@@ -226,25 +232,46 @@ fun CapitalsScreen() {
     }
 }
 
+/** The automatic capitals group of Autocorrect and typing › Capitals, shared with the setup's typing page. */
+@Composable
+internal fun CapitalsGroup(title: String = "Automatic capitals") {
+    val prefs by FlorisPreferenceStore
+    val scope = rememberCoroutineScope()
+    val sentenceCaps by prefs.typing.autoCapitalization.collectAsState()
+    val nameCaps by prefs.typing.dictionaryCapitals.collectAsState()
+    SetGroup(title) {
+        SetSwitchRow("cp:sentence", "Sentence starts", "A capital after a full stop, question mark or new line.", sentenceCaps) { v ->
+            scope.launch { prefs.typing.autoCapitalization.set(v) }
+        }
+        SetSwitchRow("cp:names", "Names and “I”", "Words the dictionary writes with a capital get one, like “I”, “Paris” and “Mr”.", nameCaps) { v ->
+            scope.launch { prefs.typing.dictionaryCapitals.set(v) }
+        }
+    }
+}
+
 /** Autocorrect and typing › Smart punctuation. */
 @Composable
 fun PunctuationScreen() {
+    SetPage("Smart punctuation") { PunctuationGroup() }
+}
+
+/** The punctuation group of Autocorrect and typing › Smart punctuation, shared with the setup's typing page. */
+@Composable
+internal fun PunctuationGroup(title: String = "As you type") {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
     val quotes by prefs.typing.smartQuotes.collectAsState()
     val dashes by prefs.typing.smartDashes.collectAsState()
     val doubleSpace by prefs.correction.doubleSpacePeriod.collectAsState()
-    SetPage("Smart punctuation") {
-        SetGroup("As you type") {
-            SetSwitchRow("pn:quotes", "Smart quotes", "Curly quotes and apostrophes (“ ” ’) instead of straight ones.", quotes) { v ->
-                scope.launch { prefs.typing.smartQuotes.set(v) }
-            }
-            SetSwitchRow("pn:dashes", "Smart dashes", "Two hyphens become a dash (—) and three full stops an ellipsis (…).", dashes) { v ->
-                scope.launch { prefs.typing.smartDashes.set(v) }
-            }
-            SetSwitchRow("pn:dblspace", "Double-space full stop", "Two quick spaces type a full stop and a space.", doubleSpace) { v ->
-                scope.launch { prefs.correction.doubleSpacePeriod.set(v) }
-            }
+    SetGroup(title) {
+        SetSwitchRow("pn:quotes", "Smart quotes", "Curly quotes and apostrophes (“ ” ’) instead of straight ones.", quotes) { v ->
+            scope.launch { prefs.typing.smartQuotes.set(v) }
+        }
+        SetSwitchRow("pn:dashes", "Smart dashes", "Two hyphens become a dash (—) and three full stops an ellipsis (…).", dashes) { v ->
+            scope.launch { prefs.typing.smartDashes.set(v) }
+        }
+        SetSwitchRow("pn:dblspace", "Double-space full stop", "Two quick spaces type a full stop and a space.", doubleSpace) { v ->
+            scope.launch { prefs.correction.doubleSpacePeriod.set(v) }
         }
     }
 }

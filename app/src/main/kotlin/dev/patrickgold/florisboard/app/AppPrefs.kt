@@ -508,7 +508,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         /** Number row "on long-press": q-p offer their digit first (numberRow stays the "On" choice). */
         val numberRowLongPress = boolean(
             key = "keyboard__number_row_long_press",
-            default = false,
+            default = true,
         )
         /** Long-press hints in the key corner: off / accents / symbols. */
         val hintKind = string(
@@ -523,15 +523,16 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         /** Bottom row: simple (123, emoji, space, action) or classic (?123, comma, emoji, space, period, action). */
         val bottomRow = string(
             key = "keyboard__bottom_row",
-            default = "simple",
+            default = "classic",
         )
         // DogBoard Layout elements (user 2026-11-17, mix and match): the symbol pages ("iphone" / "android")
         // and ?123 / action keys drawn as pills
-        val symbolPages = string(key = "keyboard__symbol_pages", default = "iphone")
+        val symbolPages = string(key = "keyboard__symbol_pages", default = "android")
         // DogBoard (user 2026-11-21): when the symbols page returns to the letters: "any" key, "space" (and an
         // apostrophe, as on an iPhone; the default) or "none"
         val symbolsReturn = string(key = "keyboard__symbols_return", default = "space")
-        val pillKeys = boolean(key = "keyboard__pill_keys", default = false)
+        // Classic (Android-style) is the default layout (user 2026-11-23)
+        val pillKeys = boolean(key = "keyboard__pill_keys", default = true)
         // DogBoard: the letter layout (tools/layouts/gen_layouts.py ids); autocorrection and
         // suggestions are English-only until the internationalisation pass
         val layoutId = string(

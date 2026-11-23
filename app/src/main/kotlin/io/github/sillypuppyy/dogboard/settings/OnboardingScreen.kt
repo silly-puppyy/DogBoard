@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -138,15 +139,15 @@ fun OnboardingScreen() {
                 stepText = "Step ${i + 1} of ${steps.size}", pathName = if (p == "quick") "Quick setup" else "Full setup",
                 progress = (i + 1f) / steps.size, title = TITLES.getValue(id).first, body = TITLES.getValue(id).second,
                 nextLabel = when {
-                    id == "done" -> "Finish"
+                    i == steps.size - 1 -> "Finish"
                     id == "enable" && !(enabled && selected) -> "Skip for now"
                     else -> "Next"
                 },
                 // Onboarding:121: Full setup can take the defaults for the rest from its third page on
-                canSkip = p == "full" && i >= 2 && id != "done",
+                canSkip = p == "full" && i >= 2 && i < steps.size - 1,
                 onBack = { if (i == 0) path = null else i-- },
                 onNext = { if (i < steps.size - 1) i++ else finish() },
-                onSkip = { i = steps.size - 1 },
+                onSkip = { finish() },
             ) {
                 when (id) {
                     "enable" -> EnableStep(enabled, selected)
@@ -156,8 +157,7 @@ fun OnboardingScreen() {
                     "theme" -> ThemeStep()
                     "typing" -> TypingStep()
                     "clipboard" -> ClipboardStep()
-                    "privacy" -> PrivacyStep()
-                    else -> DoneStep()
+                    else -> PrivacyStep()
                 }
             }
         }
@@ -167,8 +167,8 @@ fun OnboardingScreen() {
 // The canvas's paths as the user set them (2026-11-23): Quick is turn on, languages (the phone's language added with
 // its usual layout), done; Full drops emoji, puts look and feel on one Theme page and contacts with incognito on one
 // Privacy page. Writing tools, GIFs, tips and codes from messages aren't built (port map).
-private val QUICK = listOf("enable", "langs", "done")
-private val FULL = listOf("enable", "langs", "layout", "elements", "theme", "typing", "clipboard", "privacy", "done")
+private val QUICK = listOf("enable", "langs")
+private val FULL = listOf("enable", "langs", "layout", "elements", "theme", "typing", "clipboard", "privacy")
 
 /** Onboarding script S: each page's title and body. */
 private val TITLES = mapOf(
@@ -180,55 +180,37 @@ private val TITLES = mapOf(
     "typing" to ("Typing and correction" to "What DogBoard fixes for you."),
     "clipboard" to ("Clipboard" to "DogBoard can keep what you copy so you can paste it again later."),
     "privacy" to ("Privacy" to "What DogBoard may read, and what it does with links you copy."),
-    "done" to ("You’re set" to "Type anything to try it. Every choice can be changed in Settings."),
 )
 
-private val ink = css("#221a14")
 
 /** Onboarding:22-33: the paw, the wordmark, one line, the two promises and the two paths. */
 @Composable
 private fun Welcome(onQuick: () -> Unit, onFull: () -> Unit) {
+    // centred and simple, in the app's own type, as FlorisBoard's welcome (user feedback 2026-11-23, B)
     Column(
-        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars).padding(start = 28.dp, end = 28.dp, top = 96.dp, bottom = 36.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars).padding(start = 24.dp, end = 24.dp, top = 96.dp, bottom = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        PawLogo(88f)
-        DText("DogBoard", style = TextStyle(fontFamily = DesignFonts.fredoka(600), fontSize = 44.sp, letterSpacing = (-0.03).em(), color = SetColors.onSurface, lineHeight = 44.sp))
-        DText("A calm keyboard that types the way you expect, and that you can tune to the last detail.", style = setText(20f, color = SetColors.onSurface).copy(lineHeight = 28.sp), maxLines = 4)
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            // CHANGED (port map): the canvas's "Works offline" isn't true with language downloads
-            Promise("lock", "What you type stays on this phone")
-            Promise("code", "Open source")
-        }
+        PawLogo(96f)
+        DText("Welcome to DogBoard", Modifier.padding(top = 16.dp), style = setText(32f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 40.sp), maxLines = 2)
+        DText("Set it up in a minute, or go through every setting.", style = setText(16f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 24.sp), maxLines = 3)
         Spacer(Modifier.weight(1f))
-        PathButton("Quick setup", "3 screens, under a minute", filled = true, onClick = onQuick)
-        PathButton("Full setup", "9 screens, about 3 minutes", filled = false, onClick = onFull)
+        PathButton("Full setup (recommended)", filled = true, onClick = onFull)
+        PathButton("Quick setup", filled = false, onClick = onQuick)
     }
 }
 
-private fun Double.em() = androidx.compose.ui.unit.TextUnit(this.toFloat(), androidx.compose.ui.unit.TextUnitType.Em)
+
 
 @Composable
-private fun Promise(icon: String, text: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        Symbol(icon, 20.sp, SetColors.primary)
-        DText(text, style = setText(15f, color = SetColors.onSurfaceVariant))
-    }
-}
-
-@Composable
-private fun PathButton(label: String, note: String, filled: Boolean, onClick: () -> Unit) {
+private fun PathButton(label: String, filled: Boolean, onClick: () -> Unit) {
     val shape = RoundedCornerShape(28.dp)
-    Column(
+    Box(
         Modifier.fillMaxWidth().height(56.dp).clip(shape)
             .then(if (filled) Modifier.background(SetColors.primary) else Modifier.cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), shape))
             .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center,
-    ) {
-        val fg = if (filled) SetColors.scheme?.onPrimary ?: Color.White else SetColors.primary
-        DText(label, style = setText(16f, 600, fg))
-        DText(note, style = setText(12f, 400, fg.copy(alpha = 0.85f)))
-    }
+        contentAlignment = Alignment.Center,
+    ) { DText(label, style = setText(16f, 500, if (filled) SetColors.scheme?.onPrimary ?: Color.White else SetColors.primary)) }
 }
 
 /** Onboarding:37-43, 118-123: progress, title and body, the page's items, then Back / defaults / Next. */
@@ -252,7 +234,7 @@ private fun StepFrame(
         }
         Column(
             Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp), content = content,
+            verticalArrangement = Arrangement.spacedBy(20.dp), content = content,
         )
         Row(
             Modifier.fillMaxWidth().cssShadow(listOf(CssShadow(false, 0f, -1f, 0f, 0f, SetColors.surfaceContainerHighest)), RoundedCornerShape(0.dp))
@@ -280,73 +262,50 @@ private fun TextPill(text: String, color: Color, size: Float = 14f, weight: Int 
 // ---- items (Onboarding:46-114)
 
 private val cardShape = RoundedCornerShape(16.dp)
-private fun Modifier.card() = fillMaxWidth().clip(cardShape).background(SetColors.row)
+// a row of a settings group (the group rounds the outer corners, as the settings pages do)
+private fun Modifier.card() = fillMaxWidth().background(SetColors.row)
 
 /** Onboarding:49-51: a switch row (label 15, sub 12.5, the M3 switch). */
 @Composable
 private fun Toggle(label: String, sub: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier.card().heightIn(min = 60.dp).then(if (enabled) Modifier.clickable { onChange(!checked) } else Modifier)
-            .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            DText(label, style = setText(15f, color = SetColors.onSurface.copy(alpha = if (enabled) 1f else 0.38f)), maxLines = 3)
-            DText(sub, style = setText(12.5f, color = SetColors.onSurfaceVariant.copy(alpha = if (enabled) 1f else 0.38f)).copy(lineHeight = 17.5.sp), maxLines = 6)
-        }
-        Box(
-            Modifier.size(52.dp, 32.dp)
-                .then(if (checked) Modifier else Modifier.cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 2f, SetColors.outline)), RoundedCornerShape(16.dp)))
-                .background(if (checked) SetColors.primary else SetColors.surfaceContainerHighest, RoundedCornerShape(16.dp)),
-        ) {
-            Box(
-                Modifier.padding(start = if (checked) 24.dp else 8.dp, top = if (checked) 4.dp else 8.dp).size(if (checked) 24.dp else 16.dp)
-                    .background(if (checked) Color.White else SetColors.outline, CircleShape),
-            )
-        }
+    // the settings pages' own switch row
+    Box(Modifier.then(if (enabled) Modifier else Modifier.graphicsLayer { alpha = 0.38f })) {
+        io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow("onb:$label", label, sub, checked, if (enabled) onChange else null)
     }
 }
 
 /** Onboarding:56-60: a labelled segmented choice. */
 @Composable
 private fun Choice(id: String, label: String, sub: String = "", options: List<String>, selected: Int, enabled: Boolean = true, onSelect: (Int) -> Unit) {
-    Column(Modifier.card().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            DText(label, style = setText(15f, color = SetColors.onSurface.copy(alpha = if (enabled) 1f else 0.38f)))
-            if (sub.isNotEmpty()) DText(sub, style = setText(12.5f, color = SetColors.onSurfaceVariant), maxLines = 4)
-        }
-        // Onboarding:56: the whole control at 38 % while it doesn't apply
-        Box(Modifier.then(if (enabled) Modifier else Modifier.graphicsLayer { alpha = 0.38f })) {
-            Segmented("onb:$id", options, selected, onSelect = if (enabled) onSelect else null)
-        }
+    // as the settings pages' choice rows: title and line, then the segmented buttons
+    Column(Modifier.card().then(if (enabled) Modifier else Modifier.graphicsLayer { alpha = 0.38f }).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        io.github.sillypuppyy.dogboard.design.settings.TitleSub(label, sub)
+        Segmented("onb:$id", options, selected, onSelect = if (enabled) onSelect else null)
     }
 }
 
 /** Onboarding:65-71: radio cards, with an optional four-colour swatch. */
 @Composable
 private fun Cards(options: List<Triple<String, String, List<String>?>>, selected: Int, onSelect: (Int) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for ((n, o) in options.withIndex()) {
-            val on = n == selected
-            Row(
-                Modifier.card().then(if (on) Modifier.cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 2f, SetColors.primary)), cardShape) else Modifier)
-                    .clickable { onSelect(n) }.padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-            ) {
-                o.third?.let { sw ->
-                    Box(Modifier.size(44.dp, 32.dp).clip(RoundedCornerShape(8.dp)).background(css(sw[0])).padding(5.dp)) {
-                        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Box(Modifier.weight(1f).fillMaxHeight().background(css(sw[1]), RoundedCornerShape(2.dp)))
-                            Box(Modifier.weight(1f).fillMaxHeight().background(css(sw[2]), RoundedCornerShape(2.dp)))
-                            Box(Modifier.weight(1f).fillMaxHeight().background(css(sw[3]), RoundedCornerShape(2.dp)))
-                        }
+    for ((n, o) in options.withIndex()) {
+        val on = n == selected
+        Row(
+            Modifier.card().heightIn(min = 72.dp).clickable { onSelect(n) }.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            o.third?.let { sw ->
+                Box(Modifier.size(44.dp, 32.dp).clip(RoundedCornerShape(8.dp)).background(css(sw[0])).padding(5.dp)) {
+                    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Box(Modifier.weight(1f).fillMaxHeight().background(css(sw[1]), RoundedCornerShape(2.dp)))
+                        Box(Modifier.weight(1f).fillMaxHeight().background(css(sw[2]), RoundedCornerShape(2.dp)))
+                        Box(Modifier.weight(1f).fillMaxHeight().background(css(sw[3]), RoundedCornerShape(2.dp)))
                     }
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    DText(o.first, style = setText(15f, 500))
-                    DText(o.second, style = setText(12.5f, color = SetColors.onSurfaceVariant), maxLines = 4)
-                }
-                Symbol(if (on) "radio_button_checked" else "radio_button_unchecked", 22.sp, SetColors.primary, fill = if (on) 1 else 0)
+            }
+            io.github.sillypuppyy.dogboard.design.settings.TitleSub(o.first, o.second, Modifier.weight(1f))
+            // a Material radio button: ring, and a filled centre when chosen
+            Box(Modifier.size(20.dp).border(2.dp, if (on) SetColors.primary else SetColors.onSurfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                if (on) Box(Modifier.size(10.dp).background(SetColors.primary, CircleShape))
             }
         }
     }
@@ -393,27 +352,6 @@ private fun Preview() {
     }
 }
 
-/** Onboarding:107: a field to try the keyboard in (the canvas's sample text as the hint). */
-@Composable
-private fun TryField() {
-    var text by remember { mutableStateOf("") }
-    val shape = RoundedCornerShape(26.dp)
-    Box(
-        Modifier.fillMaxWidth().height(52.dp).clip(shape).background(SetColors.row)
-            .cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 2f, SetColors.primary)), shape).padding(horizontal = 18.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        BasicTextField(
-            text, { text = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = setText(16f), cursorBrush = SolidColor(SetColors.primary),
-            decorationBox = { inner ->
-                Box(contentAlignment = Alignment.CenterStart) {
-                    if (text.isEmpty()) DText("Woof, it works", style = setText(16f, color = SetColors.onSurfaceVariant))
-                    inner()
-                }
-            },
-        )
-    }
-}
 
 // ---- pages
 
@@ -421,11 +359,13 @@ private fun TryField() {
 @Composable
 private fun EnableStep(enabled: Boolean, selected: Boolean) {
     val context = LocalContext.current
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Android") {
     Status(1, "Turn on in system settings", if (enabled) "Done" else "Opens Android’s keyboard list", enabled, "Open") {
         InputMethodUtils.showImeEnablerActivity(context)
     }
     Status(2, "Switch to DogBoard", if (selected) "Done" else "Pick it in the keyboard list", selected, "Open") {
         InputMethodUtils.showImePicker(context)
+    }
     }
 }
 
@@ -475,6 +415,7 @@ private fun LanguagesStep() {
         if (loc.language != "en") PackDownloadQueue.ensure(context, listOf(tag))
     }
     fun layoutName(lang: String, id: String?) = GeneratedLayouts.all.firstOrNull { it.id == (id ?: LanguageLayouts.layoutOf(lang, memory)) }?.label ?: ""
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Your languages") {
     for ((n, s) in list.withIndex()) {
         LangRow(s.primaryLocale.displayName(), if (n == 0) "Your first language" else "Added", layoutName(s.primaryLocale.language, s.layoutId), checked = true, locked = n == 0) {
             subtypeManager.removeSubtype(s)
@@ -490,6 +431,7 @@ private fun LanguagesStep() {
             if (subtypes.isEmpty()) subtypeManager.addSubtypes(Subtype.DEFAULT, s) else subtypeManager.addSubtypes(s)
             PackDownloadQueue.ensure(context, listOf(tag))
         }
+    }
     }
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { nav.navigate(Routes.Settings.Localization) }.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -530,7 +472,9 @@ private fun LayoutStep() {
     prefs.keyboard.bottomRow.collectAsState().value
     prefs.keyboard.hintKind.collectAsState().value
     val st = LayoutPrefs.read(prefs)
-    val sel = when (st) { LayoutElements.SIMPLE -> 0; LayoutElements.CLASSIC -> 1; else -> -1 }
+    // the preset the bottom row comes from (other elements may have been changed since)
+    val sel = if (st.bottom == "classic") 1 else 0
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Layout") {
     Cards(
         listOf(
             Triple("Simple", "Punctuation on 123 and long-press. Fewer keys, bigger space bar.", null),
@@ -538,6 +482,7 @@ private fun LayoutStep() {
         ),
         sel,
     ) { n -> scope.launch { LayoutPrefs.write(prefs, if (n == 0) LayoutElements.SIMPLE else LayoutElements.CLASSIC) } }
+    }
     Preview()
 }
 
@@ -554,19 +499,24 @@ private fun ElementsStep() {
     val space by prefs.keyboard.spaceLabel.collectAsState()
     val hold by prefs.typing.spaceHold.collectAsState()
     val words by prefs.keyboard.actionKeyWords.collectAsState()
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Keys") {
     Choice("numrow", "Number row", options = listOf("Off", "On", "Long-press"), selected = if (numRow) 1 else if (numLong) 2 else 0) { n ->
         scope.launch { prefs.keyboard.numberRow.set(n == 1); prefs.keyboard.numberRowLongPress.set(n == 2) }
     }
-    val labels = listOf("blank", "space", "lang")
-    Choice("space", "Space bar shows", options = listOf("Nothing", "“space”", "Languages"), selected = labels.indexOf(space).let { if (it < 0) 2 else it }) { n ->
+    Choice("action", "Action key", options = listOf("Icon", "Word"), selected = if (words) 1 else 0) { n ->
+        scope.launch { prefs.keyboard.actionKeyWords.set(n == 1) }
+    }
+    }
+    // the same choices as Settings › Layout (Auto: "space" with one language, the language names with more)
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Space bar") {
+    val labels = listOf("auto", "lang", "space", "blank")
+    Choice("space", "Space bar label", options = listOf("Auto", "Language", "“space”", "Blank"), selected = labels.indexOf(space).coerceAtLeast(0)) { n ->
         scope.launch { prefs.keyboard.spaceLabel.set(labels[n]) }
     }
     val holds = listOf("nothing", "cursor", "language")
     Choice("hold", "Holding the space bar", options = listOf("Nothing", "Moves the cursor", "Languages"), selected = holds.indexOf(hold).coerceAtLeast(0)) { n ->
         scope.launch { prefs.typing.spaceHold.set(holds[n]) }
     }
-    Choice("action", "Action key", options = listOf("Icon", "Word"), selected = if (words) 1 else 0) { n ->
-        scope.launch { prefs.keyboard.actionKeyWords.set(n == 1) }
     }
     Preview()
 }
@@ -586,6 +536,7 @@ private fun ThemeStep() {
     val sound by prefs.inputFeedback.audioEnabled.collectAsState()
     val style by prefs.inputFeedback.audioStyle.collectAsState()
     val silent by prefs.inputFeedback.audioBypassSilent.collectAsState()
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Look") {
     Choice("dark", "Day and night", "Follows your phone’s dark mode, or keeps one look all the time.", listOf("Follow the system", "Ignore the system"), if (follow) 0 else 1) { n ->
         scope.launch { prefs.keyboard.themeFollow.set(n == 0) }
     }
@@ -602,7 +553,9 @@ private fun ThemeStep() {
         }
         Symbol("chevron_right", 24.sp, SetColors.onSurfaceVariant)
     }
+    }
     Preview()
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Sound and vibration") {
     Toggle("Vibration", "A short tap on each key.", vib) { scope.launch { prefs.inputFeedback.hapticEnabled.set(it) } }
     // the sounds of Settings › Sound and vibration
     val sounds = listOf(null to "Off", "system" to "Phone", "tick" to "Tick", "drop" to "Drop", "glass" to "Glass", "thock" to "Thock", "classic" to "Classic",
@@ -622,21 +575,15 @@ private fun ThemeStep() {
         })
     }
     if (sound) Toggle("Play on silent", "Key sounds even when the phone is on silent or vibrate.", silent) { scope.launch { prefs.inputFeedback.audioBypassSilent.set(it) } }
+    }
 }
 
-/** Onboarding S.typing as the user set it (2026-11-23): autocorrect on or off, the general rules, smart quotes. */
+/** Onboarding S.typing in the settings' own groups (feedback 2026-11-23, F1): Autocorrect, Capitalisation, Punctuation. */
 @Composable
 private fun TypingStep() {
-    val prefs by FlorisPreferenceStore
-    val scope = rememberCoroutineScope()
-    val on by prefs.correction.autocorrect.collectAsState()
-    val caps by prefs.typing.autoCapitalization.collectAsState()
-    val retro by prefs.correction.fixPreviousWord.collectAsState()
-    val quotes by prefs.typing.smartQuotes.collectAsState()
-    Toggle("Correct as you type", "Fixes typos when you press space; delete right after undoes it. Off: DogBoard only suggests and never changes what you type.", on) { scope.launch { prefs.correction.autocorrect.set(it) } }
-    Toggle("Capitalise sentences", "Starts each sentence with a capital.", caps) { scope.launch { prefs.typing.autoCapitalization.set(it) } }
-    Toggle("Fix the previous word", "When the next word shows a typo was in the word before, that one is fixed too.", retro, enabled = on) { scope.launch { prefs.correction.fixPreviousWord.set(it) } }
-    Toggle("Smart quotes", "Curly quotes and apostrophes (“like this”) instead of straight ones.", quotes) { scope.launch { prefs.typing.smartQuotes.set(it) } }
+    AutocorrectGroup("Autocorrect", lookBack = true)
+    CapitalsGroup("Capitalisation")
+    PunctuationGroup("Punctuation")
 }
 
 /** Onboarding S.clipboard: history (off by default), how long clips stay, what is never kept; smart chips. */
@@ -648,6 +595,7 @@ private fun ClipboardStep() {
     val clean by prefs.clipboard.historyAutoCleanOldEnabled.collectAsState()
     val after by prefs.clipboard.historyAutoCleanOldAfter.collectAsState()
     val chips by prefs.clipboard.smartChips.collectAsState()
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("History") {
     Toggle("Clipboard history", "Keeps copied text, images and links on this phone.", clip) { scope.launch { prefs.clipboard.historyEnabled.set(it) } }
     val minutes = listOf(60, 1440, 10080)
     val keep = if (!clean) 3 else minutes.indexOfFirst { after <= it }.let { if (it < 0) 2 else it }
@@ -657,17 +605,22 @@ private fun ClipboardStep() {
             if (n != 3) prefs.clipboard.historyAutoCleanOldAfter.set(minutes[n])
         }
     }
-    // the user (2026-11-23): passwords as a choice, cleared after a minute or kept like other clips
-    val sens by prefs.clipboard.historyAutoCleanSensitiveEnabled.collectAsState()
-    Choice("pw", "Copied passwords", "Passwords and codes you copy, in the history and on the phone’s clipboard.", listOf("Clear after a minute", "Never clear"), if (sens) 0 else 1, enabled = clip) { n ->
-        scope.launch { prefs.clipboard.historyAutoCleanSensitiveEnabled.set(n == 0) }
-    }
     val merge by prefs.clipboard.mergeRepeats.collectAsState()
     Toggle("Bring repeats to the top", "Copying something already in the history moves it to the top instead of adding it again.", merge, enabled = clip) {
         scope.launch { prefs.clipboard.mergeRepeats.set(it) }
     }
+    }
+    // passwords: cleared after a minute, or kept like other clips
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Passwords") {
+    val sens by prefs.clipboard.historyAutoCleanSensitiveEnabled.collectAsState()
+    Choice("pw", "Copied passwords", "Passwords and codes you copy, in the history and on the phone’s clipboard.", listOf("Clear after a minute", "Never clear"), if (sens) 0 else 1, enabled = clip) { n ->
+        scope.launch { prefs.clipboard.historyAutoCleanSensitiveEnabled.set(n == 0) }
+    }
+    }
     // CHANGED (port map): the canvas's "Suggest your last copy" has no setting; DogBoard's chips for what's in a copy
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Chips") {
     Toggle("Clipboard chips", "Phone numbers, links and addresses in what you copy show as chips in the bar.", chips) { scope.launch { prefs.clipboard.smartChips.set(it) } }
+    }
 }
 
 /** Onboarding S.smart: contacts (writing tools and message codes aren't built); the permission asked in place. */
@@ -692,52 +645,12 @@ private fun PrivacyStep() {
     val expand by prefs.clipboard.expandShortLinks.collectAsState()
     val previews by prefs.clipboard.linkPreviews.collectAsState()
     val trackers by prefs.clipboard.stripTrackers.collectAsState()
-    ContactsRow()
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Contacts") { ContactsRow() }
+    io.github.sillypuppyy.dogboard.design.settings.SetGroup("Links") {
     Toggle("Remove trackers from links", "Pasted links lose their tracking tags (utm_source and the like).", trackers) { scope.launch { prefs.clipboard.stripTrackers.set(it) } }
     Toggle("Expand short links", "Asks a link shortener (bit.ly, t.co…) where a copied short link leads, so you paste the full link. Uses the internet.", expand) { scope.launch { prefs.clipboard.expandShortLinks.set(it) } }
     Toggle("Link previews", "Shows a copied link’s title and picture in the clipboard. Fetches the page once.", previews) { scope.launch { prefs.clipboard.linkPreviews.set(it) } }
-}
-
-/** Onboarding S.done: the try field, what is on and off, the keyboard. */
-@Composable
-private fun DoneStep() {
-    val prefs by FlorisPreferenceStore
-    val context = LocalContext.current
-    val subtypeManager by context.subtypeManager()
-    val subtypes by subtypeManager.subtypesFlow.collectAsState()
-    val clip by prefs.clipboard.historyEnabled.collectAsState()
-    val links by prefs.clipboard.linkPreviews.collectAsState()
-    val ac by prefs.correction.autocorrect.collectAsState()
-    val contacts by prefs.spelling.useContacts.collectAsState()
-    val st = LayoutPrefs.read(prefs)
-    TryField()
-    val langs = subtypes.ifEmpty { listOf(Subtype.DEFAULT) }.map { it.primaryLocale.displayName() }.distinct().joinToString(", ")
-    Summary(
-        listOf(
-            Triple("translate", langs, true),
-            Triple("keyboard", if (st == LayoutElements.CLASSIC) "Classic layout" else if (st == LayoutElements.SIMPLE) "Simple layout" else "Your own layout", true),
-            Triple("auto_fix_high", if (ac) "Autocorrect on" else "Autocorrect off", ac),
-            Triple("content_paste", if (clip) "Clipboard history on" else "Clipboard history off", clip),
-            Triple("link", if (links) "Link previews on" else "Link previews off", links),
-            Triple("contacts", if (contacts) "Contacts on" else "Contacts off", contacts),
-        ),
-    )
-    Preview()
-}
-
-/** Onboarding:111-112: summary chips, tinted when on. */
-@Composable
-private fun Summary(items: List<Triple<String, String, Boolean>>) {
-    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        for ((icon, label, on) in items) {
-            val (bg, fg) = if (on) SetColors.container(css("#d8e2ff"), css("#2a4678")) else SetColors.surfaceContainerHighest to SetColors.onSurfaceVariant
-            Row(
-                Modifier.height(30.dp).clip(RoundedCornerShape(8.dp)).background(bg).padding(horizontal = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Symbol(icon, 16.sp, fg)
-                DText(label, Modifier.widthIn(max = 280.dp), style = setText(12f, 500, fg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            }
-        }
     }
 }
+
+

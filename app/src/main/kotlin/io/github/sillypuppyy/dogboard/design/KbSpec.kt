@@ -671,6 +671,8 @@ object KbSpec {
                     label = when {
                         P.spaceLabel == "space" -> "space"
                         P.spaceLabel == "lang" || (P.spaceLabel == "auto" && fnKeyKind == "globe") -> P.langName
+                        // Auto with one language: the word "space" (user 2026-11-23)
+                        P.spaceLabel == "auto" && t.spaceText.isEmpty() -> "space"
                         P.spaceLabel == "auto" && t.spaceText.isNotEmpty() -> t.spaceText
                         else -> ""
                     }
