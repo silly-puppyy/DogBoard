@@ -22,6 +22,7 @@ object GeneratedLayouts {
         LayoutInfo("qwertz-cs", "cs", "Czech", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = true, note = "taps"),
         LayoutInfo("standard-ka", "ka", "Georgian", "ქართული", "ქართული", listOf("ღჯუკენგშწზხც", "ფძვთაპროლდჟ", "ჭჩყსმიტქბჰ"), default = true, note = "taps"),
         LayoutInfo("arabic-ar", "ar", "Arabic", "عربي", "عربي", listOf("ضصثقفغعهخحجد", "شسيبلاتنمكطذ", "ئءؤرىةوزظ"), default = true, note = "taps"),
+        LayoutInfo("dubeolsik-ko", "ko", "Korean", "두벌식", "두벌식", listOf("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ", "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ", "ㅋㅌㅊㅍㅠㅜㅡ"), default = true, note = "taps"),
         LayoutInfo("qwerty-aa", "aa", "Afar", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwertz-aa", "aa", "Afar", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "aa", "Afar", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
@@ -160,10 +161,10 @@ object GeneratedLayouts {
         LayoutInfo("qwerty-aa", "bug", "Buginese", "QWERTY (basic)", "QWERTY (basic)", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("qwertz-aa", "bug", "Buginese", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "bug", "Buginese", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
-        LayoutInfo("colemak-aa", "bug", "Buginese", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
     )
 
     private fun part150() = listOf(
+        LayoutInfo("colemak-aa", "bug", "Buginese", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("bulu-bene-bum", "bum", "Bulu", "Bene", "Bene", listOf("qwertyuiopɔ", "asdfghjklə", "zxcvbnmŋ"), default = true, note = "nodict"),
         LayoutInfo("qwerty-aa", "bum", "Bulu", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("qwertz-aa", "bum", "Bulu", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
@@ -313,10 +314,10 @@ object GeneratedLayouts {
         LayoutInfo("qwerty-aa", "fan", "Fang", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwertz-aa", "fan", "Fang", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "fan", "Fang", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
-        LayoutInfo("colemak-aa", "fan", "Fang", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
     )
 
     private fun part300() = listOf(
+        LayoutInfo("colemak-aa", "fan", "Fang", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("fantse-fat", "fat", "Fanti", "Fantse", "Fantse", listOf("qwertyuiopɛ", "asdfghjklɔ", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwerty-aa", "fat", "Fanti", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("qwertz-aa", "fat", "Fanti", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
@@ -466,10 +467,10 @@ object GeneratedLayouts {
         LayoutInfo("azerty-aa", "ibb", "Ibibio", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
         LayoutInfo("colemak-aa", "ibb", "Ibibio", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("qwerty-aa", "id", "Indonesian", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = true, note = "nodict"),
-        LayoutInfo("qwertz-aa", "id", "Indonesian", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
     )
 
     private fun part450() = listOf(
+        LayoutInfo("qwertz-aa", "id", "Indonesian", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "id", "Indonesian", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
         LayoutInfo("colemak-aa", "id", "Indonesian", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("aragonese-an", "ig", "Igbo", "Spanish", "Spanish", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm"), default = true, note = "nodict"),
@@ -619,10 +620,10 @@ object GeneratedLayouts {
         LayoutInfo("qwertz-aa", "la", "Latin", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "la", "Latin", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
         LayoutInfo("colemak-aa", "la", "Latin", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
-        LayoutInfo("aragonese-an", "lad", "Ladino", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm"), default = true, note = "nodict"),
     )
 
     private fun part600() = listOf(
+        LayoutInfo("aragonese-an", "lad", "Ladino", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjklñ", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("turkish-q-kiu", "lad", "Ladino", "Turkish Q", "Turkish Q", listOf("qwertyuıopğü", "asdfghjklşi", "zxcvbnmöç"), default = false, note = "nodict"),
         LayoutInfo("qwerty-aa", "lad", "Ladino", "QWERTY (basic)", "QWERTY (basic)", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("qwertz-aa", "lad", "Ladino", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
@@ -772,10 +773,10 @@ object GeneratedLayouts {
         LayoutInfo("qwerty-aa", "na", "Nauru", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwertz-aa", "na", "Nauru", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "na", "Nauru", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
-        LayoutInfo("colemak-aa", "na", "Nauru", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
     )
 
     private fun part750() = listOf(
+        LayoutInfo("colemak-aa", "na", "Nauru", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("qwerty-aa", "nap", "Neapolitan", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwertz-aa", "nap", "Neapolitan", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "nap", "Neapolitan", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
@@ -925,10 +926,10 @@ object GeneratedLayouts {
         LayoutInfo("colemak-aa", "ro", "Romanian", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("pcqwerty-it", "ro", "Romanian", "Pcqwerty", "Pcqwerty", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("russian-ru", "ru", "Russian", "ЙЦУКЕН (ъ)", "ЙЦУКЕН (ъ)", listOf("йцукенгшщзхъ", "фывапролджэ", "ячсмитьбю"), default = false, note = "taps"),
-        LayoutInfo("russian-student-ru", "ru", "Russian", "Student", "Student", listOf("яшертыуиопэъ", "асдфгчйклжщ", "зхцвбнмью"), default = false, note = "taps"),
     )
 
     private fun part900() = listOf(
+        LayoutInfo("russian-student-ru", "ru", "Russian", "Student", "Student", listOf("яшертыуиопэъ", "асдфгчйклжщ", "зхцвбнмью"), default = false, note = "taps"),
         LayoutInfo("russian-yawert-ru", "ru", "Russian", "Yawert", "Yawert", listOf("явертыуиопчъ", "асдфгхйклшщ", "зьцжбнмэю"), default = false, note = "taps"),
         LayoutInfo("russian-yazhert-ru", "ru", "Russian", "Yazhert", "Yazhert", listOf("яжертыуиопэъ", "асдфгчйклшщ", "зхцвбнмью"), default = false, note = "taps"),
         LayoutInfo("russian-phonetic-iphone-ru", "ru", "Russian", "Phonetic (iPhone)", "Phonetic (iPhone)", listOf("яшертыуиопэ", "асдфгчйклжщ", "зхцвбнмью"), default = false, note = "taps"),
@@ -1078,10 +1079,10 @@ object GeneratedLayouts {
         LayoutInfo("qwertz-aa", "tet", "Tetum", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "tet", "Tetum", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
         LayoutInfo("colemak-aa", "tet", "Tetum", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
-        LayoutInfo("tajik-tg", "tg", "Tajik", "ЙҚУКЕН", "ЙҚУКЕН", listOf("йқукенгшҳзхъ", "фҷвапролджэ", "ячсмитӣбю"), default = true, note = "nodict"),
     )
 
     private fun part1050() = listOf(
+        LayoutInfo("tajik-tg", "tg", "Tajik", "ЙҚУКЕН", "ЙҚУКЕН", listOf("йқукенгшҳзхъ", "фҷвапролджэ", "ячсмитӣбю"), default = true, note = "nodict"),
         LayoutInfo("tajik-cyrillic-iphone-tg", "tg", "Tajik", "Cyrillic (iPhone)", "Cyrillic (iPhone)", listOf("йқукенгшҳзхғ", "фҷвапролджэӯ", "ячсмитӣбюъ"), default = false, note = "nodict"),
         LayoutInfo("qwerty-aa", "tiv", "Tiv", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwertz-aa", "tiv", "Tiv", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
@@ -1231,10 +1232,10 @@ object GeneratedLayouts {
         LayoutInfo("colemak-aa", "xog", "Soga", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("yao-yao", "yao", "Yao", "QWERTY", "QWERTY", listOf("qwertyuiop", "asdfghjklŵ", "zxcvbnm"), default = true, note = "nodict"),
         LayoutInfo("qwerty-aa", "yao", "Yao", "QWERTY (basic)", "QWERTY (basic)", listOf("qwertyuiop", "asdfghjkl", "zxcvbnm"), default = false, note = "nodict"),
-        LayoutInfo("qwertz-aa", "yao", "Yao", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
     )
 
     private fun part1200() = listOf(
+        LayoutInfo("qwertz-aa", "yao", "Yao", "QWERTZ", "QWERTZ", listOf("qwertzuiop", "asdfghjkl", "yxcvbnm"), default = false, note = "nodict"),
         LayoutInfo("azerty-aa", "yao", "Yao", "AZERTY", "AZERTY", listOf("azertyuiop", "qsdfghjklm", "wxcvbn"), default = false, note = "nodict"),
         LayoutInfo("colemak-aa", "yao", "Yao", "Colemak", "Colemak", listOf("qwfpgjluy", "arstdhneio", "zxcvbkm"), default = false, note = "nodict"),
         LayoutInfo("yiddish-yi", "yi", "Yiddish", "Standard", "Standard", listOf("קראטוןםפ", "שדגכעיחלךף", "זסבהנמצתץ"), default = true, note = "nodict"),

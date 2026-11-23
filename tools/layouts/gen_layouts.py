@@ -176,6 +176,13 @@ LAYOUTS = [
     floris_layout("qwertz-cs", "cs", "Čeština (QWERTZ)", "QWERTZ", "CS", "qwertz"),
     no_capitals(floris_layout("standard-ka", "ka", "ქართული", "ქართული", "KA", "georgian_standard")),
     gboard_layout("arabic-ar", "ar", "العربية", "عربي", "AR", "ar", "arabic"),
+    # Korean 2-set (두벌식, Gboard's korean_two_bulsik and iOS's): jamo keys, composed into syllables as typed
+    # (HangulComposer); shift gives the tense consonants and ㅒ ㅖ
+    replace(Layout("dubeolsik-ko", "ko", "한국어 (두벌식)", "두벌식", "KO",
+                   [list("ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ"), list("ㅁㄴㅇㄹㅎㅗㅓㅏㅣ"), list("ㅋㅌㅊㅍㅠㅜㅡ")],
+                   uppers={**{c: c for c in "ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔㅁㄴㅇㄹㅎㅗㅓㅏㅣㅋㅌㅊㅍㅠㅜㅡ"},
+                           "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ"}),
+            label="두벌식"),
 ]
 
 SYMBOL_1 = [

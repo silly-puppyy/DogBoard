@@ -163,6 +163,7 @@ def main():
     ap.add_argument("--case", help="only run cases whose typed text contains this")
     ap.add_argument("--repeat", type=int, default=1, help="run each case this many times")
     ap.add_argument("--history", action="store_true", help="print every text change on failure")
+    ap.add_argument("--rows", help="the layout's letter rows, comma-separated, when not QWERTY (same 10/9/7 shape: Korean 2-set)")
     ap.add_argument("--text", action="append", help="a case of your own, TYPED=EXPECTED (repeatable); replaces the built-in cases")
     args = ap.parse_args()
     # a log buffer large enough that the engine's one-time 'lexicon load took' line survives the touch logs
@@ -189,6 +190,9 @@ def main():
         bench_keyboards.ensure_taptype(taps_dev)
 
     failures = 0
+    if args.rows:
+        global ROWS
+        ROWS = args.rows.split(",")
     own = [tuple(t.split("=", 1)) for t in args.text or []]
     cases = [c for c in (own or CASES) if args.case is None or args.case in c[0]] * args.repeat
     for case in cases:

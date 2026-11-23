@@ -344,10 +344,13 @@ class FlorisImeService : LifecycleInputMethodService() {
                 (own?.takeIf { it != prefs.keyboard.layoutId.get() }
                     ?: if (own == null) io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get(), prefs.keyboard.layoutByLanguage.get()) else null)
                     ?.let { prefs.keyboard.layoutId.set(it) }
-                val switched = io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag)
+                io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag)
                 // a language typed together with this one ("Type together with"): both decoded, candidates merged
-                val second = io.github.sillypuppyy.dogboard.ime.EngineLoader.setSecondaries(this@FlorisImeService, active.secondaryLocales.map { it.languageTag() })
-                if (switched || second) imeController.updateState { refreshSuggestions() }
+                io.github.sillypuppyy.dogboard.ime.EngineLoader.setSecondaries(this@FlorisImeService, active.secondaryLocales.map { it.languageTag() })
+                // every language change: the new language's shift (Korean has no capitals: the automatic shift of the one
+                // before stayed on, its top row showed ㅃ ㅉ ㄸ) and suggestions (a language without a pack kept the old
+                // pack's words in the bar), whether or not the engine switched packs
+                imeController.updateState { reevaluateInputShiftState(); refreshSuggestions() }
             }
         }
 

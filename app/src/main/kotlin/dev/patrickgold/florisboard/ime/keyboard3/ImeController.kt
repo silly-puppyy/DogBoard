@@ -1107,11 +1107,18 @@ class ImeController(
 
         /** Corrections for the word the cursor rests in ([before] + [after] the cursor), decoded from key centres. */
         /**
-         * [word] drawn and read the way the loaded language types it: Vietnamese Telex draws the word its keys make and
+         * [word] drawn and read the way the language types it: Korean jamo as syllables; Vietnamese Telex draws the word its keys make and
          * keeps the keys for the decoder (the loaded pack's rules: a downloaded pack's are not among the built-in ones
          * languageRules() reads). Other languages: the letters as typed.
          */
         private fun withTypedMarks(word: CurrentWord): CurrentWord {
+            // Korean: jamo keys drawn as Hangul syllables (by the language: Korean has no pack whose rules could say so)
+            val language = languageTag.ifEmpty { dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype.primaryLocale.languageTag() }
+            if (language.substringBefore('-') == "ko") {
+                word.composer = io.github.sillypuppyy.dogboard.engine.HangulComposer::compose
+                word.decomposer = io.github.sillypuppyy.dogboard.engine.HangulComposer::decompose
+                return word
+            }
             val rules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
             val telex = rules.typedMarks
             word.composer = if (telex) { k -> io.github.sillypuppyy.dogboard.engine.TelexComposer.compose(k) } else null
