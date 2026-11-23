@@ -145,6 +145,8 @@ sealed interface TrackedPointer {
         val trackpadLastXDp: Float? = null,
         // DogBoard: the finger moved too far before the trackpad hold time; this stays a space
         val trackpadCancelled: Boolean = false,
+        // DogBoard: the hold opened the language list (spaceHold "language"): letting go types nothing
+        val spaceHoldUsed: Boolean = false,
     ) : TrackedPointer {
         /** DogBoard: the space bar was held long enough to be a trackpad, even if never moved. */
         fun isTrackpad(nowUptime: Long): Boolean = cursorAnchorDp != null ||
@@ -403,6 +405,21 @@ class PointerTracker(
             )
             // DogBoard: iOS turns a held space into the trackpad after the hold time even if the
             // finger hasn't moved (the keys go blank at once); moves then continue from here
+            // DogBoard: or, set to change language (Gboard), the hold opens the language list instead
+            if (downKey.attrs.output == SPACE && io.github.sillypuppyy.dogboard.feel.FeelSettings.spaceHoldLanguages) {
+                val downId = down.id
+                scope.launch {
+                    delay(io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadHoldMs)
+                    mutateLocked {
+                        val tp = trackedOutputPointer.value ?: return@mutateLocked
+                        if (tp.id != downId || tp.trackpadCancelled || tp.spaceHoldUsed) return@mutateLocked
+                        tp.repeatJob?.cancel()
+                        tp.longPress.extendedJob?.cancel()
+                        trackedOutputPointer.value = tp.copy(spaceHoldUsed = true)
+                        imeController.updateState { emit(dev.patrickgold.florisboard.ime.keyboard3.ImeActions.ShowSubtypePicker) }
+                    }
+                }
+            }
             if (downKey.attrs.output == SPACE && io.github.sillypuppyy.dogboard.feel.FeelSettings.trackpadEnabled) {
                 val downId = down.id
                 val downXDp = down.position.x / density
@@ -697,6 +714,7 @@ class PointerTracker(
                 val output = when {
                     // Delete's slide left: the selected words go, or nothing if it slid back
                     drag != null -> if (drag.words > 0) ImeActions.Backspace else null
+                    trackedPointer.spaceHoldUsed -> null // the hold opened the language list
                     trackedPointer.isTrackpad(up.uptimeMillis) -> null // the space bar was used as a trackpad
                     trackedPointer.downKey == trackedMultiTapSeq.value?.touchKey -> null
                     trackedPointer.longPress.shouldShowExtendedPopup() -> {

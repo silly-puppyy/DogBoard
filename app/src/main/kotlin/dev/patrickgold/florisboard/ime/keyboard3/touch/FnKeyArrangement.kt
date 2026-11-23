@@ -45,5 +45,17 @@ data class FnKeyArrangement(
                 FnKeyAction(ImeActions.ShowInputMethodPicker),
             ),
         )
+
+        /**
+         * DogBoard, with more than one language (Gboard's globe, user 2026-11-23): tap for the next language, hold for the
+         * list (first in the popup, so hold and let go opens it), emoji one slide away. Used in place of [Default] only.
+         */
+        val Multilingual = FnKeyArrangement(
+            simpleAction = FnKeyAction(ImeActions.SwitchToNextSubtype),
+            longPressActions = listOf(
+                FnKeyAction(ImeActions.ShowSubtypePicker),
+                FnKeyAction(ImeActions.ShowMediaPanel),
+            ),
+        )
     }
 }

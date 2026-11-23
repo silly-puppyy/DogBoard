@@ -3,6 +3,7 @@ package io.github.sillypuppyy.dogboard.settings
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -12,6 +13,10 @@ import io.github.sillypuppyy.dogboard.design.DText
 import io.github.sillypuppyy.dogboard.design.settings.SetColors
 import io.github.sillypuppyy.dogboard.design.settings.SetGroup
 import io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow
+import io.github.sillypuppyy.dogboard.design.settings.SetMenu
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
 import io.github.sillypuppyy.dogboard.design.settings.setText
 import kotlinx.coroutines.launch
 
@@ -27,11 +32,12 @@ import kotlinx.coroutines.launch
 fun DogGesturesScreen() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
-    val trackpad by prefs.typing.trackpadEnabled.collectAsState()
     val swipe by prefs.typing.swipeEnabled.collectAsState()
     val trail by prefs.typing.swipeTrail.collectAsState()
     val deleteSlide by prefs.typing.deleteSlide.collectAsState()
     val quickDrag by prefs.typing.spaceQuickDrag.collectAsState()
+    val spaceHold by prefs.typing.spaceHold.collectAsState()
+    var holdMenu by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     SetPage("Gestures") {
         // user 2026-11-19: "What's gestures for?"
         DText(
@@ -55,8 +61,22 @@ fun DogGesturesScreen() {
             SetSwitchRow("gs:quickdrag", "Swipe to move the cursor", "Swipe sideways along the space bar to move the cursor.", quickDrag) { v ->
                 scope.launch { prefs.typing.spaceQuickDrag.set(v) }
             }
-            SetSwitchRow("gs:trackpad", "Hold to move the cursor", "Hold the space bar, then slide anywhere to move the cursor, as on an iPhone.", trackpad) { v ->
-                scope.launch { prefs.typing.trackpadEnabled.set(v) }
+            // user 2026-11-23: holding space can move the cursor (iPhone), show your languages (Gboard), or do nothing
+            val holdChoices = listOf(
+                Triple("cursor", "Move the cursor", "Hold, then slide anywhere to move the cursor, as on an iPhone."),
+                Triple("language", "Change language", "Hold to pick one of your languages."),
+                Triple("nothing", "Nothing", "Holding types a space, like a tap."),
+            )
+            val holdNow = holdChoices.firstOrNull { it.first == spaceHold } ?: holdChoices.first()
+            androidx.compose.foundation.layout.Box {
+                androidx.compose.foundation.layout.Column(
+                    Modifier.fillMaxWidth().background(SetColors.row).clickable { holdMenu = true }.padding(16.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp),
+                ) {
+                    DText("Hold the space bar: ${holdNow.second.lowercase()}", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                    DText(holdNow.third, style = setText(14f, 400, SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
+                }
+                SetMenu(holdMenu, { holdMenu = false }, holdChoices.map { (id, name, _) -> name to { scope.launch { prefs.typing.spaceHold.set(id); if (id == "cursor") prefs.typing.trackpadEnabled.set(true) }; holdMenu = false } })
             }
         }
     }

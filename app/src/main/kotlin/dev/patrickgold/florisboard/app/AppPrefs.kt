@@ -910,6 +910,8 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         val deleteWordMs = int(key = "feel__delete_word_ms", default = io.github.sillypuppyy.dogboard.feel.Timings.DeleteWordInterval.inWholeMilliseconds.toInt())
         // DogBoard: Settings › Gestures: hold space, then slide to move the cursor (iOS); on by default
         val trackpadEnabled = boolean(key = "feel__trackpad_enabled", default = true)
+        /** DogBoard: holding the space bar: "cursor" (the trackpad, iOS), "language" (the language list, Gboard), "nothing". */
+        val spaceHold = string(key = "feel__space_hold", default = "cursor")
         // DogBoard: Settings › Gestures, the Gboard gestures (user 2026-11-19): slide left from delete to delete
         // words; a quick sideways swipe on the space bar moves the cursor without the hold; on by default
         val deleteSlide = boolean(key = "feel__delete_slide", default = true)

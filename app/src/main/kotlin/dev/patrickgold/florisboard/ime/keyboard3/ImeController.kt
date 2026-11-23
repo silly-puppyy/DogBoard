@@ -343,11 +343,15 @@ class ImeController(
         prefs.keyboard.hintKind.asFlow(),
         prefs.keyboard.bottomRow.asFlow(),
         prefs.keyboard.symbolPages.asFlow(),
+        prefs.localization.subtypes.asFlow(),
     ) { values ->
+        // more than one language and the key as it comes: the globe (FnKeyArrangement.Multilingual)
+        val languages = Regex("\"id\"").findAll(values[12] as String).count()
+        val fnKey = (values[2] as FnKeyArrangement).let { if (languages > 1 && it == FnKeyArrangement.Default) FnKeyArrangement.Multilingual else it }
         TouchModelOptions(
             showNumberRow = values[0] as Boolean,
             fnKeyEnabled = values[1] as Boolean,
-            fnKeyArrangement = values[2] as FnKeyArrangement,
+            fnKeyArrangement = fnKey,
             longPressKeyHintEnabled = values[3] as Boolean,
             longPressKeyHintPlacement = values[4] as LongPressKeyHintPlacement,
             multiTapHighlightEnabled = values[5] as Boolean,
@@ -372,7 +376,14 @@ class ImeController(
         prefs.typing.deleteWordsAfter.asFlow().collectIn(scope) { feel.deleteWordsAfter = it }
         prefs.typing.deleteWordMs.asFlow().collectIn(scope) { feel.deleteWordMs = it.toLong() }
         prefs.typing.trackpadHoldMs.asFlow().collectIn(scope) { feel.trackpadHoldMs = it.toLong() }
-        prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { feel.trackpadEnabled = it }
+        // holding the space bar: the trackpad only when it's set to move the cursor (spaceHold), the language list instead
+        fun spaceHold() {
+            val hold = prefs.typing.spaceHold.get()
+            feel.trackpadEnabled = prefs.typing.trackpadEnabled.get() && hold == "cursor"
+            feel.spaceHoldLanguages = hold == "language"
+        }
+        prefs.typing.trackpadEnabled.asFlow().collectIn(scope) { spaceHold() }
+        prefs.typing.spaceHold.asFlow().collectIn(scope) { spaceHold() }
         prefs.typing.deleteSlide.asFlow().collectIn(scope) { feel.deleteSlide = it }
         prefs.typing.spaceQuickDrag.asFlow().collectIn(scope) { feel.spaceQuickDrag = it }
         prefs.typing.swipeEnabled.asFlow().collectIn(scope) { feel.swipeEnabled = it }
@@ -1669,9 +1680,13 @@ class ImeController(
                 ImeActions.ShowInputMethodPicker -> FlorisImeService.showImePicker()
                 ImeActions.SwitchToPrevInputMethod -> FlorisImeService.switchToPrevInputMethod()
                 ImeActions.SwitchToNextInputMethod -> FlorisImeService.switchToNextInputMethod()
-                ImeActions.ShowSubtypePicker -> {} // TODO
-                ImeActions.SwitchToPrevSubtype -> {} // TODO
-                ImeActions.SwitchToNextSubtype -> {} // TODO
+                // DogBoard: languages on the keyboard (FlorisBoard left these TODO: the globe key did nothing, user
+                // 2026-11-23 "How am I supposed to switch languages on the keyboard?")
+                ImeActions.ShowSubtypePicker -> {
+                    state = state.copy(flags = state.flags.withSubtypeSelectionVisible(true))
+                }
+                ImeActions.SwitchToPrevSubtype -> dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.switchToPrevSubtype()
+                ImeActions.SwitchToNextSubtype -> dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.switchToNextSubtype()
                 ImeActions.ToggleActionsEditor -> {
                     state = state.copy(
                         flags = state.flags

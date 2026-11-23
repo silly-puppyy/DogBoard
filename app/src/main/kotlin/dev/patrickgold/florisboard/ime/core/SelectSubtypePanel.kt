@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard.ime.core
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -43,6 +44,7 @@ import org.florisboard.lib.snygg.ui.SnyggText
 
 @Composable
 fun SelectSubtypePanel(modifier: Modifier = Modifier) {
+    val closeScope = androidx.compose.runtime.rememberCoroutineScope()
     val context = LocalContext.current
     val subtypeManager by context.subtypeManager()
 
@@ -79,13 +81,20 @@ fun SelectSubtypePanel(modifier: Modifier = Modifier) {
                         elementName = FlorisImeUi.SubtypePanelListItem.elementName,
                         onClick = {
                             subtypeManager.switchToSubtypeById(it.id)
-                            // TODO keyboardManager.activeState.isSubtypeSelectionVisible = false
+                            // DogBoard: the list closes once a language is picked (FlorisBoard left it open, TODO)
+                            closeScope.launch {
+                                dev.patrickgold.florisboard.FlorisApplication.getHack().imeController.updateState {
+                                    state = state.copy(flags = state.flags.withSubtypeSelectionVisible(false))
+                                }
+                            }
                         },
                         leadingImageVector = when {
                             currentlySelected == it.id -> Icons.Default.RadioButtonChecked
                             else -> Icons.Default.RadioButtonUnchecked
                         },
-                        text = it.primaryLocale.displayName(),
+                        // DogBoard: a language added with several layouts names its layout ("Portuguese (QWERTY (ç))")
+                        text = it.primaryLocale.displayName() + (it.layoutId?.takeIf { _ -> subtypes.count { s -> s.primaryLocale == it.primaryLocale } > 1 }
+                            ?.let { id -> io.github.sillypuppyy.dogboard.ime.GeneratedLayouts.all.firstOrNull { l -> l.id == id }?.label }?.let { " ($it)" } ?: ""),
                     )
                 }
             }

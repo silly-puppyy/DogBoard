@@ -438,7 +438,8 @@ fun ImeKeyboardBox(
                     longPress = output?.longPress,
                     panel = livePanel,
                     trackpadX = trackpadX,
-                    fnKey = if (prefs.keyboard.fnKeyArrangement.collectAsState().value.simpleAction.output == ImeActions.SwitchToNextSubtype) "globe" else "emoji",
+                    // the key as it acts (ImeController: the globe when there's more than one language), not the stored setting
+                    fnKey = if (imeController.activeTouchModelOptions.collectAsState().value.fnKeyArrangement.simpleAction.output == ImeActions.SwitchToNextSubtype) "globe" else "emoji",
                     actions = remember(imeController, clipItems) {
                         io.github.sillypuppyy.dogboard.design.KbActions(
                             onSlot = {},
