@@ -88,7 +88,7 @@ object ThemeModel {
 
     // ---- the model
 
-    val ROLES = listOf("key", "keyFg", "keyLine", "fn", "fnFg", "fnLine", "act", "actFg", "actLine", "barFg", "chip", "chipFg", "hint", "pop", "popFg")
+    val ROLES = listOf("key", "keyFg", "keyLine", "fn", "fnFg", "fnLine", "act", "actFg", "actLine", "barFg", "chip", "chipFg", "hint", "pop", "popFg", "barIcon")
     private val LABEL_OF = mapOf("keyFg" to "key", "fnFg" to "fn", "actFg" to "act", "chipFg" to "chip", "popFg" to "pop")
 
     val DEFAULTS = mapOf(
@@ -109,7 +109,8 @@ object ThemeModel {
     )
 
     @kotlinx.serialization.Serializable
-    data class Version(val bg: Bg = Bg(), val tint: Boolean = false, val ov: Map<String, String> = emptyMap())
+    /** [nav]: the colour of Android's own icons under the keys (hide keyboard, switch keyboard): auto, light or dark. */
+    data class Version(val bg: Bg = Bg(), val tint: Boolean = false, val ov: Map<String, String> = emptyMap(), val nav: String = "auto")
 
     /** lib SHAPE0: corner radius (dp), label weight, label size (%), border width (dp). */
     @kotlinx.serialization.Serializable
@@ -230,6 +231,8 @@ object ThemeModel {
                 out[r] = at(p0.hue, min(p0.chroma, 12.0), onTone(t, cr(f, "#000000") >= cr(f, "#ffffff"))); src[r] = "auto"; continue
             }
             if (r.endsWith("Line")) { out[r] = "none"; src[r] = "default"; continue }
+            // the bar's icons (tools, mic) follow the bar's words unless set
+            if (r == "barIcon") { out[r] = out.getValue("barFg"); src[r] = src.getValue("barFg"); continue }
             tn[r]?.let { out[r] = it; src[r] = "tinted"; continue }
             out[r] = d.getValue(r); src[r] = "default"
         }
@@ -246,7 +249,7 @@ object ThemeModel {
             "act" to x.getValue("act"), "actFg" to x.getValue("actFg"), "chip" to x.getValue("chip"), "chipFg" to x.getValue("chipFg"),
             "pop" to x.getValue("pop"), "popFg" to x.getValue("popFg"), "sel" to x.getValue("act"), "selFg" to x.getValue("actFg"),
             "lock" to x.getValue("act"), "lockFg" to x.getValue("actFg"), "hint" to x.getValue("hint"), "barFg" to x.getValue("barFg"),
-            "barMuted" to x.getValue("barFg"), "div" to mix(x.getValue("barFg"), x.getValue("key"), 0.7), "tile" to x.getValue("key"), "tileFg" to x.getValue("keyFg"),
+            "barMuted" to x.getValue("barIcon"), "navIcons" to v.nav, "div" to mix(x.getValue("barFg"), x.getValue("key"), 0.7), "tile" to x.getValue("key"), "tileFg" to x.getValue("keyFg"),
             "pressKey" to up(x.getValue("key"), x.getValue("keyFg")), "pressFn" to up(x.getValue("fn"), x.getValue("fnFg")),
             "radius" to num(shape.radius), "fw" to shape.weight.toString(), "fsScale" to num(shape.size / 100.0),
             "keyShadow" to line(x["keyLine"]), "fnShadow" to line(x["fnLine"]), "actShadow" to line(x["actLine"]), "linkFg" to x.getValue("act"),

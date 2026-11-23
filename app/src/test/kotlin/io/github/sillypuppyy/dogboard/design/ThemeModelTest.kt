@@ -40,8 +40,10 @@ class ThemeModelTest : FunSpec({
             val r = ThemeModel.resolve(v)
             withClue(c["bg"].toString()) {
                 r.base shouldBe c["base"]!!.jsonPrimitive.content
-                r.vals shouldBe strings(c["vals"]!!.jsonObject)
-                r.src shouldBe strings(c["src"]!!.jsonObject)
+                // barIcon came after the reference (it follows barFg unless set)
+                r.vals - "barIcon" shouldBe strings(c["vals"]!!.jsonObject)
+                r.src - "barIcon" shouldBe strings(c["src"]!!.jsonObject)
+                r.vals["barIcon"] shouldBe r.vals["barFg"]
             }
         }
     }
@@ -49,7 +51,7 @@ class ThemeModelTest : FunSpec({
         for (c in cases) {
             val v = ThemeModel.Version(bgOf(c["bg"]!!.jsonObject), c["tint"]!!.jsonPrimitive.boolean, strings(c["ov"]?.jsonObject))
             val want = strings(c["roles"]!!.jsonObject) - "bg"
-            val got = ThemeModel.toRoles(v, ThemeModel.Shape(12.0, 600, 108, 1.5), "") - "bg"
+            val got = ThemeModel.toRoles(v, ThemeModel.Shape(12.0, 600, 108, 1.5), "") - "bg" - "navIcons"
             withClue(c["bg"].toString()) { got shouldBe want }
         }
     }

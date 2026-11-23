@@ -173,6 +173,20 @@ fun liveWindowBg(): androidx.compose.ui.graphics.Color {
     return KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance).bg
 }
 
+/** The window's background as a gradient brush, when the theme's background is one (it continues under the keys). */
+@Composable
+fun liveWindowBrush(): androidx.compose.ui.graphics.Brush? {
+    val p = liveTheme().apply(KbProps(dark = liveDark()))
+    return KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance).bgGradient?.brush()
+}
+
+/** The theme's choice for Android's icons under the keys: auto, light or dark. */
+@Composable
+fun liveNavIcons(): String {
+    val p = liveTheme().apply(KbProps(dark = liveDark()))
+    return KbThemes.tokens(p.theme, p.dark, p.dim, p.keyOpacity, p.photoLuminance).navIcons
+}
+
 /**
  * Dark or light as the keyboard's theme setting decides (FlorisBoard's theme mode: always day,
  * always night, follow the system, or follow the time of day).

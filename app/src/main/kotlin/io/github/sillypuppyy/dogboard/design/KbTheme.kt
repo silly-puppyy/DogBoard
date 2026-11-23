@@ -50,6 +50,8 @@ data class KbTokens(
      * it; 0 = off.
      */
     val keyUnder: Float = 0f,
+    /** Android's icons under the keys (hide / switch keyboard): auto (by the colour there), light or dark. */
+    val navIcons: String = "auto",
 )
 
 data class KbSpots(val seed: Int, val bg: Color, val fg: Color, val hint: Color, val press: Color)
@@ -262,6 +264,7 @@ object KbThemes {
             actIsTransparent = t["act"] == "transparent",
             bgGradient = CssGradient.parse(t.getValue("bg")),
             keyUnder = t["keyUnder"]?.toFloatOrNull() ?: 0f,
+            navIcons = t["navIcons"] ?: "auto",
             grad = t.mapNotNull { (k, v) -> CssGradient.parse(v)?.let { k to it } }.toMap(),
             bkspFill = t["bkspFill"]?.toInt() ?: 0, retText = t["retText"].orEmpty(), forceWord = t["forceWord"] == "true",
             spaceText = t["spaceText"].orEmpty(), spaceFg = t["spaceFg"]?.let(::css), actOffFg = t["actOffFg"]?.let(::css),

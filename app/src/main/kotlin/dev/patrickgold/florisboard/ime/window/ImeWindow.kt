@@ -158,12 +158,14 @@ fun BoxScope.ImeWindow() {
 
     // DogBoard: the window's background is the design theme's body colour (the stopgap theme's is transparent)
     val dogBg = io.github.sillypuppyy.dogboard.design.liveWindowBg()
+    // a gradient theme: the gradient behind the whole window, so it carries on under the keys
+    val dogBrush = io.github.sillypuppyy.dogboard.design.liveWindowBrush()
     SnyggBox(
         elementName = FlorisImeUi.Window.elementName,
         attributes = attributes,
         modifier = Modifier
             .align(Alignment.BottomStart)
-            .drawBehind { drawRect(dogBg) }
+            .drawBehind { if (dogBrush != null) drawRect(dogBrush) else drawRect(dogBg) }
             .ifIsInstance<ImeWindowProps.Fixed>(windowSpec.props) {
                 Modifier
                     .fillMaxWidth()

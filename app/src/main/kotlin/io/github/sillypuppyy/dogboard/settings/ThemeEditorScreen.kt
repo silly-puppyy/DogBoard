@@ -506,7 +506,7 @@ private val GROUPS = listOf(
     "Letter keys" to listOf("key" to "Fill", "keyFg" to "Letters", "keyLine" to "Border"),
     "Shift, delete, 123 and emoji" to listOf("fn" to "Fill", "fnFg" to "Icons and labels", "fnLine" to "Border"),
     "Return key" to listOf("act" to "Fill", "actFg" to "Label", "actLine" to "Border"),
-    "Suggestion bar" to listOf("barFg" to "Words", "chip" to "Highlight", "chipFg" to "Highlight text"),
+    "Suggestion bar" to listOf("barFg" to "Words", "barIcon" to "Icons", "chip" to "Highlight", "chipFg" to "Highlight text"),
     "Pop-ups and hints" to listOf("pop" to "Pop-up keys", "popFg" to "Pop-up letters", "hint" to "Long-press hints"),
 )
 private val SRC = mapOf("default" to "Default", "tinted" to "Tinted to match", "auto" to "Auto, readable on its fill", "yours" to "Yours")
@@ -549,6 +549,13 @@ private fun ElementsTab(
                     }
                 }
             }
+        }
+        // Android's own icons under the keys (hide / switch keyboard): only light or dark can be asked for
+        DText("Under the keys", Modifier.padding(start = 16.dp, top = 4.dp), style = setText(14f, 500, SetColors.primary))
+        Column(Modifier.fillMaxWidth().clip(card).background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            io.github.sillypuppyy.dogboard.design.settings.TitleSub("Bottom icons", "Android’s hide-keyboard and switch-keyboard icons. Auto picks what reads on the colour there.")
+            val navs = listOf("auto", "light", "dark")
+            Segmented("te:nav", listOf("Auto", "Light", "Dark"), navs.indexOf(v.nav).coerceAtLeast(0)) { i -> setV { it.copy(nav = navs[i]) } }
         }
         // ThemeEditor:256-280: the shape, shared by both versions
         DText(if (both) "Shape, for both versions" else "Shape", Modifier.padding(start = 16.dp, top = 4.dp), style = setText(14f, 500, SetColors.primary))
@@ -659,6 +666,7 @@ private val ROLE_NAMES = mapOf(
     "key" to "Letter keys, fill", "keyFg" to "Letters", "keyLine" to "Letter keys, border", "fn" to "Shift, delete, 123, fill", "fnFg" to "Their icons and labels",
     "fnLine" to "Their border", "act" to "Return key, fill", "actFg" to "Return key, label", "actLine" to "Return key, border", "barFg" to "Suggestion words",
     "chip" to "Suggestion highlight", "chipFg" to "Highlight text", "pop" to "Pop-up keys", "popFg" to "Pop-up letters", "hint" to "Long-press hints",
+    "barIcon" to "Suggestion bar icons",
 )
 
 @Composable

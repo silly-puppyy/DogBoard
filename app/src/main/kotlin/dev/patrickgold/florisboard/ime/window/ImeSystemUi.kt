@@ -88,7 +88,9 @@ fun ImeSystemUi() {
     val backgroundImage = backgroundQuery.backgroundImage.uriOrNull()
 
     val hasBackgroundImage = backgroundImage != null
-    val useDarkIcons = if (backgroundImage == null) {
+    // the theme can set Android's icons under the keys light or dark (theme element "Bottom icons")
+    val navIcons = io.github.sillypuppyy.dogboard.design.liveNavIcons()
+    val useDarkIcons = if (navIcons == "dark") true else if (navIcons == "light") false else if (backgroundImage == null) {
         backgroundColor.luminance() >= 0.5
     } else {
         false
