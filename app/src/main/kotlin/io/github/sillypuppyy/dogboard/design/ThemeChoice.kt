@@ -50,21 +50,25 @@ object ThemeChoice {
         // "Yours / My themes / Photos / a New pack button before Everyday" was confusing, and "Warm" looked
         // like Dog: your own themes first (the photo slot, then saved packs), then the built-in ones, then each pack;
         // "brand" (Warm) is no longer listed (kept for whoever has it picked)
+        // the order: built in, your themes and packs, Breeds, Photos (the built-in photo pack, drawn at this marker),
+        // Tactile, Gradients, Pride
         Section("everyday", "Built in", "", listOf("dogboard", "paper", "midnight", "ink", "borderless", "bold")),
+        Section("yours", "Your themes", "", listOf("glass"), add = "add_photo_alternate" to "From a photo"),
         Section("breeds", "Breeds", "Pack, 5 themes", listOf("dog", "lab", "husky", "greyhound", "dalmatian"), pack = true),
+        Section("photos", "Photos", "", emptyList()),
+        // tactile looks (was "Retro"); a mechanical-keyboard layout for it is planned
+        Section("retro", "Tactile", "Pack, 1 theme", listOf("gloss"), pack = true),
         Section("gradients", "Gradients", "Pack, 3 themes", listOf("dusk", "lagoon", "peach"), pack = true, add = "gradient" to "New gradient"),
-        Section("retro", "Retro", "Pack, 1 theme", listOf("gloss"), pack = true),
         // flags as gradients, keys coloured by the stripe under them
         Section("pride", "Pride", "Pack, ${KbThemes.PRIDE.size} themes", KbThemes.PRIDE.map { it.first }, pack = true),
-        // built-in themes and packs first, yours after them (and a "Yours" filter chip)
-        Section("yours", "Your themes", "", listOf("glass"), add = "add_photo_alternate" to "From a photo"),
     )
 
     /** :217 the packs list: (section id, icon, name, sub). */
     val PACKS: List<List<String>> = listOf(
         listOf("breeds", "pets", "Breeds", "5 themes, built in"),
         listOf("gradients", "gradient", "Gradients", "3 themes, built in"),
-        listOf("retro", "history", "Retro", "1 theme, built in"),
+        listOf("retro", "history", "Tactile", "1 theme, built in"),
+        listOf("pride", "gradient", "Pride", "${KbThemes.PRIDE.size} themes, built in"),
     )
 
     /** :165 the mode's icon and its spoken label. */

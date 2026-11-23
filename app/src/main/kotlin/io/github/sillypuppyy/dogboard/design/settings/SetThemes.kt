@@ -276,8 +276,8 @@ fun SetThemes(state: SetThemesState) {
             }
             // :77-113 the sections of theme tiles
             for (sec in ThemeChoice.SECTIONS) {
-                // the built-in Photos pack sits with the built-in packs, before your themes; your packs follow your themes
-                if (sec.id == "yours" && filter == "all") UserPackSections(state, primary, { it.isBuiltInPhotos() }) { newIn = it }
+                // the built-in Photos pack at its place among the built-in packs
+                if (sec.id == "photos") { if (filter == "all") UserPackSections(state, primary, { it.isBuiltInPhotos() }) { newIn = it }; continue }
                 if (filter == "yours" && sec.id != "yours") continue
                 if (sec.id in state.hidden) continue
                 // with saved photo themes, the built-in Photo tile (the same photo slot) would show "In use" twice
@@ -299,10 +299,9 @@ fun SetThemes(state: SetThemesState) {
                         }
                     }
                 }
+                // your own packs, right after your themes (all, or the Yours filter)
+                if (sec.id == "yours" && (filter == "all" || filter == "yours")) UserPackSections(state, primary, { !it.isBuiltInPhotos() }) { newIn = it }
             }
-
-            // your own packs, after your themes (all, or the Yours filter)
-            if (filter == "all" || filter == "yours") UserPackSections(state, primary, { !it.isBuiltInPhotos() }) { newIn = it }
 
             // theme packs: one place to order, show or hide, share and import them (the show / hide
             // switches here "seem a bit pointless"; chose a Manage packs page)
