@@ -29,7 +29,9 @@ DATA = '/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data'
 KENLM = f'{DATA}/kenlm/build/bin/lmplz'
 WORDFREQ = f'{DATA}/wordfreq/whl/wordfreq/data'
 WF_PY = '/tmp/claude-1000/-home-syn-Documents-Code-AI-keyboard/eb2fb8fd-7646-4213-845e-8d73c47f6e37/scratchpad/wfvenv/bin/python'
-PREDBENCH = '/home/syn/.claude/jobs/eb2fb8fd/tmp/predbench'
+# the typo simulator and test-set maker (tools/i18n/sim: copied from the scratch benchmark folder 2026-11-23, so a pack
+# builds from the repository alone)
+PREDBENCH = f'{REPO}/tools/i18n/sim'
 LAYOUTS = os.path.join(REPO, '..', 'notes', 'design', 'data', 'layouts')
 TATOEBA = os.path.join(REPO, '..', 'data', 'tatoeba')
 CPU = os.environ.get('PACK_CPUS', '3-6')
