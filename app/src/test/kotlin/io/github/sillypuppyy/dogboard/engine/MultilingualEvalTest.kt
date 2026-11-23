@@ -59,6 +59,35 @@ class MultilingualEvalTest : FunSpec({
             }
             return -kotlin.math.ln(1 + kotlin.math.exp(-z))
         }
+        // DOGBOARD_ML_CHAR=c1,c2: the context as the last DOGBOARD_ML_WINDOW characters (default 30) scored by each language's
+        // letter model (user 2026-11-23: "feed it the last 20-30 characters"), weight c per mode, with the word's own evidence
+        val charWeights = System.getenv("DOGBOARD_ML_CHAR")?.split(',')?.map { it.toDouble() }.orEmpty()
+        val window = System.getenv("DOGBOARD_ML_WINDOW")?.toInt() ?: 30
+        /** (ln P in [x] - ln P in [o]) per letter of the last [window] characters before the word (letter models; 0 when none). */
+        fun charDiff(x: Lang, o: Lang, before: List<String>): Double {
+            val text = before.joinToString(" ").takeLast(window)
+            var diff = 0.0; var letters = 0
+            for (w in text.split(' ').filter { it.isNotEmpty() }) {
+                val lx = x.charModel?.logProb(w.lowercase()) ?: continue
+                val lo = o.charModel?.logProb(w.lowercase()) ?: continue
+                diff += lx - lo; letters += w.length
+            }
+            return if (letters == 0) 0.0 else diff / letters
+        }
+        fun charClassified(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, c: Double): List<Candidate> {
+            val w = langid!!
+            val best = LinkedHashMap<String, Candidate>()
+            for ((cand, x, o) in ca.map { Triple(it, la, lb) } + cb.map { Triple(it, lb, la) }) {
+                val px = unigram(x, cand.word.lowercase()); val po = unigram(o, cand.word.lowercase())
+                val z = w[0] * ((if (px != null) 1.0 else 0.0) - (if (po != null) 1.0 else 0.0)) + w[1] * ((px ?: -22.0) - (po ?: -22.0)) / 10 +
+                    c * charDiff(x, o, before)
+                val sc = cand.copy(score = cand.score - kotlin.math.ln(1 + kotlin.math.exp(-z)))
+                val k = sc.word.lowercase(); val old = best[k]
+                if (old == null || sc.score > old.score) best[k] = sc.copy(isTypedString = sc.isTypedString || old?.isTypedString == true)
+                else if (sc.isTypedString && !old.isTypedString) best[k] = old.copy(isTypedString = true)
+            }
+            return best.values.sortedByDescending { it.score }
+        }
         /** Both languages' candidates, each shifted by ln p(its language). */
         fun classified(ca: List<Candidate>, cb: List<Candidate>, before: List<String>, withWord: Boolean): List<Candidate> {
             val best = LinkedHashMap<String, Candidate>()
@@ -89,7 +118,7 @@ class MultilingualEvalTest : FunSpec({
 
         data class Out(val lang: String, val since: Int, val typo: Boolean, val result: String)
         val modes = listOf("${la.tag} alone", "${lb.tag} alone") + weights.map { "merged w=$it" } +
-            (if (langid != null) listOf("classified", "context only") else emptyList())
+            (if (langid != null) listOf("classified", "context only") + charWeights.map { "char window c=$it" } else emptyList())
         val results = modes.associateWith { mutableListOf<Out>() }
         for (kind in listOf("typos", "controls")) {
             val rowsIn = File(set, "mixed-$kind.tsv").readLines().map { it.split('\t') }.filter { it.size >= 7 }.take(n)
@@ -115,6 +144,7 @@ class MultilingualEvalTest : FunSpec({
                 if (langid != null) {
                     results.getValue("classified").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, true)) ?: typed)))
                     results.getValue("context only").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, classified(ca, cb, before, false)) ?: typed)))
+                    for (c in charWeights) results.getValue("char window c=$c").add(Out(lang, since, typo, judge(Autocorrect(union).correction(typed, charClassified(ca, cb, before, c)) ?: typed)))
                 }
             }
         }
