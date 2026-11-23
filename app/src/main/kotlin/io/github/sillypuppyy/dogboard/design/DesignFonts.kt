@@ -28,6 +28,15 @@ object DesignFonts {
     private val flexCache = HashMap<Pair<Int, Int>, FontFamily>()
     private val symbolCache = HashMap<Triple<Int, Int, Int>, FontFamily>()
 
+    private val fredokaCache = HashMap<Int, FontFamily>()
+
+    /** Fredoka (Brand.dc.html: the wordmark and headings, OFL) at [weight]. */
+    fun fredoka(weight: Int): FontFamily = synchronized(fredokaCache) {
+        fredokaCache.getOrPut(weight) {
+            FontFamily(Font(R.font.fredoka, weight = FontWeight(weight), variationSettings = FontVariation.Settings(FontVariation.weight(weight))))
+        }
+    }
+
     /** Roboto Flex at [weight] and optical size [sizeSp] (rounded to whole sp). */
     fun robotoFlex(weight: Int, sizeSp: Float): FontFamily = synchronized(flexCache) {
         val key = weight to sizeSp.toInt().coerceIn(8, 144)

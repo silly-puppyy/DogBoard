@@ -363,7 +363,7 @@ object Routes {
         ) {
             composable<Setup.Screen> { navBackStack ->
                 val payload = navBackStack.toRoute<Setup.Screen>()
-                SetupScreen(payload.hasRestoredBackup)
+                io.github.sillypuppyy.dogboard.settings.OnboardingScreen()
             }
 
             composableWithDeepLink(Settings.Home::class) { HomeScreen() }

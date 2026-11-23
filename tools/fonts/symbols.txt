@@ -132,3 +132,10 @@ visibility_off
 warning
 widgets
 work
+wifi_off
+code
+check_box
+check_box_outline_blank
+arrow_drop_down
+shield
+contacts

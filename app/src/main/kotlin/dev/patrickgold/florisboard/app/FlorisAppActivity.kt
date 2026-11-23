@@ -122,11 +122,8 @@ class FlorisAppActivity : ComponentActivity() {
         val isModelLoaded = AtomicBoolean(false)
         appContext.preferenceStoreLoaded.collectIn(lifecycleScope) { loaded ->
             if (!loaded || isModelLoaded.getAndSet(true)) return@collectIn
-            // Check if android 13+ is running and the NotificationPermission is not set
-            if (AndroidVersion.ATLEAST_API33_T && !noBackupPrefs.notificationPermissionScreenSeen.get()) {
-                // update pref value to show the setup screen again
-                noBackupPrefs.isImeSetUp.set(false)
-            }
+            // DogBoard: no setup re-run for the crash-notification permission (FlorisBoard's): onboarding asks no
+            // permission it doesn't need (Onboarding.dc.html rules)
             AppVersionUtils.updateVersionOnInstallAndLastUse(this, noBackupPrefs)
             setContent {
                 ProvideLocalizedResources(

@@ -135,4 +135,11 @@ internal val SymbolCodepoints: Map<String, Int> = mapOf(
     "warning" to 0xF083,
     "widgets" to 0xE1BD,
     "work" to 0xE943,
+    "wifi_off" to 0xE648,
+    "code" to 0xE86F,
+    "check_box" to 0xE9DE,
+    "check_box_outline_blank" to 0xE835,
+    "arrow_drop_down" to 0xE5C5,
+    "shield" to 0xE9E0,
+    "contacts" to 0xE0BA,
 )
