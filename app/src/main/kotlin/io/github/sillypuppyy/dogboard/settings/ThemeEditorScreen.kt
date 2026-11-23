@@ -398,7 +398,7 @@ private fun GradientStops(v: Version, sel0: Int, onSel: (Int) -> Unit, setV: ((V
     val sel = sel0.coerceAtMost(stops.size - 1)
     val even = stops.withIndex().all { (i, s) -> kotlin.math.abs(s.p - (i * 100.0 / (stops.size - 1)).roundToInt()) <= 1 }
     Row(Modifier.heightIn(min = 40.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        DText(if (stops.size < 3) "Tap the bar to add a colour. Drag to move one." else "Drag to move a colour. Three is the most.", Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 3)
+        DText(if (stops.size < 7) "Tap the bar to add a colour. Drag to move one." else "Drag to move a colour. Seven is the most.", Modifier.weight(1f), style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 3)
         Row(
             Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).then(if (even) Modifier else Modifier.clickable { setV { it.copy(bg = it.bg.copy(stops = stops.mapIndexed { i, s -> s.copy(p = (i * 100.0 / (stops.size - 1)).roundToInt()) })) } })
                 .padding(horizontal = 12.dp),
@@ -421,7 +421,7 @@ private fun GradientStops(v: Version, sel0: Int, onSel: (Int) -> Unit, setV: ((V
                     // the nearest colour within reach is dragged; else a tap adds one (three at most)
                     val near = stops.withIndex().minByOrNull { kotlin.math.abs(it.value.p - p) }
                     var i = if (near != null && kotlin.math.abs(near.value.p - p) <= 6) near.index else null
-                    if (i == null && stops.size < 3) {
+                    if (i == null && stops.size < 7) {
                         val c = ThemeModel.mix(stops.lastOrNull { it.p <= p }?.c ?: stops.first().c, stops.firstOrNull { it.p >= p }?.c ?: stops.last().c, 0.5)
                         val n = (stops + Stop(c, p)).sortedBy { it.p }
                         setV { it.copy(bg = it.bg.copy(stops = n)) }; i = n.indexOfFirst { it.p == p && it.c == c }
@@ -438,7 +438,8 @@ private fun GradientStops(v: Version, sel0: Int, onSel: (Int) -> Unit, setV: ((V
             },
         ) {
             Box(Modifier.fillMaxWidth().padding(top = 12.dp).height(32.dp).clip(RoundedCornerShape(16.dp))
-                .background(Brush.horizontalGradient(*stops.map { it.p / 100f to css(it.c) }.toTypedArray())))
+                // blended in OKLab, as the keyboard draws it (Oklab.expand)
+                .background(Brush.horizontalGradient(*io.github.sillypuppyy.dogboard.design.Oklab.expand(stops.map { css(it.c) to it.p / 100f }).map { it.second to it.first }.toTypedArray())))
             for ((i, s) in stops.withIndex()) {
                 val size = if (i == sel) 32 else 28
                 val x = with(density) { (pad + (w - 2 * pad) * s.p / 100f).toDp() } - (size / 2).dp

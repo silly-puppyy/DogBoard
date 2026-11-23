@@ -15,7 +15,8 @@ import java.io.File
 /**
  * ThemeModel against the design's own code: theme-model-cases.json is ThemeEditor.dc.html's lib() run in node on 38
  * backgrounds (solid colours tinted and not, gradients, the four sample photos bright and dimmed, overrides with
- * labels worked out from them): every role's colour, its source, the base, the tokens and the other version.
+ * labels worked out from them): every role's colour, its source, the base, the tokens and the other version. Updated
+ * 2026-11-24 for the canvas's whiter function keys on tinted gradients (fn = min(0.92, keys + 0.28), ThemeEditor:628).
  */
 class ThemeModelTest : FunSpec({
     val cases = Json.parseToJsonElement(File("src/test/resources/theme-model-cases.json").readText()).jsonArray.map { it.jsonObject }

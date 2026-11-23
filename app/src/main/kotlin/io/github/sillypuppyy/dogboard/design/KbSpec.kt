@@ -687,7 +687,8 @@ object KbSpec {
                         else -> ""
                     }
                     fs = if (t.spaceText.isNotEmpty()) 15f else 14f; fw = if (t.spaceText.isNotEmpty()) t.fw else 400
-                    fg = t.spaceFg ?: t.hint; aria = "Space"
+                    // a language name or code in the keys' own label colour; the word "space" stays quiet (hint)
+                    fg = t.spaceFg ?: if (label.isNotEmpty() && label != "space") t.keyFg else t.hint; aria = "Space"
                 }
                 if (k.kind == "spaceicon") { icon = "space_bar"; label = ""; aria = "Space" }
                 if (k.kind == "shift") {

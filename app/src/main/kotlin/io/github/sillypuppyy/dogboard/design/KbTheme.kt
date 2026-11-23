@@ -465,7 +465,10 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
         private fun parseNow(value: String): CssGradient? {
             val v = value.trim()
             if (!v.startsWith("linear-gradient(")) return null
-            val parts = splitTopLevel(v.removePrefix("linear-gradient(").removeSuffix(")")).map { it.trim() }
+            var parts = splitTopLevel(v.removePrefix("linear-gradient(").removeSuffix(")")).map { it.trim() }
+            // "in oklab [angle]": blended by how bright and colourful things look (the theme editor's gradients)
+            val oklab = parts[0].startsWith("in oklab")
+            if (oklab) parts = listOf(parts[0].removePrefix("in oklab").trim()).filter { it.isNotEmpty() } + parts.drop(1)
             val angle = parts[0].takeIf { it.endsWith("deg") }?.removeSuffix("deg")?.toFloat() // none = CSS's "to bottom"
             val raw = parts.drop(if (angle != null) 1 else 0).map { p ->
                 val m = Regex("""^(.*?)(?:\s+([\d.]+)%)?$""").matchEntire(p)!!
@@ -484,7 +487,8 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
                 }
                 i++
             }
-            return CssGradient(angle ?: 180f, raw.indices.map { raw[it].first to pos[it]!! })
+            val stops = raw.indices.map { raw[it].first to pos[it]!! }
+            return CssGradient(angle ?: 180f, if (oklab) Oklab.expand(stops) else stops)
         }
     }
 }
@@ -573,5 +577,61 @@ data class GradientSpec(val colors: List<String>, val angle: Int, val white: Boo
             if (white) KbThemes.contrast("#ffffff", KbThemes.mix(c, "#ffffff", 0.14))
             else KbThemes.contrast(KbThemes.mix(colors.minBy { KbThemes.lumHex(it) }, "#000000", 0.75), KbThemes.mix(c, "#ffffff", 0.75))
         }
+    }
+}
+
+/**
+ * OKLab (Björn Ottosson, 2020): blending by how bright and colourful colours look, so a gradient's middle doesn't go
+ * dark and grey as sRGB mixing does. Android's gradient shader blends in sRGB, so [expand] puts [STEPS] stops between
+ * each pair, computed here in OKLab; between stops that close, sRGB and OKLab look the same (canvas TEPride).
+ */
+object Oklab {
+    const val STEPS = 16
+
+    private fun lin(c: Float) = if (c <= 0.04045f) c / 12.92f else Math.pow(((c + 0.055f) / 1.055f).toDouble(), 2.4).toFloat()
+    private fun gam(c: Float) = (if (c <= 0.0031308f) 12.92f * c else (1.055 * Math.pow(c.toDouble(), 1 / 2.4) - 0.055).toFloat()).coerceIn(0f, 1f)
+
+    fun of(c: Color): FloatArray {
+        val r = lin(c.red); val g = lin(c.green); val b = lin(c.blue)
+        val l = Math.cbrt((0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)).toFloat()
+        val m = Math.cbrt((0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)).toFloat()
+        val s = Math.cbrt((0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)).toFloat()
+        return floatArrayOf(
+            0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s,
+            1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s,
+            0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s,
+            c.alpha,
+        )
+    }
+
+    fun color(o: FloatArray): Color {
+        val l = o[0] + 0.3963377774f * o[1] + 0.2158037573f * o[2]
+        val m = o[0] - 0.1055613458f * o[1] - 0.0638541728f * o[2]
+        val s = o[0] - 0.0894841775f * o[1] - 1.2914855480f * o[2]
+        val l3 = l * l * l; val m3 = m * m * m; val s3 = s * s * s
+        return Color(
+            gam(4.0767416621f * l3 - 3.3077115913f * m3 + 0.2309699292f * s3),
+            gam(-1.2684380046f * l3 + 2.6097574011f * m3 - 0.3413193965f * s3),
+            gam(-0.0041960863f * l3 - 0.7034186147f * m3 + 1.7076147010f * s3),
+            o[3].coerceIn(0f, 1f),
+        )
+    }
+
+    /** The stops with [STEPS] OKLab steps between each pair (a hard edge, two stops at one place, stays hard). */
+    fun expand(stops: List<Pair<Color, Float>>): List<Pair<Color, Float>> {
+        if (stops.size < 2) return stops
+        val out = ArrayList<Pair<Color, Float>>()
+        for (k in 0 until stops.size - 1) {
+            val (c0, p0) = stops[k]; val (c1, p1) = stops[k + 1]
+            out.add(c0 to p0)
+            if (p1 <= p0 || c0 == c1) continue
+            val a = of(c0); val b = of(c1)
+            for (n in 1 until STEPS) {
+                val t = n.toFloat() / STEPS
+                out.add(color(FloatArray(4) { a[it] + (b[it] - a[it]) * t }) to p0 + (p1 - p0) * t)
+            }
+        }
+        out.add(stops.last())
+        return out
     }
 }

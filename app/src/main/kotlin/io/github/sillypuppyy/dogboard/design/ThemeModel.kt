@@ -215,7 +215,7 @@ object ThemeModel {
         while (a < 0.9 && cols.minOf { cr(ink, over("rgba(255,255,255,$a)", it)) } < 4.5) a = jsRound((a + 0.05) * 100) / 100.0
         val act = tone(seed, cA, 40.0)
         return mapOf(
-            "key" to "rgba(255,255,255,${fmtAlpha(a)})", "keyFg" to ink, "fn" to "rgba(255,255,255,${"%.2f".format(java.util.Locale.ROOT, max(0.2, a - 0.3))})", "fnFg" to ink,
+            "key" to "rgba(255,255,255,${fmtAlpha(a)})", "keyFg" to ink, "fn" to "rgba(255,255,255,${"%.2f".format(java.util.Locale.ROOT, min(0.92, a + 0.28))})", "fnFg" to ink,
             "act" to act, "actFg" to (if (cr(act, "#ffffff") >= 4.5) "#ffffff" else ink), "chip" to "rgba(255,255,255,0.85)", "chipFg" to ink,
             "pop" to "#ffffff", "popFg" to ink, "hint" to tone(seed, clamp(c * 0.5, 4.0, 12.0), 40.0), "barFg" to ink,
         )
@@ -386,12 +386,12 @@ object ThemeModel {
             val to = if (i == s.lastIndex) 100.0 else (s[i].p + s[i + 1].p) / 2.0
             listOf("${s[i].c} ${num(from)}%", "${s[i].c} ${num(to)}%")
         }
-        return "linear-gradient(${bg.angle}deg, " + parts.joinToString(", ") + ")"
+        return "linear-gradient(in oklab ${bg.angle}deg, " + parts.joinToString(", ") + ")"
     }
 
     fun bgCss(bg: Bg): String = when (bg.type) {
         "solid" -> bg.color
-        "gradient" -> if (bg.hard) hardCss(bg) else "linear-gradient(${bg.angle}deg, " + bg.stops.joinToString(", ") { "${it.c} ${it.p}%" } + ")"
+        "gradient" -> if (bg.hard) hardCss(bg) else "linear-gradient(in oklab ${bg.angle}deg, " + bg.stops.joinToString(", ") { "${it.c} ${it.p}%" } + ")"
         else -> "linear-gradient(rgba(0,0,0,${num(bg.dim)}), rgba(0,0,0,${num(bg.dim)}))"
     }
 }
