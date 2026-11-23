@@ -91,6 +91,12 @@ LANGS = {
                # default is the phonetic georgian_qwerty (its languages.json, checked 2026-11-23), as iOS's, with 7
                # letters (ჭ ღ თ შ ჟ ძ ჩ) on Shift, which the rows can't hold: an open question for the user
                layout=('gboard', 'georgian_georgia'), script='Geor', compounds=False),
+    # Austronesian: Latin, few diacritics, affixes (meN-, ber-, -kan, -nya); Gboard lists it under the old code "in"
+    'id': dict(name='Indonesian', leipzig=['ind_news_2024_1M', 'ind_news_2022_1M', 'ind_wikipedia_2021_1M'], tatoeba='ind',
+               layout=('gboard', 'qwerty'), gboard_tag='in', script='Latn', compounds=False),
+    # Iranian (Indo-European) in Arabic script, RTL; words carry a zero-width non-joiner (ZWNJ, U+200C: می‌خواهم)
+    'fa': dict(name='Persian', leipzig=['fas_news_2022_1M', 'fas_newscrawl_2019_1M', 'pes_wikipedia_2021_1M'], tatoeba='pes',
+               layout=('gboard', 'persian'), gboard_tag='fa-IR', script='Arab', compounds=False, rtl=True),
     'ar': dict(name='Arabic', leipzig=['ara_news_2022_1M', 'ara_wikipedia_2021_1M'], tatoeba='ara',
                layout=('gboard', 'arabic'), script='Arab', compounds=False, rtl=True),
 }
