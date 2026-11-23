@@ -181,8 +181,8 @@ private val TITLES = mapOf(
     "enable" to ("Turn on DogBoard" to "Android asks this for every keyboard. Its warning is generic: nothing you type leaves this phone."),
     "langs" to ("Languages" to "The languages you type in. Two that share an alphabet can be combined, to type both without switching."),
     "layout" to ("Pick a layout" to "Both type the same letters. You can mix the details later in Settings › Layout."),
-    "elements" to ("Fine-tune the layout" to "Each of these can be set on its own. The preview follows."),
-    "theme" to ("Theme" to "Colours, sound and vibration. More themes, gradients and photo themes are in Settings › Look."),
+    "elements" to ("Fine-tune the layout" to "Each of these can be set on its own. The keyboard below shows each change."),
+    "theme" to ("Theme" to "Colours, sound and vibration. More themes, gradients and photo themes are in Settings › Theme."),
     "typing" to ("Typing and correction" to "What DogBoard fixes for you."),
     "clipboard" to ("Clipboard" to "DogBoard can keep what you copy so you can paste it again later."),
     "privacy" to ("Privacy" to "What DogBoard may read, and what it does with links you copy."),
@@ -539,7 +539,7 @@ private fun ThemeStep() {
             name to { scope.launch { if (id == null) prefs.inputFeedback.audioEnabled.set(false) else { prefs.inputFeedback.audioStyle.set(id); prefs.inputFeedback.audioEnabled.set(true) } }; menu = false }
         })
     }
-    if (sound) Toggle("Play on silent", "Key sounds even when the phone is on silent or vibrate.", silent) { scope.launch { prefs.inputFeedback.audioBypassSilent.set(it) } }
+    if (sound) Toggle("Play on silent", "Key sounds even when your phone is on silent or vibrate, at the media volume.", silent) { scope.launch { prefs.inputFeedback.audioBypassSilent.set(it) } }
     }
 }
 
@@ -561,7 +561,7 @@ private fun ClipboardStep() {
     val after by prefs.clipboard.historyAutoCleanOldAfter.collectAsState()
     val chips by prefs.clipboard.smartChips.collectAsState()
     io.github.sillypuppyy.dogboard.design.settings.SetGroup("History") {
-    Toggle("Clipboard history", "Keeps copied text, images and links on this phone.", clip) { scope.launch { prefs.clipboard.historyEnabled.set(it) } }
+    Toggle("Clipboard history", "Keep what you copy, to paste again from the clipboard panel.", clip) { scope.launch { prefs.clipboard.historyEnabled.set(it) } }
     val minutes = listOf(60, 1440, 10080)
     val keep = if (!clean) 3 else minutes.indexOfFirst { after <= it }.let { if (it < 0) 2 else it }
     Choice("keep", "Keep clips for", options = listOf("1 hour", "1 day", "1 week", "Until cleared"), selected = keep, enabled = clip) { n ->
@@ -584,7 +584,7 @@ private fun ClipboardStep() {
     }
     // CHANGED (port map): the canvas's "Suggest your last copy" has no setting; DogBoard's chips for what's in a copy
     io.github.sillypuppyy.dogboard.design.settings.SetGroup("Chips") {
-    Toggle("Clipboard chips", "Phone numbers, links and addresses in what you copy show as chips in the bar.", chips) { scope.launch { prefs.clipboard.smartChips.set(it) } }
+    Toggle("Clipboard chips", "Phone numbers, links, emails and addresses in what you copied get chips of their own, to paste just that part.", chips) { scope.launch { prefs.clipboard.smartChips.set(it) } }
     }
 }
 
@@ -612,7 +612,7 @@ private fun PrivacyStep() {
     val trackers by prefs.clipboard.stripTrackers.collectAsState()
     io.github.sillypuppyy.dogboard.design.settings.SetGroup("Contacts") { ContactsRow() }
     io.github.sillypuppyy.dogboard.design.settings.SetGroup("Links") {
-    Toggle("Remove trackers from links", "Pasted links lose their tracking tags (utm_source and the like).", trackers) { scope.launch { prefs.clipboard.stripTrackers.set(it) } }
+    Toggle("Strip trackers from links", "Tracking tags like utm_source and fbclid are removed from links you paste with DogBoard (Brave’s list and DogBoard’s own).", trackers) { scope.launch { prefs.clipboard.stripTrackers.set(it) } }
     Toggle("Expand short links", "Asks a link shortener (bit.ly, t.co…) where a copied short link leads, so you paste the full link. Uses the internet.", expand) { scope.launch { prefs.clipboard.expandShortLinks.set(it) } }
     Toggle("Link previews", "Shows a copied link’s title and picture in the clipboard. Fetches the page once.", previews) { scope.launch { prefs.clipboard.linkPreviews.set(it) } }
     }

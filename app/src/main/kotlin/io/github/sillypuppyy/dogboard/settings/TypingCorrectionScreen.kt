@@ -114,7 +114,7 @@ fun AutocorrectScreen() {
         // the rarely changed settings sit below the common ones, no switch to reveal them
         // ("show the complicated settings just below the common ones")
         SetGroup("Looking back") {
-            SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too, as on an iPhone.", fixPrevious) { v ->
+            SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too.", fixPrevious) { v ->
                 scope.launch { prefs.correction.fixPreviousWord.set(v) }
             }
             SetSwitchRow("ac:join", "Rejoin split words", "A space typed by mistake inside a word is taken back: “meeti g” becomes “meeting”.", joinSplit) { v ->
@@ -153,7 +153,7 @@ internal fun AutocorrectGroup(title: String = "Autocorrect", lookBack: Boolean =
         SetSwitchRow("ac:undo", "Undo with backspace", "Backspace right after a fix puts back the word you typed.", undo) { v ->
             scope.launch { prefs.correction.undoOnBackspace.set(v) }
         }
-        if (lookBack) SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too, as on an iPhone.", fixPrevious) { v ->
+        if (lookBack) SetSwitchRow("ac:previous", "Fix the previous word", "When the next word shows what you meant, the one before it changes too.", fixPrevious) { v ->
             scope.launch { prefs.correction.fixPreviousWord.set(v) }
         }
     }
@@ -182,7 +182,7 @@ fun SuggestionsScreen() {
             }
             // "an option to show the tools vs first word suggestions by default"
             Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                TitleSub("Before you type", "In an empty text box, show likely first words, or your tools (undo, clipboard, selection and more), as Gboard does.")
+                TitleSub("Before you type", "In an empty text box, show likely first words, or your tools (undo, clipboard, selection and more).")
                 val choices = listOf("suggestions", "tools")
                 Segmented("sg:before", listOf("Words", "Tools"), choices.indexOf(beforeTyping).coerceAtLeast(0), listOf(1f, 1f)) { i ->
                     scope.launch { prefs.suggestion.beforeTyping.set(choices[i]) }
@@ -208,7 +208,7 @@ internal fun ContactNamesRow(id: String) {
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         scope.launch { prefs.spelling.useContacts.set(granted) }
     }
-    SetSwitchRow(id, "Contact names", "Suggest the names in your contacts. They stay on this phone.", contacts) { v ->
+    SetSwitchRow(id, "Contact names", "Names, numbers, emails, addresses and birthdays of your contacts as you type their names. Read on the phone, never sent.", contacts) { v ->
         if (!v) scope.launch { prefs.spelling.useContacts.set(false) }
         else if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             scope.launch { prefs.spelling.useContacts.set(true) }

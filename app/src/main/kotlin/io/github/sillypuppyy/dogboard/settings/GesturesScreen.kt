@@ -63,7 +63,7 @@ fun DogGesturesScreen() {
             }
             // holding space can move the cursor (iPhone), show your languages (Gboard), or do nothing
             val holdChoices = listOf(
-                Triple("cursor", "Move the cursor", "Hold, then slide anywhere to move the cursor, as on an iPhone."),
+                Triple("cursor", "Move the cursor", "Hold, then slide anywhere to move the cursor."),
                 Triple("language", "Change language", "Hold to pick one of your languages."),
                 Triple("nothing", "Nothing", "Holding types a space, like a tap."),
             )

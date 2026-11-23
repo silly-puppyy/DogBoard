@@ -64,8 +64,8 @@ fun SoundVibrationScreen() {
                         TitleSub(
                             "Style",
                             when (style) {
-                                HapticStyle.CRISP -> "Crisp clicks, a little different for letters, space and delete, as on an iPhone."
-                                HapticStyle.PHONE -> "Your phone’s own key click, the same for every key, as in Gboard. Its strength follows Android’s touch feedback setting."
+                                HapticStyle.CRISP -> "Crisp clicks, a little different for letters, space and delete."
+                                HapticStyle.PHONE -> "Your phone’s own key click, the same for every key. Its strength follows Android’s touch feedback setting."
                                 HapticStyle.SOFT -> "A soft, rounder tap."
                             },
                         )

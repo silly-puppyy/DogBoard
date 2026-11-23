@@ -224,7 +224,7 @@ fun SetLayout(state: SetLayoutState) {
                 ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.SIMPLE.symbols, { state.onChange(st.copy(symbols = LayoutElements.SIMPLE.symbols)) }) {
                     ElementSeg("symbols", listOf("iphone" to "iPhone-style", "android" to "Android-style"), st.symbols) { state.onChange(st.copy(symbols = it)) }
                 }
-                ElementRow("Back to letters", "When the symbols page returns to the letters: after any key, after a space (as on an iPhone), or never.", st.symbolsReturn != LayoutElements.SIMPLE.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.SIMPLE.symbolsReturn)) }) {
+                ElementRow("Back to letters", "When the symbols page returns to the letters: after any key, after a space, or never.", st.symbolsReturn != LayoutElements.SIMPLE.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.SIMPLE.symbolsReturn)) }) {
                     ElementSeg("symbolsReturn", listOf("any" to "Any key", "space" to "Space", "none" to "Never"), st.symbolsReturn) { state.onChange(st.copy(symbolsReturn = it)) }
                 }
                 ElementRow("Round keys", "123 and the action key as round pills, as on Android.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {

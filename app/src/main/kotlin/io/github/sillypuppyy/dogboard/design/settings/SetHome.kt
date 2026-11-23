@@ -59,7 +59,7 @@ object SetHomeSpec {
         s("schedule", "Timing and feel", "Delete speed, hold times, double taps", P),
         s("mood", "Emoji and GIFs", "Skin tone, recent emoji", S),
         s("content_paste", "Clipboard", "History, how long clips are kept", T),
-        s("shield_person", "Privacy", "Incognito, contact names, your data", P),
+        s("shield_person", "Privacy", "Incognito, contacts, your data", P),
         s("tune", "Advanced", "Neural model, suggestion-bar taps, backup", S),
         s("info", "About", "Version, licenses, credits", T),
     )
