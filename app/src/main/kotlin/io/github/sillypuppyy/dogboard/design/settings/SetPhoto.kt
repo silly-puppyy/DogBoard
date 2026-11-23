@@ -265,6 +265,8 @@ fun SetPhoto(state: SetPhotoState) {
                     SetSliderRow("photo:tint", "Key background", if (st.tint == 0.0) "Clear keys with a hairline edge" else (if (st.keyDark) "Black behind each key; more helps white labels" else "White behind each key; more helps dark labels"),
                         st.tint.toFloat(), auto.tint.toFloat(), 0f..0.9f, 0.05f, { if (it == 0f) "Clear" else pc(it) }) { state.onLook(st.copy(tint = it.toDouble())) }
                     SetSliderRow("photo:blur", "Blur", "Off keeps your photo sharp", st.blur, auto.blur, 0f..25f, 1f, { if (it == 0f) "Off" else it.roundToInt().toString() }) { state.onLook(st.copy(blur = it)) }
+                    // canvas TEPride: frosted keys, the photo blurred behind each key only
+                    SetSwitchRow("photo:frost", "Frosted keys", "The photo blurred behind each key, sharp everywhere else", st.frost) { state.onLook(st.copy(frost = it)) }
                     // :163 label shadow
                     SetSwitchRow("photo:halo", "Label shadow", "A soft shadow behind letters, for the brightest spots", st.halo) { state.onLook(st.copy(halo = it)) }
                 }

@@ -23,6 +23,8 @@ object PhotoReadability {
         val actColor: String? = null,
         /** The key background [tint] is black rather than white (dark versions). */
         val keyDark: Boolean = false,
+        /** Frosted keys: the photo blurred behind each key only, sharp elsewhere (canvas TEPride; on by default). */
+        val frost: Boolean = true,
     ) {
         val dim: Double get() = (1 - bright).coerceIn(0.0, 1.0)
         val wash: Double get() = ((bright - 1) * WASH).coerceIn(0.0, WASH)
@@ -134,10 +136,10 @@ data class PhotoVersions(
     companion object {
         private fun enc(l: PhotoReadability.Look) = org.json.JSONObject().put("b", (l.bright * 100).toInt()).put("k", (l.tint * 100).toInt())
             .put("blur", l.blur.toInt()).put("labels", l.labels).put("halo", l.halo).put("accent", l.accent)
-            .put("s", (l.sat * 100).toInt()).put("c", (l.contrast * 100).toInt()).apply { l.actColor?.let { put("ac", it) } }.put("kd", l.keyDark)
+            .put("s", (l.sat * 100).toInt()).put("c", (l.contrast * 100).toInt()).apply { l.actColor?.let { put("ac", it) } }.put("kd", l.keyDark).put("fr", l.frost)
         private fun dec(j: org.json.JSONObject?) = if (j == null) null else PhotoReadability.Look(j.optInt("b", 100) / 100.0, j.optInt("k", 0) / 100.0,
             j.optInt("blur", 0).toFloat(), j.optString("labels", "auto"), j.optBoolean("halo", true), j.optInt("accent", 0),
-            j.optInt("s", 100) / 100.0, j.optInt("c", 100) / 100.0, j.optString("ac").takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) }, j.optBoolean("kd", false))
+            j.optInt("s", 100) / 100.0, j.optInt("c", 100) / 100.0, j.optString("ac").takeIf { Regex("^#[0-9a-fA-F]{6}$").matches(it) }, j.optBoolean("kd", false), j.optBoolean("fr", true))
 
         /**
          * From [json]; a theme saved before versions ([old] its one look, [a] its photo's analysis) keeps that look

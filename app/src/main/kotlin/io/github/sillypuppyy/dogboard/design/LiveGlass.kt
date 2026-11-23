@@ -11,6 +11,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -52,6 +54,8 @@ data class LiveTheme(
     val photoPos: String = "center",
     /** Settings › Themes › Return key: the accent colour on plain fields too. */
     val retAlways: Boolean = false,
+    /** Frosted keys: the photo blurred behind each key only (PhotoReadability.Look.frost). */
+    val frost: Boolean = false,
 ) {
     /** [p] with the Glass tokens when Glass is on; the photo itself is drawn by [LiveGlassBackdrop]. */
     fun apply(p: KbProps): KbProps = if (!glass) p.copy(theme = themeId, dark = themeDark, spotSeed = spotSeed, retAlways = retAlways) else p.copy(retAlways = retAlways, 
@@ -100,7 +104,7 @@ fun liveTheme(): LiveTheme {
     return LiveTheme(glass, if (id == "glass" && stamp == 0L) "dogboard" else id, dark, if (reroll == "open") openSeed else keptSeed,
         look.dim.toFloat(), look.blur, look.tint.toFloat(), (if (photoDark) v.darkLuminance.toFloat() else lum / 1000f),
         wash = look.wash.toFloat(), photoSat = look.sat.toFloat(), keyDark = look.keyDark, photoContrast = look.contrast.toFloat(), photoDark = photoDark, photoStamp = stamp, glassFg = look.labels, halo = look.halo,
-        actColor = acc?.first, actFg = acc?.second, photoPos = pos,
+        actColor = acc?.first, actFg = acc?.second, photoPos = pos, frost = look.frost,
         retAlways = ThemeChoice.retAlways(retPref, if (glass) "glass" else id))
 }
 
@@ -121,6 +125,25 @@ fun LiveGlassBackdrop(theme: LiveTheme, modifier: Modifier = Modifier) {
                 b.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop,
                 alignment = when (theme.photoPos) { "center top" -> androidx.compose.ui.Alignment.TopCenter; "center bottom" -> androidx.compose.ui.Alignment.BottomCenter; else -> androidx.compose.ui.Alignment.Center },
                 modifier = Modifier.fillMaxSize().blur(theme.blur.dp, BlurredEdgeTreatment.Rectangle),
+                colorFilter = photoFilter(theme.photoSat, theme.photoContrast),
+            )
+        }
+        // frosted keys: the same photo blurred, shown only inside the keys' caps (sharp everywhere else); the layer is
+        // drawn again only when the photo or the caps move
+        val caps by io.github.sillypuppyy.dogboard.ime.LiveUi.frostCaps.collectAsState()
+        val b = photo
+        if (theme.frost && b != null && caps.isNotEmpty()) Box(
+            Modifier.fillMaxSize().then(androidx.compose.ui.Modifier.drawWithContent {
+                val path = androidx.compose.ui.graphics.Path()
+                for (c in caps) path.addRoundRect(androidx.compose.ui.geometry.RoundRect(c.left.dp.toPx(), c.top.dp.toPx(), c.right.dp.toPx(), c.bottom.dp.toPx(),
+                    androidx.compose.ui.geometry.CornerRadius(c.radius.dp.toPx())))
+                clipPath(path) { this@drawWithContent.drawContent() }
+            }),
+        ) {
+            Image(
+                b.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop,
+                alignment = when (theme.photoPos) { "center top" -> androidx.compose.ui.Alignment.TopCenter; "center bottom" -> androidx.compose.ui.Alignment.BottomCenter; else -> androidx.compose.ui.Alignment.Center },
+                modifier = Modifier.fillMaxSize().blur(maxOf(10f, theme.blur).dp, BlurredEdgeTreatment.Rectangle),
                 colorFilter = photoFilter(theme.photoSat, theme.photoContrast),
             )
         }

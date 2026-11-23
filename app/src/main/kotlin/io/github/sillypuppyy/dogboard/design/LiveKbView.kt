@@ -151,6 +151,20 @@ fun LiveKbView(
             io.github.sillypuppyy.dogboard.perf.GcStats.track("layout") { KbSpec.layout(layoutProps) }
         }
         val render = KbSpec.overlays(layout, themed)
+        // frosted photo keys: where the caps are in the window, for the photo layer to blur the photo there only
+        val frost = liveTheme().let { it.glass && it.frost }
+        androidx.compose.runtime.LaunchedEffect(frost, layout.rows, bg.top, bg.height) {
+            io.github.sillypuppyy.dogboard.ime.LiveUi.frostCaps.value = if (!frost || bg.height <= 0f) emptyList() else {
+                val top = bg.top + layout.floatH + layout.barH + layout.devH
+                layout.rows.flatMapIndexed { ri, row ->
+                    val rt = layout.rowTops.getOrElse(ri) { ri * layout.rowH }; val rh = layout.rowHs.getOrElse(ri) { layout.rowH }
+                    row.keys.filter { !it.gap }.map { k ->
+                        io.github.sillypuppyy.dogboard.ime.LiveUi.Cap(k.x + layout.mh, top + rt + layout.mv, k.x + k.w - layout.mh, top + rt + rh - layout.mv,
+                            if (k.pill) (rh - 2 * layout.mv) / 2 else layout.radius)
+                    }
+                }
+            }
+        }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions, LocalKbClipActions provides clipActions) {
             val a0 = io.github.sillypuppyy.dogboard.perf.GcStats.begin()
             KbView(render)

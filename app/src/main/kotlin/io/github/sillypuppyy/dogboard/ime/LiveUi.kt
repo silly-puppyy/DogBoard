@@ -14,6 +14,10 @@ import kotlinx.coroutines.launch
  * Tools are named by their icon in Kb.dc.html (Kb:663-674).
  */
 object LiveUi {
+    /** The live keys' caps in the window (dp, and their corner radius), for frosted photo keys; empty when not frosted. */
+    data class Cap(val left: Float, val top: Float, val right: Float, val bottom: Float, val radius: Float)
+    val frostCaps = MutableStateFlow<List<Cap>>(emptyList())
+
     /** Where the keyboard window draws its background (root pixels): a gradient there runs under bar and keys alike. */
     val bgFrame = MutableStateFlow<androidx.compose.ui.geometry.Rect?>(null)
     fun setBgFrame(r: androidx.compose.ui.geometry.Rect) { if (bgFrame.value != r) bgFrame.value = r }
