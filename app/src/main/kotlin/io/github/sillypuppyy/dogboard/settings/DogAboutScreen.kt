@@ -26,6 +26,7 @@ fun DogAboutScreen() {
     val clipboard by context.clipboardManager()
     val version = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
     val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+    val noBackupPrefs by dev.patrickgold.florisboard.app.NoBackupPreferenceStore
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var taps by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     SetPage("About") {
@@ -42,6 +43,11 @@ fun DogAboutScreen() {
                     else -> "Version copied"
                 }
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+            // Onboarding.dc.html rules: "Re-run any time from Settings › About › Set up again"
+            SetPageLink("ab:setup", "Set up again", "Walk through the first-run setup once more") {
+                scope.launch { noBackupPrefs.isImeSetUp.set(false) }
+                nav.navigate(Routes.Setup.Screen()) { popUpTo(Routes.Settings.Home) { inclusive = true } }
             }
             SetPageLink("ab:floris", "Built on FlorisBoard", "The open-source keyboard DogBoard started from", icon = "open_in_new") { uri.openUri("https://github.com/florisboard/florisboard") }
         }

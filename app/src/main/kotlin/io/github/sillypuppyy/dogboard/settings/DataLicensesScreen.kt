@@ -64,6 +64,7 @@ private val KINDS = listOf(
     )),
     DataKind("Fonts", listOf(
         Source("Roboto Flex", "SIL Open Font License 1.1", "https://github.com/googlefonts/roboto-flex"),
+        Source("Fredoka, the Fredoka Project Authors", "SIL Open Font License 1.1", "https://github.com/hafontia/Fredoka-One"),
         Source("Material Symbols Rounded, Google", "Apache License 2.0", "https://github.com/google/material-design-icons"),
     )),
 )
