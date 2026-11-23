@@ -151,7 +151,7 @@ def gboard_layout(id: str, locale: str, name: str, layout: str, indicator: str, 
 def indic_layout(id: str, locale: str, name: str, layout: str, indicator: str, tag: str, variant: str, label: str) -> Layout:
     """A Gboard Indic layout: every key of its rows (the virama, anusvara and nukta keys, punctuation keys too) and its
     long-press lists (comma-separated in the extracted data; digits and conjuncts like त्र included). A vowel key after a
-    consonant types its sign (DevanagariComposer, for every Indic script); no capitals."""
+    consonant types its sign (RuleComposer: Gboard's rules for the layout); no capitals."""
     langs = json.loads((GBOARD_DATA / "languages.json").read_text(encoding="utf-8"))
     lays = json.loads((GBOARD_DATA / "layouts.json").read_text(encoding="utf-8"))
     data = lays[next(v for v in langs[tag]["variants"] if v["variant"] == variant)["layout_id"]]
@@ -216,10 +216,11 @@ LAYOUTS = [
                            "ㅂ": "ㅃ", "ㅈ": "ㅉ", "ㄷ": "ㄸ", "ㄱ": "ㄲ", "ㅅ": "ㅆ", "ㅐ": "ㅒ", "ㅔ": "ㅖ"}),
             label="두벌식"),
     # Hindi compact (Gboard's default Hindi layout): its rows and long-presses as extracted (aspirates, vowel signs,
-    # digits on long-press); a vowel key after a consonant types its sign (DevanagariComposer: Gboard's conditional
-    # mappings, not in the extracted data); no capitals
+    # digits on long-press); the keys type as labelled (Gboard: क आ -> कआ, the dictionary offers का); no capitals
     no_capitals(hindi_compact()),
-    # other Indic languages: Gboard's layouts (all letters on the keys, vowel signs by DevanagariComposer)
+    # Gboard's full Hindi (its dynamic layout): every consonant on a key, signs by Gboard's Devanagari rules (RuleComposer)
+    indic_layout("hindi-hi", "hi", "हिन्दी", "हिन्दी", "HI", "hi", "hindi", "हिन्दी"),
+    # other Indic languages: Gboard's layouts (all letters on the keys, vowel signs by Gboard's rules, RuleComposer)
     indic_layout("marathi-mr", "mr", "मराठी", "मराठी", "MR", "mr-IN", "marathi_india", "मराठी"),
     indic_layout("bengali-bn", "bn", "বাংলা", "বাংলা", "BN", "bn-IN", "bengali_india", "বাংলা"),
     indic_layout("tamil-ta", "ta", "தமிழ்", "தமிழ்", "TA", "ta-IN", "tamil", "தமிழ்"),

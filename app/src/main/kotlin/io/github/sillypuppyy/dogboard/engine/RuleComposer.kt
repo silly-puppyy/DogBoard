@@ -84,6 +84,13 @@ class RuleComposer private constructor(private val rules: List<Rule>) {
         /** The rules [language]'s layout types with (Indic), or null. */
         fun forLanguage(language: String): RuleComposer? = SCRIPT_OF[language.substringBefore('-')]?.let(::forScript)
 
+        /** Layouts whose rules differ from their language's: Gboard's full Hindi (dynamic) beside the compact one. */
+        private val SCRIPT_OF_LAYOUT = mapOf("hindi-hi" to "devanagari")
+
+        /** The rules the layout [layoutId] types with, else [language]'s. */
+        fun forLayout(layoutId: String, language: String): RuleComposer? =
+            SCRIPT_OF_LAYOUT[layoutId]?.let(::forScript) ?: forLanguage(language)
+
         fun parse(text: String): RuleComposer = RuleComposer(json.decodeFromString<File>(text).rules.map { s ->
             val last = s.pattern.lastOrNull()?.takeIf { it !in """)]}?*+.|\$""" && s.pattern.getOrNull(s.pattern.length - 2) != '\\' }
             Rule(Regex("(?:${s.pattern})$"), s.text.replace("\\$", "\u0000").replace("\\\\", "\\").replace("\u0000", "$"), last)

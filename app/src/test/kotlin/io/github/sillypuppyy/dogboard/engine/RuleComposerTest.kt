@@ -44,6 +44,7 @@ class RuleComposerTest : FunSpec({
         lex.firstForm(lex.find("नमस्तए")) shouldBe "नमस्ते"
         RuleComposer.forLanguage("mr-IN") shouldBe RuleComposer.forScript("devanagari_eyelash_reph")
         RuleComposer.forLanguage("hi") shouldBe null // compact: the keys as typed, the dictionary corrects
+        RuleComposer.forLayout("hindi-hi", "hi") shouldBe RuleComposer.forScript("devanagari") // Gboard's full Hindi
     }
     test("every language's rule set loads") {
         for (script in RuleComposer.SCRIPT_OF.values.toSet()) rules(script).compose("") shouldBe ""

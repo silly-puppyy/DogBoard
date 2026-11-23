@@ -1121,7 +1121,7 @@ class ImeController(
                 return word
             }
             // Indic keyboards: the script's rules (a vowel key after a consonant writes its sign: क + आ -> का)
-            val rules = io.github.sillypuppyy.dogboard.engine.RuleComposer.forLanguage(language)
+            val rules = io.github.sillypuppyy.dogboard.engine.RuleComposer.forLayout(prefs.keyboard.layoutId.get(), language)
             if (rules != null) {
                 word.composer = rules::compose
                 word.decomposer = rules::decompose
