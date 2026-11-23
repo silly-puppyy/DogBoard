@@ -443,7 +443,12 @@ object TypingEngine {
     }
 
     /** A language whose marks are typed (Vietnamese Telex) keeps its words along their typed spelling. */
-    fun pathOf(rules: LanguageRules): ((String) -> String)? = if (rules.typedMarks) rules.typedSpellings::spelled else null
+    fun pathOf(rules: LanguageRules): ((String) -> String)? = when {
+        rules.typedMarks -> rules.typedSpellings::spelled
+        // Korean: words along their jamo keys, as typed on the 2-set layout
+        rules.path == "hangul" -> { w -> HangulComposer.decompose(w.lowercase()) }
+        else -> null
+    }
 
     /** Whether a second language is loaded. */
     val hasSecondary: Boolean get() = secondaries.isNotEmpty()

@@ -17,8 +17,29 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 WORD = re.compile(r"[^\W\d_]+")
 
 
+CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
+JUNG = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ"
+JONG = "\0ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"
+SPLIT = {'ㅘ': 'ㅗㅏ', 'ㅙ': 'ㅗㅐ', 'ㅚ': 'ㅗㅣ', 'ㅝ': 'ㅜㅓ', 'ㅞ': 'ㅜㅔ', 'ㅟ': 'ㅜㅣ', 'ㅢ': 'ㅡㅣ', 'ㄳ': 'ㄱㅅ', 'ㄵ': 'ㄴㅈ',
+         'ㄶ': 'ㄴㅎ', 'ㄺ': 'ㄹㄱ', 'ㄻ': 'ㄹㅁ', 'ㄼ': 'ㄹㅂ', 'ㄽ': 'ㄹㅅ', 'ㄾ': 'ㄹㅌ', 'ㄿ': 'ㄹㅍ', 'ㅀ': 'ㄹㅎ', 'ㅄ': 'ㅂㅅ'}
+
+
+def hangul_keys(word):
+    """HangulComposer.decompose in Python: a word's 2-set keys (한국어 -> ㅎㅏㄴㄱㅜㄱㅇㅓ)."""
+    out = []
+    for ch in word.lower():
+        code = ord(ch) - 0xAC00
+        if not 0 <= code < 11172: out.append(SPLIT.get(ch, ch)); continue
+        out.append(CHO[code // 588]); out.append(SPLIT.get(JUNG[(code // 28) % 21], JUNG[(code // 28) % 21]))
+        if code % 28: out.append(SPLIT.get(JONG[code % 28], JONG[code % 28]))
+    return ''.join(out)
+
+
 def speller(rules):
-    """TypedSpellings.spelled in Python: end marks (tones) off the letters, their keys appended; letters replaced."""
+    """The keys a word is typed with: Hangul jamo (rules path "hangul"), else TypedSpellings.spelled in Python (end
+    marks (tones) off the letters, their keys appended; letters replaced)."""
+    if rules.get('path') == 'hangul':
+        return hangul_keys
     sp = rules.get('spellings', [])
     letters = sorted([s for s in sp if s.get('letter') and s.get('typed')], key=lambda s: -len(s['letter']))
     marks = [s for s in sp if s.get('mark') and s.get('typed') and s.get('at') == 'end']
@@ -40,30 +61,32 @@ def main():
     os.makedirs(out, exist_ok=True)
     rules = json.load(open(f'{pack}/rules.json', encoding='utf-8'))
     spelled = speller(rules)
+    keyset = set(''.join(rules['letter_rows']['rows']))
+    lang = os.path.basename(os.path.normpath(pack)).split('-')[0]
     back = {}  # Telex spelling -> the most frequent word spelled so
     counts = {}
-    with open(f'{out}/vi.lexicon.tsv', 'w', encoding='utf-8') as f:
+    with open(f'{out}/{lang}.lexicon.tsv', 'w', encoding='utf-8') as f:
         f.write('#dogboard-lexicon 1\n')
-        for line in open(f'{pack}/vi.lexicon.tsv', encoding='utf-8'):
+        for line in open(f'{pack}/{lang}.lexicon.tsv', encoding='utf-8'):
             if line.startswith('#'): continue
             parts = line.rstrip('\n').split('\t')
             w, c = parts[0], float(parts[1]) if len(parts) > 1 else 1.0
             t = spelled(w)
-            if not t.isascii(): continue  # a letter Telex doesn't cover
+            if not set(t) <= keyset: continue  # a letter the layout's keys don't cover
             if c > counts.get(t, -1): counts[t] = c; back[t] = w
         for t, c in counts.items(): f.write(f'{t}\t{int(c)}\n')
-    with open(f'{out}/vi.heldout.txt', 'w', encoding='utf-8') as f:
-        for i, line in enumerate(open(f'{pack}/vi.heldout.txt', encoding='utf-8')):
+    with open(f'{out}/{lang}.heldout.txt', 'w', encoding='utf-8') as f:
+        for i, line in enumerate(open(f'{pack}/{lang}.heldout.txt', encoding='utf-8')):
             if i >= 200000: break
             f.write(WORD.sub(lambda m: spelled(m.group(0)), line.lower()))
     rows = ','.join(rules['letter_rows']['rows'])
-    subprocess.run([sys.executable, '-I', f'{HERE}/make_es_sets.py', f'{out}/vi.heldout.txt', f'{out}/vi.lexicon.tsv',
+    subprocess.run([sys.executable, '-I', f'{HERE}/make_es_sets.py', f'{out}/{lang}.heldout.txt', f'{out}/{lang}.lexicon.tsv',
                     f'{HERE}/typo_model7.json', out, n],
-                   env=dict(os.environ, SIM_ROWS=rows, SIM_PREFIX='vi', SIM_LETTERS='abcdefghijklmnopqrstuvwxyz'),
+                   env=dict(os.environ, SIM_ROWS=rows, SIM_PREFIX=lang, SIM_LETTERS=''.join(sorted(keyset))),
                    cwd=HERE, check=True, stdout=subprocess.DEVNULL)
     # context and target back in Vietnamese; the typed text stays as typed
     for kind in ('typos', 'controls'):
-        p = f'{out}/vi-{kind}.tsv'
+        p = f'{out}/{lang}-{kind}.tsv'
         if not os.path.exists(p): continue
         rows_out = []
         for line in open(p, encoding='utf-8'):

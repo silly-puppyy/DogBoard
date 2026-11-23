@@ -269,7 +269,7 @@ class RealTypoEvalTest : FunSpec({
                     got.equals(intended, ignoreCase = true) -> if (typo) "fixed" else "kept"
                     got.equals(typed, ignoreCase = true) -> "left"
                     // marks typed as letters (Telex): the word the keys spell is the typed word, written ("tronf" -> tròn)
-                    evalRules.typedMarks && evalRules.typedSpellings.spelled(got) == typed.lowercase() -> "left"
+                    TypingEngine.pathOf(evalRules)?.invoke(got) == typed.lowercase() -> "left"
                     else -> if (typo) "wrong" else "broken"
                 }
                 val dump = if (dumpCandidates == null) "" else candidates.take(8).joinToString("|") {

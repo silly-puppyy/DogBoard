@@ -73,6 +73,10 @@ LANGS = {
                rules_extra={'typed_marks': True, 'spellings': [
                    {'letter': l, 'typed': t} for l, t in [('ươ', 'uow'), ('â', 'aa'), ('ă', 'aw'), ('ê', 'ee'), ('ô', 'oo'), ('ơ', 'ow'), ('ư', 'uw'), ('đ', 'dd')]
                ] + [{'mark': m, 'typed': t, 'at': 'end'} for m, t in [('\u0301', 's'), ('\u0300', 'f'), ('\u0309', 'r'), ('\u0303', 'x'), ('\u0323', 'j')]]}),
+    # Korean (2-set): words along their jamo keys (rules path "hangul": the word list, snapshots and eval in jamo space)
+    'ko': dict(name='Korean', leipzig=['kor_news_2022_1M', 'kor_news_2020_1M', 'kor_wikipedia_2021_1M'], tatoeba='kor',
+               layout=('gboard', 'korean_two_bulsik'), gboard_tag='ko', script='Kore', compounds=False,
+               rules_extra={'path': 'hangul'}),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
@@ -121,7 +125,10 @@ def letters_of(lang):
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True); urllib.request.urlretrieve(CLDR_URL.format(lang), path)
     m = re.search(r'<exemplarCharacters>\[([^\]]*)\]', open(path, encoding='utf-8').read())
-    chars = {c for c in re.sub(r'\{[^}]*\}', '', m.group(1)) if c.isalpha() or unicodedata.category(c) == 'Mn'}
+    body = re.sub(r'\{[^}]*\}', '', m.group(1))
+    # ranges ("가-힣": Korean lists its syllables so): every letter between the ends
+    body = re.sub(r'(\S)-(\S)', lambda r: ''.join(chr(c) for c in range(ord(r.group(1)), ord(r.group(2)) + 1)), body)
+    chars = {c for c in body if c.isalpha() or unicodedata.category(c) == 'Mn'}
     return chars | {c.upper() for c in chars} | set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
 

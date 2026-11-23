@@ -22,6 +22,13 @@ class HangulComposerTest : FunSpec({
         HangulComposer.compose("ㅏㅃ") shouldBe "ㅏㅃ"
         HangulComposer.compose("ㄱㅏㄸ") shouldBe "가ㄸ"
     }
+    test("a Korean word list along jamo keys (rules path hangul): typed jamo reach the word") {
+        val rules = LanguageRules(path = "hangul")
+        val lex = Lexicon.parse("#dogboard-lexicon 1\n한국어\t500\n닭\t100\n과\t300\n".reader().buffered(), TypingEngine.pathOf(rules))
+        lex.firstForm(lex.find("ㅎㅏㄴㄱㅜㄱㅇㅓ")) shouldBe "한국어"
+        lex.firstForm(lex.find("ㄱㅗㅏ")) shouldBe "과"
+        lex.contains("닭") shouldBe true
+    }
     test("decompose gives the keys back") {
         for (w in listOf("한국어", "하나", "과", "닭이", "없다", "빵")) HangulComposer.compose(HangulComposer.decompose(w)) shouldBe w
         HangulComposer.decompose("닭") shouldBe "ㄷㅏㄹㄱ"

@@ -84,6 +84,8 @@ data class LanguageRules(
      * marked twin (bare syllables are words of their own: ngay, ba, trong; restoring marks broke 3.1 % of correct words).
      */
     @SerialName("typed_marks") val typedMarks: Boolean = false,
+    /** Words typed as other keys than their letters: "hangul" (Korean: jamo keys, 한 along ㅎ ㅏ ㄴ). Empty: the letters. */
+    @SerialName("path") val path: String = "",
 ) {
     @Serializable
     data class Spelling(val letter: String = "", val mark: String = "", val typed: String = "", val at: String = "") {
