@@ -210,6 +210,12 @@ LAYOUTS = [
     indic_layout("tamil-ta", "ta", "தமிழ்", "தமிழ்", "TA", "ta-IN", "tamil", "தமிழ்"),
     indic_layout("telugu-te", "te", "తెలుగు", "తెలుగు", "TE", "te-IN", "telugu_india", "తెలుగు"),
     indic_layout("gujarati-gu", "gu", "ગુજરાતી", "ગુજરાતી", "GU", "gu", "gujarati", "ગુજરાતી"),
+    indic_layout("kannada-kn", "kn", "ಕನ್ನಡ", "ಕನ್ನಡ", "KN", "kn-IN", "kannada_india", "ಕನ್ನಡ"),
+    indic_layout("malayalam-ml", "ml", "മലയാളം", "മലയാളം", "ML", "ml-IN", "malayalam_india", "മലയാളം"),
+    indic_layout("gurmukhi-pa", "pa", "ਪੰਜਾਬੀ", "ਗੁਰਮੁਖੀ", "PA", "pa-XF", "punjabi_gurmukhi", "ਗੁਰਮੁਖੀ"),
+    indic_layout("odia-or", "or", "ଓଡ଼ିଆ", "ଓଡ଼ିଆ", "OR", "or", "odia", "ଓଡ଼ିଆ"),
+    indic_layout("nepali-ne", "ne", "नेपाली", "नेपाली", "NE", "ne-NP", "nepali_nepal_dynamic", "नेपाली"),
+    indic_layout("assamese-as", "as", "অসমীয়া", "অসমীয়া", "AS", "as", "assamese", "অসমীয়া"),
 ]
 
 SYMBOL_1 = [
