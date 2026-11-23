@@ -1771,7 +1771,7 @@ class ImeController(
                     val gone = committed.trim()
                     if (gone.isNotEmpty() && learningAllowed()) scope.launch { TypingEngine.noteDeleted(gone) }
                     currentWord.clear()
-                    currentWord.seedFrom(state.content.surroundingText.textBefore, currentWord.keys, currentWord.params)
+                    withTypedMarks(currentWord).seedFrom(state.content.surroundingText.textBefore, currentWord.keys, currentWord.params)
                     reevaluateInputShiftState()
                     publishSuggestions()
                     return
@@ -1791,7 +1791,7 @@ class ImeController(
             currentWord.removeLast()
             if (currentWord.isEmpty || !textBefore.endsWith(currentWord.text)) {
                 // deleted back into (or within) a word: track that word
-                currentWord.seedFrom(textBefore, currentWord.keys, currentWord.params)
+                withTypedMarks(currentWord).seedFrom(textBefore, currentWord.keys, currentWord.params)
             }
             publishSuggestions()
         }
@@ -1805,7 +1805,7 @@ class ImeController(
             expectedContentQueue.push(state.content)
             val textBefore = state.content.surroundingText.textBefore
             currentWord.clear()
-            currentWord.seedFrom(textBefore, currentWord.keys, currentWord.params)
+            withTypedMarks(currentWord).seedFrom(textBefore, currentWord.keys, currentWord.params)
             publishSuggestions()
             undoEdit = UndoEdit("", selected, textBefore)
         }
