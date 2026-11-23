@@ -680,13 +680,7 @@ class ImeController(
             when {
                 wordChar != null -> {
                     val tap = pendingTap
-                    if (currentWord.isEmpty) {
-                        // the loaded pack's rules (a downloaded pack's are not among the built-in ones languageRules() reads)
-                        val rules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
-                        val telex = rules.typedMarks
-                        currentWord.composer = if (telex) { k -> io.github.sillypuppyy.dogboard.engine.TelexComposer.compose(k) } else null
-                        currentWord.decomposer = if (telex) rules.typedSpellings::spelled else null
-                    }
+                    if (currentWord.isEmpty) withTypedMarks(currentWord)
                     if (currentWord.isEmpty && !state.content.selection.isNotCollapsed()) {
                         // typing on at the end of an existing word continues that word
                         currentWord.seedFrom(state.content.surroundingText.textBefore, tap?.keys ?: emptyMap(), tap?.params)
@@ -1112,13 +1106,27 @@ class ImeController(
         }
 
         /** Corrections for the word the cursor rests in ([before] + [after] the cursor), decoded from key centres. */
+        /**
+         * [word] drawn and read the way the loaded language types it: Vietnamese Telex draws the word its keys make and
+         * keeps the keys for the decoder (the loaded pack's rules: a downloaded pack's are not among the built-in ones
+         * languageRules() reads). Other languages: the letters as typed.
+         */
+        private fun withTypedMarks(word: CurrentWord): CurrentWord {
+            val rules = io.github.sillypuppyy.dogboard.engine.TypingEngine.rules
+            val telex = rules.typedMarks
+            word.composer = if (telex) { k -> io.github.sillypuppyy.dogboard.engine.TelexComposer.compose(k) } else null
+            word.decomposer = if (telex) rules.typedSpellings::spelled else null
+            return word
+        }
+
         private fun publishWordAroundCursor(sink: (List<Suggestion>) -> Unit, before: String, after: String) {
             val whole = before + after
             // before the first letter tap there is no live key geometry: the standard QWERTY one
             // decodes key-centre taps the same way
             val keys = lastLetterKeys.ifEmpty { io.github.sillypuppyy.dogboard.engine.QwertyGeometry.letterKeys(375f, 216f, languageRules().letterRows) }
             val params = lastLetterParams ?: io.github.sillypuppyy.dogboard.touch.GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
-            val word = CurrentWord().apply { seedFrom(whole, keys, params) }
+            // a Telex word ("việt") is tracked as its keys, as while typing
+            val word = withTypedMarks(CurrentWord()).apply { seedFrom(whole, keys, params) }
             if (word.tapsOrNull() == null || whole.none { it.isLetter() }) {
                 sink(emptyList())
                 return
