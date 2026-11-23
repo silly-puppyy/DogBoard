@@ -860,6 +860,7 @@ object TypingEngine {
         val engine = loaded ?: return null
         // one language's model would rank the other's words down: off while a second language is typed (until every
         // language of the entry has one, notes/design/multilingual.md)
+        lastNeuralScoreMillis = -1 // not run: no time to report (the log repeated the last one, phone 2026-11-23)
         val lm = neuralLm?.takeIf { decoded.size > 1 && secondaries.isEmpty() } ?: return null
         val t0 = System.nanoTime()
         val scores = runCatching { tallySteps(lm, "refine") {

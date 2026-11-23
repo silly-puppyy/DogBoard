@@ -16,6 +16,7 @@
 
 package dev.patrickgold.florisboard.ime.keyboard3.ui
 
+import dev.patrickgold.florisboard.subtypeManager
 import androidx.compose.ui.graphics.asImageBitmap
 import dev.patrickgold.florisboard.clipboardManager
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
@@ -143,12 +144,19 @@ fun ImeKeyboardBox(
     val spaceBarMode by prefs.keyboard.spaceBarMode.collectAsState()
     val displayLanguageNamesIn by prefs.localization.displayLanguageNamesIn.collectAsState()
     // DogBoard: the language name for the design's space-bar label (Layout element "Space-bar label")
-    val languageName = remember(model, displayLanguageNamesIn) {
-        val locale = FlorisLocale.from(model.locales.getOrElse(0) { "en" })
-        when (displayLanguageNamesIn) {
-            DisplayLanguageNamesIn.SYSTEM_LOCALE -> locale.displayName()
-            DisplayLanguageNamesIn.NATIVE_LOCALE -> locale.displayName(locale)
+    // the language entry in use (not the layout's locale: English on AZERTY said French), and the languages typed
+    // together with it: "English + French" in their short names (user 2026-11-23: it showed only one)
+    val activeSubtype by androidx.compose.ui.platform.LocalContext.current.subtypeManager().value.activeSubtypeFlow.collectAsState()
+    val languageName = remember(model, displayLanguageNamesIn, activeSubtype) {
+        fun name(locale: FlorisLocale, short: Boolean): String {
+            val l = if (short) FlorisLocale.from(locale.language) else locale
+            return when (displayLanguageNamesIn) {
+                DisplayLanguageNamesIn.SYSTEM_LOCALE -> l.displayName()
+                DisplayLanguageNamesIn.NATIVE_LOCALE -> l.displayName(l)
+            }
         }
+        val all = listOf(activeSubtype.primaryLocale) + activeSubtype.secondaryLocales
+        if (all.size == 1) name(all[0], short = false) else all.joinToString(" + ") { name(it, short = true) }
     }
     val spaceBarDisplayOverride = remember(model, spaceBarMode, displayLanguageNamesIn) {
         when (spaceBarMode) {
