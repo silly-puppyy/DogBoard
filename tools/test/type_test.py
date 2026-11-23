@@ -11,6 +11,7 @@ Uses the debug build's test screen (ImeTestActivity) and two debug log tags:
 Run it on the emulator, not on a phone someone is using.
 """
 import argparse
+import os
 import random
 import re
 import subprocess
@@ -235,7 +236,7 @@ def main():
                     time.sleep(args.delay)
             pending.clear()
 
-        for ch in re.findall(r"\{L\}|\{123\}|\{S-?\d+\}|.", typed):
+        for ch in re.findall(r"\{L\}|\{123\}|\{S-?\d+\}|\{W:[a-z]+\}|.", typed):
             if ch.startswith("{") and len(ch) > 1:
                 flush()
             if ch == "{L}":
@@ -253,6 +254,20 @@ def main():
                 adb(args.serial, "shell",
                     f"input motionevent DOWN {int(sx)} {int(sy)} ; sleep 0.6 ; {moves} ; input motionevent UP {int(sx + dx)} {int(sy)}")
                 time.sleep(args.delay)
+                continue
+            if ch.startswith("{W:"):
+                # swipe the word: down on its first letter, through each letter's key centre (6 moves between keys,
+                # ~15 ms apart, as a quick finger), up on its last
+                pts = [(x0 + key_center_units(c)[0] * unit, y0 + (key_center_units(c)[1] + 0.5) * row_h) for c in ch[3:-1]]
+                path = [pts[0]] + [(a[0] + (b[0] - a[0]) * i / 6, a[1] + (b[1] - a[1]) * i / 6) for a, b in zip(pts, pts[1:]) for i in range(1, 7)]
+                if not taps_dev:
+                    print("FAIL: swipes need the rooted emulator (taptype strokes; adb's input commands are too slow)")
+                    sys.exit(2)
+                import bench_keyboards
+                raw = lambda v, size: max(0, min(bench_keyboards.RAW_MAX, int(v * bench_keyboards.RAW_MAX / size)))
+                stroke = " ".join(f"{raw(x, taps_dev.w)} {raw(y, taps_dev.h)} {i * int(os.environ.get('SWIPE_STEP_MS', '30'))}" for i, (x, y) in enumerate(path))
+                subprocess.run([ADB, "-s", args.serial, "shell", f"{bench_keyboards.TAPTYPE} {bench_keyboards.TOUCH_DEV}"],
+                               input=f"S {int(args.delay * 1000)} {stroke}\n", text=True, timeout=60)
                 continue
             ux, row = key_center_units(ch)
             x = x0 + ux * unit + rng.gauss(0, noise_px)

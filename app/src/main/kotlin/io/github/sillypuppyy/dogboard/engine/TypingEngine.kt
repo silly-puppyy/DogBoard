@@ -328,19 +328,25 @@ object TypingEngine {
         val logp = net.run(f)
         val t1 = System.nanoTime()
         return lock.read {
-            val lex = engine.lexicon
-            val beam = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.decode(logp, logp.size / 27, lex, top = 10)
-            val scorer = engine.decoder.context
-            val p1 = engine.contextId(previous)
-            val p2 = if (previous == null || previous == Bigrams.START) -1 else engine.contextId(previous2)
-            fun total(c: io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.Candidate): Double {
-                val uni = lex.logProb(c.node)
-                val path = c.score - uni
-                return if (scorer != null && p1 >= 0) path + SWIPE_CONTEXT_WEIGHT * scorer.logProb(p2, p1, lex.wordId(c.node), uni) else path + uni
+            /** The path spelled in one language's words, each with its total (path + that language's context). */
+            fun spelled(l: Loaded): List<Pair<String, Double>> {
+                val lex = l.lexicon
+                val beam = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.decode(logp, logp.size / 27, lex, top = 10)
+                val scorer = l.decoder.context
+                val p1 = l.contextId(previous)
+                val p2 = if (previous == null || previous == Bigrams.START) -1 else l.contextId(previous2)
+                fun total(c: io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.Candidate): Double {
+                    val uni = lex.logProb(c.node)
+                    val path = c.score - uni
+                    return if (scorer != null && p1 >= 0) path + SWIPE_CONTEXT_WEIGHT * scorer.logProb(p2, p1, lex.wordId(c.node), uni) else path + uni
+                }
+                if (swipeDebugLog) android.util.Log.d("DogBoardSwipe", "prev=" + previous + " steps=" + f.size / 4 + " beam=" +
+                    beam.take(6).joinToString { c -> lex.firstForm(c.node) + ":" + "%.1f".format(java.util.Locale.ROOT, c.score - lex.logProb(c.node)) + "/" + "%.1f".format(java.util.Locale.ROOT, total(c)) })
+                return beam.mapNotNull { c -> lex.firstForm(c.node)?.let { it to total(c) } }
             }
-            if (swipeDebugLog) android.util.Log.d("DogBoardSwipe", "prev=" + previous + " steps=" + f.size / 4 + " beam=" +
-                beam.take(6).joinToString { c -> lex.firstForm(c.node) + ":" + "%.1f".format(java.util.Locale.ROOT, c.score - lex.logProb(c.node)) + "/" + "%.1f".format(java.util.Locale.ROOT, total(c)) })
-            beam.sortedByDescending { total(it) }.mapNotNull { lex.firstForm(it.node) }.filter { it.lowercase() !in blocked }.distinct().take(top)
+            // a second language: the same path in its words, merged on the totals (as typed words)
+            (spelled(engine) + (secondary?.let { spelled(it) }.orEmpty())).sortedByDescending { it.second }.map { it.first }
+                .filter { it.lowercase() !in blocked }.distinct().take(top)
                 .also { lastSwipeTiming = "network ${(t1 - t0) / 1_000_000} ms, search ${(System.nanoTime() - t1) / 1_000_000} ms, ${f.size / 4} steps" }
         }
     }
