@@ -329,10 +329,14 @@ class FlorisImeService : LifecycleInputMethodService() {
             languageJob = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 // the saved language often arrives while the first load (which saw the default) is still running
                 while (!io.github.sillypuppyy.dogboard.engine.TypingEngine.isReady) kotlinx.coroutines.delay(200)
-                val tag = subtypeManager.activeSubtype.primaryLocale.languageTag()
-                // the language's layout (its default unless the one in use types that language): before the switch,
-                // so the keys and the pack's own-key letters (ñ, å ä ö) match
-                io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get(), prefs.keyboard.layoutByLanguage.get())?.let { prefs.keyboard.layoutId.set(it) }
+                val active = subtypeManager.activeSubtype
+                val tag = active.primaryLocale.languageTag()
+                // the entry's own layout (a language added with several layouts), else the language's (its default unless
+                // the one in use types that language): before the switch, so the keys and the pack's own-key letters match
+                val own = active.layoutId?.takeIf { id -> io.github.sillypuppyy.dogboard.ime.GeneratedLayouts.all.any { it.id == id } }
+                (own?.takeIf { it != prefs.keyboard.layoutId.get() }
+                    ?: if (own == null) io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get(), prefs.keyboard.layoutByLanguage.get()) else null)
+                    ?.let { prefs.keyboard.layoutId.set(it) }
                 if (io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag))
                     imeController.updateState { refreshSuggestions() }
             }

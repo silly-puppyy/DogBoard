@@ -35,6 +35,12 @@ data class Subtype(
     val primaryLocale: FlorisLocale,
     val secondaryLocales: List<FlorisLocale>,
     val nlpProviders: SubtypeNlpProviderMap = SubtypeNlpProviderMap(),
+    /**
+     * DogBoard: this entry's letter layout (GeneratedLayouts id), so one language can be added with several layouts
+     * (Gboard: Italiano QWERTY and Italiano handwriting, each its own entry); null: the language's remembered layout
+     * (LanguageLayouts.layoutOf), as entries saved before this field.
+     */
+    val layoutId: String? = null,
 ) {
     companion object {
         /**
@@ -70,6 +76,7 @@ data class Subtype(
         if (other.primaryLocale != primaryLocale) return false
         if (other.secondaryLocales != secondaryLocales) return false
         if (other.nlpProviders != nlpProviders) return false
+        if (other.layoutId != layoutId) return false
 
         return true
     }

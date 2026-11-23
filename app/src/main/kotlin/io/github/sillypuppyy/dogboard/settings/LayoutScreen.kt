@@ -78,11 +78,15 @@ fun LayoutScreen() {
         onLayoutId = { id, lang ->
             scope.launch {
                 prefs.keyboard.layoutByLanguage.set(LanguageLayouts.remember(prefs.keyboard.layoutByLanguage.get(), lang, id))
-                // the live keyboard changes when the layout is for the language in use
-                if (active.primaryLocale.language == lang) prefs.keyboard.layoutId.set(id)
+                // the live keyboard changes when the layout is for the language in use; an entry added with its own
+                // layout (one language, several layouts) keeps the change as its own
+                if (active.primaryLocale.language == lang) {
+                    prefs.keyboard.layoutId.set(id)
+                    if (active.layoutId != null && active.id >= 0) subtypeManager.modifySubtypeWithSameId(active.copy(layoutId = id))
+                }
             }
         },
-        layoutOf = { lang -> LanguageLayouts.layoutOf(lang, memory) },
+        layoutOf = { lang -> active.layoutId?.takeIf { active.primaryLocale.language == lang } ?: LanguageLayouts.layoutOf(lang, memory) },
         heightPercent = prefs.keyboard.heightPercent.collectAsState().value,
         onHeightPercent = { v -> scope.launch { prefs.keyboard.heightPercent.set(v) } },
     ))
