@@ -1,23 +1,30 @@
-<p><i>DogBoard</i> is a keyboard that fixes your typos the way you expect, and keeps everything you type on your phone. It has no internet permission at all.</p>
+<p><i>DogBoard</i> is a keyboard that fixes your typos the way you expect, and keeps what you type on your phone.</p>
 <p><b>Typing</b></p>
 <ul>
-    <li>Autocorrect with a full English dictionary, a language model of word context, and a model of how fingers miss keys</li>
+    <li>Autocorrect with full dictionaries, a model of word context and a model of how fingers miss keys</li>
     <li>Looks back: the next word can fix the one before it</li>
     <li>Names, slang and brands you type stay as you typed them</li>
-    <li>Learns your words and how you write, on the device; long-press a suggestion to remove it</li>
-    <li>Text shortcuts, smart punctuation, emoji suggestions</li>
-    <li>Space-bar trackpad to move the cursor</li>
+    <li>Learns your words on the device; long-press a suggestion to remove it</li>
+    <li>Text replacements, smart punctuation, emoji suggestions</li>
+    <li>Swipe typing (QWERTY layouts), space-bar trackpad to move the cursor</li>
+</ul>
+<p><b>Languages</b></p>
+<ul>
+    <li>More than 20 languages, each with its usual layouts; dictionaries download when you add a language</li>
+    <li>Combine languages that share an alphabet into one keyboard and type both without switching</li>
 </ul>
 <p><b>Looks and feel</b></p>
 <ul>
-    <li>Material You themes that follow your wallpaper, light and dark</li>
-    <li>Adjustable keyboard height, number row, sound and vibration</li>
-    <li>Clipboard history, one-handed and floating modes</li>
+    <li>Themes that follow your wallpaper, dog breeds, gradients, Pride flags and your own photos</li>
+    <li>A theme editor: colours, gradients, key styles, shapes, a bright and a dark version</li>
+    <li>iPhone-style or Android-style layouts, number row, keyboard height, sounds and vibration</li>
+    <li>Clipboard history with chips for the phone numbers, links and emails in what you copy</li>
 </ul>
 <p><b>Privacy</b></p>
 <ul>
-    <li>No network access: nothing you type can leave the keyboard</li>
+    <li>Nothing you type is sent anywhere. No ads, no analytics</li>
+    <li>The internet is used only to download the dictionaries of languages you add, and for two link features that are off until you turn them on (opening short links, link previews)</li>
+    <li>Tracking tags are removed from links you paste; copied passwords clear themselves</li>
     <li>Incognito mode, and nothing learned in password fields</li>
     <li>Open source (Apache 2.0), built on FlorisBoard</li>
 </ul>
-<p>English (US) for now; more languages are planned.</p>

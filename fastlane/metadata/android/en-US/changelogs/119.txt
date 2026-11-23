@@ -1,0 +1,5 @@
+First release of DogBoard.
+- Autocorrect that looks back, learns on the device and keeps names as typed
+- More than 20 languages; combine two or three on one keyboard
+- Themes: wallpaper colours, breeds, gradients, Pride flags, photos, and a theme editor
+- A setup that walks through every setting with the keyboard live below

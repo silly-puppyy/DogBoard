@@ -1,1 +1,1 @@
-A friendly, private keyboard with smart autocorrect. No internet access, ever.
+A private keyboard with autocorrect that fixes typos the way you expect
