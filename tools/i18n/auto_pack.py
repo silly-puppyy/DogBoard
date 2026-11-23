@@ -64,6 +64,10 @@ LANGS = {
                layout=('gboard', 'russian'), gboard_tag='ru-RU', script='Cyrl', compounds=False),
     # Hunspell (HUNSPELL=ru, BSD-style) measured on sets drawn from both lists (the sampler takes only listed words, so
     # each list's own sets favour it): typos 40.7 / 7.2 vs 40.9 / 7.3, broken 0.2 vs 0.1, 73 vs 55 MB: not worth it
+    # tones and vowel marks stack (ế, ặ); syllables are written apart, so nearly every bare syllable is several words
+    # (ma má mà mả mã mạ): the accent-twin stress test. Gboard's default is plain QWERTY (Telex conversion not modelled)
+    'vi': dict(name='Vietnamese', leipzig=['vie_news_2022_1M', 'vie_news_2020_1M', 'vie_wikipedia_2021_1M'], tatoeba='vie',
+               layout=('gboard', 'qwerty'), gboard_tag='vi-VN', script='Latn', compounds=False),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
