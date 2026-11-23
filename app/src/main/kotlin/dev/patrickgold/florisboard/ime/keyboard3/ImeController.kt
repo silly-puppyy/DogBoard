@@ -747,7 +747,7 @@ class ImeController(
                 lastSpaceUptime = null
             }
             expectedContentQueue.push(state.content)
-            // Settings › Layout › Back to letters: after any key, after a space (iOS: on the 123 and
+            // Settings › Layout › Return to letters: after any key, after a space (iOS: on the 123 and
             // #+= planes, space or an apostrophe returns to the letters; the default) or never
             val backToLetters = when (prefs.keyboard.symbolsReturn.get()) {
                 "any" -> true

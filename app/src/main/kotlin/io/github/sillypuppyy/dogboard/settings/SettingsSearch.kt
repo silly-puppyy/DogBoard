@@ -70,7 +70,7 @@ object SettingsSearch {
         Entry("About", "About", "about", "version licenses credits"),
         // rows added after the first index ("settings search only searches the top level pages");
         // SettingsSearchCoverageTest fails when a settings row has no entry
-        Entry("Back to letters", "Layout", "layout", "symbols page return letters after space key comma"),
+        Entry("Return to letters", "Layout", "layout", "symbols page return letters after space key comma"),
         Entry("Key sound", "Sound and vibration", "feedback", "click sound pack style pen mouse clack mech keys tick drop glass thock classic"),
         Entry("Variation", "Sound and vibration", "feedback", "sound vary random pitch natural"),
         Entry("Play on silent", "Sound and vibration", "feedback", "silent vibrate mute media bypass sound"),

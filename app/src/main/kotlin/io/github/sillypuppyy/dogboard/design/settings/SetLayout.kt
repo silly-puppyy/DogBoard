@@ -214,7 +214,7 @@ fun SetLayout(state: SetLayoutState) {
             // :43-78 Mix and match
             // 16 dp side margins as every other settings page (it ran edge to edge; borders audit)
             SetGroup("Mix and match", Modifier.padding(horizontal = 16.dp)) {
-                ElementRow("Number row", "A row of digits above the letters, or each digit when you hold its top-row letter, as on Gboard.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
+                ElementRow("Number row", "A row of digits above the letters, or each digit on its top-row letter, typed by holding it.", st.numRow != LayoutElements.SIMPLE.numRow, { state.onChange(st.copy(numRow = LayoutElements.SIMPLE.numRow)) }) {
                     ElementSeg("numrow", listOf("off" to "Off", "on" to "Always", "hints" to "On hold"), st.numRow) { state.onChange(st.copy(numRow = it)) }
                 }
                 ElementRow("Bottom row", "Where comma and period live. Email fields put @ in the comma slot, web addresses /.", st.bottom != LayoutElements.SIMPLE.bottom, { state.onChange(st.copy(bottom = LayoutElements.SIMPLE.bottom)) }) {
@@ -224,13 +224,13 @@ fun SetLayout(state: SetLayoutState) {
                 ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.SIMPLE.symbols, { state.onChange(st.copy(symbols = LayoutElements.SIMPLE.symbols)) }) {
                     ElementSeg("symbols", listOf("iphone" to "iPhone-style", "android" to "Android-style"), st.symbols) { state.onChange(st.copy(symbols = it)) }
                 }
-                ElementRow("Back to letters", "When the symbols page returns to the letters: after any key, after a space (as on an iPhone), or never.", st.symbolsReturn != LayoutElements.SIMPLE.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.SIMPLE.symbolsReturn)) }) {
+                ElementRow("Return to letters", "After you type on the 123 page, it can switch back to letters by itself: after any key, after a space, or never (you tap ABC).", st.symbolsReturn != LayoutElements.SIMPLE.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.SIMPLE.symbolsReturn)) }) {
                     ElementSeg("symbolsReturn", listOf("any" to "Any key", "space" to "Space", "none" to "Never"), st.symbolsReturn) { state.onChange(st.copy(symbolsReturn = it)) }
                 }
-                ElementRow("Round keys", "123 and the action key as round pills, as on Android.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {
+                ElementRow("Round keys", "123 and the action key as round pills.", st.pill != LayoutElements.SIMPLE.pill, { state.onChange(st.copy(pill = LayoutElements.SIMPLE.pill)) }) {
                     ElementSeg("pill", listOf("off" to "Off", "on" to "On"), if (st.pill) "on" else "off") { state.onChange(st.copy(pill = it == "on")) }
                 }
-                ElementRow("Hold for symbols", "“Whole page” works like Gboard’s “Long press for symbols”: each key shows a symbol in its corner, and holding the key types it. “Accents” shows each letter’s first accent there instead.", st.hints != LayoutElements.SIMPLE.hints, { state.onChange(st.copy(hints = LayoutElements.SIMPLE.hints)) }) {
+                ElementRow("Hold for symbols", "A symbol or accent in each key’s corner, typed by holding the key.", st.hints != LayoutElements.SIMPLE.hints, { state.onChange(st.copy(hints = LayoutElements.SIMPLE.hints)) }) {
                     ElementSeg("hints", listOf("off" to "Off", "accents" to "Accents", "symbols" to "Whole page"), st.hints) { state.onChange(st.copy(hints = it)) }
                 }
                 ElementRow("Space-bar label", "Auto shows the language name only when you have more than one.", st.space != LayoutElements.SIMPLE.space, { state.onChange(st.copy(space = LayoutElements.SIMPLE.space)) }) {

@@ -64,13 +64,13 @@ fun SoundVibrationScreen() {
                         TitleSub(
                             "Style",
                             when (style) {
-                                HapticStyle.CRISP -> "Crisp clicks, a little different for letters, space and delete, as on an iPhone."
+                                HapticStyle.CRISP -> "Short, sharp clicks, a little different for letters, space and delete."
                                 HapticStyle.PHONE -> "Your phone’s own key click, the same for every key. Its strength follows Android’s touch feedback setting."
-                                HapticStyle.SOFT -> "A soft, rounder tap."
+                                HapticStyle.SOFT -> "A softer, rounder tap."
                             },
                         )
                         val styles = listOf(HapticStyle.CRISP, HapticStyle.PHONE, HapticStyle.SOFT)
-                        Segmented("sv:style", listOf("Rich", "Plain", "Soft tap"), styles.indexOf(style)) { i -> scope.launch { fb.hapticStyle.set(styles[i]) } }
+                        Segmented("sv:style", listOf("Crisp", "Phone", "Soft"), styles.indexOf(style)) { i -> scope.launch { fb.hapticStyle.set(styles[i]) } }
                     }
                 }
             }
@@ -80,7 +80,7 @@ fun SoundVibrationScreen() {
                     // a dropdown: six sounds were cramped as a segmented row
                     val names = listOf(
                         "system" to "Phone" to "Your phone’s own key click.",
-                        "tick" to "Tick" to "Short and bright, closest to an iPhone.",
+                        "tick" to "Tick" to "Short and bright.",
                         "drop" to "Drop" to "Rounder and lower.",
                         "glass" to "Glass" to "Bright and clear.",
                         "thock" to "Thock" to "Deep and woody.",
