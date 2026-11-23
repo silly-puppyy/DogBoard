@@ -83,7 +83,7 @@ fun SetPacks(
 
             SetGroup("Add", Modifier.padding(horizontal = 16.dp)) {
                 ActionRow("add", "New pack", "An empty pack for your themes", onNewPack)
-                ActionRow("file_open", "Import a theme pack", "A .dogtheme file someone shared with you. It stays as they made it; copy it to change it", onImport)
+                ActionRow("file_open", "Import a theme pack", "A .dogtheme file someone shared with you. It stays as they made it; copy it to change it.", onImport)
             }
             DText("A hidden pack stays installed, and a theme you are using from it keeps working.",
                 Modifier.padding(horizontal = 20.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 4)

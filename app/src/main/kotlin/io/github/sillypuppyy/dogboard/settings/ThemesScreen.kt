@@ -128,7 +128,7 @@ fun ThemesScreen() {
                     if (io.github.sillypuppyy.dogboard.design.UserThemes.isShared(context, tid)) io.github.sillypuppyy.dogboard.design.UserThemes.copyToMine(context, tid) ?: tid else tid
                 }
                 val spec = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { io.github.sillypuppyy.dogboard.design.UserThemes.theme(context, id)?.spec }
-                if (id != tid) { version++; android.widget.Toast.makeText(context, "Copied to My themes to edit", android.widget.Toast.LENGTH_SHORT).show() }
+                if (id != tid) { version++; android.widget.Toast.makeText(context, "Copied to my themes to edit", android.widget.Toast.LENGTH_SHORT).show() }
                 // a theme made in the theme editor opens there; an older gradient in the gradient editor
                 if (spec != null && io.github.sillypuppyy.dogboard.design.ThemeModel.isSpec(spec)) navController.navigate(Routes.Settings.ThemeEditor(id = id))
                 else if (spec != null) navController.navigate(Routes.Settings.Gradient(id = id))

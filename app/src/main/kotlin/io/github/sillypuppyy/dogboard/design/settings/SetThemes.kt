@@ -176,8 +176,8 @@ fun SetThemes(state: SetThemesState) {
                     DText("App colours", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                     DText(
                         when (state.appColours) {
-                            "wallpaper" -> "Your wallpaper's colours; light or dark as the system"
-                            "none" -> "DogBoard's own colours; light or dark as the system"
+                            "wallpaper" -> "Your wallpaper's colours; light or dark with the system"
+                            "none" -> "DogBoard's own colours; light or dark with the system"
                             else -> "Light or dark and colours from the keyboard theme"
                         },
                         style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8,
@@ -197,7 +197,7 @@ fun SetThemes(state: SetThemesState) {
                     DText("Return key", style = setText(14f, color = SetColors.onSurfaceVariant))
                     Segmented("th:ret:$id", listOf("For actions", "Always coloured"), if (always) 1 else 0) { k -> state.onRet(id, k == 1) }
                     DText(
-                        if (always) "The return key takes the theme's colour everywhere." else "Coloured when it sends or searches, plain for a new line, as on an iPhone.",
+                        if (always) "The return key takes the theme's colour everywhere." else "Coloured when it sends or searches, plain for a new line.",
                         style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 8,
                     )
                 }

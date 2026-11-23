@@ -535,7 +535,7 @@ private fun ElementsTab(
 ) {
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         DText(
-            (if (both) "Colours for the $verName version. " else "") + "Tap a colour to change it. Each one shows where it comes from: Default, Tinted to match, Auto (a label picked to read on a fill you chose) or Yours. Reset puts back what it would be without you.",
+            (if (both) "Colours for the $verName version. " else "") + "Tap a colour to change it. Each one shows where it comes from: Default, Tinted to match, Auto (a label picked to read on a fill you chose) or Yours. Reset puts back the colour it had before you changed it.",
             Modifier.padding(horizontal = 4.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(lineHeight = 19.sp), maxLines = 8,
         )
         for ((title, rows) in GROUPS) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -576,7 +576,7 @@ private fun ElementsTab(
             io.github.sillypuppyy.dogboard.design.settings.TitleSub("Keys", when (k) {
                 "solid" -> "Solid: nothing shows through the keys."
                 "frosted" -> "Frosted: see-through white keys, the background showing through."
-                "under" -> "Colour under: each key takes the colour beneath it, lightened, so a gradient runs across the keys."
+                "under" -> "Under: each key takes the colour beneath it, lightened, so a gradient runs across the keys."
                 else -> "As set: the key colours above, as they are."
             })
             Segmented("te:keys", listOf("As set", "Solid", "Frosted", "Under"), styles.indexOf(k).coerceAtLeast(0)) { i -> setT(t.copy(shape = t.shape.copy(keys = styles[i]))) }
