@@ -33,18 +33,44 @@ object RecentClip {
      * on-device text classifier (no network); (icon, text) pairs; call off the main thread.
      */
     fun entities(context: android.content.Context, text: String): List<Pair<String, String>> {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P || text.isBlank()) return emptyList()
-        return runCatching {
+        if (text.isBlank()) return emptyList()
+        val classified = if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) emptyList() else runCatching {
             val classifier = context.getSystemService(android.view.textclassifier.TextClassificationManager::class.java)?.textClassifier
-                ?: return emptyList()
+                ?: return@runCatching emptyList()
             val t = text.take(classifier.maxGenerateLinksTextLength.coerceAtMost(4000))
             val links = classifier.generateLinks(android.view.textclassifier.TextLinks.Request.Builder(t).build()).links
             links.mapNotNull { link ->
                 val type = link.getEntity(0)
                 val icon = ENTITY_ICONS[type] ?: return@mapNotNull null
                 Triple(ENTITY_ORDER.indexOf(type), icon, t.substring(link.start, link.end).trim())
-            }.filter { it.third.isNotEmpty() && it.third != text.trim() }.distinctBy { it.third }.sortedBy { it.first }.map { it.second to it.third }
+            }
         }.getOrDefault(emptyList())
+        // Gboard runs both and merges them: the system classifier misses numbers in formats it has no model for
+        return (classified + patternEntities(text)).filter { it.third.isNotEmpty() && it.third != text.trim() }
+            .distinctBy { it.third.filter { c -> !c.isWhitespace() } }.sortedBy { it.first }.map { it.second to it.third }
+    }
+
+    private val PHONE = Regex("""(\+\d{1,2}\s?)?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{4}""")
+    private val EMAIL = Regex("""^[\w.+-]+@[\w-]+(\.[\w-]+)+$""")
+    private val URL = Regex("""^(https?://)?([\w-]+\.)+[a-zA-Z]{2,}(/\S*)?$""")
+    private val CODE = Regex("""^\d{4,8}$""")
+
+    /**
+     * Gboard's second extractor (its clipboard entity regexes, notes/research/gboard-clipboard-entities.md): a phone
+     * number anywhere, and whole words that are an email, a link or a 4-8 digit code; (order, icon, text) as entities().
+     */
+    fun patternEntities(text: String): List<Triple<Int, String, String>> {
+        val out = ArrayList<Triple<Int, String, String>>()
+        for (m in PHONE.findAll(text)) out.add(Triple(0, "call", m.value.trim()))
+        for (w in text.split(Regex("""\s+"""))) {
+            val word = w.trim('(', ')', ',', ';', ':', '!', '?', '"', '\'', '“', '”').trimEnd('.')
+            when {
+                EMAIL.matches(word) -> out.add(Triple(1, "mail", word))
+                URL.matches(word) && word.contains('.') && !word.contains('@') -> out.add(Triple(2, "link", word))
+                CODE.matches(word) && out.none { it.second == "call" && word in it.third } -> out.add(Triple(6, "pin", word))
+            }
+        }
+        return out
     }
 
     /** The whole clip's icon: its entity's when the clip is just that (a link, an email), else the clipboard. */
