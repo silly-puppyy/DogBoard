@@ -633,7 +633,7 @@ private fun TypingStep() {
     val caps by prefs.typing.autoCapitalization.collectAsState()
     val retro by prefs.correction.fixPreviousWord.collectAsState()
     val quotes by prefs.typing.smartQuotes.collectAsState()
-    Toggle("Autocorrect", "Fixes typos when you press space. Delete right after undoes it.", on) { scope.launch { prefs.correction.autocorrect.set(it) } }
+    Toggle("Correct as you type", "Fixes typos when you press space; delete right after undoes it. Off: DogBoard only suggests and never changes what you type.", on) { scope.launch { prefs.correction.autocorrect.set(it) } }
     Toggle("Capitalise sentences", "Starts each sentence with a capital.", caps) { scope.launch { prefs.typing.autoCapitalization.set(it) } }
     Toggle("Fix the previous word", "When the next word shows a typo was in the word before, that one is fixed too.", retro, enabled = on) { scope.launch { prefs.correction.fixPreviousWord.set(it) } }
     Toggle("Smart quotes", "Curly quotes and apostrophes (“like this”) instead of straight ones.", quotes) { scope.launch { prefs.typing.smartQuotes.set(it) } }
