@@ -1741,10 +1741,14 @@ class ImeController(
                 ImeActions.ShowInputMethodPicker -> FlorisImeService.showImePicker()
                 ImeActions.SwitchToPrevInputMethod -> FlorisImeService.switchToPrevInputMethod()
                 ImeActions.SwitchToNextInputMethod -> FlorisImeService.switchToNextInputMethod()
-                // DogBoard: languages on the keyboard (FlorisBoard left these TODO: the globe key did nothing, user
-                // 2026-11-23 "How am I supposed to switch languages on the keyboard?")
+                // DogBoard: languages on the keyboard (FlorisBoard left these TODO: the globe key did nothing). Android
+                // 15+: the system's "Change keyboard" menu, as Gboard opens it (DogBoard's keyboards are system subtypes,
+                // SystemSubtypes, with their layouts); older phones: DogBoard's own list
                 ImeActions.ShowSubtypePicker -> {
-                    state = state.copy(flags = state.flags.withSubtypeSelectionVisible(true))
+                    val imm = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM)
+                        dev.patrickgold.florisboard.FlorisApplication.getHack().getSystemService(android.view.inputmethod.InputMethodManager::class.java) else null
+                    if (imm != null) imm.showInputMethodPicker()
+                    else state = state.copy(flags = state.flags.withSubtypeSelectionVisible(true))
                 }
                 ImeActions.SwitchToPrevSubtype -> dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.switchToPrevSubtype()
                 ImeActions.SwitchToNextSubtype -> dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.switchToNextSubtype()
