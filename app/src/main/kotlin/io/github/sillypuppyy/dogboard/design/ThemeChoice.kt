@@ -29,6 +29,7 @@ object ThemeChoice {
         Theme("lagoon", "Lagoon", "2 colours", "dark"),
         Theme("peach", "Peach", "2 colours", "light"),
         Theme("gloss", "Gloss", "Glossy caps, pressed-in labels", "light"),
+        Theme("keycap", "Keycap", "Mechanical keys, with their sound", "pair"),
     ) + KbThemes.PRIDE.map { (id, name, stripes) -> Theme(id, name, "${stripes.size} stripes, keys take the colour under them", "light") }
     private val byId = THEMES.associateBy { it.id }
     fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").copy(mode = glassMode) else byId[id] ?: GradientSpec.parse(id)?.let { g ->
@@ -56,8 +57,8 @@ object ThemeChoice {
         Section("yours", "Your themes", "", listOf("glass"), add = "add_photo_alternate" to "From a photo"),
         Section("breeds", "Breeds", "Pack, 5 themes", listOf("dog", "lab", "husky", "greyhound", "dalmatian"), pack = true),
         Section("photos", "Photos", "", emptyList()),
-        // tactile looks (was "Retro"); a mechanical-keyboard layout for it is planned
-        Section("retro", "Tactile", "Pack, 1 theme", listOf("gloss"), pack = true),
+        // tactile looks (was "Retro")
+        Section("retro", "Tactile", "Pack, 2 themes", listOf("gloss", "keycap"), pack = true),
         Section("gradients", "Gradients", "Pack, 3 themes", listOf("dusk", "lagoon", "peach"), pack = true, add = "gradient" to "New gradient"),
         // flags as gradients, keys coloured by the stripe under them
         Section("pride", "Pride", "Pack, ${KbThemes.PRIDE.size} themes", KbThemes.PRIDE.map { it.first }, pack = true),
@@ -67,7 +68,7 @@ object ThemeChoice {
     val PACKS: List<List<String>> = listOf(
         listOf("breeds", "pets", "Breeds", "5 themes, built in"),
         listOf("gradients", "gradient", "Gradients", "3 themes, built in"),
-        listOf("retro", "history", "Tactile", "1 theme, built in"),
+        listOf("retro", "history", "Tactile", "2 themes, built in"),
         listOf("pride", "gradient", "Pride", "${KbThemes.PRIDE.size} themes, built in"),
     )
 

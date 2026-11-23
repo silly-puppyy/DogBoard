@@ -89,12 +89,22 @@ fun ThemesScreen() {
             navController.navigate(Routes.Settings.Photo)
         }
     }
+    // a theme that comes with a sound offers it once picked: (theme name, sound style); the person's own sound stays
+    // unless they say yes
+    var soundOffer by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, String>?>(null) }
+    fun offerSound(name: String, sound: String?) {
+        val fb = prefs.inputFeedback
+        if (sound != null && (sound != fb.audioStyle.get() || !fb.audioEnabled.get())) soundOffer = name to sound
+    }
     val themesState = SetThemesState(
         choice = choice,
         reroll = reroll,
         seed = seed,
         hidden = hidden.split(',').filter { it.isNotBlank() }.toSet(),
-        onPick = { id -> scope.launch { store(ThemeChoice.pick(choice, id).first) } },
+        onPick = { id ->
+            scope.launch { store(ThemeChoice.pick(choice, id).first) }
+            offerSound(ThemeChoice.theme(id).name, io.github.sillypuppyy.dogboard.design.KbThemes.SOUND_OF[id])
+        },
         // :212 turning following off keeps the day theme for all the time
         // follow the system, or always one slot; both slots are kept either way
         onFollow = { mode -> scope.launch { store(choice.copy(follow = mode == "system", fixedNight = mode == "night")) } },
@@ -117,7 +127,10 @@ fun ThemesScreen() {
             scope.launch {
                 // a gradient is drawn from its id; a photo goes through the photo slot
                 val spec = userPacks.flatMap { it.themes }.firstOrNull { it.id == id }?.spec
-                if (spec != null) { store(ThemeChoice.pick(choice, spec).first); prefs.keyboard.userTheme.set(id) }
+                if (spec != null) {
+                    store(ThemeChoice.pick(choice, spec).first); prefs.keyboard.userTheme.set(id)
+                    io.github.sillypuppyy.dogboard.design.ThemeModel.decode(spec)?.let { offerSound(it.name, it.sound) }
+                }
                 else if (io.github.sillypuppyy.dogboard.design.UserThemes.apply(context, prefs, id)) store(ThemeChoice.pick(choice, "glass").first)
             }
         },
@@ -186,6 +199,20 @@ fun ThemesScreen() {
             onNewPack = themesState.onNewPack, onImport = themesState.onImportPack, onBack = { managing = false },
         )
     } else SetThemes(themesState)
+    soundOffer?.let { (name, sound) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { soundOffer = null },
+            title = { androidx.compose.material3.Text("Use $name’s sound?") },
+            text = { androidx.compose.material3.Text("$name comes with its own key sound. Your sound settings stay as they are unless you switch.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    scope.launch { prefs.inputFeedback.audioStyle.set(sound); prefs.inputFeedback.audioEnabled.set(true) }
+                    soundOffer = null
+                }) { androidx.compose.material3.Text("Use its sound") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { soundOffer = null }) { androidx.compose.material3.Text("Keep mine") } },
+        )
+    }
     dialog?.let { (kind, id, name) ->
         val close = { dialog = null }
         if (kind == "newPack" || kind.startsWith("rename")) {
