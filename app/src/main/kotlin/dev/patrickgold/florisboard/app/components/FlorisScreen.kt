@@ -222,7 +222,7 @@ private class FlorisScreenScopeImpl : FlorisScreenScope {
             window.statusBarColor = Color.Transparent.toArgb()
             if (AndroidVersion.ATLEAST_API29_Q) {
                 window.navigationBarColor = Color.Transparent.toArgb()
-                window.isNavigationBarContrastEnforced = true
+                window.isNavigationBarContrastEnforced = false // DogBoard: no scrim; the pages' colour runs to the edge
             } else {
                 window.navigationBarColor = colorScheme.scrim.toArgb()
             }

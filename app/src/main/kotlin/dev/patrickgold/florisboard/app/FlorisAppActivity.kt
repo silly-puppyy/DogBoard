@@ -25,6 +25,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -102,6 +103,10 @@ class FlorisAppActivity : ComponentActivity() {
         }
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // DogBoard: the app's own background runs under the navigation bar (no grey strip or scrim below the pages)
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
 
         prefs.other.settingsTheme.asFlow().collectIn(lifecycleScope) {
             appTheme = it
@@ -213,14 +218,16 @@ class FlorisAppActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         //.statusBarsPadding()
-                        .navigationBarsPadding()
+                        // DogBoard: whatever sits at the bottom (the page, or the try-it field) runs under the
+                        // navigation bar in its own colour; the window's grey showed there before
+                        .background(io.github.sillypuppyy.dogboard.design.settings.SetColors.screen)
                         .conditional(LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                             displayCutoutPadding()
                         }
                         .imePadding(),
                 ) {
                     Routes.AppNavHost(
-                        modifier = Modifier.weight(1.0f),
+                        modifier = Modifier.weight(1.0f).conditional(!previewFieldController.isVisible) { navigationBarsPadding() },
                         navController = navController,
                         startDestination = if (isImeSetUp) Routes.Settings.Home::class else Routes.Setup.Screen::class,
                     )

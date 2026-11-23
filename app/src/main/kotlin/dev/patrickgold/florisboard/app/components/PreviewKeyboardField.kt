@@ -16,6 +16,9 @@
 
 package dev.patrickgold.florisboard.app.components
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.background
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -98,7 +101,8 @@ fun PreviewKeyboardField(
         enter = PreviewEnterTransition,
         exit = PreviewExitTransition,
     ) {
-        SelectionContainer {
+        // DogBoard: the field's colour continues under the navigation bar
+        SelectionContainer(Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest).navigationBarsPadding()) {
             TextField(
                 modifier = modifier
                     .height(56.dp)

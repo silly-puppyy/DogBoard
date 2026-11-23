@@ -195,8 +195,8 @@ private fun Welcome(onQuick: () -> Unit, onFull: () -> Unit) {
         DText("Welcome to DogBoard", Modifier.padding(top = 16.dp), style = setText(32f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 40.sp), maxLines = 2)
         DText("Set it up in a minute, or go through every setting.", style = setText(16f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 24.sp), maxLines = 3)
         Spacer(Modifier.weight(1f))
-        PathButton("Full setup (recommended)", filled = true, onClick = onFull)
         PathButton("Quick setup", filled = false, onClick = onQuick)
+        PathButton("Full setup (recommended)", filled = true, onClick = onFull)
     }
 }
 

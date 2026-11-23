@@ -62,10 +62,9 @@ import io.github.sillypuppyy.dogboard.design.lint
  */
 object SetColors {
     /**
-     * The app's Material scheme (set by FlorisAppTheme), seeded from the keyboard theme (user
-     * 2026-11-17: "change the app to match the keyboard theme"); null in previews: the canvas's
-     * light colours. Dark uses the palette's own dark roles ("isn't there
-     * already a factory default dark? why not just use it").
+     * The app's Material scheme (set by FlorisAppTheme), seeded from the keyboard theme so the app
+     * matches the keyboard; null in previews: the canvas's light colours. Dark uses the palette's
+     * own dark roles (Material's standard dark scheme, not a hand-made one).
      */
     var scheme: androidx.compose.material3.ColorScheme? by androidx.compose.runtime.mutableStateOf(null)
     var schemeDark: Boolean by androidx.compose.runtime.mutableStateOf(false)
