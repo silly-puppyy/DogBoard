@@ -43,20 +43,36 @@ class PackDownloads(private val baseUrl: String, private val packsDir: File) {
         index.packs.firstOrNull { it.tag == installed.tag && it.version > installed.manifest.version }
 
     private fun open(path: String): java.io.InputStream {
-        val c = URL("${baseUrl.trimEnd('/')}/$path").openConnection() as HttpURLConnection
+        val c = URL("${baseUrl.trimEnd('/')}/$path").openConnection()
         c.connectTimeout = 15_000
         c.readTimeout = 30_000
-        c.instanceFollowRedirects = true // release hosts redirect to their file servers
-        if (c.responseCode !in 200..299) {
-            c.disconnect()
-            throw java.io.IOException("HTTP ${c.responseCode} for $path")
+        // a file:// host (a debug build's test folder) has no status code
+        if (c is HttpURLConnection) {
+            c.instanceFollowRedirects = true // release hosts redirect to their file servers
+            if (c.responseCode !in 200..299) {
+                c.disconnect()
+                throw java.io.IOException("HTTP ${c.responseCode} for $path")
+            }
         }
-        return c.inputStream
+        return c.getInputStream()
     }
 
     companion object {
         /** The download host's base URL; empty until one is chosen (then packs show in Languages). */
         const val BASE_URL = ""
+
+        /**
+         * The host to use: [BASE_URL], or in a debug build the URL in files/dogboard/pack_host.txt (a test host, or a
+         * file:// folder pushed to the phone: tools/i18n/dist_pack.py's output).
+         */
+        fun baseUrl(context: android.content.Context): String {
+            if (dev.patrickgold.florisboard.BuildConfig.DEBUG) {
+                File(context.filesDir, "dogboard/pack_host.txt").takeIf { it.isFile }?.readText()?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+            }
+            return BASE_URL
+        }
+
+        fun of(context: android.content.Context) = PackDownloads(baseUrl(context), File(context.filesDir, "packs"))
         private val json = Json { ignoreUnknownKeys = true }
     }
 }

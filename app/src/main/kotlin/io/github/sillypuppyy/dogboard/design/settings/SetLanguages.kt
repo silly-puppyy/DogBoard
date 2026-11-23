@@ -42,7 +42,9 @@ data class LangRow(val id: Long, val name: String, val native: String?, val layo
  * A language that can be added: [usable] when it has a dictionary or layouts; [dictionary] false for a language with
  * layouts only (tools/layouts/gen_layouts.py ports every Gboard / iOS layout; it types without suggestions).
  */
-data class LangPack(val tag: String, val name: String, val usable: Boolean, val added: Boolean, val dictionary: Boolean = true)
+data class LangPack(val tag: String, val name: String, val usable: Boolean, val added: Boolean, val dictionary: Boolean = true,
+    /** Bytes to download first (a pack the download host offers that the phone doesn't have yet); 0: on the phone. */
+    val downloadBytes: Long = 0)
 
 /**
  * Settings › Languages, in DogBoard's style (user 2026-11-19, replacing FlorisBoard's subtypes page and its pink
@@ -53,6 +55,8 @@ data class LangPack(val tag: String, val name: String, val usable: Boolean, val 
 fun SetLanguages(
     langs: List<LangRow>, packs: List<LangPack>,
     onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit, onAdd: (String) -> Unit, onBack: () -> Unit,
+    /** A download in progress or its failure ("Downloading Español, 42 %"), shown under Add. */
+    status: String? = null,
 ) {
     var adding by remember { mutableStateOf(false) }
     if (adding) AddLanguageSheet(packs, { adding = false }) { adding = false; onAdd(it) }
@@ -79,7 +83,7 @@ fun SetLanguages(
                     Box(Modifier.size(40.dp).clip(RoundedCornerShape(20.dp)).background(SetColors.secondaryContainer), contentAlignment = Alignment.Center) { Symbol("add", 22.sp, SetColors.onSecondaryContainer) }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DText("Add a language", style = setText(16f).copy(textAlign = START))
-                        DText("Type in more than one language", style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 3)
+                        DText(status ?: "Type in more than one language", style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 3)
                     }
                 }
             }
@@ -154,7 +158,9 @@ private fun AddLanguageSheet(packs: List<LangPack>, onDismiss: () -> Unit, onPic
                     ) {
                         Column(Modifier.weight(1f).then(if (p.usable) Modifier else Modifier.alpha(0.5f)), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             DText(p.name, style = setText(16f).copy(textAlign = START))
-                            DText(if (p.added) "Added" else if (!p.dictionary) "Layouts only, no dictionary yet" else if (p.usable) "Dictionary, punctuation, layouts" else "Coming in a later update",
+                            DText(if (p.added) "Added" else if (!p.dictionary) "Layouts only, no dictionary yet"
+                                else if (p.downloadBytes > 0) "Dictionary, punctuation, layouts (download %d MB)".format((p.downloadBytes + 500_000) / 1_000_000)
+                                else if (p.usable) "Dictionary, punctuation, layouts" else "Coming in a later update",
                                 style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START))
                         }
                         if (p.added) Symbol("check", 20.sp, SetColors.primary)
