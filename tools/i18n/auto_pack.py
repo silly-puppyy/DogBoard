@@ -51,6 +51,9 @@ LANGS = {
     # agglutination), Polish (ą ę ł ż ... by long-press), Greek (final ς, tonos), Hebrew (final letters, RTL)
     'de': dict(name='German', digraphs={'ä': 'ae', 'ö': 'oe', 'ü': 'ue'}, leipzig=['deu_news_2024_1M', 'deu_news_2023_1M', 'deu_wikipedia_2021_1M'], tatoeba='deu',
                layout=('gboard', 'qwertz'), gboard_tag='de-DE', script='Latn', compounds=True),
+    # Romance with clitic pronouns (dá-me, fazê-lo) and ç / ã / õ by long-press; news mixes Brazil and Portugal
+    'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
+               layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     'tr': dict(name='Turkish', leipzig=['tur_news_2024_1M', 'tur_news_2022_1M', 'tur_wikipedia_2021_1M'], tatoeba='tur',
                layout=('gboard', 'qwerty'), gboard_tag='tr-TR', script='Latn', compounds=False),
     'pl': dict(name='Polish', leipzig=['pol_news_2024_1M', 'pol_news_2022_1M', 'pol_wikipedia_2021_1M'], tatoeba='pol',
