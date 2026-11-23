@@ -21,6 +21,7 @@ fun DogClipboardScreen() {
     val scope = rememberCoroutineScope()
     val c = prefs.clipboard
     val history by c.historyEnabled.collectAsState()
+    val merge by c.mergeRepeats.collectAsState()
     val smart by c.smartChips.collectAsState()
     val strip by c.stripTrackers.collectAsState()
     val expandShort by c.expandShortLinks.collectAsState()
@@ -62,6 +63,9 @@ fun DogClipboardScreen() {
             }
             // the clean-up works on the history's clips (and then clears the phone's clipboard too), so
             // it needs history on (ClipboardManager.enforceExpiryDate)
+            if (history) SetSwitchRow("cb:merge", "Bring repeats to the top", "Copying something already in the history moves it to the top instead of adding it again.", merge) { v ->
+                scope.launch { c.mergeRepeats.set(v) }
+            }
             if (history) SetSwitchRow("cb:passwords", "Passwords clear themselves", "Copied passwords are removed from the clipboard and the history.", cleanPasswords) { v ->
                 scope.launch { c.historyAutoCleanSensitiveEnabled.set(v) }
             }

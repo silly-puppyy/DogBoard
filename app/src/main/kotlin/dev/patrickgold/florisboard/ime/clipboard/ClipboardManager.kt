@@ -248,9 +248,13 @@ class ClipboardManager(
             ioScope.launch {
                 historyInsertGuard.withLock {
                     val history = clipHistoryDao?.getAll() ?: currentHistory.all
-                    val historyElement = history.firstOrNull { item ->
-                        item.type == ItemType.TEXT && item.text == newItem.text && item.isSensitive == newItem.isSensitive
+                    fun same(item: ClipboardItem) = item.type == ItemType.TEXT && item.text == newItem.text && item.isSensitive == newItem.isSensitive
+                    // repeats kept apart (Settings › Clipboard): only the newest clip again is skipped (a restart's resync)
+                    if (!prefs.clipboard.mergeRepeats.get()) {
+                        if (history.maxByOrNull { it.creationTimestampMs }?.let(::same) != true) newItem.id = clipHistoryDao?.insert(newItem) ?: 0
+                        return@withLock
                     }
+                    val historyElement = history.firstOrNull(::same)
                     if (historyElement != null) {
                         clipHistoryDao?.delete(historyElement.id)
                         clipHistoryDao?.insert(if (historyElement.isPinned) newItem.copy(isPinned = true) else newItem)

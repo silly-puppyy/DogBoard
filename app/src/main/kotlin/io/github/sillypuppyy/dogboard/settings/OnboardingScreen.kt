@@ -662,6 +662,10 @@ private fun ClipboardStep() {
     Choice("pw", "Copied passwords", "Passwords and codes you copy, in the history and on the phone’s clipboard.", listOf("Clear after a minute", "Never clear"), if (sens) 0 else 1, enabled = clip) { n ->
         scope.launch { prefs.clipboard.historyAutoCleanSensitiveEnabled.set(n == 0) }
     }
+    val merge by prefs.clipboard.mergeRepeats.collectAsState()
+    Toggle("Bring repeats to the top", "Copying something already in the history moves it to the top instead of adding it again.", merge, enabled = clip) {
+        scope.launch { prefs.clipboard.mergeRepeats.set(it) }
+    }
     // CHANGED (port map): the canvas's "Suggest your last copy" has no setting; DogBoard's chips for what's in a copy
     Toggle("Clipboard chips", "Phone numbers, links and addresses in what you copy show as chips in the bar.", chips) { scope.launch { prefs.clipboard.smartChips.set(it) } }
 }

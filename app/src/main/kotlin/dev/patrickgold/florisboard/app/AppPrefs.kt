@@ -149,7 +149,11 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard (user, 2026-11-17): Gboard's smart clipboard chips (phone, link, email, address in a
         // copied text) on a switch, and opt-in removal of tracking tags from pasted links (LinkCleaner)
         val smartChips = boolean(key = "clipboard__smart_chips", default = true)
-        val stripTrackers = boolean(key = "clipboard__strip_trackers", default = false)
+        // on by default (user 2026-11-23)
+        val stripTrackers = boolean(key = "clipboard__strip_trackers", default = true)
+        // DogBoard (user 2026-11-23): copying something already in the history brings it to the top (Gboard) instead of
+        // adding it again; on by default
+        val mergeRepeats = boolean(key = "clipboard__merge_repeats", default = true)
         // with it: short links (vm.tiktok.com, pin.it...) asked once for their target (ShortLinks; network)
         val expandShortLinks = boolean(key = "clipboard__expand_short_links", default = false)
         /** DogBoard: a copied link's title, site, banner, icon and a video's length, from the page (LinkInfo; network, opt-in). */
