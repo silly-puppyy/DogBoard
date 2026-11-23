@@ -265,7 +265,8 @@ class RealTypoEvalTest : FunSpec({
                         if (best != null && best.second - base >= retroRatio) { got = best.first.word; retroChanged.incrementAndGet() }
                     }
                 }
-                val typo = !typed.equals(intended, ignoreCase = true)
+                // typed in key space (Telex, Korean jamo, Hindi vowel keys): the word's own keys are no typo (कइतआब -> किताब)
+                val typo = !typed.equals(intended, ignoreCase = true) && TypingEngine.pathOf(evalRules)?.invoke(intended) != typed.lowercase()
                 val result = when {
                     got.equals(intended, ignoreCase = true) -> if (typo) "fixed" else "kept"
                     got.equals(typed, ignoreCase = true) -> "left"

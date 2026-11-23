@@ -84,7 +84,7 @@ LANGS = {
     # Hindi (Gboard's compact layout): words along the keys Gboard's Devanagari rules take them from (rules path)
     'hi': dict(name='Hindi', leipzig=['hin_news_2022_1M', 'hin_news_2020_1M', 'hin_wikipedia_2021_1M'], tatoeba='hin',
                layout=('gboard', 'hindi_compact'), gboard_tag='hi', script='Deva', compounds=False,
-               rules_extra={'path': 'rules:devanagari'}),
+               rules_extra={'path': 'rules:devanagari', 'sentence_end': '.!?।'}),
     'pt': dict(name='Portuguese', leipzig=['por_news_2024_1M', 'por_news_2023_1M', 'por_wikipedia_2021_1M'], tatoeba='por',
                layout=('gboard', 'qwerty'), gboard_tag='pt-BR', script='Latn', compounds=False),
     # Romance with elisions (l'acqua, dell'anno: apostrophe words) and final accents (città, perché) by long-press
