@@ -28,6 +28,13 @@ class RealTypoEvalTest : FunSpec({
         val packDir = System.getenv("DOGBOARD_PACK_DIR")?.trimEnd('/')?.plus('/') ?: "src/main/assets/dogboard/"
         val lang = System.getenv("DOGBOARD_PACK_LANG") ?: "en"
         fun packFile(name: String) = File("$packDir$lang.$name")
+        // another language's own rules (its rules.json; English: the built-in ones): with the English rules every pack was
+        // scored with English possessives (Czech "stanices" -> "stanice's") and the always-capital "I" (2026-11-23).
+        // DOGBOARD_DIGRAPHS=1 adds German ae / oe / ue to a pack built before auto_pack wrote them
+        val evalRules = if (lang == "en") LanguageRules.ENGLISH else
+            (File("${packDir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()) } ?: LanguageRules()).let { r ->
+                if (System.getenv("DOGBOARD_DIGRAPHS") == "1" && r.digraphs.isEmpty()) r.copy(digraphs = mapOf("ä" to "ae", "ö" to "oe", "ü" to "ue")) else r
+            }
         fun packReader(name: String) = packFile(name).takeIf { it.isFile }?.bufferedReader() ?: java.io.BufferedReader(java.io.StringReader(""))
         val letterRows = System.getenv("DOGBOARD_ROWS")?.split(',')?.let { rs ->
             LetterRows(rs, rs.mapIndexed { i, r -> if (i == 2) 1.28f + 0.2133f else (10 - r.length) / 2f })
@@ -46,11 +53,7 @@ class RealTypoEvalTest : FunSpec({
                 openAbbreviations = { packReader("abbreviations.txt") },
                 openNoSuggest = { packReader("nosuggest.txt") },
                 openMisspellings = { packReader("misspellings.txt") },
-                // DOGBOARD_DIGRAPHS=1: the pack's rules.json digraphs (German ae / oe / ue) on the English default rules
-                rules = if (System.getenv("DOGBOARD_DIGRAPHS") == "1")
-                    LanguageRules.ENGLISH.copy(digraphs = File("${packDir}rules.json").takeIf { it.isFile }?.let { LanguageRules.parse(it.readText()).digraphs }
-                        ?.takeIf { it.isNotEmpty() } ?: mapOf("ä" to "ae", "ö" to "oe", "ü" to "ue"))
-                else LanguageRules.ENGLISH,
+                rules = evalRules,
             )
             packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }?.let { TypingEngine.attachCharModel(it) }
         }
@@ -119,7 +122,7 @@ class RealTypoEvalTest : FunSpec({
         val misspellings = packReader("misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
         val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) } else null
         val decoders = ThreadLocal.withInitial {
-            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0", beamWidth = System.getenv("DOGBOARD_BEAM")?.toInt() ?: 100), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart))
+            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0", beamWidth = System.getenv("DOGBOARD_BEAM")?.toInt() ?: 100), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart), rules = evalRules)
                 .also { it.unknownWords = charModel; if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") it.knownMisspellings = misspellings }
         }
 
