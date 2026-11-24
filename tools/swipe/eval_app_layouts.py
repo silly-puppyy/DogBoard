@@ -86,6 +86,9 @@ def main():
     ap.add_argument("-n", type=int, default=400)
     ap.add_argument("--langs", default="es,fi,ru,el,ar")
     ap.add_argument("--top", type=int, default=100000)
+    # the generator: CVAE v2 (gen_fidelity.py 2026-11-24: within 0-20 points of real swipes on 8 layouts, same outcome
+    # 76-96 %) or h2 (far off in physical units: 13-60 % where people score 72-95 %)
+    ap.add_argument("--gen", default="cvae", choices=("cvae", "h2"))
     a = ap.parse_args()
     torch.set_num_threads(3)
     model = UniNet(); model.load_state_dict(torch.load(a.model, map_location="cpu")); model.eval()
@@ -102,8 +105,15 @@ def main():
         centres = {c: (float(boxes[i, 0]) * 10.0, float(boxes[i, 1]) * sy) for i, c in enumerate(letters)}
         keys = phys_keys(boxes, sy).unsqueeze(0); km = torch.ones(1, len(letters), dtype=torch.bool)
         t1 = t3 = 0; misses = []
+        if a.gen == "cvae":
+            from cvae import Generator
+            gen = Generator("/run/media/syn/a1991982-8703-474a-926a-020824310f2e/keyboard-data/swipe/cvae-v2.pt")
         for w in words:
-            xy = [(x, y) for x, y, _ in human_path(w, centres, rng, PRESETS["h2"])]
+            if a.gen == "cvae":
+                xy = gen.paths([w], centres, rng)[0]
+                if not xy: continue
+            else:
+                xy = [(x, y) for x, y, _ in human_path(w, centres, rng, PRESETS["h2"])]
             f = features([{"x": x, "y": y} for x, y in xy], 0.3, 1.0, 1.0)
             with torch.no_grad():
                 lp = model(f.unsqueeze(0), keys, km)[0].numpy().astype(np.float64)
