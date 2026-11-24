@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -245,6 +246,7 @@ private fun SculptedCap(r: CapFrame, t: KbTokens, k: KbKey, f: KeyFace, inArea: 
                 .then(k.bgGradient?.let { Modifier.background(it.brush()) } ?: Modifier.background(k.bg))
                 .drawBehind {
                     val w = size.width; val h = size.height
+                    drawRect(GRAIN)
                     val L = f.l.dp.toPx(); val R = w - f.r.dp.toPx(); val T = f.t.dp.toPx(); val B = h - f.b.dp.toPx()
                     fun poly(vararg p: Float) = androidx.compose.ui.graphics.Path().apply { moveTo(p[0], p[1]); var i = 2; while (i < p.size) { lineTo(p[i], p[i + 1]); i += 2 }; close() }
                     drawPath(poly(0f, 0f, w, 0f, R, T, L, T), f.bevel[0])
@@ -258,6 +260,7 @@ private fun SculptedCap(r: CapFrame, t: KbTokens, k: KbKey, f: KeyFace, inArea: 
                 Modifier.padding(start = f.l.dp, end = f.r.dp, top = f.t.dp, bottom = f.b.dp).fillMaxSize()
                     .cssShadow(f.sh.filter { !it.inset }, faceShape).clip(faceShape).background(f.bg.brush())
                     .then(if (f.sheen > 0f) Modifier.background(Color.White.copy(alpha = f.sheen)) else Modifier)
+                    .background(GRAIN)
                     .cssShadow(f.sh.filter { it.inset }, faceShape).alpha(r.labelOp),
             ) {
                 val ink = Modifier.alpha(1f)
@@ -325,6 +328,17 @@ private val POPUP_SHADOW = CssShadow.parse("0 1px 3px rgba(0,0,0,0.16), 0 6px 18
 private val MENU_SHADOW = CssShadow.parse("0 1px 3px rgba(0,0,0,0.16), 0 8px 24px rgba(0,0,0,0.16)")
 
 /** Kb:296-320: key preview, long-press bar, language menu. */
+/**
+ * Kb mech: a faint matte grain for sculpted caps (the canvas's SVG fractal noise at 7 % white): one small tile of
+ * random specks made once, repeated by a shader.
+ */
+private val GRAIN: Brush by lazy {
+    val n = 128; val rnd = java.util.Random(7)
+    val px = IntArray(n * n) { ((rnd.nextFloat() * 0.07f * 255).toInt() shl 24) or 0xFFFFFF }
+    val bmp = android.graphics.Bitmap.createBitmap(px, n, n, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+    androidx.compose.ui.graphics.ShaderBrush(androidx.compose.ui.graphics.ImageShader(bmp, androidx.compose.ui.graphics.TileMode.Repeated, androidx.compose.ui.graphics.TileMode.Repeated))
+}
+
 /** Kb mech: the raised cap's shadow (it floats above the keys). */
 private val RAISED_CAP_SHADOW = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.9), 0 6px 10px rgba(0,0,0,0.55), 0 2px 3px rgba(0,0,0,0.5)")
 
