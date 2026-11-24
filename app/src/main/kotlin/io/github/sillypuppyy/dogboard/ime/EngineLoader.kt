@@ -98,7 +98,10 @@ object EngineLoader {
             return true
         }
         val current = pack ?: return false
-        if (current.tag != tag || current.bundled) return false
+        if (current.tag != tag) return false
+        // a built-in pack is replaced only by a downloaded one of its language (English: the built-in has no word
+        // statistics or neural model, the download brings them); before, the download waited for a restart
+        if (current.bundled && LanguagePack.find(app, tag)?.bundled != false) return false
         io.github.sillypuppyy.dogboard.perf.EventLog.add("language ${current.tag}: updated pack, loading again")
         // the languages typed together stay loaded (unload leaves them; the first's autocorrect gets their lists again)
         TypingEngine.unload()

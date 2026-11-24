@@ -100,6 +100,11 @@ configure<ApplicationExtension> {
     androidResources {
         noCompress += "bin"
         noCompress += "tflite" // the neural model, memory-mapped from the package
+        // English's word statistics, their index and the neural model come as the downloadable en-US pack (the APK went
+        // from 129 to about 52 MB, and an app update no longer carries 77 MB of unchanged data); the files stay in the
+        // assets folder for the JVM tests and tools. The built-in pack (packs/en-US/manifest.json) lists neither, so the
+        // pack queue fetches them
+        ignoreAssetsPatterns += listOf("!en.ngrams.bin", "!lm")
     }
 
     buildFeatures {

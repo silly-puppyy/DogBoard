@@ -155,6 +155,10 @@ class FlorisApplication : Application() {
             // DogBoard: a first start in another language adds the phone's languages (once per install)
             runCatching { io.github.sillypuppyy.dogboard.ime.FirstLanguages.run(this@FlorisApplication) }
                 .onFailure { Log.w("DogBoardPerf", "first languages: ${it.message}") }
+            // DogBoard: the keyboards' packs the phone lacks (English's word statistics and neural model come as a
+            // download since 1.2.4; a pack whose download failed or was cleared)
+            runCatching { io.github.sillypuppyy.dogboard.ime.PackDownloadQueue.ensureKeyboards(this@FlorisApplication) }
+                .onFailure { Log.w("DogBoardPerf", "keyboard packs: ${it.message}") }
         }
         clipboardManager.value.initializeForContext(this)
         DictionaryManager.init(this)

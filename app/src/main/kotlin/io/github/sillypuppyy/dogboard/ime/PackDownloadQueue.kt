@@ -53,12 +53,33 @@ object PackDownloadQueue {
         scope.launch { downloads.index()?.let { _index.value = it } }
     }
 
+    /**
+     * At app start: the packs every keyboard's languages need and the phone lacks (none on the phone, or a built-in one
+     * without its word statistics or neural model, as English since 1.2.4), fetched. Nothing is asked of the host when
+     * every pack is in place.
+     */
+    fun ensureKeyboards(context: Context) {
+        val app = context.applicationContext
+        val subtypes = dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.subtypes
+        val tags = subtypes.flatMap { s -> listOf(s.primaryLocale) + s.secondaryLocales }.map { it.languageTag() }.distinct()
+        // off the main thread: the lookups read the packs' manifests
+        scope.launch {
+            val missing = tags.filter { t ->
+                val have = LanguagePack.find(app, t)?.takeIf { it.hasWords }
+                have == null || (have.bundled && (!have.has("ngrams") || !have.has("lm_model")))
+            }
+            if (missing.isNotEmpty()) ensure(app, missing)
+        }
+    }
+
     /** Downloads the packs of [tags] that the host offers and the phone lacks (the languages the user has added). */
     fun ensure(context: Context, tags: Collection<String>) {
         val app = context.applicationContext
         scope.launch {
             if (_index.value == null) PackDownloads.of(app).index()?.let { _index.value = it }
-            for (tag in tags) {
+            for (raw in tags) {
+                // the tag as a pack folder ("en-US-u-fw-mon": the system's regional preferences, LanguagePack.candidates)
+                val tag = LanguagePack.candidates(raw).firstOrNull() ?: raw
                 val entry = offered(tag) ?: continue
                 // a pack on the phone is fetched again only when the host has a newer version of it (a downloaded one:
                 // a built-in pack updates with the app)

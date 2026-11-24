@@ -15,12 +15,6 @@
       "size": 2887013,
       "sha256": "0ce1895f73d17252e42969cd26d259252d003574da2d2dae0da951c2be94f25a"
     },
-    "ngrams": {
-      "path": "dogboard/en.ngrams.bin",
-      "optional": true,
-      "size": 51116337,
-      "sha256": "50e6b7857bd72bac6676fbb20b129f77812eaabb30e5a701531fa37fdfe7dcc4"
-    },
     "charlm": {
       "path": "dogboard/en.charlm.bin",
       "size": 2720200,
@@ -50,18 +44,6 @@
       "path": "dogboard/en.emoji-tones.tsv",
       "size": 25393,
       "sha256": "f69c8e4e0c57722060ad4eb2de3cea7fe29914a1ff08e4aef02b70cf2c999940"
-    },
-    "lm_model": {
-      "path": "dogboard/lm/v3.tflite",
-      "optional": true,
-      "size": 25887424,
-      "sha256": "d5e8ba13358204be639aceaa9469d50afcdb768d1752812d05bb98ccaafe29ec"
-    },
-    "lm_pieces": {
-      "path": "dogboard/lm/v3.pieces.tsv",
-      "optional": true,
-      "size": 359040,
-      "sha256": "60936154a11db67eeec3dd45c57f438af6005fced38afcdeeac08dfaa2646446"
     },
     "swipe_qwerty": {
       "path": "dogboard/swipe/en-qwerty.tflite",
