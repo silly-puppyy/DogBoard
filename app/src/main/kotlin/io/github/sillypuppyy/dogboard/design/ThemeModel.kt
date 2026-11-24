@@ -348,7 +348,9 @@ object ThemeModel {
         )
         fun ver(m: Map<String, String>?): Version? = m?.let { t ->
             val bg = t["bg"] ?: return@let null
-            val g = CssGradient.parse(bg)
+            // the stops as written ("in oklab" expands each span into 16 for drawing; the editor keeps its own and
+            // writes "in oklab" again, so a copy of Pride keeps 7 stops instead of growing on every save)
+            val g = CssGradient.parse(bg.replace(Regex("""in oklab\s*,?\s*"""), ""))
             val back = if (g != null) Bg(type = "gradient", stops = g.stops.mapIndexed { i, (c, p) -> Stop(cssHex(c), (p * 100).roundToInt()) }, angle = g.angleDeg.toInt())
                 else Bg(color = bg)
             // borders drawn as a ring (inset 0 0 0 Npx colour) are the editor's border roles

@@ -50,7 +50,8 @@ object RecentClip {
             .distinctBy { it.third.filter { c -> !c.isWhitespace() } }.sortedBy { it.first }.map { it.second to it.third }
     }
 
-    private val PHONE = Regex("""(\+\d{1,2}\s?)?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{4}""")
+    // not inside a longer run of digits (card numbers, millisecond timestamps)
+    private val PHONE = Regex("""(?<![\d+])(\+\d{1,2}\s?)?\(?\d{3,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{4}(?!\d)""")
     private val EMAIL = Regex("""^[\w.+-]+@[\w-]+(\.[\w-]+)+$""")
     private val URL = Regex("""^(https?://)?([\w-]+\.)+[a-zA-Z]{2,}(/\S*)?$""")
     private val CODE = Regex("""^\d{4,8}$""")

@@ -30,12 +30,14 @@ object SystemSubtypes {
         val others = s.secondaryLocales.map { l -> dev.patrickgold.florisboard.lib.FlorisLocale.from(l.language).let { it.displayName(it) }.replaceFirstChar { c -> c.uppercase() } }
         val with = if (others.isEmpty()) "" else "with " + (if (others.size == 1) others[0] else others.dropLast(1).joinToString(", ") + " and " + others.last())
         val sub = listOfNotNull(layout, with.takeIf { it.isNotEmpty() }).joinToString(", ")
+        // Latin-script keyboards only: the system looks for an ASCII-capable one for passwords and addresses
+        val latin = android.icu.util.ULocale.addLikelySubtags(android.icu.util.ULocale.forLanguageTag(s.primaryLocale.languageTag())).script == "Latn"
         val b = InputMethodSubtype.InputMethodSubtypeBuilder()
             .setSubtypeNameOverride(name)
             .setSubtypeMode("keyboard")
-            .setSubtypeExtraValue("AsciiCapable,$KEY${s.id}")
+            .setSubtypeExtraValue((if (latin) "AsciiCapable," else "") + "$KEY${s.id}")
             .setSubtypeId(("dogboard:" + s.id).hashCode())
-            .setIsAsciiCapable(true)
+            .setIsAsciiCapable(latin)
             .setIsAuxiliary(false)
             .setOverridesImplicitlyEnabledSubtype(false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) b.setLanguageTag(s.primaryLocale.languageTag())

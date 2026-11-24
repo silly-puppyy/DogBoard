@@ -22,4 +22,9 @@ class RecentClipEntitiesTest : FunSpec({
         of("call samantha 0483994029").count { it.first == "pin" } shouldBe 0
         of("just words here").shouldBeEmpty()
     }
+    test("no call chip inside a longer run of digits (card numbers, millisecond timestamps)") {
+        of("4111111111111111").none { it.first == "call" } shouldBe true
+        of("1732451234567").none { it.first == "call" } shouldBe true
+        of("call 555-123-4567 now") shouldContain ("call" to "555-123-4567")
+    }
 })

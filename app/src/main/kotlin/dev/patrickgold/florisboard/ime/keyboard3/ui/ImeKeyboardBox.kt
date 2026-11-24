@@ -430,8 +430,9 @@ fun ImeKeyboardBox(
                         }
                         val before = imeState.content.surroundingText.textBefore.takeLast(8).toString()
                         val rows = remember(model) { io.github.sillypuppyy.dogboard.design.LiveKb.letterRows(model) }
-                        remember(rules, before, rows) {
-                            if (rules == null || rows == null || before.isEmpty()) emptyMap()
+                        remember(rules, before, rows, passwordField) {
+                            // never in a password field: the keys would spell out the last characters typed
+                            if (passwordField || rules == null || rows == null || before.isEmpty()) emptyMap()
                             else rows.flatten().mapNotNull { k -> k.base.singleOrNull()?.let { c -> rules.labelFor(before, c)?.let { k.base to it } } }.toMap()
                         }
                     },

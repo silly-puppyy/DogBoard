@@ -463,7 +463,9 @@ data class CssGradient(val angleDeg: Float, val stops: List<Pair<Color, Float>>)
         if (half == 0f) return stops.first().first
         val t = (((x - w / 2) * dx + (y - h / 2) * dy) / (2 * half) + 0.5f).coerceIn(0f, 1f)
         val i = stops.indexOfFirst { it.second >= t }
-        if (i <= 0) return stops[maxOf(i, 0)].first
+        // past the last stop the shader pads with the last colour
+        if (i < 0) return stops.last().first
+        if (i == 0) return stops[0].first
         val (c0, p0) = stops[i - 1]; val (c1, p1) = stops[i]
         return if (p1 <= p0) c1 else androidx.compose.ui.graphics.lerp(c0, c1, (t - p0) / (p1 - p0))
     }

@@ -167,6 +167,8 @@ fun LiveKbView(
                 }
             }
         }
+        // the emoji / clipboard panels replace the keys: no blurred caps left behind on the photo
+        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { io.github.sillypuppyy.dogboard.ime.LiveUi.frostCaps.value = emptyList() } }
         androidx.compose.runtime.CompositionLocalProvider(LocalKbActions provides actions, LocalKbClipActions provides clipActions) {
             val a0 = io.github.sillypuppyy.dogboard.perf.GcStats.begin()
             KbView(render)

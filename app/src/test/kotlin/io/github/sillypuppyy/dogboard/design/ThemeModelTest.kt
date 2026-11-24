@@ -82,6 +82,19 @@ class ThemeModelTest : FunSpec({
         light.key shouldBe css(ThemeModel.resolve(t.light!!).vals.getValue("key"))
         light.radius shouldBe 12f
     }
+    test("Copy and edit of a Pride theme keeps its stops as written, and saving doesn't grow them") {
+        val light = KbThemes.raw("pride", false); val dark = KbThemes.raw("pride", true)
+        val t = ThemeModel.fromBuiltIn("pride", light, dark)
+        val v = (t.light ?: t.dark)!!
+        val n = v.bg.stops.size
+        withClue("stops $n") { (n in 2..7) shouldBe true }
+        val again = ThemeModel.fromBuiltIn("pride", t.light?.let { ThemeModel.tokensOf(t, false) }, t.dark?.let { ThemeModel.tokensOf(t, true) })
+        (again.light ?: again.dark)!!.bg.stops.size shouldBe n
+    }
+    test("a gradient's colour past its last stop is the last colour, as the shader pads") {
+        val g = CssGradient.parse("linear-gradient(180deg, #ff0000 0%, #0000ff 80%)")!!
+        g.colorAt(50f, 99f, 100f, 100f) shouldBe androidx.compose.ui.graphics.Color(0xff0000ff)
+    }
 })
 
 private inline fun <T> withClue(clue: String, block: () -> T): T = io.kotest.assertions.withClue(clue, block)

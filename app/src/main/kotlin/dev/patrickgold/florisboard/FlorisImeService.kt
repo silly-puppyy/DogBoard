@@ -304,6 +304,8 @@ class FlorisImeService : LifecycleInputMethodService() {
         }
         lifecycleScope.launch {
             subtypeManager.activeSubtypeFlow.collect { s ->
+                // the placeholder before the keyboards load is no system subtype
+                if (subtypeManager.subtypes.none { it.id == s.id }) return@collect
                 if (io.github.sillypuppyy.dogboard.ime.SystemSubtypes.idOf(systemServiceOrNull(InputMethodManager::class)?.currentInputMethodSubtype) == s.id) return@collect
                 val id = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.imeId(this@FlorisImeService) ?: return@collect
                 if (AndroidVersion.ATLEAST_API28_P) runCatching { switchInputMethod(id, io.github.sillypuppyy.dogboard.ime.SystemSubtypes.of(s)) }

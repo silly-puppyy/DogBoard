@@ -306,7 +306,8 @@ object LinkInfo {
         fun num(o: kotlinx.serialization.json.JsonElement?, k: String) = ((o as? kotlinx.serialization.json.JsonObject)?.get(k) as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull()
         val fmt = java.text.NumberFormat.getIntegerInstance()
         when {
-            host == "github.com" && path.size >= 2 && path[0] !in setOf("orgs", "settings", "topics", "search", "marketplace") -> {
+            // the repository's own page only: an issue, pull request or file keeps its page's title
+            host == "github.com" && path.size == 2 && path[0] !in setOf("orgs", "settings", "topics", "search", "marketplace") -> {
                 val r = obj("https://api.github.com/repos/${path[0]}/${path[1]}") ?: return null
                 val stars = num(r, "stargazers_count")
                 Targeted(str(r, "full_name")?.let { n -> str(r, "description")?.let { "$n: $it" } ?: n }, stars?.let { fmt.format(it) + " stars" }, null,
