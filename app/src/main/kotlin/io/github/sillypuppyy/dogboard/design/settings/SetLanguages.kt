@@ -159,10 +159,18 @@ fun SetLanguages(
             onDone = { ids -> ids.firstOrNull()?.let { onSetLayout(kb.id, it) }; page = null }, doneLabel = "Save",
             subtitle = if (kb.together.isEmpty()) "Its layout" else "The layout its languages share") {
             val canJoin = combineChoices(kb.id).isNotEmpty()
-            if (canJoin || kb.together.isNotEmpty() || langs.size > 1) SetRows {
+            SetRows {
                 if (canJoin) KbAction("add", "Combine with another language", "Type both on this keyboard, without switching") { page = "combine:${kb.id}" }
+                else KbAction("add", "Combine with another language", "First add a language with the same alphabet and a dictionary", enabled = false) {}
                 if (kb.together.isNotEmpty()) KbAction("content_cut", "Split up", "Each language back on its own keyboard") { onSplit(kb.id); page = null }
-                if (langs.size > 1) KbAction("delete", "Remove", "Take this keyboard off your list") { onRemove(kb.id); page = null }
+            }
+            // removing: a separate red pill, as Forget everything in Your words
+            if (langs.size > 1) Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) {
+                Row(Modifier.height(48.dp).clip(RoundedCornerShape(24.dp)).background(SetColors.errorContainer).clickable { onRemove(kb.id); page = null }.padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Symbol("delete", 20.sp, SetColors.onErrorContainer)
+                    DText("Remove this keyboard", style = setText(14f, 600, SetColors.onErrorContainer))
+                }
             }
         }
     } else if (shared != null && shared.size == 3) {
@@ -218,7 +226,6 @@ private fun LanguageRow(
     l: LangRow, removable: Boolean, onUse: (Long) -> Unit, onLayout: () -> Unit, onRemove: (Long) -> Unit,
     canCombine: Boolean, onCombine: () -> Unit, onSplit: () -> Unit,
 ) {
-    var menu by remember { mutableStateOf(false) }
     Row(
         Modifier.fillMaxWidth().heightIn(min = 72.dp).background(SetColors.row).clickable { onLayout() }
             .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
@@ -236,19 +243,12 @@ private fun LanguageRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DText(l.name + (l.native?.takeIf { it != l.name }?.let { " ($it)" } ?: ""), style = setText(16f).copy(textAlign = START), maxLines = 2)
             // the layout as a line, not tags
-            DText(listOfNotNull(l.layout, "swipe typing".takeIf { l.swipe }, "getting dictionary…".takeIf { l.gettingDictionary }).joinToString(", "),
+            // the layout only (swipe works on nearly every layout now; "swipe typing" on each row was noise)
+            DText(listOfNotNull(l.layout, "getting dictionary…".takeIf { l.gettingDictionary }).joinToString(", "),
                 style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
         }
-        if (removable || canCombine || l.together.isNotEmpty()) Box {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { menu = true }, contentAlignment = Alignment.Center) { Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant) }
-            // combining: languages typed on one keyboard without switching (up to three), with a layout they share
-            SetMenu(menu, { menu = false }, listOfNotNull(
-                "Layout and options" to onLayout,
-                ("Combine with…" to onCombine).takeIf { canCombine },
-                ("Split up" to onSplit).takeIf { l.together.isNotEmpty() },
-                ("Remove" to { onRemove(l.id) }).takeIf { removable },
-            ))
-        }
+        // an arrow: the row opens the keyboard's own page (its layout, combining, splitting, removing)
+        Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant)
     }
 }
 
@@ -372,8 +372,8 @@ private fun PickLayoutPage(
 
 /** An action row on a keyboard's page: icon, title, a line under it. */
 @Composable
-private fun KbAction(icon: String, title: String, sub: String, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).background(SetColors.row).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+private fun KbAction(icon: String, title: String, sub: String, enabled: Boolean = true, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).background(SetColors.row).then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier.alpha(0.5f)).padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Symbol(icon, 22.sp, SetColors.onSurfaceVariant)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
