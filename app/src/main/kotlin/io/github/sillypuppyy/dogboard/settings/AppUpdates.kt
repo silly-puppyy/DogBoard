@@ -36,6 +36,17 @@ object AppUpdates {
     /** Whether this build can update itself at all (not a store build). */
     val supported: Boolean get() = BuildConfig.SELF_UPDATE
 
+    /**
+     * About > Check for updates now: GitHub asked at once, whatever the day's check did. The newer release, or null
+     * (up to date); throws when GitHub couldn't be reached.
+     */
+    suspend fun checkNow(): Release? {
+        val r = latest() ?: error("no answer")
+        val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+        prefs.other.updateLastCheck.set(System.currentTimeMillis())
+        return r.takeIf { isNewer(it.version, BuildConfig.VERSION_NAME) }.also { _available.value = it }
+    }
+
     /** The check's own scope: it outlives the screen that asks (the home screen's first composition is replaced at once). */
     private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
     @Volatile private var running = false

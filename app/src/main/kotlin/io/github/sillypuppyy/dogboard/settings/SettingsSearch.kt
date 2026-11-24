@@ -68,7 +68,7 @@ object SettingsSearch {
         Entry("Neural model", "Advanced", "advanced", "battery memory ai language model"),
         Entry("Show the app icon", "Advanced", "advanced", "launcher hide icon"),
         Entry("About", "About", "about", "version licenses credits"),
-        Entry("Check for updates", "About", "about", "update new version github download"),
+        Entry("Check automatically", "About", "about", "update new version github download check for updates"),
         // rows added after the first index ("settings search only searches the top level pages");
         // SettingsSearchCoverageTest fails when a settings row has no entry
         Entry("Return to letters", "Layout", "layout", "symbols page return letters after space key comma"),

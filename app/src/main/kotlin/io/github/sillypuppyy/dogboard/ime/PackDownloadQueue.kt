@@ -72,6 +72,29 @@ object PackDownloadQueue {
         }
     }
 
+    /**
+     * About > Check for updates now: the host's index fetched again, then every downloaded pack with a newer version
+     * there updated (one at a time, in the background), and a built-in pack missing its big files completed. The
+     * number of packs started; -1 when the host couldn't be reached.
+     */
+    suspend fun updateAll(context: Context): Int = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val app = context.applicationContext
+        val downloads = PackDownloads.of(app)
+        if (!downloads.enabled) return@withContext 0
+        val index = downloads.index() ?: return@withContext -1
+        _index.value = index
+        // per hosted pack, the pack the phone would use for its language (a downloaded one first): a built-in region
+        // pack with rules only (fr-FR) must not fetch French again when the downloaded French is current
+        val entries = LanguagePack.all(app).mapNotNull { offered(it.tag) }.distinctBy { it.tag }
+        var n = 0
+        for (entry in entries) {
+            val have = LanguagePack.find(app, entry.tag) ?: continue
+            val due = if (have.bundled) !have.has("ngrams") || !have.has("lm_model") else downloads.updateFor(have, index) != null
+            if (due) { start(app, entry); n++ }
+        }
+        n
+    }
+
     private fun start(app: Context, entry: PackIndexEntry) {
         var claimed = false
         _pending.update { if (entry.tag in it) it else { claimed = true; it + entry.tag } }

@@ -45,9 +45,46 @@ fun DogAboutScreen() {
                 }
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             }
+            // the app (GitHub build) and the downloaded languages, checked now; a newer app asks before downloading
+            var checking by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+            var offer by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<io.github.sillypuppyy.dogboard.settings.AppUpdates.Release?>(null) }
+            SetPageLink("ab:checknow", "Check for updates now", if (checking) "Checking…" else if (io.github.sillypuppyy.dogboard.settings.AppUpdates.supported) "DogBoard and your languages" else "Your languages", icon = "restart_alt") {
+                if (!checking) scope.launch {
+                    checking = true
+                    val app = runCatching { if (io.github.sillypuppyy.dogboard.settings.AppUpdates.supported) io.github.sillypuppyy.dogboard.settings.AppUpdates.checkNow() else null }
+                    val packs = io.github.sillypuppyy.dogboard.ime.PackDownloadQueue.updateAll(context)
+                    checking = false
+                    val langs = when {
+                        packs < 0 -> "Couldn’t reach the language downloads"
+                        packs == 0 -> "Your languages are up to date"
+                        packs == 1 -> "1 language is updating"
+                        else -> "$packs languages are updating"
+                    }
+                    val appLine = when {
+                        !io.github.sillypuppyy.dogboard.settings.AppUpdates.supported -> null
+                        app.isFailure -> "Couldn’t reach GitHub"
+                        app.getOrNull() == null -> "DogBoard is up to date"
+                        else -> null
+                    }
+                    app.getOrNull()?.let { offer = it }
+                    Toast.makeText(context, listOfNotNull(appLine, langs).joinToString(". "), Toast.LENGTH_LONG).show()
+                }
+            }
+            offer?.let { r ->
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { offer = null },
+                    title = { androidx.compose.material3.Text("DogBoard ${r.version} is out") },
+                    text = { androidx.compose.material3.Text("Download it now? Android asks before it installs.") },
+                    confirmButton = { androidx.compose.material3.TextButton({
+                        offer = null
+                        scope.launch { if (!io.github.sillypuppyy.dogboard.settings.AppUpdates.install(context, r)) Toast.makeText(context, "The download didn’t work. Try again later", Toast.LENGTH_SHORT).show() }
+                    }) { androidx.compose.material3.Text("Update") } },
+                    dismissButton = { androidx.compose.material3.TextButton({ offer = null }) { androidx.compose.material3.Text("Later") } },
+                )
+            }
             if (io.github.sillypuppyy.dogboard.settings.AppUpdates.supported) {
                 val check by prefs.other.updateCheck.collectAsState()
-                io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow("ab:updates", "Check for updates", "Once a day, DogBoard asks GitHub whether a newer version is out", check) { on ->
+                io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow("ab:updates", "Check automatically", "Once a day, DogBoard asks GitHub whether a newer version is out", check) { on ->
                     scope.launch { prefs.other.updateCheck.set(on) }
                 }
             }

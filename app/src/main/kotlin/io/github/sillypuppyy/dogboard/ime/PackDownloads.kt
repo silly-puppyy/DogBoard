@@ -45,7 +45,7 @@ class PackDownloads(private val baseUrl: String, private val packsDir: File, pri
             if (!verify(bytes, sig, publicKey)) { android.util.Log.w("DogBoardPerf", "pack index: signature does not verify"); return null }
         }
         json.decodeFromString<PackIndex>(bytes.decodeToString())
-    }.getOrNull()
+    }.onFailure { android.util.Log.w("DogBoardPerf", "pack index: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
     /** Downloads and installs [tag] (replacing an installed one only when the whole pack arrived intact). */
     fun install(tag: String, onProgress: (done: Long, total: Long) -> Unit = { _, _ -> }, entry: PackIndexEntry? = null): PackInstaller.Result {
