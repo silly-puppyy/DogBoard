@@ -105,6 +105,8 @@ class SetHomeActions(
     /** The Look row's line: the chosen theme(s). */
     val lookSub: String = "DogBoard, follows your wallpaper",
     val onKeyboardHeight: (Int) -> Unit = {},
+    /** Your languages, for the Languages row ("English (US), French and 3 more"); null: the design's sample. */
+    val languages: String? = null,
     /** A newer DogBoard on GitHub (AppUpdates), its version; null: none. [updating]: its download is running. */
     val update: String? = null,
     val updating: Boolean = false,
@@ -163,7 +165,8 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         val (bg, fg) = SetColors.container(s.bg, s.fg)
                         // a status, not a description (drop the descriptions to avoid clutter, as Gboard,
                         // whose home shows only the language under Languages)
-                        val sub = if (s.title == "Languages") s.sub else ""
+                        // (live: your own languages; the design's sample line named English for everyone)
+                        val sub = if (s.title == "Languages") actions?.languages ?: s.sub else ""
                         SetSectionRow(s.icon, s.title, sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
                     }
                 }

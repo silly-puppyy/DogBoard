@@ -97,9 +97,20 @@ fun HomeScreen() {
         var updating by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
         androidx.compose.runtime.LaunchedEffect(Unit) { io.github.sillypuppyy.dogboard.settings.AppUpdates.checkIfDue() }
         val updateContext = androidx.compose.ui.platform.LocalContext.current
+        // the Languages row's line: your languages (every keyboard's, each once), the first three by name
+        val homeSubtypes by dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.subtypesFlow.collectFlowAsState()
+        val homeLanguages = androidx.compose.runtime.remember(homeSubtypes) {
+            val names = homeSubtypes.flatMap { listOf(it.primaryLocale) + it.secondaryLocales }.map { it.displayName() }.distinct()
+            when {
+                names.isEmpty() -> null
+                names.size <= 3 -> names.joinToString(", ")
+                else -> names.take(2).joinToString(", ") + " and ${names.size - 2} more"
+            }
+        }
         io.github.sillypuppyy.dogboard.design.settings.SetHome(
             modifier = androidx.compose.ui.Modifier.fillMaxSize(),
             actions = io.github.sillypuppyy.dogboard.design.settings.SetHomeActions(
+                languages = homeLanguages,
                 update = update?.version,
                 updating = updating,
                 onUpdate = {
