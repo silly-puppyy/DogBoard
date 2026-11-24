@@ -1,0 +1,2 @@
+- Updates: DogBoard now finds new versions by itself. In 1.0 and 1.1 the daily check was cancelled as the settings opened, so they never showed an update; install this one by hand once.
+- Update opens Android's installer directly, without an "Open with" choice

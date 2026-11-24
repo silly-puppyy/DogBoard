@@ -6,6 +6,7 @@ import dev.patrickgold.florisboard.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -35,15 +36,33 @@ object AppUpdates {
     /** Whether this build can update itself at all (not a store build). */
     val supported: Boolean get() = BuildConfig.SELF_UPDATE
 
-    /** Checks when a day has passed since the last check (and the check is on). */
-    suspend fun checkIfDue() {
-        if (!supported) return
-        val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
-        if (!prefs.other.updateCheck.get()) return
-        val now = System.currentTimeMillis()
-        if (now - prefs.other.updateLastCheck.get() < DAY_MS && _available.value == null) return
-        prefs.other.updateLastCheck.set(now)
-        _available.value = runCatching { latest() }.getOrNull()?.takeIf { isNewer(it.version, BuildConfig.VERSION_NAME) }
+    /** The check's own scope: it outlives the screen that asks (the home screen's first composition is replaced at once). */
+    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+    @Volatile private var running = false
+
+    /**
+     * Checks when a day has passed since the last successful check (and the check is on). 1.0 checked inside the home
+     * screen's composition, which the app replaces right after it starts: the request was cancelled every time, and
+     * the time was stored first, so the next try waited a day (2026-11-24).
+     */
+    fun checkIfDue() {
+        if (!supported || running) return
+        running = true
+        scope.launch {
+            try {
+                val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+                if (!prefs.other.updateCheck.get()) return@launch
+                val now = System.currentTimeMillis()
+                if (now - prefs.other.updateLastCheck.get() < DAY_MS && _available.value == null) return@launch
+                val r = runCatching { latest() }.onFailure { android.util.Log.w("DogBoardPerf", "update check failed: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+                android.util.Log.i("DogBoardPerf", "update check: latest ${r?.version} (this ${BuildConfig.VERSION_NAME})")
+                // only an answer counts as a check (a failed one tries again next time the settings open)
+                if (r != null) prefs.other.updateLastCheck.set(now)
+                _available.value = r?.takeIf { isNewer(it.version, BuildConfig.VERSION_NAME) }
+            } finally {
+                running = false
+            }
+        }
     }
 
     private suspend fun latest(): Release? = withContext(Dispatchers.IO) {
@@ -51,7 +70,7 @@ object AppUpdates {
         c.connectTimeout = 15_000; c.readTimeout = 15_000
         c.setRequestProperty("Accept", "application/vnd.github+json")
         try {
-            if (c.responseCode != 200) return@withContext null
+            if (c.responseCode != 200) { android.util.Log.w("DogBoardPerf", "update check: HTTP ${c.responseCode}"); return@withContext null }
             val o = Json.parseToJsonElement(c.inputStream.use { it.readBytes() }.decodeToString()) as JsonObject
             fun str(j: JsonObject?, k: String) = (j?.get(k) as? JsonPrimitive)?.takeIf { it.isString }?.content
             val tag = str(o, "tag_name") ?: return@withContext null
@@ -106,7 +125,10 @@ object AppUpdates {
         if (!ok) { apk.delete(); return@withContext false }
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider.file", apk)
         withContext(Dispatchers.Main) {
-            context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+            // Android's installer itself: ACTION_VIEW offered any app that opens APKs (an "Open with" chooser: Termux,
+            // file managers) before the installer (emulator, 2026-11-24)
+            @Suppress("DEPRECATION")
+            context.startActivity(Intent(Intent.ACTION_INSTALL_PACKAGE).setData(uri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
         }
         true
