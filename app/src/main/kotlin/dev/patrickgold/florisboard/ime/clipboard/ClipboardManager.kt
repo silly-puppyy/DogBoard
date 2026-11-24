@@ -139,7 +139,8 @@ class ClipboardManager(
     }
 
     private fun updateHistory(items: List<ClipboardItem>) {
-        val itemsSorted = items.sortedByDescending { it.creationTimestampMs }
+        // DogBoard: empty clips saved before they were skipped stay out of the list
+        val itemsSorted = items.filterNot { it.type == ItemType.TEXT && it.text.isNullOrBlank() }.sortedByDescending { it.creationTimestampMs }
         val clipHistory = ClipboardHistory(itemsSorted)
         enforceHistoryLimit(clipHistory)
         historyFlow.value = clipHistory
@@ -240,6 +241,8 @@ class ClipboardManager(
      * Adds a new item to the clipboard history (if enabled).
      */
     private fun insertOrMoveBeginning(newItem: ClipboardItem) {
+        // DogBoard: a copy of nothing (or only spaces) is no clip: it showed as a blank row (emulator 2026-11-24)
+        if (newItem.type == ItemType.TEXT && newItem.text.isNullOrBlank()) return
         if (prefs.clipboard.historyEnabled.get()) {
             // DogBoard: a repeat copy moves the clip to the top instead of adding a second tile
             // (Gboard, measured 2026-11-15: copy a, b, a shows a, b). Looked up in the database, not
