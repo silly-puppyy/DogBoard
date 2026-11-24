@@ -259,4 +259,22 @@ class KbSpecTest : FunSpec({
         key(KbSpec.render(KbProps(ret = "search", actionStyle = "word")), "ret").label shouldBe "Search"
         KbSpec.render(KbProps(words = bg, plane = "sym1")).rows.flatMap { it.keys }.any { it.label == "АБВ" } shouldBe true
     }
+    test("long-press grid as Gboard: the first item straight above the key, balanced rows, on the keyboard") {
+        val w = 360f
+        fun check(capX: Float, n: Int) {
+            val cells = KbSpec.longPressCells(capX, 30f, w, List(n) { "x" })
+            val centre = capX + 15f
+            val first = cells[0]
+            (first.row) shouldBe 0
+            // over the key: its centre within the first cell (or the grid pinned at the edge, still nearest the key)
+            (cells.filter { it.row == 0 }.minOf { kotlin.math.abs(it.x + it.w / 2 - centre) } == kotlin.math.abs(first.x + first.w / 2 - centre)) shouldBe true
+            cells.all { it.x >= 2f && it.x + it.w <= w - 2f } shouldBe true
+            cells.map { it.row to it.x }.toSet().size shouldBe n
+        }
+        for (capX in listOf(4f, 100f, 236f, 326f)) for (n in listOf(1, 3, 7, 11)) check(capX, n)
+        // "u" right of centre with 7 items: the number over the key, rows of 4 and 3 (Gboard: û 7 ú ü / ũ ù ū)
+        val u = KbSpec.longPressCells(236f, 30f, w, List(7) { "x" })
+        (kotlin.math.abs(u[0].x + u[0].w / 2 - 251f) < u[0].w / 2) shouldBe true
+        u.count { it.row == 0 } shouldBe 4; u.count { it.row == 1 } shouldBe 3
+    }
 })

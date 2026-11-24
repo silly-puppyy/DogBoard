@@ -318,8 +318,8 @@ object KbSpec {
     /** Long-press cell height and the bar's padding (Kb:577-581). */
     const val LP_CELL_H = 46f
     const val LP_PAD = 4f
-    /** Designer answers 2026-11-14 §6: at most this many variants per row; the rest go in a row above. */
-    const val LP_PER_ROW = 8
+    /** At most this many variants side by side (Gboard: balanced rows, 7 variants as 4 + 3). */
+    const val LP_MAX_COLS = 5
 
     /**
      * A variant's cell width (designer answers §6): 34 dp, or its text plus 8 dp a side when longer
@@ -331,23 +331,30 @@ object KbSpec {
     }
 
     /**
-     * Where each variant sits (shared with the touch targets in LongPress.kt, so the drawn cells are
-     * the ones that select): rows of [LP_PER_ROW] in list order, the first row next to the key with
-     * item 0 over it, the bar shifted to stay on a keyboard [w] wide.
+     * Where each variant sits (shared with the touch targets in LongPress.kt, so the drawn cells are the ones that
+     * select), as Gboard lays them out: a grid of balanced rows (at most [LP_MAX_COLS] wide), the first item (the
+     * key's number or main variant, selected at first) in the row next to the key, in the column straight above it,
+     * the others around it nearest first, then the rows above; the grid kept on a keyboard [w] wide. A row of 8 in
+     * list order put the number at the far left on keys right of centre ("holding u doesn't work", 2026-11-24).
      */
     fun longPressCells(capX: Float, capW: Float, w: Float, labels: List<String>): List<LpCell> {
-        val rows = labels.chunked(LP_PER_ROW)
-        val out = ArrayList<LpCell>(labels.size)
-        for ((r, row) in rows.withIndex()) {
-            val widths = row.map(::longPressCellWidth)
-            val rowW = widths.sum() + 2 * LP_PAD
-            var x = capX + capW / 2 - widths.first() / 2 - LP_PAD
-            if (x + rowW > w - 2) x = capX + capW / 2 + widths.first() / 2 + LP_PAD - rowW
-            x = max(2f, min(w - rowW - 2, x))
-            var cx = x + LP_PAD
-            for (cw in widths) { out.add(LpCell(cx, r, cw)); cx += cw }
-        }
-        return out
+        val n = labels.size
+        if (n == 0) return emptyList()
+        val rows = (n + LP_MAX_COLS - 1) / LP_MAX_COLS
+        val cols = (n + rows - 1) / rows
+        val cw = labels.maxOf(::longPressCellWidth)
+        val gridW = cols * cw + 2 * LP_PAD
+        val centre = capX + capW / 2
+        // the first item's column: the middle (left of middle for an even count), moved so the grid stays on the keyboard
+        var c0 = (cols - 1) / 2
+        fun left(c: Int) = centre - (c + 0.5f) * cw - LP_PAD
+        while (c0 > 0 && left(c0) < 2f) c0--
+        while (c0 < cols - 1 && left(c0) + gridW > w - 2f) c0++
+        val x0 = max(2f, min(w - gridW - 2f, left(c0))) + LP_PAD
+        // cells by distance from the first item: its row first (nearest columns, right before left), then the rows above
+        val order = (0 until rows).flatMap { r -> (0 until cols).map { c -> r to c } }
+            .sortedWith(compareBy({ it.first }, { kotlin.math.abs(it.second - c0) }, { if (it.second >= c0) 0 else 1 }))
+        return order.take(n).map { (r, c) -> LpCell(x0 + c * cw, r, cw) }
     }
 
     fun longPressBarX(capX: Float, capW: Float, w: Float, n: Int): Float {
