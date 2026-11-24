@@ -1,5 +1,6 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -449,13 +450,31 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
 @Composable
 private fun UserThemeSheet(
     name: String, about: String, sel: Boolean, primary: Color, actions: List<Pair<String, () -> Unit>>,
-    onUse: () -> Unit, onDismiss: () -> Unit, picture: @Composable (Float) -> Unit,
+    onUse: () -> Unit, onDismiss: () -> Unit, gradient: String?, photoId: String?,
 ) {
+    // the real keyboard shows the theme while the sheet is open: a gradient by its id, a photo through the photo slot
+    // (kept aside and put back on close, unless the theme is taken)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs by dev.patrickgold.florisboard.app.FlorisPreferenceStore
+    val used = androidx.compose.runtime.remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+    androidx.compose.runtime.DisposableEffect(gradient, photoId) {
+        val bg = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+        var snap: io.github.sillypuppyy.dogboard.design.UserThemes.PreviewSnapshot? = null
+        val start = bg.launch {
+            if (gradient != null) io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = gradient
+            else if (photoId != null) {
+                snap = io.github.sillypuppyy.dogboard.design.UserThemes.previewStart(context, prefs, photoId)
+                if (snap != null) io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = "glass"
+            }
+        }
+        onDispose {
+            io.github.sillypuppyy.dogboard.ime.LiveUi.themePreview.value = null
+            bg.launch { start.join(); snap?.let { io.github.sillypuppyy.dogboard.design.UserThemes.previewEnd(context, prefs, it, keep = used.get()) } }
+        }
+    }
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = SetColors.screen) {
-        Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            val w = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp - 40f
-            Box(Modifier.size(w.dp, tileH(w).dp).clip(RoundedCornerShape(TILE_R)).background(SetColors.surfaceContainerHighest)) { picture(w) }
+        Column(Modifier.fillMaxWidth().imePadding().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 DText(name, style = setText(24f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                 DText(about, style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
@@ -465,11 +484,21 @@ private fun UserThemeSheet(
                     DText(label, Modifier.weight(1f), style = setText(15f, color = SetColors.onSurface).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                 }
             }
+            // the test drive, as the built-in sheet: the keyboard opens at once in this theme
+            var tryText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+            val focus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(250); runCatching { focus.requestFocus() } }
+            androidx.compose.foundation.text.BasicTextField(
+                tryText, { tryText = it },
+                Modifier.fillMaxWidth().focusRequester(focus).heightIn(min = 52.dp).clip(RoundedCornerShape(26.dp)).background(SetColors.surfaceContainerHighest).padding(horizontal = 20.dp, vertical = 15.dp),
+                textStyle = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start),
+                decorationBox = { inner -> Box { if (tryText.isEmpty()) DText("Type here to try it", style = setText(16f, color = SetColors.onSurfaceVariant)); inner() } },
+            )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                 Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).clickable(onClick = onDismiss).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
                     DText("Close", style = setText(14f, 500, primary))
                 }
-                Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).background(primary).clickable { onDismiss(); onUse() }.padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).background(primary).clickable { used.set(true); onDismiss(); onUse() }.padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
                     DText(if (sel) "Edit" else "Use this theme", style = setText(14f, 500, SetColors.screen))
                 }
             }
@@ -697,14 +726,8 @@ private fun UserPackSections(state: SetThemesState, primary: Color, which: (io.g
                                     listOf("Delete" to { state.onThemeAction(t.id, "delete") }),
                                 onUse = { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
                                 onDismiss = { menu = false },
-                            ) { w ->
-                                if (t.spec != null) Box(Modifier.fillMaxSize()) {
-                                    Preview(t.spec, io.github.sillypuppyy.dogboard.design.GradientSpec.parse(t.spec)?.white == true, 0, w, tileH(w), w / 375f, null)
-                                } else thumb?.let { (imgs, tile) ->
-                                    val first = tile?.versions.orEmpty().firstOrNull()
-                                    imgs[0]?.let { PhotoPreview(if (first?.second == true) imgs[1] ?: it else it, first?.first, t.name, w, w / 375f) }
-                                }
-                            }
+                                gradient = t.spec, photoId = t.id.takeIf { t.spec == null },
+                            )
 
                         }
                     }

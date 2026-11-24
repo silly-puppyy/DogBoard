@@ -241,6 +241,42 @@ object UserThemes {
         return true
     }
 
+    /** What a photo theme's preview changed, to put back ([previewEnd]): the slot's files and settings. */
+    class PreviewSnapshot(
+        val dir: File, val userTheme: String, val enabled: Boolean, val looks: String, val lum: Int, val pos: String,
+        val stamp: Long, val mode: String?,
+    )
+
+    /**
+     * Holding a photo theme: it goes into the photo slot for a while, so the real keyboard shows it (as a built-in's
+     * sheet does); the slot's files and settings are kept aside first. Null when [id] isn't a photo theme.
+     */
+    suspend fun previewStart(context: Context, prefs: FlorisPreferenceModel, id: String): PreviewSnapshot? {
+        val back = File(context.cacheDir, "theme-preview").apply { deleteRecursively(); mkdirs() }
+        for ((name, dark, photo) in SLOT_FILES) slotFile(context, dark, photo).takeIf { it.isFile }?.copyTo(File(back, name), overwrite = true)
+        val k = prefs.keyboard
+        val snap = PreviewSnapshot(back, k.userTheme.get(), k.glassEnabled.get(), k.glassLooks.get(), k.glassPhotoLuminance.get(),
+            k.glassPhotoPos.get(), k.glassPhotoStamp.get(), ThemeChoice.glassMode)
+        return if (apply(context, prefs, id)) snap else { back.deleteRecursively(); null }
+    }
+
+    /** The preview is over: the slot as it was, unless the theme was taken ([keep]). */
+    suspend fun previewEnd(context: Context, prefs: FlorisPreferenceModel, snap: PreviewSnapshot, keep: Boolean) {
+        if (!keep) {
+            for ((name, dark, photo) in SLOT_FILES) {
+                val f = File(snap.dir, name)
+                if (f.isFile) f.copyTo(slotFile(context, dark, photo), overwrite = true) else slotFile(context, dark, photo).delete()
+            }
+            val k = prefs.keyboard
+            k.userTheme.set(snap.userTheme); k.glassEnabled.set(snap.enabled); k.glassLooks.set(snap.looks)
+            k.glassPhotoLuminance.set(snap.lum); k.glassPhotoPos.set(snap.pos)
+            snap.mode?.let { ThemeChoice.glassMode = it }
+            // a new stamp: the keyboard reloads the slot's photo (the old stamp would keep the preview's in memory)
+            k.glassPhotoStamp.set(if (snap.stamp == 0L) 0L else System.currentTimeMillis())
+        }
+        snap.dir.deleteRecursively()
+    }
+
     /** The photo slot's settings (and photo, when [photoToo]) stored back into the theme in use. */
     @Synchronized
     fun saveBack(context: Context, prefs: FlorisPreferenceModel, photoToo: Boolean = false) {
