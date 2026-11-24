@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.LocalNavController
@@ -52,6 +53,7 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
     val active by subtypeManager.activeSubtypeFlow.collectAsState()
     val layoutId by prefs.keyboard.layoutId.collectAsState()
     val memory by prefs.keyboard.layoutByLanguage.collectAsState()
+    val scope = rememberCoroutineScope()
     val index by PackDownloadQueue.index.collectAsState()
     val installedCount by PackDownloadQueue.installed.collectAsState()
     // the language packs, built in and downloaded (read again when one arrives in the background)
@@ -98,6 +100,7 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,
             together = s.secondaryLocales.map { second -> list.firstOrNull { it.primaryLocale == second }?.let { packName(second.languageTag(), it) } ?: second.displayName() },
             togetherTags = s.secondaryLocales.map { it.languageTag() },
+            tag = tag,
             // every language's code; the badge stacks them (EN over FR)
             code = (listOf(s.primaryLocale) + s.secondaryLocales).joinToString("+") { it.language.uppercase() },
             togetherChoices = if (!hasDictionary(tag)) emptyList() else list
@@ -171,6 +174,15 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             }
         },
         // split up: each joined language becomes a keyboard of its own again, with its usual layout
+        // a keyboard's page: its own layout (and the live one, when it's the keyboard in use; remembered for its language)
+        onSetLayout = { id, layout ->
+            val s = subtypes.firstOrNull { it.id == id } ?: list.firstOrNull { it.id == id }
+            if (s != null) scope.launch {
+                subtypeManager.updateSubtypes { now -> now.ifEmpty { listOf(s) }.map { if (it.id == id) it.copy(layoutId = layout) else it } }
+                prefs.keyboard.layoutByLanguage.set(LanguageLayouts.remember(prefs.keyboard.layoutByLanguage.get(), s.primaryLocale.language, layout))
+                if (id == active.id) prefs.keyboard.layoutId.set(layout)
+            }
+        },
         onSplit = { id ->
             subtypes.firstOrNull { it.id == id }?.let { s ->
                 val alone = s.secondaryLocales.map { l -> Subtype(0, l, emptyList(), layoutId = LanguageLayouts.layoutOf(l.language, memory)) }

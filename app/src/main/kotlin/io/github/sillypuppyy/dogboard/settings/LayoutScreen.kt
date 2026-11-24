@@ -73,6 +73,7 @@ fun LayoutScreen() {
         elements = LayoutPrefs.read(prefs),
         onChange = { e -> scope.launch { LayoutPrefs.write(prefs, e) } },
         onBack = { navController.popBackStack() },
+        onLanguages = { navController.navigate(dev.patrickgold.florisboard.app.Routes.Settings.Localization) },
         layoutId = prefs.keyboard.layoutId.collectAsState().value,
         languages = subtypes.map { it.primaryLocale.language }.ifEmpty { listOf("en") },
         onLayoutId = { id, lang ->

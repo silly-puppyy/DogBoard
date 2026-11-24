@@ -83,6 +83,8 @@ class SetLayoutState(
     val layoutId: String? = null,
     /** A card picked: its layout id and language (the layout becomes that language's; live if it is the active one). */
     val onLayoutId: (String, String) -> Unit = { _, _ -> },
+    /** Opens Languages, where each keyboard's letters are picked. */
+    val onLanguages: () -> Unit = {},
     /** Each language's chosen layout (LanguageLayouts.layoutOf): the ticked card per language. */
     val layoutOf: (String) -> String? = { null },
     /** The user's languages (codes, "cs"): the Letters group offers their layouts (the full list is 1469). */
@@ -175,31 +177,16 @@ fun SetLayout(state: SetLayoutState) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
             // DogBoard: the letter layout (moved here from the old Typing screen, 2026-11-17)
-            // "a good interface for picking a keyboard layout": Gboard's variant thumbnails, as
-            // cards with each layout's letter rows drawn small
-            state.layoutId?.let { id ->
-                SetGroup("Letters") {
-                    Column(Modifier.fillMaxWidth().background(SetColors.row).padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // the user's languages' layouts, a heading per language when there are several (the chosen
-                        // layout's language first, so it shows even if that language was removed since)
-                        // (a keyboard file shared by several languages: the entry of one of the user's)
-                        val chosen = LETTER_LAYOUTS.firstOrNull { it.id == id && it.code in state.languages } ?: LETTER_LAYOUTS.firstOrNull { it.id == id }
-                        val langs = (listOfNotNull(chosen?.code) + state.languages).distinct()
-                        langs.forEach { code ->
-                            val ofLang = LETTER_LAYOUTS.filter { it.code == code }
-                            if (ofLang.isEmpty()) return@forEach
-                            if (langs.size > 1) DText(ofLang[0].language, style = setText(13f, 500, color = SetColors.onSurfaceVariant))
-                            ofLang.chunked(2).forEach { pair ->
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    pair.forEach { l -> LayoutCard(l, l.id == (state.layoutOf(l.code) ?: id), Modifier.weight(1f)) { state.onLayoutId(l.id, l.code) } }
-                                    if (pair.size == 1) Box(Modifier.weight(1f))
-                                }
-                            }
-                        }
-                        chosen?.note?.let { note ->
-                            DText(note, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 8)
-                        }
+            // each keyboard's letters (QWERTY, AZERTY, ...) are on its own page in Languages (moved there 2026-11-24:
+            // here they named only the first keyboard's language)
+            SetGroup("Letters") {
+                Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).background(SetColors.row).clickable { state.onLanguages() }.padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        DText("Each keyboard’s letters", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        DText("QWERTY, AZERTY and others: tap a keyboard in Languages", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                     }
+                    Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant)
                 }
             }
             // :31-41 Preset

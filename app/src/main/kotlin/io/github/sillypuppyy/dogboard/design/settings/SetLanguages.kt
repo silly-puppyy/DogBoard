@@ -56,6 +56,8 @@ data class LangRow(
     val togetherMax: Int = 3,
     /** Its language code for the badge ("BG", "EN"), as the keyboard's language indicator shows it. */
     val code: String = "",
+    /** Its first language's tag ("en-US"): the layouts its page offers. */
+    val tag: String = "",
 )
 
 /**
@@ -95,6 +97,8 @@ fun SetLanguages(
     onCombine: (id: Long, tag: String, layout: String) -> Unit = { _, _, _ -> },
     /** Keyboard [id]'s joined languages become keyboards of their own. */
     onSplit: (id: Long) -> Unit = {},
+    /** A keyboard's page picked a layout for it. */
+    onSetLayout: (id: Long, layout: String) -> Unit = { _, _ -> },
     /** The page to open on ("": Add a language). */
     startPage: String? = null,
     /**
@@ -112,7 +116,7 @@ fun SetLanguages(
     if (embedded) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SetGroup("Your languages") {
-                for (l in langs) LanguageRow(l, langs.size > 1, onUse, onLayout, onRemove, canCombine = combineChoices(l.id).isNotEmpty(),
+                for (l in langs) LanguageRow(l, langs.size > 1, onUse, { onOpenPage("kb:${l.id}") }, onRemove, canCombine = combineChoices(l.id).isNotEmpty(),
                     onCombine = { onOpenPage("combine:${l.id}") }, onSplit = { onSplit(l.id) })
             }
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(28.dp)).clickable { onOpenPage("") }.padding(horizontal = 12.dp),
@@ -127,7 +131,9 @@ fun SetLanguages(
     var ask by remember { mutableStateOf<Pair<String, List<Pair<Long, String>>>?>(null) }
     val shared = page?.takeIf { it.startsWith("shared:") }?.split(':')
     val combineId = page?.takeIf { it.startsWith("combine:") }?.removePrefix("combine:")?.toLongOrNull()
-    val picked = page?.takeIf { it.isNotEmpty() && shared == null && combineId == null }?.let { t -> packs.firstOrNull { it.tag == t } }
+    // "kb:<id>": a keyboard's own page (its layout, combining, removing), opened by tapping it
+    val kb = page?.takeIf { it.startsWith("kb:") }?.removePrefix("kb:")?.toLongOrNull()?.let { id -> langs.firstOrNull { it.id == id } }
+    val picked = page?.takeIf { it.isNotEmpty() && shared == null && combineId == null && !it.startsWith("kb:") }?.let { t -> packs.firstOrNull { it.tag == t } }
     fun pickNew(tag: String) {
         val targets = combineTargets(tag)
         if (targets.isEmpty()) page = tag else ask = tag to targets
@@ -146,7 +152,20 @@ fun SetLanguages(
             confirmButton = { androidx.compose.material3.TextButton({ ask = null; page = tag }) { androidx.compose.material3.Text("Keep separate") } },
         )
     }
-    if (shared != null && shared.size == 3) {
+    if (kb != null) {
+        BackHandler { page = null }
+        val p = packs.firstOrNull { it.tag == kb.tag } ?: LangPack(kb.tag, kb.name, kb.name, dictionary = true)
+        PickLayoutPage(p, layoutsForAll(kb.id, kb.tag), single = true, title = kb.name, onBack = { page = null },
+            onDone = { ids -> ids.firstOrNull()?.let { onSetLayout(kb.id, it) }; page = null }, doneLabel = "Save",
+            subtitle = if (kb.together.isEmpty()) "Its layout" else "The layout its languages share") {
+            val canJoin = combineChoices(kb.id).isNotEmpty()
+            if (canJoin || kb.together.isNotEmpty() || langs.size > 1) SetRows {
+                if (canJoin) KbAction("add", "Combine with another language", "Type both on this keyboard, without switching") { page = "combine:${kb.id}" }
+                if (kb.together.isNotEmpty()) KbAction("content_cut", "Split up", "Each language back on its own keyboard") { onSplit(kb.id); page = null }
+                if (langs.size > 1) KbAction("delete", "Remove", "Take this keyboard off your list") { onRemove(kb.id); page = null }
+            }
+        }
+    } else if (shared != null && shared.size == 3) {
         val id = shared[1].toLong(); val tag = shared[2]
         BackHandler { page = null }
         val p = packs.firstOrNull { it.tag == tag } ?: LangPack(tag, tag, tag, dictionary = true)
@@ -168,7 +187,7 @@ fun SetLanguages(
         ) {
             TitleBar("Languages", onBack)
             SetGroup("Your languages", Modifier.padding(horizontal = 16.dp)) {
-                for (l in langs) LanguageRow(l, langs.size > 1, onUse, onLayout, onRemove, canCombine = combineChoices(l.id).isNotEmpty(),
+                for (l in langs) LanguageRow(l, langs.size > 1, onUse, { page = "kb:${l.id}" }, onRemove, canCombine = combineChoices(l.id).isNotEmpty(),
                     onCombine = { page = "combine:${l.id}" }, onSplit = { onSplit(l.id) })
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).heightIn(min = 56.dp).clip(RoundedCornerShape(28.dp)).clickable { page = "" }.padding(horizontal = 12.dp),
@@ -224,7 +243,7 @@ private fun LanguageRow(
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).clickable { menu = true }, contentAlignment = Alignment.Center) { Symbol("more_vert", 22.sp, SetColors.onSurfaceVariant) }
             // combining: languages typed on one keyboard without switching (up to three), with a layout they share
             SetMenu(menu, { menu = false }, listOfNotNull(
-                "Layout" to onLayout,
+                "Layout and options" to onLayout,
                 ("Combine with…" to onCombine).takeIf { canCombine },
                 ("Split up" to onSplit).takeIf { l.together.isNotEmpty() },
                 ("Remove" to { onRemove(l.id) }).takeIf { removable },
@@ -307,11 +326,12 @@ private fun LanguageChoiceRow(p: LangPack, onPick: (String) -> Unit) {
 @Composable
 private fun PickLayoutPage(
     p: LangPack, layouts: List<LayoutChoice>, single: Boolean = false, title: String? = null, onBack: () -> Unit, onDone: (List<String>) -> Unit,
+    doneLabel: String = "Done", subtitle: String? = null, extra: (@Composable () -> Unit)? = null,
 ) {
     var chosen by remember(p.tag) { mutableStateOf(layouts.firstOrNull { !it.added }?.let { setOf(it.id) } ?: emptySet()) }
     Box(Modifier.fillMaxSize().background(SetColors.screen)) {
         Column(Modifier.fillMaxSize().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars).padding(top = 8.dp)) {
-            TitleBar(title ?: p.native, onBack, subtitle = if (title != null) "The layout all its languages type with" else p.name.takeIf { it != p.native })
+            TitleBar(title ?: p.native, onBack, subtitle = subtitle ?: if (title != null) "The layout all its languages type with" else p.name.takeIf { it != p.native })
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DText("Layout", Modifier.padding(start = 12.dp), style = setText(14f, 500, SetColors.primary).copy(textAlign = START))
                 for (pair in layouts.chunked(2)) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -327,6 +347,7 @@ private fun PickLayoutPage(
                         .format((p.downloadBytes + 500_000) / 1_000_000)
                     else -> null
                 }
+                extra?.invoke()
                 if (note != null) Row(Modifier.padding(horizontal = 4.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     // bundled icons only (tools/fonts/symbols.txt): "download" isn't, and took the page down
                     Symbol(if (p.dictionary) "spellcheck" else "info", 20.sp, SetColors.onSurfaceVariant)
@@ -341,11 +362,24 @@ private fun PickLayoutPage(
                 }
                 Box(Modifier.height(48.dp).clip(RoundedCornerShape(24.dp)).background(if (chosen.isEmpty()) SetColors.surfaceContainerHighest else SetColors.primary)
                     .then(if (chosen.isEmpty()) Modifier else Modifier.clickable { onDone(layouts.filter { it.id in chosen }.map { it.id }) }).padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
-                    DText("Done", style = setText(15f, 500, if (chosen.isEmpty()) SetColors.onSurfaceVariant else Color.White))
+                    DText(doneLabel, style = setText(15f, 500, if (chosen.isEmpty()) SetColors.onSurfaceVariant else Color.White))
                 }
             }
         }
         StatusBarBand()
+    }
+}
+
+/** An action row on a keyboard's page: icon, title, a line under it. */
+@Composable
+private fun KbAction(icon: String, title: String, sub: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).background(SetColors.row).clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Symbol(icon, 22.sp, SetColors.onSurfaceVariant)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            DText(title, style = setText(16f).copy(textAlign = START))
+            DText(sub, style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
+        }
     }
 }
 
