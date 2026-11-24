@@ -1,0 +1,2 @@
+- About › Check for updates now: the app and your languages, checked at once
+- Holding a key shows its number straight above your finger, with the other characters around it (as on Gboard)
