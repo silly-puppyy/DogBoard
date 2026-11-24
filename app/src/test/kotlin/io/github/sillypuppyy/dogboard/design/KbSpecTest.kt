@@ -244,4 +244,9 @@ class KbSpecTest : FunSpec({
         repeat(n) { KbSpec.render(props.copy(pressed = if (it % 2 == 0) "e" else "")) }
         println("SPEED KbSpec.render: %.3f ms, %.0f KB allocated per render".format((System.nanoTime() - t0) / 1e6 / n, (mx.currentThreadAllocatedBytes - a0) / 1024.0 / n))
     }
+    test("context labels replace a letter key's label on the letters page only") {
+        val labelled = KbSpec.render(KbProps(keyLabels = mapOf("e" to "é")))
+        labelled.rows.flatMap { it.keys }.first { it.base == "e" }.label shouldBe "é"
+        KbSpec.render(KbProps(keyLabels = mapOf("e" to "é"), plane = "sym1")).rows.flatMap { it.keys }.none { it.label == "é" } shouldBe true
+    }
 })

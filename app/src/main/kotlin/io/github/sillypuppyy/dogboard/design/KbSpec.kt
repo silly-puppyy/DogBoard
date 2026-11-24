@@ -104,6 +104,8 @@ data class KbProps(
      * drawn is what is hit); null = English QWERTY ([KbSpec.ENGLISH_ROWS]).
      */
     val letterRows: List<List<KbLetterKey>>? = null,
+    /** Letter keys' labels for now (Gboard's context labels: after क the आ key reads का), by the key's letter. */
+    val keyLabels: Map<String, String> = emptyMap(),
     /** The layout's own marks on the symbol pages and the bottom row ([LiveKb.symbols]: Arabic "1" -> "١", "," -> "،"):
      *  drawn as the touch layout types them. */
     val symbolLabels: Map<String, String> = emptyMap(),
@@ -679,6 +681,7 @@ object KbSpec {
                     fs = (if (LETTER_RE.matches(label.take(1)) && label.length == 1) 25 else 24) * scale
                     if (label == ".com") { fs = 16f; fw = 500 }
                     val base = k.base.ifEmpty { k.id }
+                    if (plane == "base") P.keyLabels[base]?.let { label = it }
                     // Kb:747-751
                     if (plane == "base" && hintKind != "off") {
                         if (hintKind == "symbols") hint = letterPlace[base]?.let { (r, j) -> positionalHint(r, j) } ?: ""

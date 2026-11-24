@@ -66,6 +66,7 @@ fun LiveKbView(
     trackpadX: Float? = null,
     /** The active layout's letter rows ([LiveKb.letterRows]); null = English. */
     letterRows: List<List<KbLetterKey>>? = null,
+    keyLabels: Map<String, String> = emptyMap(),
     /** The layout's own symbol-page marks ([LiveKb.symbols]). */
     symbolLabels: Map<String, String> = emptyMap(),
     modifier: Modifier = Modifier,
@@ -103,6 +104,7 @@ fun LiveKbView(
             field = field,
             numberRow = numberRow && plane == "base",
             letterRows = letterRows,
+            keyLabels = keyLabels,
             symbolLabels = symbolLabels,
             numRow = if (numberRow) "on" else if (numberRowLongPress) "hints" else "off",
             hintKind = hintKind,

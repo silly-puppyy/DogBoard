@@ -423,6 +423,18 @@ fun ImeKeyboardBox(
                 io.github.sillypuppyy.dogboard.design.LiveKbView(
                     layerId = touchLayerId.toString(),
                     letterRows = remember(model) { io.github.sillypuppyy.dogboard.design.LiveKb.letterRows(model) },
+                    // Gboard's context labels (Indic layouts with live rules): each key shows what it would write now
+                    keyLabels = run {
+                        val rules = remember(model, activeSubtype) {
+                            io.github.sillypuppyy.dogboard.engine.RuleComposer.forLayout(prefs.keyboard.layoutId.get(), activeSubtype.primaryLocale.languageTag())
+                        }
+                        val before = imeState.content.surroundingText.textBefore.takeLast(8).toString()
+                        val rows = remember(model) { io.github.sillypuppyy.dogboard.design.LiveKb.letterRows(model) }
+                        remember(rules, before, rows) {
+                            if (rules == null || rows == null || before.isEmpty()) emptyMap()
+                            else rows.flatten().mapNotNull { k -> k.base.singleOrNull()?.let { c -> rules.labelFor(before, c)?.let { k.base to it } } }.toMap()
+                        }
+                    },
                     symbolLabels = remember(model) { io.github.sillypuppyy.dogboard.design.LiveKb.symbols(model) },
                     shiftState = inputShiftState,
                     enterAction = enterAction,
