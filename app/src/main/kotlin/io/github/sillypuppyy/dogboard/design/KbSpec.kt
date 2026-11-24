@@ -834,6 +834,19 @@ object KbSpec {
         val slotSrc = P.slots ?: BARS[P.bar]
         val mIncog = incognito && !special && (P.bar == "empty" || P.bar == "hi") && P.slots == null
         val mSlots = !special && !mIncog && slotSrc != null
+        // canvas Kb inkAt: on a gradient, text and icons drawn straight on the ground (suggestion words, the tools
+        // button, the mic) take the theme's colour where it reads (4.5:1) on the colour under them, else white or dark,
+        // whichever reads better there; keys keep their own (they have a fill)
+        val groundH = if (P.bgH > 0f) P.bgH else hFloat + barH + devH + keyAreaH
+        fun inkAt(x: Float, y: Float, base: Color): Color {
+            val g = t.bgGradient ?: return base
+            val c = g.colorAt(x, P.bgTop + y, W, groundH)
+            fun cr(a: Color) = (maxOf(a.luminance(), c.luminance()) + 0.05f) / (minOf(a.luminance(), c.luminance()) + 0.05f)
+            if (cr(base) >= 4.5f) return base
+            val dark = Color(0xFF1B1C1E)
+            return if (cr(Color.White) >= cr(dark)) Color.White else dark
+        }
+        val barY = hFloat + barH / 2
         val slots = (slotSrc ?: emptyList()).mapIndexed { i, (text, kind) ->
             val isChip = kind == "ac"
             val prevChip = i > 0 && slotSrc!![i - 1].second == "ac"
@@ -850,7 +863,8 @@ object KbSpec {
             )
             KbSlot(
                 text = text, kind = kind, aria = if (kind == "lit") "Keep $text" else text,
-                bg = if (isChip) t.chip else Color.Transparent, fg = if (isChip) t.chipFg else t.barFg,
+                bg = if (isChip) t.chip else Color.Transparent,
+                fg = if (isChip) t.chipFg else inkAt(48 + (W - 96) * (i + 0.5f) / slotSrc!!.size, barY, t.barFg),
                 // Gboard's candidates are 18 dp (traced), ours 16 in the canvas
                 wt = if (isChip) 600 else 400, fs = if (kind == "emo") 22f else if (t.gboardRow) 18f else 16f,
                 ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else emptyList(),
@@ -874,7 +888,7 @@ object KbSpec {
             mSlots = mSlots, slots = slots, barOp = if (trackpad) 0.35f else 1f,
             leftIcon = if (incognito) "domino_mask" else "widgets",
             leftAria = if (incognito) "Incognito is on" else if (toolsOpen) "Close tools" else "Tools",
-            leftBg = if (toolsOpen && !t.seg) t.fn else Color.Transparent, leftFg = if (toolsOpen && !t.seg) t.fnFg else t.barMuted,
+            leftBg = if (toolsOpen && !t.seg) t.fn else Color.Transparent, leftFg = if (toolsOpen && !t.seg) t.fnFg else inkAt(24f, barY, t.barMuted),
             // Kb:966-967
             // the bar's icons and words take the keys' label shadow (photo themes: the halo, so they read on a busy
             // photo; "a bit of background shadow on the ... icons in the top bar"); none elsewhere
@@ -888,7 +902,7 @@ object KbSpec {
             ),
             leftFill = if (toolsOpen || incognito) 1 else 0,
             micIcon = if (mVoice) "stop" else "mic", micAria = if (mVoice) "Stop dictation" else "Voice input",
-            micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else t.barMuted, micFill = if (mVoice) 1 else 0,
+            micBg = if (mVoice) t.act else Color.Transparent, micFg = if (mVoice) t.actFg else inkAt(W - 24, barY, t.barMuted), micFill = if (mVoice) 1 else 0,
             trackpad = trackpad, tpX = (P.trackpadX ?: (kbW / 2 + stripL.w)) - 28, tpY = keyAreaH - rowHs.last() / 2 - 28,
             upperBase = upper && plane == "base", tpRestX = kbW / 2 + stripL.w,
             rootRadius = if (floating) 28f else if (only == "bar") 14f else 0f,
