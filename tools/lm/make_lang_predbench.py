@@ -11,6 +11,9 @@ import pyarrow.parquet as pq
 
 WILD, PACKS, OUT = sys.argv[1:4]
 LANGS = {'es': 'Spanish', 'fr': 'French', 'ru': 'Russian', 'fi': 'Finnish'}
+# PREDBENCH_LANGS="de:German,it:Italian": build only these (the first four's sets stay as they are)
+if os.environ.get('PREDBENCH_LANGS'):
+    LANGS = dict(x.split(':', 1) for x in os.environ['PREDBENCH_LANGS'].split(','))
 N = 200
 SPLIT = re.compile(r'(?<=[.!?…])\s+|\n+')
 BAD = re.compile(r'https?://|www\.|[{}<>=_`#@\\|]|\d{3,}')
