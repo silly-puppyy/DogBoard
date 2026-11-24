@@ -35,6 +35,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** canvas Kb cc (SkinPanels): the Gloss paste chip's fill and edges, the Mechanical one's front edge. */
+private val GLOSS_CHIP_BG = CssGradient.parse("linear-gradient(#ffffff, #eef0f3 50%, #dcdfe5)")!!
+private val GLOSS_CHIP_SH = CssShadow.parse("inset 0 1px 0 #ffffff, 0 0 0 1px rgba(40,45,60,0.55), 0 1px 1px rgba(255,255,255,0.6), 0 2px 3px rgba(0,0,0,0.2)")
+private val MECH_CHIP_SH = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.08), 0 2.5px 0 #1b1b1e, 0 3px 1.5px rgba(0,0,0,0.6)")
+
 /** A smart chip's longest label before "…" (ours; Gboard's clip chips: 107 dp for the whole chip). */
 private val CHIP_TEXT_MAX = 150.dp
 
@@ -171,8 +176,16 @@ fun RowScope.KbBarSpecial(r: KbRender) {
         }
         x.mClip -> Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             // Kb:102-105
+            // canvas Kb (SkinPanels): the paste chip is a glossy bordered capsule on Gloss, a small keycap with its front
+            // edge on Mechanical, the plain pill in the highlight colour elsewhere
+            val face = t.face
+            val shape = if (face != null && !t.seg) RoundedCornerShape(7.dp) else PILL
             Row(
-                Modifier.height(36.dp).tap(LocalKbActions.current?.onRecentClip).background(t.chip, PILL).padding(start = 4.dp, end = 14.dp),
+                Modifier.height(36.dp).then(when {
+                    t.seg -> Modifier.cssShadow(GLOSS_CHIP_SH.filter { !it.inset }, shape).background(GLOSS_CHIP_BG.brush(), shape).cssShadow(GLOSS_CHIP_SH.filter { it.inset }, shape)
+                    face != null -> Modifier.cssShadow(MECH_CHIP_SH.filter { !it.inset }, shape).background(face.key.brush(), shape).cssShadow(MECH_CHIP_SH.filter { it.inset }, shape)
+                    else -> Modifier.background(t.chip, PILL)
+                }).clip(shape).tap(LocalKbActions.current?.onRecentClip).padding(start = 4.dp, end = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
                 // the copied image itself (the chip showed an empty preview); the placeholder until it loads
@@ -180,7 +193,12 @@ fun RowScope.KbBarSpecial(r: KbRender) {
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop)
                 else if (x.clipMedia) Box(Modifier.size(28.dp).clip(PILL).stripes(t.fn, t.key, 4f).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, t.div)), PILL))
                 else Box(Modifier.size(6.dp))
-                DText(x.clipLabel, style = text(15, 500, t.chipFg), overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                val chipText = when {
+                    t.seg -> text(15, 500, css("#1d1f24")).copy(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), androidx.compose.ui.geometry.Offset(0f, 1f), 0f))
+                    face != null -> text(15, 500, t.keyFg)
+                    else -> text(15, 500, t.chipFg)
+                }
+                DText(x.clipLabel, style = chipText, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
         x.mAutofill -> Row(Modifier.weight(1f).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
