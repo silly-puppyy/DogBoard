@@ -138,9 +138,13 @@ fun KbClipList(t: KbTokens, rows: List<KbClipRow>, modifier: Modifier = Modifier
     } else Modifier)) {
         LazyColumn(
             Modifier.fillMaxSize(), state = state,
-            contentPadding = if (gloss) androidx.compose.foundation.layout.PaddingValues(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 9.dp)
-                else androidx.compose.foundation.layout.PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(if (gloss) 0.dp else 2.dp),
+            contentPadding = when {
+                gloss -> androidx.compose.foundation.layout.PaddingValues(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 9.dp)
+                // SkinPanels .m-list: sheets of paper on the plate, 10 dp apart
+                t.face != null -> androidx.compose.foundation.layout.PaddingValues(start = 10.dp, end = 12.dp, top = 10.dp, bottom = 10.dp)
+                else -> androidx.compose.foundation.layout.PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp)
+            },
+            verticalArrangement = Arrangement.spacedBy(if (gloss) 0.dp else if (t.face != null) 10.dp else 2.dp),
         ) {
             itemsIndexed(rows) { i, r ->
                 ClipRow(t, r, i, rows.size, state, held == i) { held = if (held == i) -1 else i }
@@ -164,13 +168,16 @@ fun KbClipList(t: KbTokens, rows: List<KbClipRow>, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListState, held: Boolean, onHold: () -> Unit) {
+private fun ClipRow(theme: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListState, held: Boolean, onHold: () -> Unit) {
     val actions = LocalKbClipActions.current
+    // Mechanical: each clip a sheet of paper on the plate (SkinPanels .sheet2), dark ink, paper discs, an orange pin
+    val paper = theme.face != null
+    val t = if (paper) theme.copy(key = PAPER, keyFg = INK, hint = INK_MUTED, fn = DISC, fnFg = INK_MUTED, act = DISC_ON, actFg = Color.White) else theme
     val gloss = t.seg
     val shape = if (gloss) RoundedCornerShape(
         topStart = if (i == 0) 9.dp else 0.dp, topEnd = if (i == 0) 9.dp else 0.dp,
         bottomStart = if (i == n - 1) 9.dp else 0.dp, bottomEnd = if (i == n - 1) 9.dp else 0.dp,
-    ) else rowShape(i, n)
+    ) else if (paper) RoundedCornerShape(2.dp) else rowShape(i, n)
     val density = LocalDensity.current
     val img by produceState<ImageBitmap?>(null, r.image) {
         value = r.image?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { (if (r.window) 400 else 80).dp.roundToPx() }) } }
@@ -179,7 +186,7 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
     val window = r.window && img.let { b -> b == null || (b.width.toFloat() / b.height in 0.5f..3f) }
     val id = "cliprow:$i"
     Box(
-        Modifier.fillMaxWidth().height(ROW_H.dp).clip(shape)
+        Modifier.fillMaxWidth().height(ROW_H.dp).then(if (paper) Modifier else Modifier.clip(shape))
             .then(when {
                 gloss -> Modifier.background(if (held) GLOSS_CELL_HELD else Color.White).drawBehind {
                     // SkinPanels .i6-grp / .i6-cell: the group's grey edge, a light rule between cells
@@ -189,6 +196,7 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
                     if (i == n - 1) drawRect(GLOSS_EDGE, Offset(0f, size.height - px), androidx.compose.ui.geometry.Size(size.width, px))
                     drawRect(if (i == 0) GLOSS_EDGE else GLOSS_RULE, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, px))
                 }
+                paper -> Modifier.cssShadow(PAPER_SH, shape).background(if (held) PAPER_HELD else PAPER, shape)
                 held -> Modifier.background(t.pressKey)
                 else -> Modifier.themedSurface(t, "key", shape, t.key, shadow = false)
             })
@@ -329,7 +337,9 @@ private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean
         // P:145-149
         Slot(if (r.pinned) "Pinned. Tap to unpin" else "Pin", { actions?.onPin?.invoke(i) }) {
             if (t.seg) GlossButton("keep", r.pinned)
-            else Box(Modifier.size(28.dp).background(if (r.pinned) t.act else if (window) t.key else Color.Transparent, PILL), contentAlignment = Alignment.Center) {
+            // Mechanical: a paper disc (SkinPanels .disc), orange when pinned
+            else Box(Modifier.size(28.dp).then(if (t.face != null) Modifier.cssShadow(DISC_SH, PILL) else Modifier)
+                .background(if (r.pinned) t.act else if (t.face != null) t.fn else if (window) t.key else Color.Transparent, PILL), contentAlignment = Alignment.Center) {
                 Symbol("keep", 18.sp, if (r.pinned) t.actFg else t.hint, fill = if (r.pinned) 1 else 0, weight = 500)
             }
         }
@@ -381,6 +391,14 @@ private fun GlossButton(icon: String, on: Boolean, crossed: Boolean = false) {
     ) { Symbol(icon, 18.sp, if (on) Color.White else GLOSS_ICON, fill = if (on) 1 else 0, weight = if (on) 500 else 400) }
 }
 
+private val PAPER = css("#f3efe6")
+private val PAPER_HELD = css("#e6e0d3")
+private val PAPER_SH = CssShadow.parse("0 1px 1px rgba(0,0,0,0.5), 0 3px 6px rgba(0,0,0,0.35)")
+private val INK = css("#2b2a27")
+private val INK_MUTED = css("#6d675c")
+private val DISC = css("#f7f4ec")
+private val DISC_ON = css("#e2703a")
+private val DISC_SH = CssShadow.parse("0 1px 1px rgba(0,0,0,0.4), 0 2px 3px rgba(0,0,0,0.2)")
 private val GLOSS_STRIPE_A = css("#c5ccd4")
 private val GLOSS_STRIPE_B = css("#cbd2d8")
 private val GLOSS_EDGE = css("#a8adb4")

@@ -46,6 +46,8 @@ private fun GlossBarButton(modifier: Modifier, content: @Composable () -> Unit) 
     ) { content() }
 }
 
+private val LED = Color(0xFFFF9A5C)
+private val LED_SH = CssShadow.parse("0 0 2px #ffc29a, 0 0 5px rgba(255,140,70,0.8)")
 private val GLOSS_NAV = CssGradient.parse("linear-gradient(#b0bccd, #889bb3 50%, #8195af 51%, #6d84a2)")!!
 private val GLOSS_NAV_SH = CssShadow.parse("inset 0 1px 0 #cdd5df, inset 0 -1px 0 #2d3642")
 private val GLOSS_BAR_BTN = CssGradient.parse("linear-gradient(#8fa1b9, #6a82a1 50%, #5f7898 51%, #4f6a8f)")!!
@@ -119,7 +121,12 @@ fun KbPanelHeader(r: KbRender) {
                             if (t.styledSurfaces) Box(
                                 Modifier.height(32.dp).themedSurface(t, if (on) "fn" else "key", PILL, t.key).tap(actions?.let { a -> { a.onClipFilter(i) } })
                                     .padding(horizontal = 12.dp), contentAlignment = Alignment.Center,
-                            ) { DText(label, style = text(13, 500, if (on) t.fnFg else t.keyFg)) }
+                            ) {
+                                DText(label, style = text(13, 500, if (on) t.fnFg else t.keyFg))
+                                // Mechanical: the picked filter's lit LED (SkinPanels .led)
+                                if (on && t.face != null) Box(Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = 2.dp).size(4.dp)
+                                    .cssShadow(LED_SH, PILL).background(LED, PILL))
+                            }
                             else Chip(label, if (on) t.chip else Color.Transparent, if (on) t.chipFg else t.barFg, if (on) null else t.div,
                                 Modifier.tap(actions?.let { a -> { a.onClipFilter(i) } }))
                         }
