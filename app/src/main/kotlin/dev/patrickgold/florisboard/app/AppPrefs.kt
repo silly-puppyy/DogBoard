@@ -113,13 +113,14 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
                 historyNumGridColumnsLandscape
             }
         }
+        // DogBoard: unpinned clips are kept a week by default (minutes)
         val historyAutoCleanOldEnabled = boolean(
             key = "clipboard__history_auto_clean_old_enabled",
-            default = false,
+            default = true,
         )
         val historyAutoCleanOldAfter = int(
             key = "clipboard__history_auto_clean_old_after",
-            default = 20,
+            default = 10080,
         )
         val historyAutoCleanSensitiveEnabled = boolean(
             key = "clipboard__history_auto_clean_sensitive_enabled",

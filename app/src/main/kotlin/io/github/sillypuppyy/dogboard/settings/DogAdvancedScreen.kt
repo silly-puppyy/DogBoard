@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 fun DogAdvancedScreen() {
     val prefs by FlorisPreferenceStore
     val scope = rememberCoroutineScope()
+    val noBackupPrefs by dev.patrickgold.florisboard.app.NoBackupPreferenceStore
     val nav = LocalNavController.current
     val barTap by prefs.typing.barTapWindowMs.collectAsState()
     val popup by prefs.keyboard.popupEnabled.collectAsState()
@@ -70,6 +71,11 @@ fun DogAdvancedScreen() {
             }
             SetPageLink("adv:backup", "Back up settings and words", "Save them to a file") { nav.navigate(Routes.Settings.Backup) }
             SetPageLink("adv:restore", "Restore from a backup", "Load a saved file") { nav.navigate(Routes.Settings.Restore()) }
+            // (moved from About: redoing the setup is a settings task, not information about the app)
+            SetPageLink("adv:setup", "Set up again", "Walk through the first-run setup once more") {
+                scope.launch { noBackupPrefs.isImeSetUp.set(false) }
+                nav.navigate(dev.patrickgold.florisboard.app.Routes.Setup.Screen()) { popUpTo(dev.patrickgold.florisboard.app.Routes.Settings.Home) { inclusive = true } }
+            }
         }
         if (devOn || dev.patrickgold.florisboard.BuildConfig.DEBUG) SetGroup("Developer") {
             SetPageLink("adv:testing", "Testing", "Replay the setup, log your keystrokes in a test field") { nav.navigate(Routes.Settings.Testing) }

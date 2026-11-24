@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DogBoard: resources looked up by name only, kept from release resource shrinking. AboutLibraries reads
+     raw/aboutlibraries (the plugin's list); shrunk away, About > Open-source libraries closed the app (1.0, 1.1). -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/aboutlibraries" />

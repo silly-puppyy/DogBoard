@@ -45,11 +45,6 @@ fun DogAboutScreen() {
                 }
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             }
-            // Onboarding.dc.html rules: "Re-run any time from Settings › About › Set up again"
-            SetPageLink("ab:setup", "Set up again", "Walk through the first-run setup once more") {
-                scope.launch { noBackupPrefs.isImeSetUp.set(false) }
-                nav.navigate(Routes.Setup.Screen()) { popUpTo(Routes.Settings.Home) { inclusive = true } }
-            }
             if (io.github.sillypuppyy.dogboard.settings.AppUpdates.supported) {
                 val check by prefs.other.updateCheck.collectAsState()
                 io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow("ab:updates", "Check for updates", "Once a day, DogBoard asks GitHub whether a newer version is out", check) { on ->

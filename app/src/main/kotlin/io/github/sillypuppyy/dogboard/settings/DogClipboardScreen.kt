@@ -1,5 +1,9 @@
 package io.github.sillypuppyy.dogboard.settings
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,11 +84,20 @@ fun DogClipboardScreen() {
                 SetSwitchRow("cb:old", "Delete old clips", "Unpinned clips are deleted after a while.", cleanOld) { v ->
                     scope.launch { c.historyAutoCleanOldEnabled.set(v) }
                 }
-                SetSliderRow(
-                    "cb:oldafter", "Delete after", "How long unpinned clips are kept.",
-                    oldAfter.toFloat(), c.historyAutoCleanOldAfter.default.toFloat(), 5f..240f, 5f, { v -> "${v.toInt()} min" },
-                    enabled = cleanOld,
-                ) { v -> scope.launch { c.historyAutoCleanOldAfter.set(v.toInt()) } }
+                // the setup's choices (an hour, a day, a week); the old 5-240 minute slider couldn't reach a day
+                if (cleanOld) {
+                    val minutes = listOf(60, 1440, 10080)
+                    val at = minutes.indexOfFirst { oldAfter <= it }.let { if (it < 0) 2 else it }
+                    androidx.compose.foundation.layout.Column(
+                        androidx.compose.ui.Modifier.fillMaxWidth().background(io.github.sillypuppyy.dogboard.design.settings.SetColors.row).padding(16.dp),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+                    ) {
+                        io.github.sillypuppyy.dogboard.design.settings.TitleSub("Keep clips for", "How long unpinned clips are kept.")
+                        io.github.sillypuppyy.dogboard.design.settings.Segmented("cb:oldafter", listOf("1 hour", "1 day", "1 week"), at) { i ->
+                            scope.launch { c.historyAutoCleanOldAfter.set(minutes[i]) }
+                        }
+                    }
+                }
             }
             // the rarely changed ones, below the common settings
             SetGroup("History details") {
