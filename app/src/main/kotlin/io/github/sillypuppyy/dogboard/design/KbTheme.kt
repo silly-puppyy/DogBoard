@@ -275,7 +275,7 @@ object KbThemes {
             sh = CssShadow.parse("inset 0 1.5px 2px rgba(0,0,0,0.38), inset 0 -0.5px 0 rgba(255,255,255,0.07), 0 -0.5px 0 rgba(255,255,255,0.10)"),
             pressFace = CssShadow.parse("inset 0 1.5px 2.5px rgba(0,0,0,0.45), inset 0 -0.5px 0 rgba(255,255,255,0.05), 0 -0.5px 0 rgba(255,255,255,0.07)"),
             pressShadow = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.9), 0 0.5px 0.5px rgba(0,0,0,0.7)"),
-            top = 3f, side = 4.5f, bottom = 7f, travel = 1.5f, rad = 4f,
+            top = 3f, side = 4.5f, bottom = 7f, travel = 3f, rad = 4f,
             bevel = mapOf(
                 "key" to listOf("#3d3d41", "#28282b", "#1f1f22", "#28282b", "#151517").map(::css),
                 "fn" to listOf("#343437", "#212124", "#19191c", "#212124", "#121214").map(::css),
@@ -292,7 +292,7 @@ object KbThemes {
             sh = CssShadow.parse("inset 0 1.5px 2px rgba(0,0,0,0.16), inset 0 -0.5px 0 rgba(255,255,255,0.5), 0 -0.5px 0 rgba(255,255,255,0.6)"),
             pressFace = CssShadow.parse("inset 0 1.5px 2.5px rgba(0,0,0,0.22), inset 0 -0.5px 0 rgba(255,255,255,0.4), 0 -0.5px 0 rgba(255,255,255,0.5)"),
             pressShadow = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.35), 0 0.5px 0.5px rgba(0,0,0,0.25)"),
-            top = 3f, side = 4.5f, bottom = 7f, travel = 1.5f, rad = 4f,
+            top = 3f, side = 4.5f, bottom = 7f, travel = 3f, rad = 4f,
             bevel = mapOf(
                 "key" to listOf("#f8f7f3", "#d6d4cd", "#c8c6bf", "#d6d4cd", "#b2b0a9").map(::css),
                 "fn" to listOf("#dad8d1", "#bbb9b2", "#aeaca5", "#bbb9b2", "#9a9891").map(::css),

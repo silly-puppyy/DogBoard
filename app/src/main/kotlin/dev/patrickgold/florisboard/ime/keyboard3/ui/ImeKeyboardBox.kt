@@ -157,7 +157,9 @@ fun ImeKeyboardBox(
         }
         val all = listOf(activeSubtype.primaryLocale) + activeSubtype.secondaryLocales
         // a combined keyboard: its codes, Google style ("EN • FR"); names alone got long with three
-        if (all.size == 1) name(all[0], short = false) else all.joinToString(" • ") { it.language.uppercase() }
+        // one language: its own name, as the Languages page and Android's menu ("العربية", not "Arabic")
+        if (all.size == 1) io.github.sillypuppyy.dogboard.ime.SystemSubtypes.nativeName(all[0].languageTag(), false)
+        else all.joinToString(" • ") { it.language.uppercase() }
     }
     val spaceBarDisplayOverride = remember(model, spaceBarMode, displayLanguageNamesIn) {
         when (spaceBarMode) {

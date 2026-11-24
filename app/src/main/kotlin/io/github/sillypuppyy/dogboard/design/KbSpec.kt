@@ -634,7 +634,9 @@ object KbSpec {
                 )
             }
             // Kb:655: the number row (ours is a full-height row, the user's rule, not Kb's 44 dp)
-            else -> (if (numRow == "on" && plane == "base" && !landscape) listOf("1234567890".map { ch(it.toString()) }) else emptyList()) +
+            else -> // the layout's own digits where it types others (Arabic ١٢٣, as its symbol page): the hints and the number row
+            // showed 1 2 3 while the keys typed ١ ٢ ٣ (2026-11-24)
+            (if (numRow == "on" && plane == "base" && !landscape) listOf("1234567890".map { sym(it.toString()) }) else emptyList()) +
                 letterRows.map { row ->
                     row.map { k ->
                         when (k.kind) {
@@ -705,7 +707,7 @@ object KbSpec {
                         if (hintKind == "symbols") hint = letterPlace[base]?.let { (r, j) -> positionalHint(r, j) } ?: ""
                         else if (base in LP && base != URL_DOT) hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
                     }
-                    if (plane == "base" && numRow == "hints") topRow.indexOf(base).takeIf { it in 0..9 }?.let { hint = "1234567890"[it].toString() }
+                    if (plane == "base" && numRow == "hints") topRow.indexOf(base).takeIf { it in 0..9 }?.let { "1234567890"[it].toString().let { d -> hint = P.symbolLabels[d] ?: d } }
                 }
                 // Kb:754
                 if (k.kind == "char" && ctrlOn && plane == "base") CTRLH[k.base.ifEmpty { k.id }]?.let { sub = it; fs = 20f * scale; hint = "" }

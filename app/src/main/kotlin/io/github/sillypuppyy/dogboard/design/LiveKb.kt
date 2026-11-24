@@ -95,7 +95,9 @@ object LiveKb {
             output == ImeActions.Enter -> "ret"
             key.attrs.id.isFnKeyId() -> "fn"
             key.attrs.id.value == "to-symbol-1-classic" -> "mode-?123"
-            key.isSuitableForSpaceBarDisplayOverride -> "space"
+            // the space bar by what it types too: its display flag isn't set on every layout, and it then came out as
+            // " ", which no drawn key has, so a held space bar showed no press on any theme (2026-11-24)
+            key.isSuitableForSpaceBarDisplayOverride || (output is K3String && output.toText() == " ") -> "space"
             target != null && target.startsWith("telpad") -> "mode-$target"
             target != null -> "mode-" + when {
                 target.startsWith("symbol-2") -> "#+="

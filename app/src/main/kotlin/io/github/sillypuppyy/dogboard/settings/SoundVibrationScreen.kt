@@ -77,23 +77,23 @@ fun SoundVibrationScreen() {
             SetGroup("Sound") {
                 SetSwitchRow("sv:sound", "Sound", "A click on each key.", sound) { v -> scope.launch { fb.audioEnabled.set(v) } }
                 if (sound) {
-                    // a dropdown: six sounds were cramped as a segmented row
+                    // a dropdown: six sounds were cramped as a segmented row; names only (descriptions dropped as noise)
                     val names = listOf(
-                        "system" to "Phone" to "Your phone’s own key click.",
-                        "tick" to "Tick" to "Short and bright.",
-                        "drop" to "Drop" to "Rounder and lower.",
-                        "glass" to "Glass" to "Bright and clear.",
-                        "thock" to "Thock" to "Deep and woody.",
-                        "classic" to "Classic" to "A crisp, slightly noisy click.",
-                        "tock" to "Tock" to "The bright tick of early touchscreen phones.",
-                        "clack" to "Clack" to "A quick wooden clack, recorded.",
-                        "pen" to "Pen" to "A ballpoint pen’s click, recorded.",
-                        "mouse" to "Mouse" to "A computer mouse button, recorded.",
-                        "mechkeys" to "Mech keys" to "A mechanical keyboard, recorded.",
+                        "system" to "Phone",
+                        "tick" to "Tick",
+                        "drop" to "Drop",
+                        "glass" to "Glass",
+                        "thock" to "Thock",
+                        "classic" to "Classic",
+                        "tock" to "Tock",
+                        "clack" to "Clack",
+                        "pen" to "Pen",
+                        "mouse" to "Mouse",
+                        "mechkeys" to "Mech keys",
                     )
                     var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
                     var variationPreview by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<kotlinx.coroutines.Job?>(null) }
-                    val current = names.firstOrNull { it.first.first == soundStyle } ?: names.first()
+                    val current = names.firstOrNull { it.first == soundStyle } ?: names.first()
                     fun preview(id: String, variationPercent: Int = variation) = scope.launch {
                         fb.audioStyle.set(id)
                         if (id != "system") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -108,9 +108,9 @@ fun SoundVibrationScreen() {
                     }
                     androidx.compose.foundation.layout.Box {
                         Column(Modifier.fillMaxWidth().background(SetColors.row).clickable { open = true }.padding(16.dp)) {
-                            TitleSub("Key sound", "${current.first.second}: ${current.second} Picking one plays it, even on silent.")
+                            TitleSub("Key sound", "${current.second}. Picking one plays it, even on silent.")
                         }
-                        SetMenu(open, { open = false }, names.map { (idName, sub) -> "${idName.second}, ${sub.lowercase().trimEnd('.')}" to { preview(idName.first) } })
+                        SetMenu(open, { open = false }, names.map { (id, name) -> name to { preview(id) } })
                     }
                     // how much each press differs from the last (DogBoard's sounds only; Android's click is one fixed sound)
                     if (soundStyle != "system") SetSliderRow(
