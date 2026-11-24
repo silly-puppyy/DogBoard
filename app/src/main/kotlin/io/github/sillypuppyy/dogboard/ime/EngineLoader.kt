@@ -109,6 +109,28 @@ object EngineLoader {
         return true
     }
 
+    /**
+     * Everything loaded again from the packs on the phone (Advanced › Reload the keyboard): the first language and those
+     * typed together with it. For an engine left empty (a reload after a pack update that failed: no suggestions, no
+     * autocorrect until the app restarted). Off the main thread.
+     */
+    @Synchronized
+    fun reloadAll(context: Context) {
+        val app = context.applicationContext
+        val tag = pack?.tag
+        val together = secondaryPacks.map { it.tag }
+        android.util.Log.i("DogBoardPerf", "reload all: ${tag ?: "none"}${if (together.isEmpty()) "" else " + " + together.joinToString()}")
+        secondaryPacks = emptyList()
+        TypingEngine.unloadSecondary()
+        TypingEngine.unload()
+        TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
+        pack = tag?.let { LanguagePack.find(app, it) }
+        System.gc()
+        ensureLoaded(app)
+        if (together.isNotEmpty()) setSecondaries(app, together)
+        android.util.Log.i("DogBoardPerf", "reload all: engine ${if (TypingEngine.isReady) "ready" else "NOT READY"}")
+    }
+
     /** Before the first load: start with [tag]'s pack when one with a dictionary exists (else the default, English). */
     @Synchronized
     fun prefer(context: Context, tag: String) {

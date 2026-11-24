@@ -80,6 +80,18 @@ fun DogAdvancedScreen() {
                     android.widget.Toast.makeText(context, "Report copied. Paste it where you were asked.", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
+            // something stuck (user: autocorrect stopped and stayed off): the word engine and every loaded language
+            // loaded again in the running keyboard (ending the process made Android switch to another keyboard)
+            SetPageLink("adv:reload", "Reload the keyboard", "Loads your languages again if suggestions or corrections stop", icon = "restart_alt") {
+                scope.launch {
+                    val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        io.github.sillypuppyy.dogboard.ime.EngineLoader.reloadAll(context)
+                        io.github.sillypuppyy.dogboard.engine.TypingEngine.isReady
+                    }
+                    android.widget.Toast.makeText(context, if (ok) "Your languages are loaded again" else "Couldn’t load your languages. Copy a report to send.",
+                        android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
             // (moved from About: redoing the setup is a settings task, not information about the app)
             SetPageLink("adv:setup", "Set up again", "Walk through the first-run setup once more") {
                 scope.launch { noBackupPrefs.isImeSetUp.set(false) }
