@@ -46,6 +46,20 @@ class TypedProbeTest : FunSpec({
                 println("PROBE-FORMS lexicon avons node=${lex.find("avons")} wordId=${lex.wordId(lex.find("avons"))} word=${lex.word(lex.find("avons"))}")
             } }
         }
+        // DOGBOARD_PROBE_SECOND=dir/lang: a second language typed together (a combined keyboard), from its work files
+        System.getenv("DOGBOARD_PROBE_SECOND")?.let { s2 ->
+            val l2 = s2.substringAfterLast('/'); val d2 = s2.substringBeforeLast('/') + "/"
+            val lex2 = File("$d2$l2.lexicon.tsv").bufferedReader().use { Lexicon.parse(it) }
+            val big2 = File("$d2$l2.bigrams.tsv").takeIf { it.isFile }?.bufferedReader()?.use { Bigrams.parse(it, lex2) }
+            val ng2 = File("$d2$l2.ngrams.bin").takeIf { it.isFile }?.inputStream()?.use { NgramModel.readBinary(it) }
+            val ch2 = File("$d2$l2.charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) }
+            TypingEngine.loadSecondary(lex2, big2, LanguageRules(), ng2, ch2)
+            println("PROBE-SECOND $l2 loaded")
+        }
+        // DOGBOARD_PROBE_AUTOSHIFT=1: a capital first letter was set by the keyboard (a sentence start), not shifted
+        val autoshift = System.getenv("DOGBOARD_PROBE_AUTOSHIFT") == "1"
+        fun CurrentWord.type(c: Char, tap: Tap) = if (autoshift && c.isUpperCase() && text.isEmpty())
+            addLetter(c, tap, keys, params, CaseAdapt.AUTOSHIFTED, CaseAdapt.Context.AUTOSHIFT) else addLetter(c, tap, keys, params)
         try {
             // DOGBOARD_PROBE_NOISE=n: n tries per case with taps scattered 1.5 x 2 mm (6.3 dp a mm), outcomes counted
             val tries = System.getenv("DOGBOARD_PROBE_NOISE")?.toIntOrNull()
@@ -57,7 +71,7 @@ class TypedProbeTest : FunSpec({
                 repeat(tries) {
                     val word = CurrentWord().apply {
                         for (c in typed) keys[c.lowercaseChar()]?.let {
-                            addLetter(c, Tap((it.centerX + rnd.nextGaussian() * 1.5 * 6.3).toFloat(), (it.centerY + rnd.nextGaussian() * 2.0 * 6.3).toFloat()), keys, params)
+                            type(c, Tap((it.centerX + rnd.nextGaussian() * 1.5 * 6.3).toFloat(), (it.centerY + rnd.nextGaussian() * 2.0 * 6.3).toFloat()))
                         }
                     }
                     val candidates = TypingEngine.candidates(word, words.lastOrNull() ?: ".", previous2 = words.getOrNull(words.size - 2))
@@ -69,7 +83,7 @@ class TypedProbeTest : FunSpec({
             if (tries == null) for (line in cases) {
                 val (before, typed) = line.split('\t')
                 val word = CurrentWord().apply {
-                    for (c in typed) keys[c.lowercaseChar()]?.let { addLetter(c, Tap(it.centerX, it.centerY), keys, params) }
+                    for (c in typed) keys[c.lowercaseChar()]?.let { type(c, Tap(it.centerX, it.centerY)) }
                 }
                 val words = before.split(' ').filter { it.isNotEmpty() }
                 val candidates = TypingEngine.candidates(word, words.lastOrNull() ?: ".", previous2 = words.getOrNull(words.size - 2))
@@ -78,6 +92,7 @@ class TypedProbeTest : FunSpec({
                     candidates.take(4).joinToString(" | ") { "%s %.2f".format(it.word, it.score) }))
             }
         } finally {
+            TypingEngine.unloadSecondary()
             TypingEngine.unloadForTest()
         }
     }

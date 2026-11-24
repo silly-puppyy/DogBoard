@@ -176,7 +176,7 @@ fun SetLanguages(
                 Symbol("add", 22.sp, SetColors.primary)
                 DText("Add a language", style = setText(16f, 500, SetColors.primary).copy(textAlign = START))
             }
-            if (langs.size > 1) DText("Switch languages with the globe key on the keyboard.",
+            if (langs.size > 1) DText("To switch languages, hold the space bar or tap the globe under the keyboard.",
                 Modifier.padding(horizontal = 20.dp), style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 4)
         }
         StatusBarBand()
