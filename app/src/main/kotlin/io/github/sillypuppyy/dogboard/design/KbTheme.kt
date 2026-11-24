@@ -227,6 +227,16 @@ object KbThemes {
         ),
         // Tactile, canvas Kb "mech": dark sculpted caps on a matte plate, an orange accent cap; the cap shapes are FACES
         "mech" to mapOf(
+            // the day version (ours; the canvas drew the night one): light grey caps on a pale plate, darker grey
+            // modifiers, the same orange accent, contact shadows softened for a light ground
+            "light" to m("bg" to "linear-gradient(#d4d3cd, #c5c4bd)", "key" to "#ecebe6", "keyFg" to "#2d2c29", "fn" to "#cfcdc6", "fnFg" to "#3b3a36",
+                "act" to "#c65d2e", "actFg" to "#fff3ea", "chip" to "#e2e1db", "chipFg" to "#2d2c29", "pop" to "#f3f2ee", "popFg" to "#2d2c29",
+                "sel" to "#c65d2e", "selFg" to "#fff3ea", "hint" to "#7a7870", "div" to "#b9b7b0", "barFg" to "#2d2c29", "barMuted" to "#6f6d66",
+                "tile" to "#e2e1db", "tileFg" to "#2d2c29", "pressKey" to "#e2e1db", "pressFn" to "#c4c2bb", "lock" to "#c65d2e", "lockFg" to "#fff3ea",
+                "keyG" to "linear-gradient(#e9e8e3, #cdcbc4)", "fnG" to "linear-gradient(#cbc9c2, #b1afa8)", "actG" to "linear-gradient(#b4522b, #7c3415)",
+                "keyShadow" to CAP_SH_LIGHT, "fnShadow" to CAP_SH_LIGHT, "actShadow" to CAP_SH_LIGHT, "actOffFg" to "rgba(60,58,54,0.45)",
+                "chipG" to "linear-gradient(#cdccc6, #d7d6d0)", "chipShadow" to "inset 0 1px 2px rgba(0,0,0,0.22), 0 0.5px 0 rgba(255,255,255,0.7)",
+                "retText" to "return", "forceWord" to "true", "radius" to "6", "fw" to "500", "gapH" to "1.5", "gapV" to "3.5"),
             "dark" to m("bg" to "linear-gradient(#18181a, #0f0f10)", "key" to "#2f2f32", "keyFg" to "#cdc9bf", "fn" to "#252528", "fnFg" to "#b5b1a8",
                 "act" to "#c65d2e", "actFg" to "#fff3ea", "chip" to "#2e2e31", "chipFg" to "#e6e2d8", "pop" to "#38383c", "popFg" to "#e6e2d8",
                 "sel" to "#c65d2e", "selFg" to "#fff3ea", "hint" to "#8a867e", "div" to "#2c2c2f", "barFg" to "#d9d5cb", "barMuted" to "#9a968d",
@@ -250,10 +260,11 @@ object KbThemes {
     val NOT_COPYABLE = setOf("gloss", "dalmatian", "mech")
 
     /** The sound a built-in theme suggests when it's picked (the person's own sound stays unless they say yes). */
-    val SOUND_OF = mapOf("mech" to "mechkeys")
+    val SOUND_OF = mapOf("mech" to "mechkeys", "gloss" to "tock")
 
     /** Kb: caps sit on the plate with a tight contact shadow at the base, no drop shadow. */
     private const val CAP_SH = "0 0 0 0.5px rgba(0,0,0,0.9), 0 1px 1px rgba(0,0,0,0.6)"
+    private const val CAP_SH_LIGHT = "0 0 0 0.5px rgba(0,0,0,0.35), 0 1px 1px rgba(0,0,0,0.25)"
 
     /** Sculpted caps by theme (canvas Kb mech face). */
     val FACES: Map<String, CapFace> by lazy {
@@ -273,6 +284,23 @@ object KbThemes {
             legend = css("rgba(207,202,192,0.3)"),
             ledOff = css("#3a3a3d"), ledOn = css("#f4f7ff"), ledOnGlow = CssShadow.parse("0 0 2px #ffffff, 0 0 5px rgba(220,235,255,0.7)"),
             ledLock = css("#8ff07e"), ledLockGlow = CssShadow.parse("0 0 2px #b8ffae, 0 0 6px rgba(120,240,100,0.7)"),
+        ), "mech-light" to CapFace(
+            // the day caps: the same dish lit from the back, in light greys
+            key = CssGradient.parse("linear-gradient(#e3e2dd, #eae9e4 45%, #f2f1ed)")!!,
+            fn = CssGradient.parse("linear-gradient(#c2c0b9, #c9c7c0 45%, #d1cfc8)")!!,
+            act = CssGradient.parse("linear-gradient(#b9562b, #c9602f 45%, #db6f3a)")!!,
+            sh = CssShadow.parse("inset 0 1.5px 2px rgba(0,0,0,0.16), inset 0 -0.5px 0 rgba(255,255,255,0.5), 0 -0.5px 0 rgba(255,255,255,0.6)"),
+            pressFace = CssShadow.parse("inset 0 1.5px 2.5px rgba(0,0,0,0.22), inset 0 -0.5px 0 rgba(255,255,255,0.4), 0 -0.5px 0 rgba(255,255,255,0.5)"),
+            pressShadow = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.35), 0 0.5px 0.5px rgba(0,0,0,0.25)"),
+            top = 3f, side = 4.5f, bottom = 7f, travel = 1.5f, rad = 4f,
+            bevel = mapOf(
+                "key" to listOf("#f8f7f3", "#d6d4cd", "#c8c6bf", "#d6d4cd", "#b2b0a9").map(::css),
+                "fn" to listOf("#dad8d1", "#bbb9b2", "#aeaca5", "#bbb9b2", "#9a9891").map(::css),
+                "act" to listOf("#e88a5a", "#b3542b", "#9c4520", "#b3542b", "#7a3416").map(::css),
+            ),
+            legend = css("rgba(45,44,41,0.32)"),
+            ledOff = css("#b5b3ac"), ledOn = css("#f4f7ff"), ledOnGlow = CssShadow.parse("0 0 2px #ffffff, 0 0 5px rgba(220,235,255,0.7)"),
+            ledLock = css("#4fc13d"), ledLockGlow = CssShadow.parse("0 0 2px #8be07c, 0 0 6px rgba(80,200,60,0.6)"),
         ))
     }
 
@@ -328,7 +356,7 @@ object KbThemes {
             chipShadow = CssShadow.parse(t["chipShadow"] ?: "none"),
             seg = t["seg"] == "true", segCellFg = t["segCellFg"]?.let(::css),
             spots = t["spotSeed"]?.let { KbSpots(it.toInt(), c("spotBg"), c("spotFg"), c("spotHint"), c("spotPress")) },
-            face = FACES[themeId], gapH = t["gapH"]?.toFloatOrNull(), gapV = t["gapV"]?.toFloatOrNull(),
+            face = FACES[if (themeId == "mech" && !dark) "mech-light" else themeId], gapH = t["gapH"]?.toFloatOrNull(), gapV = t["gapV"]?.toFloatOrNull(),
         )
     }
 

@@ -29,7 +29,7 @@ object ThemeChoice {
         Theme("lagoon", "Lagoon", "2 colours", "dark"),
         Theme("peach", "Peach", "2 colours", "light"),
         Theme("gloss", "Gloss", "Glossy caps, pressed-in labels", "light"),
-        Theme("mech", "Mechanical", "Sculpted keycaps, with their sound", "dark"),
+        Theme("mech", "Mechanical", "Sculpted keycaps, with their sound", "pair"),
     ) + KbThemes.PRIDE.map { (id, name, f) -> Theme(id, name, "${f.first.size} colours", "light") }
     private val byId = THEMES.associateBy { it.id }
     fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").copy(mode = glassMode) else byId[id] ?: GradientSpec.parse(id)?.let { g ->

@@ -341,13 +341,15 @@ private val GRAIN: Brush by lazy {
 
 /** A cap lifted off the plate (Mechanical's long-press choices): its slopes, face and [label], casting a shadow. */
 @Composable
-private fun RaisedCap(t: KbTokens, face: CapFace, label: String, w: Float, h: Float, tone: String, fg: Color) {
+private fun RaisedCap(t: KbTokens, face: CapFace, label: String, w: Float, h: Float, chosen: Boolean, fg: Color) {
     val capShape = RoundedCornerShape(7.dp); val faceShape = RoundedCornerShape(4.dp)
-    val bv = face.bevel.getValue(tone)
-    val skirt = t.grad[if (tone == "act") "actG" else "keyG"]
+    // the chosen one wholly in the accent (the same size as its neighbours: one cell each; an orange top alone looked
+    // worse, 2026-11-24)
+    val bv = face.bevel.getValue(if (chosen) "act" else "key")
+    val skirt = t.grad[if (chosen) "actG" else "keyG"]
     Box(
         Modifier.size(w.dp, h.dp).cssShadow(RAISED_CAP_SHADOW, capShape).clip(capShape)
-            .then(skirt?.let { Modifier.background(it.brush()) } ?: Modifier.background(if (tone == "act") t.act else t.key))
+            .then(skirt?.let { Modifier.background(it.brush()) } ?: Modifier.background(if (chosen) t.act else t.key))
             .drawBehind {
                 val sw = size.width; val sh = size.height
                 val L = 4.dp.toPx(); val R = sw - 4.dp.toPx(); val T = 2.5f * density; val B = sh - 6.dp.toPx()
@@ -358,7 +360,7 @@ private fun RaisedCap(t: KbTokens, face: CapFace, label: String, w: Float, h: Fl
             },
     ) {
         Box(Modifier.padding(start = 4.dp, end = 4.dp, top = 2.5.dp, bottom = 6.dp).fillMaxSize().clip(faceShape)
-            .background((if (tone == "act") face.act else face.key).brush()).cssShadow(face.sh.filter { it.inset }, faceShape),
+            .background((if (chosen) face.act else face.key).brush()).cssShadow(face.sh.filter { it.inset }, faceShape),
             contentAlignment = Alignment.Center) {
             val single = label.codePointCount(0, label.length) <= 1
             DText(label, style = designTextStyle(if (single) 20.sp else 16.sp, 500, fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
@@ -414,7 +416,7 @@ private fun KbPopups(r: KbRender) {
                 val cell = lp.cells.getOrNull(i) ?: continue
                 val top = KbSpec.LP_PAD + (rows - 1 - cell.row) * KbSpec.LP_CELL_H
                 Box(Modifier.offset((cell.x - lp.x + 1).dp, (top + 1).dp).lint("longpress:$c")) {
-                    RaisedCap(t, face, c, (cell.w - 2), KbSpec.LP_CELL_H - 2, if (chosen) "act" else "key", if (chosen) t.actFg else t.keyFg)
+                    RaisedCap(t, face, c, (cell.w - 2), KbSpec.LP_CELL_H - 2, chosen, if (chosen) t.actFg else t.keyFg)
                 }
             }
         } }
