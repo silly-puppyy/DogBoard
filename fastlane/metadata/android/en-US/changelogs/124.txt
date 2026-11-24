@@ -1,0 +1,11 @@
+- Fix: suggestions and autocorrect could stop after a language update until the app was restarted; the keyboard now loads them again by itself
+- Languages: tap a keyboard for its own page (layout, combine, split); Remove is a separate red button
+- Languages shown in their own names (English + Français), with a region only where two need telling apart
+- Android's keyboard menu shows each keyboard's language code
+- Mechanical theme: now with a day version; keys press in, held keys raise their choices as keycaps, suggestions sit in an inset well
+- New key sound: Tock, a bright tick in the style of early touchscreen phones
+- Key hints follow your setting on every theme
+- Swipe: words with ñ on Spanish keyboards (mañana)
+- Smaller download: about 14 MB less
+- Advanced › Copy a report: details to paste when something goes wrong (nothing you typed)
+- Advanced › Reload the keyboard: loads your languages again if suggestions or corrections stop
