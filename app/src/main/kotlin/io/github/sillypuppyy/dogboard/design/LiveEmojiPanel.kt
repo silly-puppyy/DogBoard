@@ -2,6 +2,9 @@ package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -86,7 +89,13 @@ fun LiveEmojiPanel(
 
     Column(modifier.fillMaxSize().then(if (t.seg) Modifier.background(GLOSS_EMOJI_BG.brush()) else Modifier.themeBg(t))) {
         Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp)) {
-            LazyVerticalGrid(GridCells.Fixed(8), state = grid, modifier = Modifier.fillMaxSize()) {
+            val keys = t.face != null
+            LazyVerticalGrid(
+                GridCells.Fixed(8), state = grid, modifier = Modifier.fillMaxSize(),
+                // Mechanical: emoji on simple keys, 5 dp between rows, 4 between keys (SkinPanels .ekeys)
+                verticalArrangement = Arrangement.spacedBy(if (keys) 5.dp else 0.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (keys) 4.dp else 0.dp),
+            ) {
                 for (s in sections) {
                     item(span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
                         Box(Modifier.height(20.dp).padding(start = 4.dp), contentAlignment = Alignment.CenterStart) {
@@ -102,13 +111,18 @@ fun LiveEmojiPanel(
                     items(s.sets.size, contentType = { "emoji" }) { i ->
                         val set = s.sets[i]
                         val emoji = toneChoices[set.base(EmojiSkinTone.DEFAULT).value]?.let { v -> set.emojis.firstOrNull { it.value == v } } ?: set.base(skinTone)
+                        val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                        val down by press.collectIsPressedAsState()
                         Box(
-                            Modifier.height(32.dp).fillMaxWidth().combinedClickable(
-                                onClick = { onEmoji(emoji) },
-                                onLongClick = { if (set.emojis.size > 1) skinPicker = set else onEmoji(emoji) },
-                            ),
+                            Modifier.height(if (keys) 38.dp else 32.dp).fillMaxWidth()
+                                .then(if (keys) Modifier.emojiKey(t, down) else Modifier)
+                                .combinedClickable(
+                                    interactionSource = press, indication = if (keys) null else androidx.compose.foundation.LocalIndication.current,
+                                    onClick = { onEmoji(emoji) },
+                                    onLongClick = { if (set.emojis.size > 1) skinPicker = set else onEmoji(emoji) },
+                                ),
                             contentAlignment = Alignment.Center,
-                        ) { DText(emoji.value, style = designTextStyle(24.sp, 400, Color.Black)) }
+                        ) { DText(emoji.value, style = designTextStyle(if (keys) 23.sp else 24.sp, 400, Color.Black)) }
                     }
                 }
             }
@@ -131,10 +145,12 @@ fun LiveEmojiPanel(
                 }
             }
         }
-        if (t.seg) { GlossEmojiTabs(r, activeCategory, onAbc, onDelete) { ci ->
+        val jump = { ci: Int ->
             val target = sections.indexOfFirst { it.category == ci }
             if (target >= 0) scope.launch { grid.scrollToItem(headerIndex[target]) }
-        }; return@Column }
+        }
+        if (t.seg) { GlossEmojiTabs(r, activeCategory, onAbc, onDelete) { jump(it) }; return@Column }
+        if (t.face != null) { MechEmojiCaps(r, activeCategory, onAbc, onDelete) { jump(it) }; return@Column }
         // Kb:241-247 bottom row: ABC, the nine categories, delete
         Row(
             Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp),
@@ -193,6 +209,54 @@ private fun GlossEmojiTabs(r: KbRender, active: Int, onAbc: () -> Unit, onDelete
     }
 }
 
+/**
+ * Mechanical: an emoji's flat key (SkinPanels .ek), 3 dp of travel; [down] pressed. The light version (no canvas
+ * spec) the same key in the light theme's key colours.
+ */
+private fun Modifier.emojiKey(t: KbTokens, down: Boolean): Modifier {
+    val dark = t.bg.luminance() < 0.3f
+    val shape = RoundedCornerShape(6.dp)
+    val (fill, sh) = when {
+        dark && down -> EK_DOWN to EK_DOWN_SH
+        dark -> EK to EK_SH
+        down -> EK_LIGHT_DOWN to EK_LIGHT_DOWN_SH
+        else -> EK_LIGHT to EK_LIGHT_SH
+    }
+    return offset(y = if (down) 3.dp else 0.dp).cssShadow(sh.filter { !it.inset }, shape).background(fill.brush(), shape).cssShadow(sh.filter { it.inset }, shape)
+}
+
+/** Mechanical: the bottom row as function caps (ABC, the categories, delete), the shown category's LED lit. */
+@Composable
+private fun MechEmojiCaps(r: KbRender, active: Int, onAbc: () -> Unit, onDelete: () -> Unit, onCategory: (Int) -> Unit) {
+    val t = r.t
+    val shape = RoundedCornerShape(r.radius.coerceAtMost(999f).dp)
+    Row(Modifier.fillMaxWidth().height(44.dp).padding(start = 3.dp, end = 3.dp, top = 4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Box(Modifier.width(50.dp).fillMaxHeight().themedSurface(t, "fn", shape, t.fn).clickable(onClick = onAbc).padding(start = 6.dp, bottom = 5.dp), contentAlignment = Alignment.BottomStart) {
+            DText("ABC", style = designTextStyle(11.5.sp, 500, t.fnFg))
+        }
+        for ((ci, c) in r.x.emojiCats.withIndex()) {
+            val on = ci == active
+            Box(Modifier.weight(1f).fillMaxHeight().themedSurface(t, "fn", shape, t.fn).clickable { onCategory(ci) }, contentAlignment = Alignment.Center) {
+                if (c.icon == "pets") PawIcon(16.dp, 15.dp, t.fnFg) else Symbol(c.icon, 17.sp, t.fnFg)
+                if (on) Box(Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp).size(3.dp).cssShadow(EK_LED_SH, RoundedCornerShape(50)).background(EK_LED, RoundedCornerShape(50)))
+            }
+        }
+        Box(Modifier.width(50.dp).fillMaxHeight().themedSurface(t, "fn", shape, t.fn).clickable(onClick = onDelete), contentAlignment = Alignment.Center) {
+            Symbol("backspace", 18.sp, t.fnFg)
+        }
+    }
+}
+
+private val EK = CssGradient.parse("linear-gradient(#323236, #2a2a2d)")!!
+private val EK_SH = CssShadow.parse("0 3px 0 #18181a, 0 3.5px 1px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 0.5px rgba(0,0,0,0.9)")
+private val EK_DOWN = CssGradient.parse("linear-gradient(#2a2a2d, #262629)")!!
+private val EK_DOWN_SH = CssShadow.parse("0 0.5px 0.5px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 0.5px rgba(0,0,0,0.9)")
+private val EK_LIGHT = CssGradient.parse("linear-gradient(#ecebe6, #e2e1db)")!!
+private val EK_LIGHT_SH = CssShadow.parse("0 3px 0 #b1afa8, 0 3.5px 1px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.7), 0 0 0 0.5px rgba(0,0,0,0.3)")
+private val EK_LIGHT_DOWN = CssGradient.parse("linear-gradient(#e2e1db, #dcdbd5)")!!
+private val EK_LIGHT_DOWN_SH = CssShadow.parse("0 0.5px 0.5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4), 0 0 0 0.5px rgba(0,0,0,0.3)")
+private val EK_LED = Color(0xFFFF9A5C)
+private val EK_LED_SH = CssShadow.parse("0 0 2px #ffc29a, 0 0 5px rgba(255,140,70,0.8)")
 private val GLOSS_CARD = CssGradient.parse("linear-gradient(#ffffff, #f2f3f5)")!!
 private val GLOSS_CARD_SH = CssShadow.parse("0 1px 1px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.22)")
 private val GLOSS_FIELD_SH = CssShadow.parse("inset 0 1px 2px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.9)")
