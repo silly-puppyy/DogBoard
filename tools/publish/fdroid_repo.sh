@@ -22,7 +22,9 @@ export ANDROID_HOME=${ANDROID_HOME:-/opt/android-sdk}
 
 cp "$APK" "$WORK/repo/"
 if [ -n "$CHANGELOG" ]; then
-    code=$("$ANDROID_HOME"/build-tools/*/aapt2 dump badging "$APK" | head -1 | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
+    # the newest build-tools (several are installed: a glob gave aapt2 two paths)
+    aapt2=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt2
+    code=$("$aapt2" dump badging "$APK" | head -1 | sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p")
     mkdir -p "$WORK/metadata/$APP/en-US/changelogs"
     cp "$CHANGELOG" "$WORK/metadata/$APP/en-US/changelogs/$code.txt"
 fi
