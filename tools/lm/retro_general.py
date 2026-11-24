@@ -179,6 +179,23 @@ def main():
             o = outcome(t, w, c, pen, th)
             if norm(o) != norm(t):
                 print(f"   ...{before[-40:]} [{t} -> {o}] {' '.join(after)}")
+    if os.environ.get("BREAKDOWN"):
+        pen, th = (float(x) for x in os.environ["BREAKDOWN"].split(","))
+        CONTRACTIONS = {"it's", "he's", "she's", "that's", "what's", "there's", "here's", "who's", "let's", "where's", "how's"}
+        def kind(w):
+            lw = w.lower()
+            if lw.endswith("'s") and lw not in CONTRACTIONS or lw.endswith("s'"):
+                return "possessive"
+            return "contraction"
+        k = 3
+        for name in ("possessive", "contraction"):
+            cases = [(t, w, c) for t, w, c in scored[k]["apostrophe"] if c and kind(w) == name]
+            ok = sum(norm(outcome(t, w, c, pen, th)) == norm(w) for t, w, c in cases)
+            print(f"{name}s with the apostrophe dropped, fixed: {ok} of {len(cases)} ({100 * ok / max(1, len(cases)):.1f} %)")
+        ends_s = [(t, w, c) for t, w, c in scored[k]["clean"] if t.lower().endswith("s") and c]
+        bad = [(t, outcome(t, w, c, pen, th)) for t, w, c in ends_s if norm(outcome(t, w, c, pen, th)) != norm(t)]
+        print(f"right words ending in -s (plurals, verbs) changed: {len(bad)} of {len(ends_s)} {bad[:8]}")
+        return
     for k in (1, 3):
         print(f"\n== {'1 word of hindsight (iOS)' if k == 1 else '3 words of hindsight'}")
         for penalty in (3.0, 4.0, 5.0):
