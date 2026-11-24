@@ -32,7 +32,7 @@ def main():
         with open(f"{out}/{lang}.judged.jsonl", "w", encoding="utf-8") as f:
             for r in rows:
                 msg = [{"role": "user", "content": ASK.format(lang=NAMES[lang], prompt=r["prompt"], cont=r["cont"] or "(nothing)")}]
-                ids = tok.apply_chat_template(msg, add_generation_prompt=True, enable_thinking=False, return_tensors="pt").to("cuda")
+                ids = tok.apply_chat_template(msg, add_generation_prompt=True, enable_thinking=False, return_tensors="pt", return_dict=True)["input_ids"].to("cuda")
                 with torch.no_grad():
                     o = model.generate(ids, max_new_tokens=30, do_sample=False)
                 text = tok.decode(o[0, ids.shape[1]:], skip_special_tokens=True)

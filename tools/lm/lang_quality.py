@@ -167,20 +167,21 @@ def decode(sp, ids):
         if i == capsmod.CAP:
             cap = True; continue
         out.append(("\x01" if cap else "") + sp.id_to_piece(i)); cap = False
-    text = "".join(out).replace("▁", " ")
+    text = "".join(out).replace("<s>", " ").replace("</s>", " ").replace("▁", " ")
     text = re.sub("\x01(\\s*)(\\S)", lambda m: m.group(1) + m.group(2).upper(), text)
     return text.replace("\x01", "").strip()
 
 
 @torch.no_grad()
-def greedy(m, sp, caps, prompt, n=24):
+def greedy(m, sp, caps, prompt, n=int(os.environ.get("PIECES", "24"))):
     ids = [1] + encode(sp, caps, prompt)
     gen = []
     for _ in range(n):
         t = torch.tensor([ids[-m.cfg.ctx:] if hasattr(m, "cfg") else ids[-256:]], device=DEV)
         nxt = int(m(t)[0, -1].argmax())
-        # the end of the text, or the sentence separator: one continuation is one sentence
-        if nxt in (2, 0) or "<s>" in sp.id_to_piece(nxt): break
+        # the end of the text, or the sentence separator: one continuation is one sentence; FIXED=1 writes the same
+        # length for every model instead (short and empty outputs made the judged scores incomparable)
+        if os.environ.get("FIXED") != "1" and (nxt in (2, 0) or "<s>" in sp.id_to_piece(nxt)): break
         ids.append(nxt); gen.append(nxt)
     return decode(sp, gen)
 
