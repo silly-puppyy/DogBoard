@@ -37,6 +37,9 @@ object SwipeBeam {
     ): List<Candidate> {
         var beams = HashMap<Int, Beam>().apply { put(Lexicon.ROOT, Beam(0.0, NEG, -1)) }
         val classes = 1 + alphabet.size
+        // the lexicon's tree holds folded letters (Lexicon.fold: ñ -> n where the language doesn't count ñ as a letter of
+        // its own, as Spanish): a key's letter is walked folded, as a typed one is ("mañana" swiped as Naama, 2026-11-24)
+        val keys = CharArray(alphabet.size) { Lexicon.fold(alphabet[it]) }
         val allowed = IntArray(alphabet.size)
         for (t in 0 until steps) {
             val row = classes * t
@@ -50,7 +53,7 @@ object SwipeBeam {
                 if (b.last > 0) stay.letter = lse(stay.letter, b.letter + logp[row + b.last])
                 for (i in 0 until nAllowed) {
                     val k = allowed[i]
-                    val c = alphabet[k - 1]
+                    val c = keys[k - 1]
                     // a repeated letter needs a blank in between
                     val p = (if (b.last == k) b.blank else total) + logp[row + k]
                     fun extend(child: Int) {
