@@ -490,7 +490,7 @@ class FlorisImeService : LifecycleInputMethodService() {
         runCatching {
             val sys = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.idOf(systemServiceOrNull(InputMethodManager::class)?.currentInputMethodSubtype)
             if (sys != null && sys != subtypeManager.activeSubtype.id && subtypeManager.subtypes.any { it.id == sys }) {
-                android.util.Log.i("DogBoardPerf", "keyboard: following Android's selection ($sys, was ${subtypeManager.activeSubtype.id})")
+                io.github.sillypuppyy.dogboard.perf.EventLog.add("keyboard: following Android's selection ($sys, was ${subtypeManager.activeSubtype.id})")
                 subtypeManager.switchToSubtypeById(sys)
             }
         }

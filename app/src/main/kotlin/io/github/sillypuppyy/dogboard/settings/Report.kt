@@ -44,6 +44,9 @@ object Report {
         appendLine("Suggestions ${if (prefs.suggestion.enabled.get()) "on" else "off"}, autocorrect ${prefs.correction.autocorrectLevel.get()}, " +
             "neural model ${if (prefs.correction.neuralModel.get()) "on" else "off"}")
         appendLine()
+        appendLine("Language events (the keyboard's own record):")
+        io.github.sillypuppyy.dogboard.perf.EventLog.all().forEach { appendLine("  $it") }
+        appendLine()
         appendLine("Recent keyboard log:")
         runCatching {
             val p = ProcessBuilder("logcat", "-d", "-v", "time", "-t", "$LOG_LINES", "-s", "DogBoardPerf:V", "DogBoardJank:V").redirectErrorStream(true).start()

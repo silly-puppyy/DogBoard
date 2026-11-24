@@ -276,6 +276,8 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
         // ("foces": foxes or forces; real typos 2026-11-24: most wrong words were such near ties)
         if (!(t.length >= typed.length && t.startsWith(typed))) {
             val r = correctionDominanceOverride ?: level.correctionDominance ?: return t
+            // the typed letters kept, only dots, apostrophes or capitals added ("ie" -> "i.e."): no guess between words
+            if (sortKey(t) == sortKey(typed)) return t
             val rival = cased.drop(1).firstOrNull { (c, w) -> !c.isTypedString && !w.equals(t, ignoreCase = true) && !w.equals(typed, ignoreCase = true) }
                 ?: return t
             return if (r * exp(rival.first.score) < exp(top.score)) t else null

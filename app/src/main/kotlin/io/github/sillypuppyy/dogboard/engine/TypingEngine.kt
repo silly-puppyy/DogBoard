@@ -107,7 +107,14 @@ object TypingEngine {
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, val rules: LanguageRules) {
         val decoder = Decoder(
             lexicon,
-            Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
+            // English: skipped and extra letters cheaper than iOS's costs (-1.0 / -2.0, no extra language cost): real
+            // typos ("thi", "goesd") read as a wrong key before; with the runner-up check 49.5/5.3 -> 49.4/2.6 % fixed /
+            // wrong on Gboard's set, held-out +1.2 fixed. Finnish broke more long words with them (1.2 -> 1.7 %): iOS's
+            // costs elsewhere until measured per language (CaseAdapt.locale is the loading pack's, set before load)
+            if (CaseAdapt.locale.language == "en") Decoder.Config(
+                languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM,
+                insertion = -1.0, deletion = -2.0, deletionLanguage = 0.0,
+            ) else Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
             bigrams,
             rules = rules,
         )

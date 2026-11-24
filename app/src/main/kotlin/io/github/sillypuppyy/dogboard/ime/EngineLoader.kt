@@ -30,7 +30,7 @@ object EngineLoader {
         if (current != null && (current.tag.equals(tag, true) || current.tag.equals(tag.substringBefore('-'), true))) return false
         val next = LanguagePack.find(app, tag)?.takeIf { it.hasWords } ?: return false
         if (next.tag == current?.tag) return false
-        android.util.Log.i("DogBoardPerf", "language: ${current?.tag} -> ${next.tag}")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("language: ${current?.tag} -> ${next.tag}")
         TypingEngine.unload()
         TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
         pack = next
@@ -57,7 +57,7 @@ object EngineLoader {
         if (next.map { it.tag } == secondaryPacks.map { it.tag }) return false
         TypingEngine.unloadSecondary()
         secondaryPacks = emptyList()
-        if (next.isEmpty()) { android.util.Log.i("DogBoardPerf", "second language: none"); return true }
+        if (next.isEmpty()) { io.github.sillypuppyy.dogboard.perf.EventLog.add("second language: none"); return true }
         System.gc() // the languages that went before the new ones are read
         for (p in next) {
             val t0 = android.os.SystemClock.uptimeMillis()
@@ -76,8 +76,8 @@ object EngineLoader {
                     letters = runCatching { p.open("charlm")?.use { CharModel.read(it) } }.getOrNull(),
                 )
                 secondaryPacks = secondaryPacks + p
-                android.util.Log.i("DogBoardPerf", "second language ${p.tag} loaded after ${android.os.SystemClock.uptimeMillis() - t0} ms")
-            }.onFailure { android.util.Log.w("DogBoardPerf", "second language ${p.tag} failed: ${it.javaClass.simpleName}") }
+                io.github.sillypuppyy.dogboard.perf.EventLog.add("second language ${p.tag} loaded after ${android.os.SystemClock.uptimeMillis() - t0} ms")
+            }.onFailure { io.github.sillypuppyy.dogboard.perf.EventLog.add("second language ${p.tag} failed: ${it.javaClass.simpleName}") }
             nativeMark("second language")
         }
         return true
@@ -99,7 +99,7 @@ object EngineLoader {
         }
         val current = pack ?: return false
         if (current.tag != tag || current.bundled) return false
-        android.util.Log.i("DogBoardPerf", "language ${current.tag}: updated pack, loading again")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("language ${current.tag}: updated pack, loading again")
         // the languages typed together stay loaded (unload leaves them; the first's autocorrect gets their lists again)
         TypingEngine.unload()
         TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
@@ -119,7 +119,7 @@ object EngineLoader {
         val app = context.applicationContext
         val tag = pack?.tag
         val together = secondaryPacks.map { it.tag }
-        android.util.Log.i("DogBoardPerf", "reload all: ${tag ?: "none"}${if (together.isEmpty()) "" else " + " + together.joinToString()}")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("reload all: ${tag ?: "none"}${if (together.isEmpty()) "" else " + " + together.joinToString()}")
         secondaryPacks = emptyList()
         TypingEngine.unloadSecondary()
         TypingEngine.unload()
@@ -128,7 +128,7 @@ object EngineLoader {
         System.gc()
         loadOrFallBack(app)
         if (together.isNotEmpty()) setSecondaries(app, together)
-        android.util.Log.i("DogBoardPerf", "reload all: engine ${if (TypingEngine.isReady) "ready" else "NOT READY"}")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("reload all: engine ${if (TypingEngine.isReady) "ready" else "NOT READY"}")
     }
 
     /**
@@ -139,14 +139,14 @@ object EngineLoader {
     private fun loadOrFallBack(app: Context) {
         val tried = pack
         runCatching { ensureLoaded(app) }.onSuccess { return }.onFailure {
-            android.util.Log.w("DogBoardPerf", "language ${tried?.tag} failed to load: ${it.javaClass.simpleName} ${it.message}")
+            io.github.sillypuppyy.dogboard.perf.EventLog.add("language ${tried?.tag} failed to load: ${it.javaClass.simpleName} ${it.message}")
         }
         TypingEngine.unload()
         val builtIn = tried?.let { t -> LanguagePack.all(app).firstOrNull { it.bundled && it.tag == t.tag && it.hasWords && it !== t } }
         pack = builtIn
         runCatching { ensureLoaded(app) }.onSuccess {
-            android.util.Log.w("DogBoardPerf", "language ${pack?.tag}: loaded ${if (builtIn != null) "its built-in pack" else "the default"} instead")
-        }.onFailure { android.util.Log.w("DogBoardPerf", "fallback failed too: ${it.javaClass.simpleName} ${it.message}") }
+            io.github.sillypuppyy.dogboard.perf.EventLog.add("language ${pack?.tag}: loaded ${if (builtIn != null) "its built-in pack" else "the default"} instead")
+        }.onFailure { io.github.sillypuppyy.dogboard.perf.EventLog.add("fallback failed too: ${it.javaClass.simpleName} ${it.message}") }
     }
 
     /**
@@ -159,7 +159,7 @@ object EngineLoader {
     @Synchronized
     fun heal(context: Context) {
         if (TypingEngine.isReady) return
-        android.util.Log.w("DogBoardPerf", "engine empty at a text field: loading again")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("engine empty at a text field: loading again")
         loadOrFallBack(context.applicationContext)
     }
 
@@ -227,7 +227,7 @@ object EngineLoader {
                     runCatching { java.io.RandomAccessFile(f, "r").channel.use { c -> c.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, 0, c.size()) } }.getOrNull()
                 }
                 io.github.sillypuppyy.dogboard.engine.NgramModel.fromBuffer(buffer, index).also { m ->
-                    android.util.Log.i("DogBoardPerf", "trigram model: ${m?.pairCount} pairs, ${m?.tripleCount} triples, " +
+                    io.github.sillypuppyy.dogboard.perf.EventLog.add("trigram model: ${m?.pairCount} pairs, ${m?.tripleCount} triples, " +
                         "${android.os.SystemClock.uptimeMillis() - t0} ms, index ${if (index != null) "mapped" else "built"}")
                     // the next start maps it (written atomically: a half-written file is never read)
                     if (m != null && index == null) runCatching {
@@ -246,8 +246,8 @@ object EngineLoader {
         val tokenizer = (p.open("lm_pieces") ?: return null).bufferedReader().use {
             io.github.sillypuppyy.dogboard.engine.lm.PieceTokenizer.parse(it)
         }
-        io.github.sillypuppyy.dogboard.engine.lm.NeuralLm(p.map("lm_model") ?: return null, tokenizer).also { android.util.Log.i("DogBoardPerf", "neural model: ${android.os.SystemClock.uptimeMillis() - t0} ms") }
-    }.onFailure { android.util.Log.i("DogBoardPerf", "neural model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+        io.github.sillypuppyy.dogboard.engine.lm.NeuralLm(p.map("lm_model") ?: return null, tokenizer).also { io.github.sillypuppyy.dogboard.perf.EventLog.add("neural model: ${android.os.SystemClock.uptimeMillis() - t0} ms") }
+    }.onFailure { io.github.sillypuppyy.dogboard.perf.EventLog.add("neural model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
     /**
      * Whether this phone runs the neural model: not a low-RAM device, and more than
@@ -307,7 +307,7 @@ object EngineLoader {
 
     private fun loadSwipeNet(app: Context): io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet? = runCatching {
         io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet(pack(app).map("swipe_qwerty") ?: error("no swipe model"), threads = 1)
-    }.onFailure { android.util.Log.i("DogBoardPerf", "swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+    }.onFailure { io.github.sillypuppyy.dogboard.perf.EventLog.add("swipe recogniser not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
     /** The swipe recogniser again after a memory-pressure release (call off the main thread). */
     @Synchronized
@@ -317,13 +317,13 @@ object EngineLoader {
             java.io.FileInputStream(fd.fileDescriptor).channel.use { ch -> ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length) }
         }
         io.github.sillypuppyy.dogboard.engine.swipe.UniSwipeNet(buffer, threads = 1)
-    }.onFailure { android.util.Log.i("DogBoardPerf", "universal swipe model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+    }.onFailure { io.github.sillypuppyy.dogboard.perf.EventLog.add("universal swipe model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
 
     fun ensureSwipe(context: Context) {
         if (TypingEngine.isReady && !TypingEngine.hasUniSwipeNet && mayReload(context)) TypingEngine.attachUniSwipeNet(loadUniSwipeNet(context.applicationContext))
         if (!TypingEngine.isReady || TypingEngine.hasSwipeNet || !mayReload(context)) return
         TypingEngine.attachSwipeNet(loadSwipeNet(context.applicationContext))
-        android.util.Log.i("DogBoardPerf", "swipe recogniser loaded again")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("swipe recogniser loaded again")
     }
 
     private fun nativeMark(what: String) {
@@ -379,7 +379,7 @@ object EngineLoader {
             openShipped = { name -> shippedSnapshot(app, p, name) },
             rules = rules,
         )
-        android.util.Log.i("DogBoardPerf", "engine ready (suggestions on) after ${android.os.SystemClock.uptimeMillis() - t0} ms")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("engine ready (suggestions on) after ${android.os.SystemClock.uptimeMillis() - t0} ms")
         nativeMark("engine")
         // the trigram model (when built into this app), attached after the engine is ready so
         // startup isn't slowed: memory-mapped from the package, which stores it uncompressed
@@ -387,7 +387,7 @@ object EngineLoader {
         // a first start parses the word lists, the heap's peak: on a 128 MB heap (2 GB phones) that and the trigram
         // index built on top ran out of memory (Test Lab Galaxy A10, 2026-11-20). The trigram (the smallest loss:
         // -0.5 fixed, T7; the neural model or the n-grams cover context) waits for the next start, which maps it
-        if (TypingEngine.parsedAtLoad && heapMb(app) <= LOW_HEAP_MB) android.util.Log.i("DogBoardPerf", "trigram held back (first start on a ${heapMb(app)} MB heap)")
+        if (TypingEngine.parsedAtLoad && heapMb(app) <= LOW_HEAP_MB) io.github.sillypuppyy.dogboard.perf.EventLog.add("trigram held back (first start on a ${heapMb(app)} MB heap)")
         else TypingEngine.attachNgrams(loadNgrams(app))
         nativeMark("trigram")
         // the neural language model for next-word predictions, when its files are in this build
@@ -396,7 +396,7 @@ object EngineLoader {
         // older devices use the n-gram model): ~50 MB (mapped weights + the runtime's copy) and most
         // of the typing path's CPU; without it the trigram alone predicts and scores
         if (neuralTier(app)) TypingEngine.attachNeuralLm(loadNeuralLm(app))
-        else android.util.Log.i("DogBoardPerf", "neural model skipped on this device (memory)")
+        else io.github.sillypuppyy.dogboard.perf.EventLog.add("neural model skipped on this device (memory)")
         nativeMark("neural")
         // the swipe recogniser (4.4 MB, memory-mapped like the trigram; every phone: ~2 ms of work per
         // swipe on a desktop core, run only when a swipe ends)
@@ -406,7 +406,7 @@ object EngineLoader {
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
         TypingEngine.attachCharModel(runCatching { p.open("charlm")?.use { CharModel.read(it) } }.getOrNull())
-        android.util.Log.i("DogBoardPerf", "letter model attached after ${android.os.SystemClock.uptimeMillis() - t1} ms")
+        io.github.sillypuppyy.dogboard.perf.EventLog.add("letter model attached after ${android.os.SystemClock.uptimeMillis() - t1} ms")
         nativeMark("letter model")
     }
 }

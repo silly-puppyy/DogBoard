@@ -1461,7 +1461,17 @@ class ImeController(
 
         /** DogBoard: the word engine's language matches the layout (English only until the i18n pass). */
         // the layout types the loaded language (was: English layouts only; a Spanish pack with its ñ layout is on too)
-        private fun englishLayout(): Boolean = io.github.sillypuppyy.dogboard.ime.LanguageLayouts.matchesLoaded(prefs.keyboard.layoutId.get())
+        private fun englishLayout(): Boolean {
+            val layout = prefs.keyboard.layoutId.get()
+            val ok = io.github.sillypuppyy.dogboard.ime.LanguageLayouts.matchesLoaded(layout)
+            // when it turns, for Copy a report: the bar and autocorrect are off while the layout types no loaded language
+            if (ok != layoutOk) {
+                layoutOk = ok
+                io.github.sillypuppyy.dogboard.perf.EventLog.add("layout $layout types a loaded language: ${if (ok) "yes" else "NO (no suggestions, no autocorrect)"}")
+            }
+            return ok
+        }
+        private var layoutOk: Boolean? = null
 
         /** DogBoard: the layout's language tag (from the model, as composition uses it). */
         private var languageTag = ""

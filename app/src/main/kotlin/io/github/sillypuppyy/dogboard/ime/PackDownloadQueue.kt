@@ -105,7 +105,7 @@ object PackDownloadQueue {
                     if (attempt > 0) delay(wait)
                     val r = installLock.withLock { PackDownloads.of(app).install(entry.tag, entry = entry) }
                     if (r is PackInstaller.Result.Installed) {
-                        android.util.Log.i("DogBoardPerf", "pack ${r.tag} ${r.version} installed in the background")
+                        io.github.sillypuppyy.dogboard.perf.EventLog.add("pack ${r.tag} ${r.version} installed in the background")
                         _installed.update { it + 1 }
                         // in use now: load it (the language typed with its layout alone until here), or load it again (updated)
                         val active = dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype
@@ -113,10 +113,10 @@ object PackDownloadQueue {
                             if (!EngineLoader.reloadIfLoaded(app, entry.tag) &&
                                 active.primaryLocale.languageTag().substringBefore('-').equals(entry.tag.substringBefore('-'), true)
                             ) EngineLoader.switchTo(app, active.primaryLocale.languageTag())
-                        }.onFailure { android.util.Log.w("DogBoardPerf", "pack ${entry.tag}: loading after install failed: ${it.javaClass.simpleName} ${it.message}") }
+                        }.onFailure { io.github.sillypuppyy.dogboard.perf.EventLog.add("pack ${entry.tag}: loading after install failed: ${it.javaClass.simpleName} ${it.message}") }
                         return@launch
                     }
-                    android.util.Log.w("DogBoardPerf", "pack ${entry.tag}: attempt ${attempt + 1} failed: ${(r as PackInstaller.Result.Failed).reason}")
+                    io.github.sillypuppyy.dogboard.perf.EventLog.add("pack ${entry.tag}: attempt ${attempt + 1} failed: ${(r as PackInstaller.Result.Failed).reason}")
                 }
             } finally {
                 _pending.update { it - entry.tag }
