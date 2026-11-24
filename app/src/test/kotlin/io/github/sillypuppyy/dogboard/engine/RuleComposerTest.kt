@@ -46,6 +46,13 @@ class RuleComposerTest : FunSpec({
         RuleComposer.forLanguage("hi") shouldBe null // compact: the keys as typed, the dictionary corrects
         RuleComposer.forLayout("hindi-hi", "hi") shouldBe RuleComposer.forScript("devanagari") // Gboard's full Hindi
     }
+    test("context labels: what a key writes after the text before it") {
+        val d = rules("devanagari")
+        d.labelFor("क", 'आ') shouldBe "का"
+        d.labelFor("क्ष", 'ई') shouldBe "क्षी"
+        d.labelFor("", 'आ') shouldBe null // nothing to join: the key's own letter
+        d.labelFor("क", 'क') shouldBe null
+    }
     test("every language's rule set loads") {
         for (script in RuleComposer.SCRIPT_OF.values.toSet()) rules(script).compose("") shouldBe ""
     }

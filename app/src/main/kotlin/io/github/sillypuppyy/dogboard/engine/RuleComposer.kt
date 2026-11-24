@@ -20,7 +20,7 @@ class RuleComposer private constructor(private val rules: List<Rule>) {
     private class Spec(val pattern: String, val text: String, @SerialName("label") val label: String = "")
 
     /** [last]: the key the pattern ends with when it is a plain character (rules for other keys are skipped). */
-    private class Rule(val regex: Regex, val text: String, val last: Char?)
+    private class Rule(val regex: Regex, val text: String, val last: Char?, val label: String = "")
 
     /** What each sign's key is: the key whose rule writes "$1" + the sign after a consonant (ा <- आ, Tamil ் <- அ). */
     private val keyOfSign: Map<Char, Char> = buildMap {
@@ -50,6 +50,22 @@ class RuleComposer private constructor(private val rules: List<Rule>) {
             return
         }
         out.append(key)
+    }
+
+    /**
+     * What [key]'s cap shows after [before] (Gboard's context labels: after क the आ key shows का): the label of the rule
+     * the key would fire, its back-references filled in; null where no rule fires or the label is the key itself.
+     */
+    fun labelFor(before: String, key: Char): String? {
+        val text = before.takeLast(WINDOW) + key
+        for (r in rules) {
+            if (r.last != null && r.last != key) continue
+            val m = r.regex.find(text) ?: continue
+            if (r.label.isEmpty()) return null
+            val l = r.label.replace(BACKREF) { g -> m.groupValues.getOrNull(g.groupValues[1].toInt()).orEmpty() }.replace(INHERENT, "")
+            return l.takeIf { it.isNotEmpty() && it != key.toString() }
+        }
+        return null
     }
 
     private fun isSign(c: Char) = Character.getType(c).let {
@@ -93,7 +109,8 @@ class RuleComposer private constructor(private val rules: List<Rule>) {
 
         fun parse(text: String): RuleComposer = RuleComposer(json.decodeFromString<File>(text).rules.map { s ->
             val last = s.pattern.lastOrNull()?.takeIf { it !in """)]}?*+.|\$""" && s.pattern.getOrNull(s.pattern.length - 2) != '\\' }
-            Rule(Regex("(?:${s.pattern})$"), s.text.replace("\\$", "\u0000").replace("\\\\", "\\").replace("\u0000", "$"), last)
+            fun unescape(t: String) = t.replace("\\$", "\u0000").replace("\\\\", "\\").replace("\u0000", "$")
+            Rule(Regex("(?:${s.pattern})$"), unescape(s.text), last, unescape(s.label))
         })
 
         /**
