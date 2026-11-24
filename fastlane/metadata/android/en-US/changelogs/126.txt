@@ -1,0 +1,3 @@
+- Less than half the size: about 50 MB instead of 129 MB, and app updates stay that small. English's word statistics and prediction model download once, on first start (about 50 MB); typing works offline until then
+- Languages you've added whose dictionary is missing are downloaded by themselves when the app starts
+- A downloaded dictionary is used straight away, without restarting the keyboard
