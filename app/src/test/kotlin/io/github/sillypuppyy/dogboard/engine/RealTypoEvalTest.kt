@@ -127,7 +127,10 @@ class RealTypoEvalTest : FunSpec({
         val misspellings = packReader("misspellings.txt").readLines().filter { it.isNotBlank() && !it.startsWith("#") }.toHashSet()
         val charModel = if (System.getenv("DOGBOARD_CHARLM") == "1") packFile("charlm.bin").takeIf { it.isFile }?.inputStream()?.use { CharModel.read(it) } else null
         val decoders = ThreadLocal.withInitial {
-            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0", beamWidth = System.getenv("DOGBOARD_BEAM")?.toInt() ?: 100), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart), rules = evalRules)
+            Decoder(lexicon, Decoder.Config(endInsertion = endInsertion,
+                insertion = System.getenv("DOGBOARD_INSERTION")?.toDoubleOrNull() ?: Decoder.Config().insertion,
+                deletion = System.getenv("DOGBOARD_DELETION")?.toDoubleOrNull() ?: Decoder.Config().deletion,
+                deletionLanguage = System.getenv("DOGBOARD_DELETION_LANGUAGE")?.toDoubleOrNull() ?: Decoder.Config().deletionLanguage, spaceTap = System.getenv("DOGBOARD_SPACE_TAP")?.toDouble() ?: Decoder.SPACE_TAP, missedSpace = System.getenv("DOGBOARD_MISSED_SPACE") != "0", beamWidth = System.getenv("DOGBOARD_BEAM")?.toInt() ?: 100), bigrams = bigrams, context = if (noTrigram) null else NgramScorer(ngrams, lexicon, bigrams.sentenceStart), rules = evalRules)
                 .also { it.unknownWords = charModel; if (System.getenv("DOGBOARD_MISSPELLINGS") == "1") it.knownMisspellings = misspellings }
         }
 

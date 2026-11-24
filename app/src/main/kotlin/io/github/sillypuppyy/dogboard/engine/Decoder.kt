@@ -135,6 +135,11 @@ class Decoder(
          * 47.7 / 12.6 at -1.0, correct words broken 0.6 throughout).
          */
         val spaceTap: Double = SPACE_TAP,
+        /** Cost of a key the user skipped (iOS -2.0; benchmarks sweep it with [deletion]). */
+        val insertion: Double = INSERTION,
+        /** Cost of an extra tap that isn't a repeat of the key before (iOS -3.2), and its added language cost. */
+        val deletion: Double = DELETION,
+        val deletionLanguage: Double = DELETION_LANGUAGE,
     )
 
     companion object {
@@ -688,7 +693,7 @@ class Decoder(
                 }
                 // An extra tap that belongs to no letter, the first one included (iOS: "ghello" → "hello")
                 val repeated = t > 0 && info[t].nearest == info[t - 1].nearest
-                val extra = if (repeated) DELETION_REPEATED + info[t].q else DELETION + info[t].q + DELETION_LANGUAGE
+                val extra = if (repeated) DELETION_REPEATED + info[t].q else config.deletion + info[t].q + config.deletionLanguage
                 offer(out, sNode, sGeometry + extra, sEdits + 1, sPrefix)
             }
             // Swapped pair: tap i-2 belongs to the next letter, tap i-1 to this one.
@@ -734,7 +739,7 @@ class Decoder(
                             layer.indexOf(key(sPrefix, child)).takeIf { it >= 0 }?.let { j -> insertAfter(sPrefix, child, layer.geometry(j), layer.edits(j), allowApostrophe = false) }
                         }
                     } else if (i > 0) { // no inserting before the first tap
-                        val g = sGeometry + (if (i == n) config.endInsertion ?: INSERTION else INSERTION) + qi
+                        val g = sGeometry + (if (i == n) config.endInsertion ?: config.insertion else config.insertion) + qi
                         // a state below the beam's cut-off before the insertions can't survive the
                         // prune (insertions only raise the cut): not made at all, unless it ends a word
                         // (a word end may start the next word); same result, far fewer states
@@ -780,7 +785,7 @@ class Decoder(
                 }
                 for (t in 0 until count) {
                     val p = restart(topFrom[t], topNode[t])
-                    if (p >= 0) offer(layer, Lexicon.ROOT, topGeometry[t] + INSERTION + qi, topEdits[t] + 1, p)
+                    if (p >= 0) offer(layer, Lexicon.ROOT, topGeometry[t] + config.insertion + qi, topEdits[t] + 1, p)
                 }
             }
             prune(layer, w, prefixes)
