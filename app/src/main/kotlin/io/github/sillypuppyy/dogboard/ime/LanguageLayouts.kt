@@ -13,10 +13,16 @@ object LanguageLayouts {
     /** The languages each layout types (one keyboard file serves every language with the same letters and long-press). */
     private val languagesOf: Map<String, Set<String>> = GeneratedLayouts.all.groupBy({ it.id }, { it.language }).mapValues { it.value.toSet() }
 
-    /** Whether [layoutId] types the language of the word engine's loaded pack (English when none is loaded yet). */
+    /**
+     * Whether [layoutId] types a language the word engine has loaded: the first (English when none is loaded yet) or
+     * one typed together with it. Only the first was checked: an English + French keyboard on French AZERTY (its ' key
+     * makes it French's own) got no suggestions and no autocorrect at all (2026-11-24).
+     */
     fun matchesLoaded(layoutId: String): Boolean {
-        val loaded = (EngineLoader.pack?.tag ?: LanguagePack.DEFAULT_TAG).substringBefore('-').lowercase()
-        return loaded in (languagesOf[layoutId] ?: setOf(layoutId.substringAfterLast('-')))
+        val loaded = (listOf(EngineLoader.pack?.tag ?: LanguagePack.DEFAULT_TAG) + EngineLoader.secondaryPacks.map { it.tag })
+            .map { it.substringBefore('-').lowercase() }
+        val types = languagesOf[layoutId] ?: setOf(layoutId.substringAfterLast('-'))
+        return loaded.any { it in types }
     }
 
     /** [memory] ("en=dvorak-en,cs=qwertz-cs") as language -> layout id. */

@@ -484,6 +484,16 @@ class FlorisImeService : LifecycleInputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onStartInputView") // DogBoard: startup timing
+        // DogBoard: Android's selected keyboard wins when the two disagree (after a restart the saved one came back while
+        // Android's menu showed another as checked; picking that one changed nothing: an Arabic layout under an
+        // English + French entry, the word engine on yet another language, emulator 2026-11-24)
+        runCatching {
+            val sys = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.idOf(systemServiceOrNull(InputMethodManager::class)?.currentInputMethodSubtype)
+            if (sys != null && sys != subtypeManager.activeSubtype.id && subtypeManager.subtypes.any { it.id == sys }) {
+                android.util.Log.i("DogBoardPerf", "keyboard: following Android's selection ($sys, was ${subtypeManager.activeSubtype.id})")
+                subtypeManager.switchToSubtypeById(sys)
+            }
+        }
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             // an engine a failed load left empty is loaded again here: typing heals without restarting the app
             if (io.github.sillypuppyy.dogboard.ime.EngineLoader.firstLoadDone) io.github.sillypuppyy.dogboard.ime.EngineLoader.heal(this@FlorisImeService)

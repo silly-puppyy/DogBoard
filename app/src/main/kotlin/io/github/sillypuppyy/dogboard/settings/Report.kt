@@ -38,6 +38,9 @@ object Report {
         appendLine()
         appendLine("Engine: ${if (TypingEngine.isReady) "ready" else "NOT READY"}, language ${EngineLoader.pack?.tag ?: "none"}" +
             EngineLoader.secondaryPacks.takeIf { it.isNotEmpty() }?.let { s -> ", also ${s.joinToString { it.tag }}" }.orEmpty())
+        // the layout in use and whether it types a loaded language: when not, the bar and autocorrect are off by design
+        val layout = prefs.keyboard.layoutId.get()
+        appendLine("Layout $layout, types a loaded language: ${if (io.github.sillypuppyy.dogboard.ime.LanguageLayouts.matchesLoaded(layout)) "yes" else "NO (no suggestions or autocorrect)"}")
         appendLine("Suggestions ${if (prefs.suggestion.enabled.get()) "on" else "off"}, autocorrect ${prefs.correction.autocorrectLevel.get()}, " +
             "neural model ${if (prefs.correction.neuralModel.get()) "on" else "off"}")
         appendLine()
