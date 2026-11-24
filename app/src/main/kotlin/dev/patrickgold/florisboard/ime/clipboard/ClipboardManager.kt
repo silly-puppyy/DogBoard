@@ -216,6 +216,14 @@ class ClipboardManager(
                     val item = ClipboardItem.fromClipData(appContext, systemPrimaryClip, cloneUri = true)
                     primaryClip = item
                     insertOrMoveBeginning(item)
+                    // DogBoard: a copied link is expanded (and previewed) as it is copied, not when the keyboard next
+                    // opens: the clean link is ready by the time it is pasted
+                    val expand = prefs.clipboard.expandShortLinks.get()
+                    val previews = prefs.clipboard.linkPreviews.get()
+                    val text = item.text?.toString()
+                    if ((expand || previews) && item.type == ItemType.TEXT && !item.isSensitive && text != null) {
+                        io.github.sillypuppyy.dogboard.ime.LinkInfo.fetchAll(appContext, text, expand, previews)
+                    }
                 }
             }
         }

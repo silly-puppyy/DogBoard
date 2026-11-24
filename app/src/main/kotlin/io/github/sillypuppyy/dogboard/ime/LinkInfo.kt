@@ -79,7 +79,12 @@ object LinkInfo {
             val target = if (expand) resolve(url) else null
             val page = target ?: url
             var info = Info(url, target = target?.takeIf { it != url })
-            if (previews) info = withPreview(info, page)
+            if (previews) {
+                // the expanded (and so cleaned) link is shown as soon as it is known, the preview when it arrives: the
+                // page, its oEmbed and its pictures took seconds, and the expanded link waited for them all
+                if (expand && known?.target == null) { infos[url] = info; changes.value++ }
+                info = withPreview(info, page)
+            }
             infos[url] = info
             save()
             changes.value++
