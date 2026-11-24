@@ -283,9 +283,11 @@ fun SetThemes(state: SetThemesState) {
                 if (sec.id in state.hidden) continue
                 // with saved photo themes, the built-in Photo tile (the same photo slot) would show "In use" twice
                 val ids = sec.ids.filter { (filter == "yours" || ThemeChoice.keep(filter, ThemeChoice.theme(it).mode)) && (it != "glass" || state.userPacks.isEmpty()) }
-                val add = sec.add?.takeIf { filter == "all" || filter == "yours" }
-                if (ids.isEmpty() && add == null) continue
-                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // a pack of your own has its own New theme tile: this one too showed two, one under the other
+                val add = sec.add?.takeIf { (filter == "all" || filter == "yours") && !(sec.id == "yours" && state.userPacks.any { !it.isBuiltInPhotos() }) }
+                // (Your themes with nothing of its own still shows your packs, below)
+                if (ids.isEmpty() && add == null && sec.id != "yours") continue
+                if (ids.isNotEmpty() || add != null) Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                         DText(sec.title, style = setText(14f, 500, primary)); DText(sec.sub, style = setText(12f, color = SetColors.onSurfaceVariant))
                     }
