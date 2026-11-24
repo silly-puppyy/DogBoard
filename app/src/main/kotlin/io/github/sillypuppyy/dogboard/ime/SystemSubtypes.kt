@@ -17,19 +17,14 @@ object SystemSubtypes {
     private const val KEY = "DogBoardId="
 
     /**
-     * The subtype Android gets for keyboard [s], as Gboard's read in the system's "Change keyboard" menu: the language
-     * in its own name ("Español (España)"), the layout under it, with a combined keyboard's other languages after it
-     * ("QWERTY (ñ), with English (US)"); tagged with the keyboard's id.
+     * The subtype Android gets for keyboard [s] in the system's "Change keyboard" menu (the one Gboard's space bar
+     * opens too): the languages in their own names, a short region ("English (US) + français"); the layout under it
+     * only when [showLayout] (another keyboard has the same languages). Tagged with the keyboard's id.
      */
-    fun of(s: Subtype): InputMethodSubtype {
-        val name = s.primaryLocale.displayName(s.primaryLocale).replaceFirstChar { it.uppercase() }
-        // the entry's own layout, else its language's usual one
+    fun of(s: Subtype, showLayout: Boolean = false): InputMethodSubtype {
+        val name = nameOf(s)
         val layoutId = s.layoutId ?: LanguageLayouts.layoutOf(s.primaryLocale.language, "")
-        val layout = GeneratedLayouts.all.firstOrNull { it.id == layoutId }?.label
-        // the other languages without their region, so the line fits ("with English")
-        val others = s.secondaryLocales.map { l -> dev.patrickgold.florisboard.lib.FlorisLocale.from(l.language).let { it.displayName(it) }.replaceFirstChar { c -> c.uppercase() } }
-        val with = if (others.isEmpty()) "" else "with " + (if (others.size == 1) others[0] else others.dropLast(1).joinToString(", ") + " and " + others.last())
-        val sub = listOfNotNull(layout, with.takeIf { it.isNotEmpty() }).joinToString(", ")
+        val sub = if (showLayout) GeneratedLayouts.all.firstOrNull { it.id == layoutId }?.label.orEmpty() else ""
         // Latin-script keyboards only: the system looks for an ASCII-capable one for passwords and addresses
         val latin = android.icu.util.ULocale.addLikelySubtags(android.icu.util.ULocale.forLanguageTag(s.primaryLocale.languageTag())).script == "Latn"
         val b = InputMethodSubtype.InputMethodSubtypeBuilder()
@@ -46,6 +41,19 @@ object SystemSubtypes {
         return b.build()
     }
 
+    /** "English (US) + français": the first language with its region (a long region as its code), then the others. */
+    fun nameOf(s: Subtype): String {
+        val l = java.util.Locale.forLanguageTag(s.primaryLocale.languageTag())
+        val lang = l.getDisplayLanguage(l).replaceFirstChar { it.uppercase(l) }
+        val region = l.country.takeIf { it.isNotEmpty() }?.let { c -> l.getDisplayCountry(l).takeIf { it.length <= 12 } ?: c }
+        val first = if (region != null) "$lang ($region)" else lang
+        return (listOf(first) + s.secondaryLocales.map { o -> java.util.Locale.forLanguageTag(o.languageTag()).let { it.getDisplayLanguage(it) } }).joinToString(" + ")
+    }
+
+    /** Keyboards sharing their languages with another one: those show their layout to tell them apart. */
+    fun sameLanguages(list: List<Subtype>): Set<Long> =
+        list.groupBy { (listOf(it.primaryLocale.language) + it.secondaryLocales.map { l -> l.language }).sorted() }.values.filter { it.size > 1 }.flatten().map { it.id }.toSet()
+
     /** The DogBoard keyboard id a system subtype stands for, or null for another subtype. */
     fun idOf(sub: InputMethodSubtype?): Long? =
         sub?.extraValue?.split(',')?.firstOrNull { it.startsWith(KEY) }?.removePrefix(KEY)?.toLongOrNull()
@@ -58,7 +66,8 @@ object SystemSubtypes {
     fun publish(context: Context, list: List<Subtype>) {
         val imm = context.getSystemService(InputMethodManager::class.java) ?: return
         val id = imeId(context) ?: return
-        val subs = list.map { of(it) }.toTypedArray()
+        val twins = sameLanguages(list)
+        val subs = list.map { of(it, it.id in twins) }.toTypedArray()
         runCatching {
             @Suppress("DEPRECATION") imm.setAdditionalInputMethodSubtypes(id, subs)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) imm.setExplicitlyEnabledInputMethodSubtypes(id, subs.map { it.hashCode() }.toIntArray())

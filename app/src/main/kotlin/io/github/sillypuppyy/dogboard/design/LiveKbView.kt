@@ -41,6 +41,7 @@ fun LiveKbView(
     hintKind: String = "off",
     spaceLabel: String = "auto",
     langName: String = "English",
+    words: Map<String, String> = emptyMap(),
     capsLabels: Boolean = false,
     /** Symbol pages ("iphone" / "android") and ?123 / action keys as pills (Settings › Layout). */
     symbolPages: String = "iphone",
@@ -110,6 +111,7 @@ fun LiveKbView(
             hintKind = hintKind,
             spaceLabel = spaceLabel,
             langName = langName,
+            words = words,
             caseMode = if (capsLabels) "caps" else "shift",
             kstyle = if (bottomClassic) "android" else "ios",
             actionStyle = if (actionWords) "word" else "icon",

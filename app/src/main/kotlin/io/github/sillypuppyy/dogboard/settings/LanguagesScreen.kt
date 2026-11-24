@@ -154,16 +154,18 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             langs.flatMap { lang -> GeneratedLayouts.all.filter { it.language == lang }.sortedByDescending { it.default } }.distinctBy { it.id }
                 .sortedByDescending { it.id == current }.map { LayoutChoice(it.id, it.label, it.rows, added = false) }
         },
-        // combined: the language joins the keyboard, which takes the chosen layout; a keyboard of that language alone
-        // is folded in
+        // combined: the language joins the keyboard, which takes the chosen layout; one keyboard of that language alone
+        // is folded in (the one with that layout, else the first): another layout of it stays
         onCombine = { id, tag, layout ->
             val s = subtypes.firstOrNull { it.id == id } ?: list.firstOrNull { it.id == id }
             if (s != null) {
                 val combined = s.copy(secondaryLocales = s.secondaryLocales + FlorisLocale.fromTag(tag), layoutId = layout)
                 subtypeManager.updateSubtypes { now ->
                     // no languages stored yet: the default entry is the one being combined
-                    (now.ifEmpty { listOf(s) }).filter { it.id == id || it.primaryLocale.language != tag.substringBefore('-') || it.secondaryLocales.isNotEmpty() }
-                        .map { if (it.id == id) combined else it }
+                    val all = now.ifEmpty { listOf(s) }
+                    val alone = all.filter { it.id != id && it.primaryLocale.language == tag.substringBefore('-') && it.secondaryLocales.isEmpty() }
+                    val folded = (alone.firstOrNull { it.layoutId == layout } ?: alone.firstOrNull())?.id
+                    all.filter { it.id != folded }.map { if (it.id == id) combined else it }
                 }
                 PackDownloadQueue.ensure(context, listOf(tag))
             }
@@ -173,7 +175,11 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             subtypes.firstOrNull { it.id == id }?.let { s ->
                 val alone = s.secondaryLocales.map { l -> Subtype(0, l, emptyList(), layoutId = LanguageLayouts.layoutOf(l.language, memory)) }
                 val single = s.copy(secondaryLocales = emptyList(), layoutId = LanguageLayouts.layoutOf(s.primaryLocale.language, memory) ?: s.layoutId)
-                subtypeManager.updateSubtypes { now -> now.flatMap { if (it.id == id) listOf(single) + alone else listOf(it) } }
+                subtypeManager.updateSubtypes { now ->
+                    // a language that already has a keyboard of its own isn't added twice
+                    val have = now.filter { it.id != id && it.secondaryLocales.isEmpty() }.map { it.primaryLocale.language }.toSet()
+                    now.flatMap { if (it.id == id) listOf(single) + alone.filter { a -> a.primaryLocale.language !in have } else listOf(it) }
+                }
             }
         },
     )

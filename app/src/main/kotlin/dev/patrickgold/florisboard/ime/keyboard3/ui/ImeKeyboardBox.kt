@@ -445,6 +445,8 @@ fun ImeKeyboardBox(
                     hintKind = prefs.keyboard.hintKind.collectAsState().value,
                     spaceLabel = prefs.keyboard.spaceLabel.collectAsState().value,
                     langName = languageName,
+                    // the space bar and action key in the keyboard's own language ("интервал")
+                    words = io.github.sillypuppyy.dogboard.design.KeyWords.of(activeSubtype.primaryLocale.language),
                     multiLang = activeSubtype.secondaryLocales.isNotEmpty() ||
                         androidx.compose.ui.platform.LocalContext.current.subtypeManager().value.subtypesFlow.collectAsState().value.size > 1,
                     capsLabels = prefs.keyboard.capsLabels.collectAsState().value,

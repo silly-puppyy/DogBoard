@@ -119,6 +119,8 @@ data class KbProps(
     val spaceLabel: String = "auto",
     /** The language name for the space bar (Kb's langName). */
     val langName: String = "English",
+    /** The keys' words in the keyboard's language (KeyWords.of); empty: English. */
+    val words: Map<String, String> = emptyMap(),
     /** shift / caps: letters follow shift, or always show capitals (Kb:606). */
     val caseMode: String = "shift",
     /**
@@ -385,6 +387,11 @@ object KbSpec {
     /** The hint for a letter key at [row] (0-2) and [index] among that row's letters, or null. */
     fun positionalHint(row: Int, index: Int): String? = HINT_ROWS.getOrNull(row)?.getOrNull(index)
 
+    /** A word in the keyboard's language, or null (KeyWords). */
+    private fun KbProps.localWord(key: String): String? = words[key]
+    /** The English word, or the keyboard language's; null when that language has none (the key shows its icon). */
+    private fun KbProps.wordOf(key: String): String? = if (words.isEmpty()) key else words[key]
+
     /** Kb:508 return-key words. */
     val RET: Map<String, String> = mapOf(
         "go" to "Go", "search" to "Search", "send" to "Send", "next" to "Next", "previous" to "Previous", "done" to "Done",
@@ -496,6 +503,7 @@ object KbSpec {
         val shift = P.shift
         val kstyle = P.kstyle
         val ret = P.ret
+        val spaceWord = P.words["space"] ?: "space"
         val hints = P.hints
         // Kb:569-573
         val numRow = P.numRow ?: if (P.numberRow) "on" else if (kstyle == "android") "hints" else "off"
@@ -547,7 +555,7 @@ object KbSpec {
         // Gboard's row 3: shift and delete take what the letters leave (1.5 units), no gaps
         val shiftK = K("shift", "shift", 1.5f)
         fun bksp(w: Float = 1.5f) = K("bksp", "bksp", w)
-        fun mode(label: String, w: Float) = K("mode-$label", "mode", w, label = label)
+        fun mode(label: String, w: Float) = K("mode-$label", "mode", w, label = if (label == "ABC") P.words["abc"] ?: label else label)
         fun fnK(w: Float = 1.2533f) = K("fn", "fn", w)
         fun space(w: Float) = K("space", "space", w)
         fun retK(w: Float = 2.4933f) = K("ret", "ret", w)
@@ -697,16 +705,16 @@ object KbSpec {
                 // Kb:757
                 if (k.kind == "space") {
                     label = when {
-                        P.spaceLabel == "space" -> "space"
+                        P.spaceLabel == "space" -> spaceWord
                         P.spaceLabel == "lang" || (P.spaceLabel == "auto" && (fnKeyKind == "globe" || P.multiLang)) -> P.langName
                         // Auto with one language: the word "space"
-                        P.spaceLabel == "auto" && t.spaceText.isEmpty() -> "space"
-                        P.spaceLabel == "auto" && t.spaceText.isNotEmpty() -> t.spaceText
+                        P.spaceLabel == "auto" && t.spaceText.isEmpty() -> spaceWord
+                        P.spaceLabel == "auto" && t.spaceText.isNotEmpty() -> if (t.spaceText == "space") spaceWord else t.spaceText
                         else -> ""
                     }
                     fs = if (t.spaceText.isNotEmpty()) 15f else 14f; fw = if (t.spaceText.isNotEmpty()) t.fw else 400
                     // a language name or code in the keys' own label colour; the word "space" stays quiet (hint)
-                    fg = t.spaceFg ?: if (label.isNotEmpty() && label != "space") t.keyFg else t.hint; aria = "Space"
+                    fg = t.spaceFg ?: if (label.isNotEmpty() && label != spaceWord) t.keyFg else t.hint; aria = "Space"
                 }
                 if (k.kind == "spaceicon") { icon = "space_bar"; label = ""; aria = "Space" }
                 if (k.kind == "shift") {
@@ -721,16 +729,18 @@ object KbSpec {
                 if (k.kind == "bksp") { icon = "backspace"; fill = t.bkspFill; aria = "Delete" }
                 if (k.kind == "fn") { icon = if (fnKeyKind == "globe") "language" else "mood"; aria = if (fnKeyKind == "globe") "Next language" else "Emoji" }
                 if (k.kind == "ret") {
-                    val word = RET[ret]?.let { P.actionLabel?.takeIf { l -> l.isNotBlank() } ?: it }
+                    val word = RET[ret]?.let { P.actionLabel?.takeIf { l -> l.isNotBlank() } ?: P.localWord(ret) ?: it }
+                    // a language without its own word for this action: the icon, not an English word
+                    val iconOnly = P.words.isNotEmpty() && P.actionLabel.isNullOrBlank() && P.localWord(ret) == null
                     if (word != null) {
                         bg = t.act; bgG = t.grad["actG"]; fg = t.actFg; shadow = t.actShadow; ts = t.actTs; aria = word
                         // Kb:772
                         if (P.actionOff) { bg = t.fn; bgG = t.grad["fnG"]; fg = t.actOffFg ?: t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "$word, unavailable until you type" }
                         // Kb:774 (Gloss forces words); Panels:176 fits(): a word wider than the cap minus 8 dp a side shows the icon
-                        if ((P.actionStyle == "word" || t.forceWord) && word.length * 8.6f <= w - mh * 2 - 16f) { label = word; fs = 15f; fw = 600 }
+                        if (!iconOnly && (P.actionStyle == "word" || t.forceWord) && word.length * 8.6f <= w - mh * 2 - 16f) { label = word; fs = 15f; fw = 600 }
                         else icon = RET_ICON[ret] ?: "arrow_forward"
-                    } else if (t.retText.isNotEmpty()) { // Kb:776
-                        label = t.retText; fs = 15f; fw = t.fw; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return"
+                    } else if (t.retText.isNotEmpty() && (t.retText != "return" || P.words.isEmpty() || P.localWord("return") != null)) { // Kb:776
+                        label = if (t.retText == "return") P.localWord("return") ?: t.retText else t.retText; fs = 15f; fw = t.fw; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return"
                     } else if (P.retAlways) { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.act; bgG = t.grad["actG"]; fg = t.actFg; shadow = t.actShadow; ts = t.actTs; aria = "Return" }
                     else { icon = t.retIcon; fill = if (t.retIcon == "pets") 1 else 0; bg = t.fn; bgG = t.grad["fnG"]; fg = t.fnFg; shadow = t.fnShadow; ts = t.fnTs; aria = "Return" }
                 }
@@ -777,14 +787,14 @@ object KbSpec {
                     if (down) shadow = F.pressShadow
                     var word = ""; var ic = icon
                     val tl = k.kind == "char" || k.kind == "pad" || (k.kind == "fnchar" && label.length == 1)
-                    if (k.kind == "shift") { word = "shift"; ic = "" }
-                    if (k.kind == "bksp") { word = "delete"; ic = "" }
+                    if (k.kind == "shift") P.wordOf("shift")?.let { word = it; ic = "" }
+                    if (k.kind == "bksp") P.wordOf("delete")?.let { word = it; ic = "" }
                     // a word has to fit the face: on a narrow cap it steps down a size, then becomes the classic symbol
                     val faceW = w - mh * 2 - F.side * 2
                     fun need(n: Int, f: Float) = n * f * 0.56f + 9
                     var wordFs = 11.5f
                     if (word.isNotEmpty()) {
-                        val n = if (k.kind == "shift") 6 else word.length
+                        val n = if (k.kind == "shift") maxOf(6, word.length) else word.length
                         if (need(n, 11.5f) > faceW) wordFs = if (need(n, 10.5f) <= faceW) 10.5f else 0f
                         if (wordFs == 0f) { ic = if (k.kind == "bksp") "arrow_back" else "shift"; word = ""; wordFs = 10.5f }
                     }

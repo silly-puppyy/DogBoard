@@ -249,4 +249,14 @@ class KbSpecTest : FunSpec({
         labelled.rows.flatMap { it.keys }.first { it.base == "e" }.label shouldBe "é"
         KbSpec.render(KbProps(keyLabels = mapOf("e" to "é"), plane = "sym1")).rows.flatMap { it.keys }.none { it.label == "é" } shouldBe true
     }
+    test("key words in the keyboard's language; an action it has no word for shows the icon") {
+        val bg = KeyWords.of("bg")
+        fun key(r: KbRender, kind: String) = r.rows.flatMap { it.keys }.first { it.kind == kind }
+        key(KbSpec.render(KbProps(words = bg)), "space").label shouldBe "интервал"
+        key(KbSpec.render(KbProps(words = bg, ret = "search", actionStyle = "word")), "ret").label shouldBe "Търсене"
+        val join = key(KbSpec.render(KbProps(words = bg, ret = "join", actionStyle = "word")), "ret")
+        join.label shouldBe ""
+        key(KbSpec.render(KbProps(ret = "search", actionStyle = "word")), "ret").label shouldBe "Search"
+        KbSpec.render(KbProps(words = bg, plane = "sym1")).rows.flatMap { it.keys }.any { it.label == "АБВ" } shouldBe true
+    }
 })
