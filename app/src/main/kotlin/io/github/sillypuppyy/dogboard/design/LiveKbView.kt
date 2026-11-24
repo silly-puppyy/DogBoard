@@ -157,13 +157,14 @@ fun LiveKbView(
         val render = KbSpec.overlays(layout, themed)
         // frosted photo keys: where the caps are in the window, for the photo layer to blur the photo there only
         val frost = liveTheme().let { it.glass && it.frost }
-        androidx.compose.runtime.LaunchedEffect(frost, layout.rows, bg.top, bg.height) {
+        androidx.compose.runtime.LaunchedEffect(frost, layout.rows, bg.top, bg.height, bg.left) {
             io.github.sillypuppyy.dogboard.ime.LiveUi.frostCaps.value = if (!frost || bg.height <= 0f) emptyList() else {
                 val top = bg.top + layout.floatH + layout.barH + layout.devH
                 layout.rows.flatMapIndexed { ri, row ->
                     val rt = layout.rowTops.getOrElse(ri) { ri * layout.rowH }; val rh = layout.rowHs.getOrElse(ri) { layout.rowH }
                     row.keys.filter { !it.gap }.map { k ->
-                        io.github.sillypuppyy.dogboard.ime.LiveUi.Cap(k.x + layout.mh, top + rt + layout.mv, k.x + k.w - layout.mh, top + rt + rh - layout.mv,
+                        // x from the keys' own left edge to the window's (a one-handed keyboard sits inset)
+                        io.github.sillypuppyy.dogboard.ime.LiveUi.Cap(bg.left + k.x + layout.mh, top + rt + layout.mv, bg.left + k.x + k.w - layout.mh, top + rt + rh - layout.mv,
                             if (k.pill) (rh - 2 * layout.mv) / 2 else layout.radius)
                     }
                 }
@@ -340,7 +341,8 @@ fun LiveSideStrip(left: Boolean, onAction: (String) -> Unit, modifier: Modifier 
 }
 
 /** This view's place in the window's background (dp): [track] measures it; 0 height until both are known. */
-class WindowBgFrame(val top: Float, val height: Float, val track: Modifier)
+/** Where this view sits in the window's background (dp): its top and left (one-handed and floating keyboards sit inset). */
+class WindowBgFrame(val top: Float, val height: Float, val track: Modifier, val left: Float = 0f)
 
 @Composable
 fun rememberWindowBgFrame(): WindowBgFrame {
@@ -352,5 +354,5 @@ fun rememberWindowBgFrame(): WindowBgFrame {
     }
     val f = frame; val m = mine
     return if (f == null || m == null || f.height <= 0f) WindowBgFrame(0f, 0f, track)
-        else WindowBgFrame((m.top - f.top) / density, f.height / density, track)
+        else WindowBgFrame((m.top - f.top) / density, f.height / density, track, (m.left - f.left) / density)
 }
