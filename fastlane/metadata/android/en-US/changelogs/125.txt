@@ -1,0 +1,10 @@
+- Fix: autocorrect stopped after switching languages on phones with regional preferences (first day of week, units): English is found again
+- Fix: DogBoard opens in the language picked in Android's keyboard menu, also when switching over from another keyboard
+- Fix: English + French on the French layout gets suggestions and autocorrect
+- Autocorrect makes fewer wrong changes at every level, and fixes more typos in Spanish, French and Russian
+- Better swipe typing on Arabic, Persian, Hebrew, Russian, Ukrainian, Finnish and Greek keyboards
+- Gloss and Mechanical: clipboard, emoji and search in the theme's own style
+- Paste chip in the suggestion bar
+- Links are expanded and cleaned as you copy them
+- App colours can follow the keyboard theme
+- Copy a report now includes the keyboard's recent language events
