@@ -18,11 +18,13 @@ object LanguageLayouts {
      * one typed together with it. Only the first was checked: an English + French keyboard on French AZERTY (its ' key
      * makes it French's own) got no suggestions and no autocorrect at all (2026-11-24).
      */
-    fun matchesLoaded(layoutId: String): Boolean {
-        val loaded = (listOf(EngineLoader.pack?.tag ?: LanguagePack.DEFAULT_TAG) + EngineLoader.secondaryPacks.map { it.tag })
-            .map { it.substringBefore('-').lowercase() }
+    fun matchesLoaded(layoutId: String): Boolean =
+        types(layoutId, listOf(EngineLoader.pack?.tag ?: LanguagePack.DEFAULT_TAG) + EngineLoader.secondaryPacks.map { it.tag })
+
+    /** Whether [layoutId] types any of [tags] ("en-US", "fr"): the decision behind [matchesLoaded]. */
+    fun types(layoutId: String, tags: List<String>): Boolean {
         val types = languagesOf[layoutId] ?: setOf(layoutId.substringAfterLast('-'))
-        return loaded.any { it in types }
+        return tags.any { it.substringBefore('-').lowercase() in types }
     }
 
     /** [memory] ("en=dvorak-en,cs=qwertz-cs") as language -> layout id. */
