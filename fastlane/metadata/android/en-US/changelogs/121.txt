@@ -1,0 +1,3 @@
+- Tap a keyboard in Languages to pick its layout, combine it with another language, split it or remove it
+- Settings take your wallpaper's colours by default
+- Fixes: a photo theme's preview could stay on after closing it; two "New theme" tiles; the home screen named English for everyone; file names offered as links; frosted keys in one-handed mode; Privacy opened an old clipboard page
