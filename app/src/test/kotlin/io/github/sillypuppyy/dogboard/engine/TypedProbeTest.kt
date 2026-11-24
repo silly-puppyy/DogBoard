@@ -61,6 +61,15 @@ class TypedProbeTest : FunSpec({
         fun CurrentWord.type(c: Char, tap: Tap) = if (autoshift && c.isUpperCase() && text.isEmpty())
             addLetter(c, tap, keys, params, CaseAdapt.AUTOSHIFTED, CaseAdapt.Context.AUTOSHIFT) else addLetter(c, tap, keys, params)
         try {
+            // DOGBOARD_PROBE_PREDICT=1: the empty strip's predictions (a sentence start, then after each case's previous
+            // words), as the bar shows them with no neural model
+            if (System.getenv("DOGBOARD_PROBE_PREDICT") == "1") {
+                println("PROBE-PREDICT <start> -> " + TypingEngine.predictions(Bigrams.START, null, textBefore = ""))
+                for (line in cases) {
+                    val words = line.split('\t')[0].split(' ').filter { it.isNotEmpty() }
+                    println("PROBE-PREDICT ${words.joinToString(" ")} -> " + TypingEngine.predictions(words.lastOrNull() ?: Bigrams.START, words.getOrNull(words.size - 2)))
+                }
+            }
             // DOGBOARD_PROBE_NOISE=n: n tries per case with taps scattered 1.5 x 2 mm (6.3 dp a mm), outcomes counted
             val tries = System.getenv("DOGBOARD_PROBE_NOISE")?.toIntOrNull()
             val rnd = java.util.Random(1)
