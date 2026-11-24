@@ -40,6 +40,8 @@ data class KbTokens(
     // Kb:551: label text-shadows (Gloss; `none` elsewhere) and the shift glow with its label colour
     val keyTs: List<CssShadow> = emptyList(), val fnTs: List<CssShadow> = emptyList(), val actTs: List<CssShadow> = emptyList(),
     val glow: List<CssShadow> = emptyList(), val glowFg: Color? = null,
+    /** Kb:547/976: the suggestion chip's own shadow (Mechanical: a well pressed into the plate); empty = flat. */
+    val chipShadow: List<CssShadow> = emptyList(),
     /** Kb:507: the segmented suggestion bar (Gloss), its chip cell (`grad["segCell"]`) label colour. */
     val seg: Boolean = false, val segCellFg: Color? = null,
     /** Kb:516: Dalmatian's spots (seed, then the spotted keys' colours); null = no spots. */
@@ -231,6 +233,8 @@ object KbThemes {
                 "tile" to "#2a2a2d", "tileFg" to "#d9d5cb", "pressKey" to "#2a2a2d", "pressFn" to "#202023", "lock" to "#c65d2e", "lockFg" to "#fff3ea",
                 "keyG" to "linear-gradient(#2c2c2f, #17171a)", "fnG" to "linear-gradient(#242427, #121214)", "actG" to "linear-gradient(#b4522b, #7c3415)",
                 "keyShadow" to CAP_SH, "fnShadow" to CAP_SH, "actShadow" to CAP_SH, "actOffFg" to "rgba(190,186,177,0.45)",
+                // Kb:547: the suggestion chip is a well in the plate
+                "chipG" to "linear-gradient(#1a1a1c, #212124)", "chipShadow" to "inset 0 1px 2px rgba(0,0,0,0.6), 0 0.5px 0 rgba(255,255,255,0.06)",
                 "retText" to "return", "forceWord" to "true", "radius" to "6", "fw" to "500", "gapH" to "1.5", "gapV" to "3.5"),
         ),
         "dog" to mapOf(
@@ -321,6 +325,7 @@ object KbThemes {
             spaceText = t["spaceText"].orEmpty(), spaceFg = t["spaceFg"]?.let(::css), actOffFg = t["actOffFg"]?.let(::css),
             keyTs = CssShadow.parse(t["keyTs"] ?: "none"), fnTs = CssShadow.parse(t["fnTs"] ?: "none"), actTs = CssShadow.parse(t["actTs"] ?: "none"),
             glow = CssShadow.parse(t["glow"] ?: "none"), glowFg = t["glowFg"]?.let(::css),
+            chipShadow = CssShadow.parse(t["chipShadow"] ?: "none"),
             seg = t["seg"] == "true", segCellFg = t["segCellFg"]?.let(::css),
             spots = t["spotSeed"]?.let { KbSpots(it.toInt(), c("spotBg"), c("spotFg"), c("spotHint"), c("spotPress")) },
             face = FACES[themeId], gapH = t["gapH"]?.toFloatOrNull(), gapV = t["gapV"]?.toFloatOrNull(),

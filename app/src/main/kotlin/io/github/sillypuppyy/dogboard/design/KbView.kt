@@ -339,6 +339,33 @@ private val GRAIN: Brush by lazy {
     androidx.compose.ui.graphics.ShaderBrush(androidx.compose.ui.graphics.ImageShader(bmp, androidx.compose.ui.graphics.TileMode.Repeated, androidx.compose.ui.graphics.TileMode.Repeated))
 }
 
+/** A cap lifted off the plate (Mechanical's long-press choices): its slopes, face and [label], casting a shadow. */
+@Composable
+private fun RaisedCap(t: KbTokens, face: CapFace, label: String, w: Float, h: Float, tone: String, fg: Color) {
+    val capShape = RoundedCornerShape(7.dp); val faceShape = RoundedCornerShape(4.dp)
+    val bv = face.bevel.getValue(tone)
+    val skirt = t.grad[if (tone == "act") "actG" else "keyG"]
+    Box(
+        Modifier.size(w.dp, h.dp).cssShadow(RAISED_CAP_SHADOW, capShape).clip(capShape)
+            .then(skirt?.let { Modifier.background(it.brush()) } ?: Modifier.background(if (tone == "act") t.act else t.key))
+            .drawBehind {
+                val sw = size.width; val sh = size.height
+                val L = 4.dp.toPx(); val R = sw - 4.dp.toPx(); val T = 2.5f * density; val B = sh - 6.dp.toPx()
+                fun poly(vararg q: Float) = androidx.compose.ui.graphics.Path().apply { moveTo(q[0], q[1]); var i = 2; while (i < q.size) { lineTo(q[i], q[i + 1]); i += 2 }; close() }
+                drawPath(poly(0f, 0f, sw, 0f, R, T, L, T), bv[0]); drawPath(poly(sw, 0f, sw, sh, R, B, R, T), bv[1])
+                drawPath(poly(0f, 0f, L, T, L, B, 0f, sh), bv[3])
+                drawPath(poly(L, B, R, B, sw, sh, 0f, sh), Brush.verticalGradient(listOf(bv[2], bv[4]), startY = B, endY = sh))
+            },
+    ) {
+        Box(Modifier.padding(start = 4.dp, end = 4.dp, top = 2.5.dp, bottom = 6.dp).fillMaxSize().clip(faceShape)
+            .background((if (tone == "act") face.act else face.key).brush()).cssShadow(face.sh.filter { it.inset }, faceShape),
+            contentAlignment = Alignment.Center) {
+            val single = label.codePointCount(0, label.length) <= 1
+            DText(label, style = designTextStyle(if (single) 20.sp else 16.sp, 500, fg), maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+        }
+    }
+}
+
 /** Kb mech: the raised cap's shadow (it floats above the keys). */
 private val RAISED_CAP_SHADOW = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.9), 0 6px 10px rgba(0,0,0,0.55), 0 2px 3px rgba(0,0,0,0.5)")
 
@@ -377,7 +404,22 @@ private fun KbPopups(r: KbRender) {
             contentAlignment = Alignment.Center,
         ) { LintParent("preview") { DText(pv.label, style = designTextStyle(30.sp, pv.fw, t.popFg), overflow = TextOverflow.Visible) } }
     }
-    r.lp?.let { lp ->
+    if (face != null) r.lp?.let { lp ->
+        // sculpted caps: each choice a raised copy of a cap floating over the keys, the chosen one in the accent's
+        // colours (the canvas's raised cap was its tap preview; here the cap sinks on a tap and floats up on a hold)
+        val rows = (lp.cells.maxOfOrNull { it.row } ?: 0) + 1
+        Box(Modifier.offset(lp.x.dp, lp.y.dp).size(lp.w.dp, lp.h.dp).lint("longpress", DesignLint.Kind.FLOATING)) { LintParent("longpress") {
+            for ((i, item) in lp.items.withIndex()) {
+                val c = item.first; val chosen = item.second != Color.Transparent
+                val cell = lp.cells.getOrNull(i) ?: continue
+                val top = KbSpec.LP_PAD + (rows - 1 - cell.row) * KbSpec.LP_CELL_H
+                Box(Modifier.offset((cell.x - lp.x + 1).dp, (top + 1).dp).lint("longpress:$c")) {
+                    RaisedCap(t, face, c, (cell.w - 2), KbSpec.LP_CELL_H - 2, if (chosen) "act" else "key", if (chosen) t.actFg else t.keyFg)
+                }
+            }
+        } }
+    }
+    if (face == null) r.lp?.let { lp ->
         // cells sized to their text, rows of 8, the second row above (designer answers §6); the
         // cells come from KbSpec.longPressCells, the same geometry the finger selects with
         val rows = (lp.cells.maxOfOrNull { it.row } ?: 0) + 1
@@ -531,8 +573,10 @@ private fun slotStyle(s: KbSlot) = designTextStyle(s.fs.sp, s.wt, s.fg).copy(lin
 
 @Composable
 private fun SlotText(r: KbRender, s: KbSlot) {
-    val chip = Modifier.cssShadow(s.ring, RoundedCornerShape(50))
-        .background(s.bg, RoundedCornerShape(50))
+    // outer shadows behind the chip, inset ones over its fill (Mechanical's well)
+    val chip = Modifier.cssShadow(s.ring.filter { !it.inset }, RoundedCornerShape(50))
+        .then(s.bgG?.let { Modifier.background(it.brush(), RoundedCornerShape(50)) } ?: Modifier.background(s.bg, RoundedCornerShape(50)))
+        .cssShadow(s.ring.filter { it.inset }, RoundedCornerShape(50))
         .padding(horizontal = SLOT_PADDING_H, vertical = 6.dp)
     if (r.slotOverflow != "fade") {
         if (s.ts.isEmpty()) DText(s.text, chip, style = slotStyle(s), maxLines = 1, squash = true)

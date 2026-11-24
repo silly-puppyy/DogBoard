@@ -221,6 +221,8 @@ data class KbLangMenu(val x: Float, val y: Float, val items: List<KbLangItem>)
 data class KbSlot(
     val text: String, val kind: String, val aria: String, val bg: Color, val fg: Color,
     val wt: Int, val fs: Float, val ring: List<CssShadow>, val showDiv: Boolean,
+    /** Kb:974: the chip's gradient fill (Mechanical's well), over [bg]. */
+    val bgG: CssGradient? = null,
     // Kb:860-866: the segmented bar's cells and full-height dividers (Gloss); defaults = the plain bar
     val ts: List<CssShadow> = emptyList(), val cellBg: CssGradient? = null, val cellSh: List<CssShadow> = emptyList(),
     val divH: Float = 22f, val divBg: Color = Color.Transparent, val divSh: List<CssShadow> = emptyList(),
@@ -469,7 +471,8 @@ object KbSpec {
         if (P.preview.isEmpty() && P.longpress.isEmpty() && P.trackpadX == null) return r
         val pos = r.pos; val W = r.W; val t = r.t; val trackpad = r.trackpad
         // Kb:571-576 key preview
-        val pv = P.preview.takeIf { it.isNotEmpty() && it in pos && !trackpad }?.let { id ->
+        // sculpted caps show no preview: the cap sinks under the finger, and the raised cap is the long-press's
+        val pv = P.preview.takeIf { it.isNotEmpty() && it in pos && !trackpad && t.face == null }?.let { id ->
             val p = pos.getValue(id); val w = p.capW + 18
             KbPreview(x = max(2f, min(W - w - 2, p.capX + p.capW / 2 - w / 2)), y = p.capTop - 6 - 58, w = w, label = p.label, fw = t.fw, alpha = P.previewFade ?: 1f)
         }
@@ -514,8 +517,8 @@ object KbSpec {
         val hints = P.hints
         // Kb:569-573
         val numRow = P.numRow ?: if (P.numberRow) "on" else if (kstyle == "android") "hints" else "off"
-        // sculpted caps always print the long-press character, like a second legend (canvas Kb mech)
-        val hintKind = if (t.face != null) "symbols" else P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
+        // every theme follows the hint setting (the canvas's Mechanical always printed the long-press character)
+        val hintKind = P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
         val panel = P.panel
         val dev = P.dev && panel.isEmpty()
         // Kb:604-605: with Ctrl armed, letters show what Ctrl + letter does
@@ -887,7 +890,8 @@ object KbSpec {
                 fg = if (isChip) t.chipFg else inkAt(48 + (W - 96) * (i + 0.5f) / slotSrc!!.size, barY, t.barFg),
                 // Gboard's candidates are 18 dp (traced), ours 16 in the canvas
                 wt = if (isChip) 600 else 400, fs = if (kind == "emo") 22f else if (t.gboardRow) 18f else 16f,
-                ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else emptyList(),
+                ring = if (kind == "kept") listOf(CssShadow(true, 0f, 0f, 0f, 1.5f, t.div)) else if (isChip) t.chipShadow else emptyList(),
+                bgG = if (isChip) t.grad["chipG"] else null,
                 showDiv = i > 0 && !isChip && !prevChip, divBg = t.div, ts = if (isChip) emptyList() else t.keyTs,
             )
         }
