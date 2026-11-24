@@ -76,6 +76,9 @@ private val SPACE = " ".asK3String()
 // DogBoard: how far (key widths) a press on a letter has to move to become a swipe
 private const val GLIDE_START_KEYS = 0.6f
 
+// DogBoard: iOS's interval for the candidates during a swipe (0.2 s, UIKeyboardLayoutStar completeHitTestForTouchDragged)
+private const val SWIPE_PREVIEW_MS = 200L
+
 // DogBoard: a swipe lasts at least this long (Gboard's min_gesture_time_threshold) and its path is at least
 // this long (key widths); shorter or quicker slides are taps
 private const val GLIDE_MIN_MS = 150L
@@ -210,6 +213,9 @@ class PointerTracker(
     ) {
         /** The press as a tap (key, touch, targets), typed if the slide turns out too short or quick to be a swipe. */
         var tapKey: TouchKey? = null
+        /** When the bar last showed what the path so far reads as (ImeController.previewSwipe), and the letter keys' centres. */
+        var previewT: Long = startT
+        var centres: Map<Char, Pair<Float, Float>>? = null
         var tap: Tap? = null
         var tapTargets: Map<Char, io.github.sillypuppyy.dogboard.touch.KeyTarget> = emptyMap()
         var tapParams: io.github.sillypuppyy.dogboard.touch.GaussianTouch.Params? = null
@@ -540,6 +546,13 @@ class PointerTracker(
                     // only what the trail can still show (TRAIL_MS)
                     val from = g.ts.indexOfFirst { move.uptimeMillis - it <= TRAIL_MS + 50 }.coerceAtLeast(0)
                     glideTrail.value = (from until g.xs.size).map { TrailPoint(g.xs[it] * density, g.ys[it] * density, g.ts[it]) }
+                }
+                // iOS: the candidates follow the swipe, every 0.2 s (UIKeyboardLayoutStar, progressive candidates)
+                if (move.uptimeMillis - g.previewT >= SWIPE_PREVIEW_MS) {
+                    g.previewT = move.uptimeMillis
+                    val centres = g.centres ?: touchKeyboard.letterTargets(g.layerId, size.width / density, size.height / density, typingSpeed.interval)
+                        .first.entries.associate { (c, t) -> c.lowercaseChar() to (t.centerX to t.centerY) }.also { g.centres = it }
+                    imeController.previewSwipe(imeController.swipeSeq, g.xs.toFloatArray(), g.ys.toFloatArray(), centres)
                 }
                 return
             }

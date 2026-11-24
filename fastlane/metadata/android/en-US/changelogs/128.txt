@@ -1,0 +1,2 @@
+- Swipe typing shows the words it reads in the suggestion bar while you swipe, updated as your finger moves (as on iPhone)
+- Swipe suggestions no longer offer the same word twice in different capitals

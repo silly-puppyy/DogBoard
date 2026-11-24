@@ -82,6 +82,7 @@ import io.github.sillypuppyy.dogboard.engine.Bigrams
 import io.github.sillypuppyy.dogboard.engine.Candidate
 import io.github.sillypuppyy.dogboard.engine.CurrentWord
 import io.github.sillypuppyy.dogboard.engine.Suggestion
+import kotlinx.coroutines.sync.withLock
 import io.github.sillypuppyy.dogboard.engine.SuggestionStrip
 import io.github.sillypuppyy.dogboard.engine.Tap
 import io.github.sillypuppyy.dogboard.engine.TypingEngine
@@ -194,9 +195,11 @@ class ImeController(
      * as a bar pick would (UpdateImeStateScope.acceptSwipe).
      */
     suspend fun commitSwipe(xs: FloatArray, ys: FloatArray, centres: Map<Char, Pair<Float, Float>>) {
+        swipeSeq++  // a preview still running is stale now
         val textBefore = snapshotState().content.surroundingText.textBefore
         val t0 = SystemClock.uptimeMillis()
-        val words = kotlinx.coroutines.withContext(Dispatchers.Default) {
+        // one decode at a time (the swipe model's interpreter): the finished swipe waits for a preview in flight
+        val words = swipeLock.withLock { kotlinx.coroutines.withContext(Dispatchers.Default) {
             // debug builds, after `adb shell setprop log.tag.DogBoardSwipe DEBUG`: each swipe's beam in the log
             io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeDebugLog =
                 BuildConfig.DEBUG && android.util.Log.isLoggable("DogBoardSwipe", android.util.Log.DEBUG)
@@ -204,11 +207,56 @@ class ImeController(
                 xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
                 universal = universalSwipe,
             )
-        }
+        } }
         android.util.Log.i("DogBoardPerf", "swipe: ${xs.size} points -> ${words.size} words in ${SystemClock.uptimeMillis() - t0} ms (${io.github.sillypuppyy.dogboard.engine.TypingEngine.lastSwipeTiming})")
         if (words.isEmpty()) return
         updateState { acceptSwipe(words) }
     }
+
+    private val swipeLock = kotlinx.coroutines.sync.Mutex()
+
+    /** The swipe being drawn, counted: a preview started before the finished swipe (or a later preview) is dropped. */
+    @Volatile var swipeSeq = 0
+        private set
+
+    /**
+     * DogBoard, iOS's progressive candidates (KeyboardContinuousPathProgressiveCandidates, on by default; UIKit decodes
+     * the path so far every 0.2 s while the finger moves): the words the swipe so far reads as, on the bar, the best in
+     * the middle. Skipped while a decode is running; the finished swipe ([commitSwipe]) replaces it.
+     */
+    fun previewSwipe(seq: Int, xs: FloatArray, ys: FloatArray, centres: Map<Char, Pair<Float, Float>>) {
+        if (swipeLock.isLocked) return
+        scope.launch {
+            val state = snapshotState()
+            val textBefore = state.content.surroundingText.textBefore
+            val words = swipeLock.withLock {
+                if (seq != swipeSeq) return@launch
+                kotlinx.coroutines.withContext(Dispatchers.Default) {
+                    io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeWords(
+                        xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
+                        universal = universalSwipe,
+                    )
+                }
+            }
+            if (seq != swipeSeq || words.isEmpty()) return@launch
+            // in the case the word will go in with (acceptSwipe)
+            val shift = state.flags.inputShiftState
+            fun cased(w: String) = when (shift) {
+                InputShiftState.CAPS_LOCK -> w.uppercase()
+                InputShiftState.SHIFTED_MANUAL, InputShiftState.SHIFTED_AUTOMATIC -> w.replaceFirstChar { it.titlecase() }
+                else -> w
+            }
+            // a word once (the recogniser returns casings apart: "Wonder" beside "wonder")
+            val top = words.map(::cased).distinctBy { it.lowercase() }.take(SuggestionStrip.SLOTS)
+            val strip = listOfNotNull(
+                top.getOrNull(1)?.let { Suggestion(it, Suggestion.Kind.WORD) },
+                Suggestion(top[0], Suggestion.Kind.AUTOCORRECT),
+                top.getOrNull(2)?.let { Suggestion(it, Suggestion.Kind.WORD) },
+            )
+            kotlinx.coroutines.withContext(Dispatchers.Main) { if (seq == swipeSeq) suggestionSink?.invoke(strip) }
+        }
+    }
+
     private var lastCorrection: LastCorrection? = null
 
     // DogBoard: an autocorrection that was made, until the next word shows it was kept (iOS
@@ -1252,7 +1300,8 @@ class ImeController(
             lastSpaceUptime = SystemClock.uptimeMillis()
             autoSpace = true
             swipeCommitted = "$word "
-            swipeOthers = words.drop(1).map(::cased)
+            // a word once: the recogniser returns casings apart ("wonderful", then "Wonderful" offered beside it)
+            swipeOthers = words.drop(1).map(::cased).filter { !it.equals(word, ignoreCase = true) }.distinctBy { it.lowercase() }
             reevaluateInputShiftState()
             publishSuggestions()
         }
