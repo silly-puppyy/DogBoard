@@ -202,7 +202,8 @@ def prompts(lang, n=40):
     out = []
     for line in open(path, encoding="utf-8"):
         w = line.split()
-        if len(w) >= 10: out.append(" ".join(w[:6]))
+        # LOWER=1: English's openings lowercased like the other languages' sets (they are case-folded), a fair start
+        if len(w) >= 10: out.append(" ".join(w[:6]).lower() if os.environ.get("LOWER") == "1" else " ".join(w[:6]))
         if len(out) >= n: break
     return out
 
