@@ -105,6 +105,10 @@ class SetHomeActions(
     /** The Look row's line: the chosen theme(s). */
     val lookSub: String = "DogBoard, follows your wallpaper",
     val onKeyboardHeight: (Int) -> Unit = {},
+    /** A newer DogBoard on GitHub (AppUpdates), its version; null: none. [updating]: its download is running. */
+    val update: String? = null,
+    val updating: Boolean = false,
+    val onUpdate: () -> Unit = {},
 )
 
 @Composable
@@ -139,6 +143,19 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 ) {
                     Symbol("search", 24.sp, SetColors.onSurfaceVariant)
                     DText("Search settings", Modifier.weight(1f), style = setText(16f, color = SetColors.onSurfaceVariant))
+                }
+                // a newer DogBoard (the GitHub build checks its releases once a day)
+                actions?.update?.let { v ->
+                    Row(
+                        Modifier.fillMaxWidth().background(SetColors.secondaryContainer, RoundedCornerShape(24.dp)).padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        DText("DogBoard $v is out", Modifier.weight(1f), style = setText(16f, 500, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        Box(
+                            Modifier.height(40.dp).background(SetColors.primary, RoundedCornerShape(20.dp)).then(if (actions.updating) Modifier else Modifier.clickable { actions.onUpdate() }).padding(horizontal = 18.dp),
+                            contentAlignment = Alignment.Center,
+                        ) { DText(if (actions.updating) "Downloading" else "Update", style = setText(14f, 500, SetColors.screen)) }
+                    }
                 }
                 // settings tree v3 in Gboard's order, split into cards as Gboard's home is
                 for (group in SetHomeSpec.groups) SetRows(Modifier.fillMaxWidth()) {

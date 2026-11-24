@@ -18,6 +18,7 @@ package dev.patrickgold.florisboard.app.settings
 
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.collectAsState as collectFlowAsState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Assignment
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.LocalNavController
@@ -90,9 +92,25 @@ fun HomeScreen() {
         }
         val scope = androidx.compose.runtime.rememberCoroutineScope()
         val L = io.github.sillypuppyy.dogboard.engine.AutocorrectLevel.entries
+        // DogBoard: the GitHub build's update check (once a day) and its home card
+        val update by io.github.sillypuppyy.dogboard.settings.AppUpdates.available.collectFlowAsState()
+        var updating by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        androidx.compose.runtime.LaunchedEffect(Unit) { io.github.sillypuppyy.dogboard.settings.AppUpdates.checkIfDue() }
+        val updateContext = androidx.compose.ui.platform.LocalContext.current
         io.github.sillypuppyy.dogboard.design.settings.SetHome(
             modifier = androidx.compose.ui.Modifier.fillMaxSize(),
             actions = io.github.sillypuppyy.dogboard.design.settings.SetHomeActions(
+                update = update?.version,
+                updating = updating,
+                onUpdate = {
+                    val r = update
+                    if (r != null && !updating) scope.launch {
+                        updating = true
+                        val ok = io.github.sillypuppyy.dogboard.settings.AppUpdates.install(updateContext, r)
+                        updating = false
+                        if (!ok) android.widget.Toast.makeText(updateContext, "The download didn’t work. Try again later", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                },
                 autocorrect = if (!autocorrectOn) 0 else 1 + L.indexOf(level),
                 onAutocorrect = { i ->
                     scope.launch {

@@ -11,6 +11,7 @@ import dev.patrickgold.florisboard.app.Routes
 import dev.patrickgold.florisboard.clipboardManager
 import io.github.sillypuppyy.dogboard.design.settings.SetGroup
 import kotlinx.coroutines.launch
+import dev.patrickgold.jetpref.datastore.model.collectAsState
 import androidx.compose.runtime.setValue
 
 /**
@@ -49,6 +50,15 @@ fun DogAboutScreen() {
                 scope.launch { noBackupPrefs.isImeSetUp.set(false) }
                 nav.navigate(Routes.Setup.Screen()) { popUpTo(Routes.Settings.Home) { inclusive = true } }
             }
+            if (io.github.sillypuppyy.dogboard.settings.AppUpdates.supported) {
+                val check by prefs.other.updateCheck.collectAsState()
+                io.github.sillypuppyy.dogboard.design.settings.SetSwitchRow("ab:updates", "Check for updates", "Once a day, DogBoard asks GitHub whether a newer version is out", check) { on ->
+                    scope.launch { prefs.other.updateCheck.set(on) }
+                }
+            }
+            SetPageLink("ab:new", "What’s new", "Every version and its changes", icon = "open_in_new") { uri.openUri("https://github.com/${io.github.sillypuppyy.dogboard.settings.AppUpdates.REPO}/releases") }
+            SetPageLink("ab:source", "Source code", "DogBoard on GitHub: code, issues and discussions", icon = "open_in_new") { uri.openUri("https://github.com/${io.github.sillypuppyy.dogboard.settings.AppUpdates.REPO}") }
+            SetPageLink("ab:privacy", "Privacy policy", "What stays on your phone, and when DogBoard goes online", icon = "open_in_new") { uri.openUri("https://github.com/${io.github.sillypuppyy.dogboard.settings.AppUpdates.REPO}/blob/main/PRIVACY.md") }
             SetPageLink("ab:floris", "Built on FlorisBoard", "The open-source keyboard DogBoard started from", icon = "open_in_new") { uri.openUri("https://github.com/florisboard/florisboard") }
         }
         SetGroup("Licenses") {

@@ -72,6 +72,8 @@ configure<ApplicationExtension> {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "BUILD_COMMIT_HASH", "\"${getGitCommitHash().get()}\"")
+        // DogBoard: only the GitHub build updates itself (AppUpdates); store builds (F-Droid) are updated by the store
+        buildConfigField("boolean", "SELF_UPDATE", "false")
         buildConfigField("String", "FLADDONS_API_VERSION", "\"v~draft2\"")
         buildConfigField("String", "FLADDONS_STORE_URL", "\"beta.addons.florisboard.org\"")
 
@@ -128,6 +130,14 @@ configure<ApplicationExtension> {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isMinifyEnabled = true
             isShrinkResources = true
+        }
+
+        // DogBoard: the build published on GitHub releases: release + its own updater (src/github adds the install
+        // permission). `./gradlew :app:assembleGithub`
+        create("github") {
+            initWith(getByName("release"))
+            buildConfigField("boolean", "SELF_UPDATE", "true")
+            matchingFallbacks += listOf("release")
         }
 
         create("benchmark") {
