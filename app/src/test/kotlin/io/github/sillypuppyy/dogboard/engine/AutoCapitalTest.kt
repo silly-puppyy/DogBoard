@@ -28,7 +28,8 @@ private fun finished(text: String, auto: Boolean): String {
 
 /** A capital the keyboard added at a sentence start: "Aldo" (the user meant "Also", 2026-11-21) still corrects (the full JVM engine does; the phone kept "Aldo", unreproduced: likely the neural path). */
 class AutoCapitalTest : FunSpec({
-    test("Aldo at a sentence start, capitalised by the keyboard, is also") {
+    // needs the English trigram model (not in git): skipped in a fresh clone, as the rankings it checks come from it
+    test("Aldo at a sentence start, capitalised by the keyboard, is also").config(enabled = File("src/main/assets/dogboard/en.ngrams.bin").isFile) {
         TypingEngine.unloadForTest()
         // as the app loads it: word pairs, trigram (where present), abbreviations, misspellings, letter model
         val a = "src/main/assets/dogboard/"

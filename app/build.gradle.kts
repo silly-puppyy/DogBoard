@@ -186,27 +186,47 @@ kover {
 
 // DogBoard: a release ships the word-data snapshots of its packs' current word lists (SnapshotExportTest, not in git);
 // without them a first start parses the word lists, which 2 GB phones can't afford (Galaxy A10, 2026-11-21)
+fun missingSnapshots(assetsDir: File): List<String> {
+    val missing = mutableListOf<String>()
+    assetsDir.resolve("dogboard/packs").listFiles().orEmpty().forEach { pack ->
+        val manifest = pack.resolve("manifest.json").takeIf { it.isFile } ?: return@forEach
+        @Suppress("UNCHECKED_CAST")
+        val files = (groovy.json.JsonSlurper().parse(manifest) as Map<String, Any?>)["files"] as? Map<String, Map<String, Any?>> ?: return@forEach
+        val key = listOf("lexicon", "bigrams").joinToString("") { (files[it]?.get("sha256") as? String)?.take(8).orEmpty() }
+        if (key.length != 16) return@forEach
+        for (name in listOf("lexicon", "bigrams")) {
+            val f = assetsDir.resolve("dogboard/snapshot/${pack.name}-$name-$key.dgz")
+            if (!f.isFile) missing += f.name
+        }
+    }
+    return missing
+}
 val checkShippedSnapshots by tasks.registering {
     val assetsDir = file("src/main/assets")
     doLast {
-        val missing = mutableListOf<String>()
-        assetsDir.resolve("dogboard/packs").listFiles().orEmpty().forEach { pack ->
-            val manifest = pack.resolve("manifest.json").takeIf { it.isFile } ?: return@forEach
-            @Suppress("UNCHECKED_CAST")
-            val files = (groovy.json.JsonSlurper().parse(manifest) as Map<String, Any?>)["files"] as? Map<String, Map<String, Any?>> ?: return@forEach
-            val key = listOf("lexicon", "bigrams").joinToString("") { (files[it]?.get("sha256") as? String)?.take(8).orEmpty() }
-            if (key.length != 16) return@forEach
-            for (name in listOf("lexicon", "bigrams")) {
-                val f = assetsDir.resolve("dogboard/snapshot/${pack.name}-$name-$key.dgz")
-                if (!f.isFile) missing += f.name
-            }
-        }
+        val missing = missingSnapshots(assetsDir)
         if (missing.isNotEmpty()) throw GradleException(
             "Missing word-data snapshots (DOGBOARD_EXPORT_SNAPSHOT=1 ./gradlew :app:testDebugUnitTest --rerun): " + missing.joinToString()
         )
     }
 }
 tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(checkShippedSnapshots) }
+
+// a build from a fresh clone (F-Droid, anyone) makes the snapshots first: the exporter (ShippedSnapshots in the unit
+// tests' sources) as a plain JVM run, only when some are missing (a release from a clone failed on the check,
+// 2026-11-24; a Test task ran every spec, Kotest ignored the filter)
+afterEvaluate {
+    val unit = tasks.named<Test>("testDebugUnitTest")
+    val exportShippedSnapshots = tasks.register<JavaExec>("exportShippedSnapshots") {
+        description = "Builds the word-data snapshots a release ships"
+        dependsOn("compileDebugUnitTestKotlin")
+        classpath = unit.get().classpath
+        mainClass.set("io.github.sillypuppyy.dogboard.engine.ShippedSnapshots")
+        workingDir = projectDir
+        onlyIf { missingSnapshots(file("src/main/assets")).isNotEmpty() }
+    }
+    checkShippedSnapshots.configure { dependsOn(exportShippedSnapshots) }
+}
 
 dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
