@@ -320,6 +320,7 @@
             <row keys="gap1-kazakh-pc-kk u0451 u04d9 u0456 u04a3 u0493 u04af u04b1 u049b u04e9 u04bb gap1-kazakh-pc-kk" />
             <row keys="u0439 u0446 u0443 u043a u0435 u043d u0433 u0448 u0449 u0437 u0445 u044a" />
             <row keys="gap3-kazakh-pc-kk u0444 u044b u0432 u0430 u043f u0440 u043e u043b u0434 u0436 u044d gap3-kazakh-pc-kk" />
+            <row keys="base-to-shift-narrow-kazakh-pc-kk u044f u0447 u0441 u043c u0438 u0442 u044c u0431 u044e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -327,6 +328,7 @@
             <row keys="gap1-kazakh-pc-kk U0401 U04d8 U0406 U04a2 U0492 U04ae U04b0 U049a U04e8 U04ba gap1-kazakh-pc-kk" />
             <row keys="U0419 U0426 U0423 U041a U0415 U041d U0413 U0428 U0429 U0417 U0425 U042a" />
             <row keys="gap3-kazakh-pc-kk U0424 U042b U0412 U0410 U041f U0420 U041e U041b U0414 U0416 U042d gap3-kazakh-pc-kk" />
+            <row keys="shift-to-base-narrow-kazakh-pc-kk U042f U0427 U0421 U041c U0418 U0422 U042c U0411 U042e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -334,6 +336,7 @@
             <row keys="gap1-kazakh-pc-kk u0451 u04d9 u0456 u04a3 u0493 u04af u04b1 u049b u04e9 u04bb gap1-kazakh-pc-kk" />
             <row keys="u0439 u0446 u0443 u043a u0435 u043d u0433 u0448 u0449 u0437 u0445 u044a" />
             <row keys="gap3-kazakh-pc-kk u0444 u044b u0432 u0430 u043f u0440 u043e u043b u0434 u0436 u044d gap3-kazakh-pc-kk" />
+            <row keys="base-to-shift-narrow-kazakh-pc-kk u044f u0447 u0441 u043c u0438 u0442 u044c u0431 u044e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -341,6 +344,7 @@
             <row keys="gap1-kazakh-pc-kk U0401 U04d8 U0406 U04a2 U0492 U04ae U04b0 U049a U04e8 U04ba gap1-kazakh-pc-kk" />
             <row keys="U0419 U0426 U0423 U041a U0415 U041d U0413 U0428 U0429 U0417 U0425 U042a" />
             <row keys="gap3-kazakh-pc-kk U0424 U042b U0412 U0410 U041f U0420 U041e U041b U0414 U0416 U042d gap3-kazakh-pc-kk" />
+            <row keys="shift-to-base-narrow-kazakh-pc-kk U042f U0427 U0421 U041c U0418 U0422 U042c U0411 U042e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -348,6 +352,7 @@
             <row keys="gap1-kazakh-pc-kk u0451 u04d9 u0456 u04a3 u0493 u04af u04b1 u049b u04e9 u04bb gap1-kazakh-pc-kk" />
             <row keys="u0439 u0446 u0443 u043a u0435 u043d u0433 u0448 u0449 u0437 u0445 u044a" />
             <row keys="gap3-kazakh-pc-kk u0444 u044b u0432 u0430 u043f u0440 u043e u043b u0434 u0436 u044d gap3-kazakh-pc-kk" />
+            <row keys="base-to-shift-narrow-kazakh-pc-kk u044f u0447 u0441 u043c u0438 u0442 u044c u0431 u044e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -355,6 +360,7 @@
             <row keys="gap1-kazakh-pc-kk U0401 U04d8 U0406 U04a2 U0492 U04ae U04b0 U049a U04e8 U04ba gap1-kazakh-pc-kk" />
             <row keys="U0419 U0426 U0423 U041a U0415 U041d U0413 U0428 U0429 U0417 U0425 U042a" />
             <row keys="gap3-kazakh-pc-kk U0424 U042b U0412 U0410 U041f U0420 U041e U041b U0414 U0416 U042d gap3-kazakh-pc-kk" />
+            <row keys="shift-to-base-narrow-kazakh-pc-kk U042f U0427 U0421 U041c U0418 U0422 U042c U0411 U042e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -362,6 +368,7 @@
             <row keys="gap1-kazakh-pc-kk u0451 u04d9 u0456 u04a3 u0493 u04af u04b1 u049b u04e9 u04bb gap1-kazakh-pc-kk" />
             <row keys="u0439 u0446 u0443 u043a u0435 u043d u0433 u0448 u0449 u0437 u0445 u044a" />
             <row keys="gap3-kazakh-pc-kk u0444 u044b u0432 u0430 u043f u0440 u043e u043b u0434 u0436 u044d gap3-kazakh-pc-kk" />
+            <row keys="base-to-shift-narrow-kazakh-pc-kk u044f u0447 u0441 u043c u0438 u0442 u044c u0431 u044e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -369,6 +376,7 @@
             <row keys="gap1-kazakh-pc-kk U0401 U04d8 U0406 U04a2 U0492 U04ae U04b0 U049a U04e8 U04ba gap1-kazakh-pc-kk" />
             <row keys="U0419 U0426 U0423 U041a U0415 U041d U0413 U0428 U0429 U0417 U0425 U042a" />
             <row keys="gap3-kazakh-pc-kk U0424 U042b U0412 U0410 U041f U0420 U041e U041b U0414 U0416 U042d gap3-kazakh-pc-kk" />
+            <row keys="shift-to-base-narrow-kazakh-pc-kk U042f U0427 U0421 U041c U0418 U0422 U042c U0411 U042e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -376,6 +384,7 @@
             <row keys="gap1-kazakh-pc-kk u0451 u04d9 u0456 u04a3 u0493 u04af u04b1 u049b u04e9 u04bb gap1-kazakh-pc-kk" />
             <row keys="u0439 u0446 u0443 u043a u0435 u043d u0433 u0448 u0449 u0437 u0445 u044a" />
             <row keys="gap3-kazakh-pc-kk u0444 u044b u0432 u0430 u043f u0440 u043e u043b u0434 u0436 u044d gap3-kazakh-pc-kk" />
+            <row keys="base-to-shift-narrow-kazakh-pc-kk u044f u0447 u0441 u043c u0438 u0442 u044c u0431 u044e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -383,6 +392,7 @@
             <row keys="gap1-kazakh-pc-kk U0401 U04d8 U0406 U04a2 U0492 U04ae U04b0 U049a U04e8 U04ba gap1-kazakh-pc-kk" />
             <row keys="U0419 U0426 U0423 U041a U0415 U041d U0413 U0428 U0429 U0417 U0425 U042a" />
             <row keys="gap3-kazakh-pc-kk U0424 U042b U0412 U0410 U041f U0420 U041e U041b U0414 U0416 U042d gap3-kazakh-pc-kk" />
+            <row keys="shift-to-base-narrow-kazakh-pc-kk U042f U0427 U0421 U041c U0418 U0422 U042c U0411 U042e bksp-narrow-kazakh-pc-kk" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

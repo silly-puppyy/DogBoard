@@ -393,6 +393,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="base-to-shift gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -400,6 +402,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="shift-to-base gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -407,6 +411,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="base-to-shift gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -414,6 +420,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="shift-to-base gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -421,6 +429,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="base-to-shift gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -428,6 +438,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="shift-to-base gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -435,6 +447,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="base-to-shift gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -442,6 +456,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="shift-to-base gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -449,6 +465,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="base-to-shift gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -456,6 +474,8 @@
             <row keys="gap1-nepali-ne U0905 U0906 U0907 U0908 U0909 U090a U090f U0910 U0913 U0914 gap1-nepali-ne" />
             <row keys="gap2-nepali-ne U0915 U0916 U0917 U0918 U091a U091b U091c U091d u093c u0902 gap2-nepali-ne" />
             <row keys="gap3-nepali-ne U091f U0920 U0921 U0922 U0923 U0924 U0925 U0926 U0927 U0928 gap3-nepali-ne" />
+            <row keys="U092a U092b U092c U092d U092e U092f U0930 U0932 U0935 U0936 u0021" />
+            <row keys="shift-to-base gaplast-nepali-ne U0937 U0938 U0939 U090b u094d u002c u0964 gaplast-nepali-ne bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

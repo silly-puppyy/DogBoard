@@ -327,6 +327,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="base-to-shift-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -334,6 +335,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="shift-to-base-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -341,6 +343,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="base-to-shift-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -348,6 +351,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="shift-to-base-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -355,6 +359,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="base-to-shift-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -362,6 +367,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="shift-to-base-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -369,6 +375,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="base-to-shift-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -376,6 +383,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="shift-to-base-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -383,6 +391,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="base-to-shift-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -390,6 +399,7 @@
             <row keys="U062d U0686 U062c U062b U0679 U062a U067e U0628 U0627 U0622" />
             <row keys="U0635 U0634 U0633 U0632 U0691 U0631 U0630 U0688 U062f U062e" />
             <row keys="U0644 U06af U06a9 U0642 U0641 U063a U0639 U0638 U0637 U0636" />
+            <row keys="shift-to-base-narrow-urdu-in-ur U06d2 U06cc U0621 U06be U06c1 U0648 U06ba U0646 U0645 bksp-narrow-urdu-in-ur" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

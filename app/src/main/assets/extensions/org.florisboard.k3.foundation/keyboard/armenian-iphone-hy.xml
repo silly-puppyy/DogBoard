@@ -324,6 +324,7 @@
             <row keys="gap1-armenian-iphone-hy u0571 u0575 u0585 u057c u056a gap1-armenian-iphone-hy" />
             <row keys="u056d u057e u0567 u0580 u0564 u0565 u0568 u056b u0578 u0562 u0579 u057b" />
             <row keys="gap3-armenian-iphone-hy u0561 u057d u057f u0586 u056f u0570 u0573 u0584 u056c u0569 u0583 gap3-armenian-iphone-hy" />
+            <row keys="base-to-shift-narrow-armenian-iphone-hy u0566 u0581 u0563 u0582 u057a u0576 u0574 u0577 u0572 u056e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -331,6 +332,7 @@
             <row keys="gap1-armenian-iphone-hy U0541 U0545 U0555 U054c U053a gap1-armenian-iphone-hy" />
             <row keys="U053d U054e U0537 U0550 U0534 U0535 U0538 U053b U0548 U0532 U0549 U054b" />
             <row keys="gap3-armenian-iphone-hy U0531 U054d U054f U0556 U053f U0540 U0543 U0554 U053c U0539 U0553 gap3-armenian-iphone-hy" />
+            <row keys="shift-to-base-narrow-armenian-iphone-hy U0536 U0551 U0533 U0552 U054a U0546 U0544 U0547 U0542 U053e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -338,6 +340,7 @@
             <row keys="gap1-armenian-iphone-hy u0571 u0575 u0585 u057c u056a gap1-armenian-iphone-hy" />
             <row keys="u056d u057e u0567 u0580 u0564 u0565 u0568 u056b u0578 u0562 u0579 u057b" />
             <row keys="gap3-armenian-iphone-hy u0561 u057d u057f u0586 u056f u0570 u0573 u0584 u056c u0569 u0583 gap3-armenian-iphone-hy" />
+            <row keys="base-to-shift-narrow-armenian-iphone-hy u0566 u0581 u0563 u0582 u057a u0576 u0574 u0577 u0572 u056e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -345,6 +348,7 @@
             <row keys="gap1-armenian-iphone-hy U0541 U0545 U0555 U054c U053a gap1-armenian-iphone-hy" />
             <row keys="U053d U054e U0537 U0550 U0534 U0535 U0538 U053b U0548 U0532 U0549 U054b" />
             <row keys="gap3-armenian-iphone-hy U0531 U054d U054f U0556 U053f U0540 U0543 U0554 U053c U0539 U0553 gap3-armenian-iphone-hy" />
+            <row keys="shift-to-base-narrow-armenian-iphone-hy U0536 U0551 U0533 U0552 U054a U0546 U0544 U0547 U0542 U053e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -352,6 +356,7 @@
             <row keys="gap1-armenian-iphone-hy u0571 u0575 u0585 u057c u056a gap1-armenian-iphone-hy" />
             <row keys="u056d u057e u0567 u0580 u0564 u0565 u0568 u056b u0578 u0562 u0579 u057b" />
             <row keys="gap3-armenian-iphone-hy u0561 u057d u057f u0586 u056f u0570 u0573 u0584 u056c u0569 u0583 gap3-armenian-iphone-hy" />
+            <row keys="base-to-shift-narrow-armenian-iphone-hy u0566 u0581 u0563 u0582 u057a u0576 u0574 u0577 u0572 u056e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -359,6 +364,7 @@
             <row keys="gap1-armenian-iphone-hy U0541 U0545 U0555 U054c U053a gap1-armenian-iphone-hy" />
             <row keys="U053d U054e U0537 U0550 U0534 U0535 U0538 U053b U0548 U0532 U0549 U054b" />
             <row keys="gap3-armenian-iphone-hy U0531 U054d U054f U0556 U053f U0540 U0543 U0554 U053c U0539 U0553 gap3-armenian-iphone-hy" />
+            <row keys="shift-to-base-narrow-armenian-iphone-hy U0536 U0551 U0533 U0552 U054a U0546 U0544 U0547 U0542 U053e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -366,6 +372,7 @@
             <row keys="gap1-armenian-iphone-hy u0571 u0575 u0585 u057c u056a gap1-armenian-iphone-hy" />
             <row keys="u056d u057e u0567 u0580 u0564 u0565 u0568 u056b u0578 u0562 u0579 u057b" />
             <row keys="gap3-armenian-iphone-hy u0561 u057d u057f u0586 u056f u0570 u0573 u0584 u056c u0569 u0583 gap3-armenian-iphone-hy" />
+            <row keys="base-to-shift-narrow-armenian-iphone-hy u0566 u0581 u0563 u0582 u057a u0576 u0574 u0577 u0572 u056e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -373,6 +380,7 @@
             <row keys="gap1-armenian-iphone-hy U0541 U0545 U0555 U054c U053a gap1-armenian-iphone-hy" />
             <row keys="U053d U054e U0537 U0550 U0534 U0535 U0538 U053b U0548 U0532 U0549 U054b" />
             <row keys="gap3-armenian-iphone-hy U0531 U054d U054f U0556 U053f U0540 U0543 U0554 U053c U0539 U0553 gap3-armenian-iphone-hy" />
+            <row keys="shift-to-base-narrow-armenian-iphone-hy U0536 U0551 U0533 U0552 U054a U0546 U0544 U0547 U0542 U053e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -380,6 +388,7 @@
             <row keys="gap1-armenian-iphone-hy u0571 u0575 u0585 u057c u056a gap1-armenian-iphone-hy" />
             <row keys="u056d u057e u0567 u0580 u0564 u0565 u0568 u056b u0578 u0562 u0579 u057b" />
             <row keys="gap3-armenian-iphone-hy u0561 u057d u057f u0586 u056f u0570 u0573 u0584 u056c u0569 u0583 gap3-armenian-iphone-hy" />
+            <row keys="base-to-shift-narrow-armenian-iphone-hy u0566 u0581 u0563 u0582 u057a u0576 u0574 u0577 u0572 u056e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -387,6 +396,7 @@
             <row keys="gap1-armenian-iphone-hy U0541 U0545 U0555 U054c U053a gap1-armenian-iphone-hy" />
             <row keys="U053d U054e U0537 U0550 U0534 U0535 U0538 U053b U0548 U0532 U0549 U054b" />
             <row keys="gap3-armenian-iphone-hy U0531 U054d U054f U0556 U053f U0540 U0543 U0554 U053c U0539 U0553 gap3-armenian-iphone-hy" />
+            <row keys="shift-to-base-narrow-armenian-iphone-hy U0536 U0551 U0533 U0552 U054a U0546 U0544 U0547 U0542 U053e bksp-narrow-armenian-iphone-hy" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

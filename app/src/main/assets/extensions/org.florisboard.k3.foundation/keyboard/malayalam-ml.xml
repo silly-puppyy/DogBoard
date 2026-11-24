@@ -611,6 +611,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="base-to-shift-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -618,6 +620,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="shift-to-base-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -625,6 +629,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="base-to-shift-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -632,6 +638,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="shift-to-base-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -639,6 +647,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="base-to-shift-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -646,6 +656,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="shift-to-base-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -653,6 +665,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="base-to-shift-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -660,6 +674,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="shift-to-base-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -667,6 +683,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="base-to-shift-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -674,6 +692,8 @@
             <row keys="gap1-malayalam-ml U0d15 U0d16 U0d17 U0d18 U0d19 U0d05 U0d06 U0d07 U0d08 U0d09 U0d0a gap1-malayalam-ml" />
             <row keys="gap2-malayalam-ml U0d1a U0d1b U0d1c U0d1d U0d1e U0d0e U0d0f U0d10 U0d12 U0d13 U0d14 gap2-malayalam-ml" />
             <row keys="gap3-malayalam-ml U0d1f U0d20 U0d21 U0d22 U0d23 U0d2f U0d30 U0d32 U0d35 U0d7c U0d0b gap3-malayalam-ml" />
+            <row keys="U0d24 U0d25 U0d26 U0d27 U0d28 U0d36 U0d37 U0d38 U0d39 U0d7b U0d7a u003b" />
+            <row keys="shift-to-base-narrow-malayalam-ml U0d2a U0d2b U0d2c U0d2d U0d2e U0d33 U0d34 U0d31 U0d7d U0d7e u002c u002e bksp-narrow-malayalam-ml" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

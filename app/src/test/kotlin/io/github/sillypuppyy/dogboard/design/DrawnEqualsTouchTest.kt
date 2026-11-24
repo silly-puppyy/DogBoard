@@ -49,9 +49,10 @@ class DrawnEqualsTouchTest : FunSpec({
         }
         off.shouldBeEmpty()
         // with the number row on too (Bangla's full layout once drew a row above its touch: taps landed a row up)
-        val kbN = coroutineScope { computeTouchModel(result.model, TouchModelOptions.Default.copy(showNumberRow = true)) }.selectKeyboard(deviceWidthMm = 70)
+        // and with the Classic bottom row (the default since 2026-11-23: its "-classic" layer variants)
+        val kbN = coroutineScope { computeTouchModel(result.model, TouchModelOptions.Default.copy(showNumberRow = true, bottomRowClassic = true)) }.selectKeyboard(deviceWidthMm = 70)
         val (targetsN, _) = kbN.letterTargets(ImeLayerIds.Base, w, h, 0.3)
-        val rN = KbSpec.render(KbProps(width = w, keyH = h, only = "live", letterRows = rows, numberRow = true, numRow = "on"))
+        val rN = KbSpec.render(KbProps(width = w, keyH = h, only = "live", letterRows = rows, numberRow = true, numRow = "on", kstyle = "android"))
         val digitRows = rN.rows.size - r.rows.size
         val offN = buildList {
             rN.rows.drop(digitRows).take(rows.size).forEachIndexed { i, row ->

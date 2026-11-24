@@ -695,6 +695,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="base-to-shift-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -702,6 +704,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="shift-to-base-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -709,6 +713,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="base-to-shift-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -716,6 +722,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="shift-to-base-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -723,6 +731,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="base-to-shift-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -730,6 +740,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="shift-to-base-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -737,6 +749,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="base-to-shift-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -744,6 +758,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="shift-to-base-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -751,6 +767,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="base-to-shift-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -758,6 +776,8 @@
             <row keys="gap1-kannada-kn U0c85 U0c86 U0c87 U0c88 U0c89 U0c8a U0c8b U0c8e U0c8f U0c90 gap1-kannada-kn" />
             <row keys="gap2-kannada-kn U0c92 U0c93 U0c94 u0c82 U0c95 U0c96 U0c97 U0c98 U0c99 U0c9a gap2-kannada-kn" />
             <row keys="gap3-kannada-kn U0c9b U0c9c U0c9d U0c9e U0c9f U0ca0 U0ca1 U0ca2 U0ca3 U0ca4 gap3-kannada-kn" />
+            <row keys="U0ca5 U0ca6 U0ca7 U0ca8 U0caa U0cab U0cac U0cad U0cae U0caf u003b" />
+            <row keys="shift-to-base-narrow-kannada-kn U0cb0 U0cb2 U0cb5 U0cb6 U0cb7 U0cb8 U0cb9 U0cb3 u002c u002e bksp-narrow-kannada-kn" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

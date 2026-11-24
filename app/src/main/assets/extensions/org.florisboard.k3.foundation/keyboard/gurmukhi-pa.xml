@@ -410,6 +410,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="base-to-shift-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -417,6 +419,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="shift-to-base-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -424,6 +428,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="base-to-shift-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -431,6 +437,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="shift-to-base-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -438,6 +446,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="base-to-shift-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -445,6 +455,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="shift-to-base-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -452,6 +464,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="base-to-shift-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -459,6 +473,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="shift-to-base-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -466,6 +482,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="base-to-shift-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -473,6 +491,8 @@
             <row keys="gap1-gurmukhi-pa U0a05 U0a06 U0a07 U0a08 U0a09 U0a0a U0a0f U0a10 U0a13 U0a14 gap1-gurmukhi-pa" />
             <row keys="gap2-gurmukhi-pa U0a73 U0a72 U0a38 U0a39 U0a15 U0a16 U0a17 U0a18 u0a70 u0a02 gap2-gurmukhi-pa" />
             <row keys="gap3-gurmukhi-pa U0a1a U0a1b U0a1c U0a1d U0a1f U0a20 U0a21 U0a22 U0a23 u0a71 gap3-gurmukhi-pa" />
+            <row keys="U0a24 U0a25 U0a26 U0a27 U0a28 U0a2a U0a2b U0a2c U0a2d U0a2e u0021" />
+            <row keys="shift-to-base-narrow-gurmukhi-pa U0a2f U0a30 U0a32 U0a35 U0a5c u0a4d u0a3c u002c u0964 bksp-narrow-gurmukhi-pa" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

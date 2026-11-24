@@ -516,6 +516,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="base-to-shift-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -523,6 +525,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="shift-to-base-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -530,6 +534,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="base-to-shift-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -537,6 +543,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="shift-to-base-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -544,6 +552,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="base-to-shift-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -551,6 +561,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="shift-to-base-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -558,6 +570,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="base-to-shift-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -565,6 +579,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="shift-to-base-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -572,6 +588,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="base-to-shift-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -579,6 +597,8 @@
             <row keys="gap1-gujarati-gu U0a85 U0a86 U0a87 U0a88 U0a89 U0a8a U0a8f U0a90 U0a93 U0a94 gap1-gujarati-gu" />
             <row keys="gap2-gujarati-gu U0a8b U0a8d U0a91 U0a95 U0a96 U0a97 U0a98 U0a99 gap2-gujarati-gu" />
             <row keys="gap3-gujarati-gu U0a9a U0a9b U0a9c U0a9d U0a9e U0a9f U0aa0 U0aa1 U0aa2 U0aa3 gap3-gujarati-gu" />
+            <row keys="U0aa4 U0aa5 U0aa6 U0aa7 U0aa8 U0aaa U0aab U0aac U0aad U0aae u003b" />
+            <row keys="shift-to-base-narrow-gujarati-gu U0aaf U0ab0 U0ab2 U0ab5 U0ab6 U0ab7 U0ab8 U0ab9 u002c u002e bksp-narrow-gujarati-gu" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

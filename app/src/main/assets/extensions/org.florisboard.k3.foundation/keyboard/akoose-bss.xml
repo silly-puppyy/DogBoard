@@ -361,6 +361,7 @@
             <row keys="gap1-akoose-bss u0259 u025b u0254 gap1-akoose-bss" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-akoose-bss a s d f g h j k l gap3-akoose-bss" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -368,6 +369,7 @@
             <row keys="gap1-akoose-bss U018f U0190 U0186 gap1-akoose-bss" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-akoose-bss A S D F G H J K L gap3-akoose-bss" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -375,6 +377,7 @@
             <row keys="gap1-akoose-bss u0259 u025b u0254 gap1-akoose-bss" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-akoose-bss a s d f g h j k l gap3-akoose-bss" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -382,6 +385,7 @@
             <row keys="gap1-akoose-bss U018f U0190 U0186 gap1-akoose-bss" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-akoose-bss A S D F G H J K L gap3-akoose-bss" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -389,6 +393,7 @@
             <row keys="gap1-akoose-bss u0259 u025b u0254 gap1-akoose-bss" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-akoose-bss a s d f g h j k l gap3-akoose-bss" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -396,6 +401,7 @@
             <row keys="gap1-akoose-bss U018f U0190 U0186 gap1-akoose-bss" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-akoose-bss A S D F G H J K L gap3-akoose-bss" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -403,6 +409,7 @@
             <row keys="gap1-akoose-bss u0259 u025b u0254 gap1-akoose-bss" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-akoose-bss a s d f g h j k l gap3-akoose-bss" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -410,6 +417,7 @@
             <row keys="gap1-akoose-bss U018f U0190 U0186 gap1-akoose-bss" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-akoose-bss A S D F G H J K L gap3-akoose-bss" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -417,6 +425,7 @@
             <row keys="gap1-akoose-bss u0259 u025b u0254 gap1-akoose-bss" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-akoose-bss a s d f g h j k l gap3-akoose-bss" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -424,6 +433,7 @@
             <row keys="gap1-akoose-bss U018f U0190 U0186 gap1-akoose-bss" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-akoose-bss A S D F G H J K L gap3-akoose-bss" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

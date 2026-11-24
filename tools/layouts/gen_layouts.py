@@ -477,8 +477,10 @@ def build(lay: Layout) -> str:
                               "to-symbol-2-android " + " ".join(SYMBOL_1_ANDROID[2]) + " bksp", bottom_row("to-base")]),
         ("symbol-2-android", [" ".join(SYMBOL_2_ANDROID[0]), " ".join(SYMBOL_2_ANDROID[1]),
                               "to-symbol-1-android " + " ".join(SYMBOL_2_ANDROID[2]) + " bksp", bottom_row("to-base")]),
-        *[(f"{layer}-{variant}", rows[:3] + [row]) for variant, row in FIELD_ROWS.items()
-          for layer, rows in (("base", base_rows + [""]), ("shift", shift_rows + [""]))],
+        # every letter row, then the variant's bottom row (rows[:3] dropped the 4th and 5th letter rows of the
+        # Indic / Armenian / Balochi layouts: their touch rows no longer matched the drawn ones, 2026-11-24)
+        *[(f"{layer}-{variant}", list(rows) + [row]) for variant, row in FIELD_ROWS.items()
+          for layer, rows in (("base", base_rows), ("shift", shift_rows))],
         ("numeric", [
             "plus-numeric 1-numeric 2-numeric 3-numeric percent-numeric",
             "open-paren-numeric 4-numeric 5-numeric 6-numeric space-numeric",

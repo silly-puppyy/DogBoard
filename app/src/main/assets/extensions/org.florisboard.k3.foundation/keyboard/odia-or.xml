@@ -529,6 +529,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="base-to-shift-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -536,6 +538,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="shift-to-base-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -543,6 +547,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="base-to-shift-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -550,6 +556,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="shift-to-base-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -557,6 +565,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="base-to-shift-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -564,6 +574,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="shift-to-base-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -571,6 +583,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="base-to-shift-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -578,6 +592,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="shift-to-base-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -585,6 +601,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="base-to-shift-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -592,6 +610,8 @@
             <row keys="gap1-odia-or U0b05 U0b06 U0b07 U0b08 U0b09 U0b0a U0b0b U0b0f U0b10 U0b13 gap1-odia-or" />
             <row keys="U0b15 U0b16 U0b17 U0b18 U0b19 U0b1a U0b1b U0b1c U0b1d U0b1e u003f" />
             <row keys="gap3-odia-or U0b1f U0b20 U0b21 U0b22 U0b23 U0b24 U0b25 U0b26 U0b27 U0b28 gap3-odia-or" />
+            <row keys="U0b2a U0b2b U0b2c U0b35 U0b2d U0b2e U0b2f U0b5f U0b30 U0b33 u0021" />
+            <row keys="shift-to-base-narrow-odia-or U0b32 U0b71 U0b36 U0b37 U0b38 U0b39 u0b3c u0b4d u002c u0964 bksp-narrow-odia-or" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

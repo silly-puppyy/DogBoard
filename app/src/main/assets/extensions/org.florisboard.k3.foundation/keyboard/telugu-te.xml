@@ -691,6 +691,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="base-to-shift-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -698,6 +700,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="shift-to-base-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -705,6 +709,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="base-to-shift-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -712,6 +718,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="shift-to-base-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -719,6 +727,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="base-to-shift-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -726,6 +736,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="shift-to-base-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -733,6 +745,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="base-to-shift-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -740,6 +754,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="shift-to-base-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -747,6 +763,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="base-to-shift-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -754,6 +772,8 @@
             <row keys="gap1-telugu-te U0c05 U0c06 U0c07 U0c08 U0c09 U0c0a U0c0b U0c60 U0c0e U0c0f gap1-telugu-te" />
             <row keys="gap2-telugu-te U0c10 U0c12 U0c13 U0c14 u0c02 u0c03 U0c15 U0c16 U0c17 U0c18 gap2-telugu-te" />
             <row keys="gap3-telugu-te u0c4d U0c1a U0c1b U0c1c U0c1d U0c1f U0c20 U0c21 U0c22 U0c23 gap3-telugu-te" />
+            <row keys="U0c24 U0c25 U0c26 U0c27 U0c28 U0c2a U0c2b U0c2c U0c2d U0c2e u003b" />
+            <row keys="shift-to-base-narrow-telugu-te U0c2f U0c30 U0c32 U0c35 U0c33 U0c36 U0c37 U0c38 U0c39 u002c u002e bksp-narrow-telugu-te" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

@@ -421,6 +421,7 @@
             <row keys="gap1-basaa-bas u025b u0254 u014b gap1-basaa-bas" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-basaa-bas a s d f g h j k l gap3-basaa-bas" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -428,6 +429,7 @@
             <row keys="gap1-basaa-bas U0190 U0186 U014a gap1-basaa-bas" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-basaa-bas A S D F G H J K L gap3-basaa-bas" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -435,6 +437,7 @@
             <row keys="gap1-basaa-bas u025b u0254 u014b gap1-basaa-bas" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-basaa-bas a s d f g h j k l gap3-basaa-bas" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -442,6 +445,7 @@
             <row keys="gap1-basaa-bas U0190 U0186 U014a gap1-basaa-bas" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-basaa-bas A S D F G H J K L gap3-basaa-bas" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -449,6 +453,7 @@
             <row keys="gap1-basaa-bas u025b u0254 u014b gap1-basaa-bas" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-basaa-bas a s d f g h j k l gap3-basaa-bas" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -456,6 +461,7 @@
             <row keys="gap1-basaa-bas U0190 U0186 U014a gap1-basaa-bas" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-basaa-bas A S D F G H J K L gap3-basaa-bas" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -463,6 +469,7 @@
             <row keys="gap1-basaa-bas u025b u0254 u014b gap1-basaa-bas" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-basaa-bas a s d f g h j k l gap3-basaa-bas" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -470,6 +477,7 @@
             <row keys="gap1-basaa-bas U0190 U0186 U014a gap1-basaa-bas" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-basaa-bas A S D F G H J K L gap3-basaa-bas" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -477,6 +485,7 @@
             <row keys="gap1-basaa-bas u025b u0254 u014b gap1-basaa-bas" />
             <row keys="q w e r t y u i o p" />
             <row keys="gap3-basaa-bas a s d f g h j k l gap3-basaa-bas" />
+            <row keys="base-to-shift z x c v b n m bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -484,6 +493,7 @@
             <row keys="gap1-basaa-bas U0190 U0186 U014a gap1-basaa-bas" />
             <row keys="Q W E R T Y U I O P" />
             <row keys="gap3-basaa-bas A S D F G H J K L gap3-basaa-bas" />
+            <row keys="shift-to-base Z X C V B N M bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

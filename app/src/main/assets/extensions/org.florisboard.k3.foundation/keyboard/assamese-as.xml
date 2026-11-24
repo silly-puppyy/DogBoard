@@ -495,6 +495,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="base-to-shift gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -502,6 +504,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="shift-to-base gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -509,6 +513,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="base-to-shift gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -516,6 +522,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="shift-to-base gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -523,6 +531,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="base-to-shift gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -530,6 +540,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="shift-to-base gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -537,6 +549,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="base-to-shift gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -544,6 +558,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="shift-to-base gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -551,6 +567,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="base-to-shift gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -558,6 +576,8 @@
             <row keys="gap1-assamese-as U0985 U0986 U0987 U0988 U0989 U098a U098f U0990 U0993 U0994 gap1-assamese-as" />
             <row keys="U0995 U0996 U0997 U0998 U0999 U099a U099b U099c U099d U099e u0021" />
             <row keys="gap3-assamese-as U099f U09a0 U09a1 U09a2 U09a3 U09a4 U09a5 U09a6 U09a7 U09a8 gap3-assamese-as" />
+            <row keys="U09aa U09ab U09ac U09ad U09ae U09af U09f0 U09b2 U09f1 U09b6 u09cd" />
+            <row keys="shift-to-base gaplast-assamese-as U09b7 U09b8 U09b9 U09ce U098b u002c u0964 gaplast-assamese-as bksp" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 

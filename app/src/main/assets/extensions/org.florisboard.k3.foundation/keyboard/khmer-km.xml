@@ -320,6 +320,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="base-to-shift-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -327,6 +328,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="shift-to-base-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1 fn-key space-email at-email period-email enter" />
         </layer>
 
@@ -334,6 +336,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="base-to-shift-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -341,6 +344,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="shift-to-base-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1 fn-key space-email slash-url period-url enter" />
         </layer>
 
@@ -348,6 +352,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="base-to-shift-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -355,6 +360,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="shift-to-base-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -362,6 +368,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="base-to-shift-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -369,6 +376,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="shift-to-base-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -376,6 +384,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="base-to-shift-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
@@ -383,6 +392,7 @@
             <row keys="gap1-khmer-km U1780 U1781 U1782 U1783 U1784 U1785 U1786 U1787 U1788 U1789 gap1-khmer-km" />
             <row keys="U178a u17b7 u17b8 u17b9 U178e U178f U1790 U1791 U1792 U1793 u002e" />
             <row keys="gap3-khmer-km U1794 U1795 U1796 U1797 U1798 u17d2 U1799 U179a U179b U179c gap3-khmer-km" />
+            <row keys="shift-to-base-narrow-khmer-km U179f U17a0 U17a1 U17a2 u17cb u17c9 u17cd u17d0 u17d4 u200b u002c bksp-narrow-khmer-km" />
             <row keys="to-symbol-1-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
         </layer>
 
