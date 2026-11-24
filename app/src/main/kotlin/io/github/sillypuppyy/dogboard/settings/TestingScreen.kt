@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,8 +64,11 @@ fun TestingScreen() {
                     "Type in this field: every tap, picked suggestion and change to its text is listed below. Only this field is logged, in memory, until you clear it or the app stops. Nothing is saved or sent.",
                     style = setText(14f, color = SetColors.onSurfaceVariant), maxLines = 8,
                 )
+                // the page's own text colours (the field took the system default: white on the light page in day mode)
+                val fg = SetColors.onSurface.toArgb(); val hintFg = SetColors.onSurfaceVariant.toArgb()
                 AndroidView(
                     factory = { ctx -> logField(ctx) },
+                    update = { f -> f.setTextColor(fg); f.setHintTextColor(hintFg) },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp).clip(RoundedCornerShape(12.dp)).background(SetColors.screen),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
