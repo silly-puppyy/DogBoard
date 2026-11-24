@@ -69,11 +69,16 @@ fun getColorScheme(
     val themeSeed = when (colours) {
         "none" -> io.github.sillypuppyy.dogboard.design.css("#435e91") // the design canvas's seed
         "wallpaper" -> null
-        // the theme's main colour, its background (a gradient's middle colour), not its return key: Greyhound's
-        // fawn key made the app fawn on a slate keyboard; photo themes: their return-key colour
-        else -> if (kbTheme == "dogboard") null else if (kbTheme == "glass") photoSeed else {
+        // canvas AppColors: one seed from the keyboard, Material's tonal spot scheme. DogBoard: its own blue (today's app);
+        // solid and tactile themes: their accent, the return key (Gloss's blue, Mechanical's orange; a tinted theme's
+        // is made from its background); gradients: Material's ranking over their colours (as Android ranks a
+        // wallpaper); photo themes: the photo's ranked colour. Dark mode seeds from the theme's dark version
+        else -> if (kbTheme == "dogboard") io.github.sillypuppyy.dogboard.design.css("#435e91")
+        else if (kbTheme == "glass") photoSeed else {
             val t = io.github.sillypuppyy.dogboard.design.KbThemes.tokens(kbTheme, kbDark)
-            (t.bgGradient?.stops?.let { it[it.size / 2].first } ?: t.bg).takeIf { it.alpha > 0.5f } ?: t.act.takeIf { it.alpha > 0.5f }
+            t.bgGradient?.stops?.map { it.first }?.filter { it.alpha > 0.5f }?.takeIf { it.isNotEmpty() }?.let { cs ->
+                com.materialkolor.score.Score.score(cs.groupingBy { it.toArgb() }.eachCount()).firstOrNull()?.let { Color(it) }
+            } ?: t.act.takeIf { it.alpha > 0.5f } ?: t.bg.takeIf { it.alpha > 0.5f }
         }
     }
     // a nearly grey theme (Dalmatian, Paper, Ink) takes Material's neutral palette, not a tint of its grey
