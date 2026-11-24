@@ -112,13 +112,11 @@ fun SetLayout(state: SetLayoutState) {
         // status band cover it), and the preview stays in view, at the keyboard's real size, while the
         // options scroll under it (round keys, hold for symbols, space label, action key showed nothing)
         Column(Modifier.fillMaxSize().windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.statusBars)) {
-            // :18-22 header: back, title + language, Reset all while anything differs from Simple
+            // :18-22 header: back, title, Reset all while anything differs from Simple (no language line: it named only
+            // the first keyboard, "English (US)", though the layout applies to all)
             Row(Modifier.fillMaxWidth().height(64.dp).padding(start = 4.dp, end = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).clickable { state.onBack() }, contentAlignment = Alignment.Center) { Symbol("arrow_back", 24.sp, SetColors.onSurface) }
-                Column(Modifier.weight(1f)) {
-                    DText("Layout", style = setText(22f))
-                    DText(state.subtitle, style = setText(13f, color = SetColors.onSurfaceVariant))
-                }
+                DText("Layout", Modifier.weight(1f), style = setText(22f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                 if (st != LayoutElements.SIMPLE) {
                     Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).clickable { state.onChange(LayoutElements.SIMPLE) }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
                         DText("Reset all", style = setText(14f, 500, SetColors.primary))
