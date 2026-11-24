@@ -141,6 +141,9 @@ configure<ApplicationExtension> {
 
         named("release") {
             versionNameSuffix = projectVersionNameSuffix
+            // phones only (ARM): the x86 / x86_64 libraries were 13 MB of the 137 MB APK that no phone runs (the
+            // emulator and Test Lab's virtual devices use debug or benchmark builds, which keep every ABI)
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isMinifyEnabled = true
@@ -160,6 +163,7 @@ configure<ApplicationExtension> {
             initWith(getByName("release"))
 
             applicationIdSuffix = ".bench"
+            ndk { abiFilters += listOf("x86_64") } // benchmarked on the emulator
             versionNameSuffix = "-bench+${getGitCommitHash(short = true).get()}"
 
             signingConfig = signingConfigs.getByName("debug")
