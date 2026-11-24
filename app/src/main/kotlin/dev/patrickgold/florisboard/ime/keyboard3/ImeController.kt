@@ -182,6 +182,9 @@ class ImeController(
 
     // DogBoard: swipe typing: the text a swipe just put in (word and space) and the other words it may
     // have been, offered on the bar until something else is typed
+    /** The layout in use swipes through the universal model (any layout but English QWERTY). */
+    @Volatile private var universalSwipe = false
+
     private var swipeCommitted: String? = null
     private var swipeOthers: List<String> = emptyList()
 
@@ -199,6 +202,7 @@ class ImeController(
                 BuildConfig.DEBUG && android.util.Log.isLoggable("DogBoardSwipe", android.util.Log.DEBUG)
             io.github.sillypuppyy.dogboard.engine.TypingEngine.swipeWords(
                 xs, ys, centres, previousContext(textBefore), io.github.sillypuppyy.dogboard.engine.previousContext2(textBefore),
+                universal = universalSwipe,
             )
         }
         android.util.Log.i("DogBoardPerf", "swipe: ${xs.size} points -> ${words.size} words in ${SystemClock.uptimeMillis() - t0} ms (${io.github.sillypuppyy.dogboard.engine.TypingEngine.lastSwipeTiming})")
@@ -431,8 +435,9 @@ class ImeController(
         // DogBoard: the chosen layout, compiled again when the setting changes
         scope.launch {
             prefs.keyboard.layoutId.asFlow().collectLatest { id ->
-                // the swipe recogniser reads English QWERTY paths only (the universal model comes later)
-                io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeLayout = id == "qwerty-en"
+                // swipe: English QWERTY with its own model, other layouts with the universal one (SwipeSupport)
+                universalSwipe = id != "qwerty-en"
+                io.github.sillypuppyy.dogboard.feel.FeelSettings.swipeLayout = io.github.sillypuppyy.dogboard.engine.swipe.SwipeSupport.layoutSwipes(id)
                 loadFoundationKeyboard(this@ImeController, storageController.activeStorage.value, id)
             }
         }

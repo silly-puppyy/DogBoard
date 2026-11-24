@@ -94,7 +94,7 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             s.primaryLocale.displayName(s.primaryLocale).takeIf { !tag.startsWith("en") && s.secondaryLocales.isEmpty() },
             // each entry's own layout (a language can be added with several)
             layoutLabel(layout, s.primaryLocale.language),
-            layout == "qwerty-en" && tag.startsWith("en"),
+            io.github.sillypuppyy.dogboard.engine.swipe.SwipeSupport.layoutSwipes(layout),
             s.id == active.id || list.size == 1,
             // the host has its dictionary and the phone doesn't yet: downloading, or waiting to try again
             gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,

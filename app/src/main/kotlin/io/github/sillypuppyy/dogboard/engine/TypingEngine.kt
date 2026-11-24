@@ -307,15 +307,26 @@ object TypingEngine {
 
     // swipe typing: the recogniser (tools/swipe: trained on FUTO's MIT swipe data), when its file is in the app
     @Volatile private var swipeNet: io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet? = null
+    /** The universal swipe model (every layout but English QWERTY, which has its own): null until loaded. */
+    @Volatile private var uniNet: io.github.sillypuppyy.dogboard.engine.swipe.UniSwipeNet? = null
+
+    fun attachUniSwipeNet(net: io.github.sillypuppyy.dogboard.engine.swipe.UniSwipeNet?) { uniNet = net }
+    val hasUniSwipeNet: Boolean get() = uniNet != null
+
+    /** Whether a layout with these letter keys can be swiped: English QWERTY's own model, or the universal one (<= its keys). */
+    fun canSwipe(letterKeys: Int, universal: Boolean): Boolean =
+        if (!universal) swipeNet != null else (uniNet?.maxKeys ?: 0) >= letterKeys && letterKeys > 0
 
     fun attachSwipeNet(net: io.github.sillypuppyy.dogboard.engine.swipe.SwipeNet?) {
         swipeNet = net
     }
 
-    val hasSwipe: Boolean get() = swipeNet != null && loaded != null
+    /** A swipe can be read (English QWERTY's own model or the universal one; which one the layout gets: swipeWords). */
+    val hasSwipe: Boolean get() = (swipeNet != null || uniNet != null) && loaded != null
 
     /** The swipe recogniser's interpreter released under critical memory pressure (~12 MB native); loaded again on the next show. */
     fun releaseSwipeNet() {
+        uniNet?.let { uniNet = null; it.close() }
         val net = swipeNet ?: return
         swipeNet = null
         net.close()
@@ -335,23 +346,35 @@ object TypingEngine {
      */
     fun swipeWords(
         xs: FloatArray, ys: FloatArray, centres: Map<Char, Pair<Float, Float>>,
-        previous: String?, previous2: String?, top: Int = 5,
+        previous: String?, previous2: String?, top: Int = 5, universal: Boolean = false,
     ): List<String> {
-        val net = swipeNet ?: return emptyList()
         val engine = loaded ?: return emptyList()
         if (xs.size < 2) return emptyList()
-        val map = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.ToKeyUnits(centres)
-        val f = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.features(
-            FloatArray(xs.size) { map.x(xs[it]) }, FloatArray(ys.size) { map.y(ys[it]) },
-        )
+        val f: FloatArray; val logp: FloatArray; val alphabet: CharArray
         val t0 = System.nanoTime()
-        val logp = net.run(f)
+        if (!universal) {
+            val net = swipeNet ?: return emptyList()
+            val map = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.ToKeyUnits(centres)
+            f = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.features(
+                FloatArray(xs.size) { map.x(xs[it]) }, FloatArray(ys.size) { map.y(ys[it]) },
+            )
+            logp = net.run(f); alphabet = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.LATIN
+        } else {
+            // any other layout: the universal model, given this layout's letter keys (tools/swipe/uni.py's units)
+            val net = uniNet ?: return emptyList()
+            val units = io.github.sillypuppyy.dogboard.engine.swipe.UniUnits(centres)
+            f = io.github.sillypuppyy.dogboard.engine.swipe.SwipePath.features(
+                FloatArray(xs.size) { units.x(xs[it]) }, FloatArray(ys.size) { units.y(ys[it]) },
+            )
+            logp = net.run(f, units.boxes(centres)); alphabet = units.letters
+        }
+        if (logp.isEmpty()) return emptyList()
         val t1 = System.nanoTime()
         return lock.read {
             /** The path spelled in one language's words, each with its total (path + that language's context). */
             fun spelled(l: Loaded): List<Pair<String, Double>> {
                 val lex = l.lexicon
-                val beam = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.decode(logp, logp.size / 27, lex, top = 10)
+                val beam = io.github.sillypuppyy.dogboard.engine.swipe.SwipeBeam.decode(logp, logp.size / (1 + alphabet.size), lex, top = 10, alphabet = alphabet)
                 val scorer = l.decoder.context
                 val p1 = l.contextId(previous)
                 val p2 = if (previous == null || previous == Bigrams.START) -1 else l.contextId(previous2)

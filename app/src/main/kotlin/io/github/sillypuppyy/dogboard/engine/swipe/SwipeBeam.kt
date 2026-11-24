@@ -23,20 +23,25 @@ object SwipeBeam {
 
     private class Beam(var blank: Double, var letter: Double, val last: Int)
 
+    /** English QWERTY's classes after the blank (the per-layout models). */
+    val LATIN = CharArray(26) { 'a' + it }
+
     /**
-     * [logp]: [steps x 27] row-major natural log-probs (0 = blank, 1..26 = a..z). The best [top] word
-     * nodes in [lexicon], best first. [minLogProb] leaves out words rarer than that (ln P).
+     * [logp]: [steps x (1 + alphabet.size)] row-major natural log-probs (0 = blank, k = [alphabet] k - 1: a..z for the
+     * English model, the layout's keys for the universal one). The best [top] word nodes in [lexicon], best first.
+     * [minLogProb] leaves out words rarer than that (ln P).
      */
     fun decode(
         logp: FloatArray, steps: Int, lexicon: Lexicon, width: Int = 48, alpha: Double = 1.0,
-        top: Int = 5, prune: Float = -8f, minLogProb: Double = Double.NEGATIVE_INFINITY,
+        top: Int = 5, prune: Float = -8f, minLogProb: Double = Double.NEGATIVE_INFINITY, alphabet: CharArray = LATIN,
     ): List<Candidate> {
         var beams = HashMap<Int, Beam>().apply { put(Lexicon.ROOT, Beam(0.0, NEG, -1)) }
-        val allowed = IntArray(26)
+        val classes = 1 + alphabet.size
+        val allowed = IntArray(alphabet.size)
         for (t in 0 until steps) {
-            val row = 27 * t
+            val row = classes * t
             var nAllowed = 0
-            for (k in 1..26) if (logp[row + k] > prune) allowed[nAllowed++] = k
+            for (k in 1..alphabet.size) if (logp[row + k] > prune) allowed[nAllowed++] = k
             val next = HashMap<Int, Beam>(beams.size * 4)
             for ((node, b) in beams) {
                 val total = lse(b.blank, b.letter)
@@ -45,7 +50,7 @@ object SwipeBeam {
                 if (b.last > 0) stay.letter = lse(stay.letter, b.letter + logp[row + b.last])
                 for (i in 0 until nAllowed) {
                     val k = allowed[i]
-                    val c = 'a' + (k - 1)
+                    val c = alphabet[k - 1]
                     // a repeated letter needs a blank in between
                     val p = (if (b.last == k) b.blank else total) + logp[row + k]
                     fun extend(child: Int) {

@@ -257,7 +257,16 @@ object EngineLoader {
 
     /** The swipe recogniser again after a memory-pressure release (call off the main thread). */
     @Synchronized
+    /** The universal swipe model, built into the app (assets/dogboard/swipe/uni.tflite, stored uncompressed: mapped). */
+    private fun loadUniSwipeNet(app: Context): io.github.sillypuppyy.dogboard.engine.swipe.UniSwipeNet? = runCatching {
+        val buffer = app.assets.openFd("dogboard/swipe/uni.tflite").use { fd ->
+            java.io.FileInputStream(fd.fileDescriptor).channel.use { ch -> ch.map(java.nio.channels.FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.length) }
+        }
+        io.github.sillypuppyy.dogboard.engine.swipe.UniSwipeNet(buffer, threads = 1)
+    }.onFailure { android.util.Log.i("DogBoardPerf", "universal swipe model not loaded: ${it.javaClass.simpleName} ${it.message}") }.getOrNull()
+
     fun ensureSwipe(context: Context) {
+        if (TypingEngine.isReady && !TypingEngine.hasUniSwipeNet && mayReload(context)) TypingEngine.attachUniSwipeNet(loadUniSwipeNet(context.applicationContext))
         if (!TypingEngine.isReady || TypingEngine.hasSwipeNet || !mayReload(context)) return
         TypingEngine.attachSwipeNet(loadSwipeNet(context.applicationContext))
         android.util.Log.i("DogBoardPerf", "swipe recogniser loaded again")
@@ -338,6 +347,7 @@ object EngineLoader {
         // the swipe recogniser (4.4 MB, memory-mapped like the trigram; every phone: ~2 ms of work per
         // swipe on a desktop core, run only when a swipe ends)
         TypingEngine.attachSwipeNet(loadSwipeNet(app))
+        TypingEngine.attachUniSwipeNet(loadUniSwipeNet(app))
         nativeMark("swipe")
         // the unknown-word letter model, also after (a bulk read of its binary form)
         val t1 = android.os.SystemClock.uptimeMillis()
