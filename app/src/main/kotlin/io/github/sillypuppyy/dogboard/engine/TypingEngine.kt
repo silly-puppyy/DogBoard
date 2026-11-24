@@ -104,14 +104,19 @@ object TypingEngine {
         rules = withLayoutRows(packRules)
     }
 
+    /** Languages whose decoder takes skipped and extra letters at the cheaper costs (measured, see [Loaded]). */
+    private val CHEAP_LETTER_EDITS = setOf("en", "es", "fr", "ru")
+
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, val rules: LanguageRules) {
         val decoder = Decoder(
             lexicon,
-            // English: skipped and extra letters cheaper than iOS's costs (-1.0 / -2.0, no extra language cost): real
-            // typos ("thi", "goesd") read as a wrong key before; with the runner-up check 49.5/5.3 -> 49.4/2.6 % fixed /
-            // wrong on Gboard's set, held-out +1.2 fixed. Finnish broke more long words with them (1.2 -> 1.7 %): iOS's
-            // costs elsewhere until measured per language (CaseAdapt.locale is the loading pack's, set before load)
-            if (CaseAdapt.locale.language == "en") Decoder.Config(
+            // skipped and extra letters cheaper than iOS's costs (-1.0 / -2.0, no extra language cost) where measured to
+            // help: English real typos ("thi", "goesd" read as a wrong key before; with the runner-up check 49.5/5.3 ->
+            // 49.4/2.6 % fixed / wrong on Gboard's set), and simulated typos on real sentences (sim_typos9) es 47.4/2.4/1.6
+            // -> 50.7/2.2/1.4, fr 47.8/3.9/0.8 -> 49.6/3.1/0.8, ru 47.9/3.2/0.2 -> 52.3/2.3/0.2 (fixed / wrong / broken).
+            // Not where long words break more: Finnish real typos 1.2 -> 1.7 % broken, German 1.4 -> 2.0. iOS's costs
+            // elsewhere until measured (CaseAdapt.locale is the loading pack's, set before load)
+            if (CaseAdapt.locale.language in CHEAP_LETTER_EDITS) Decoder.Config(
                 languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM,
                 insertion = -1.0, deletion = -2.0, deletionLanguage = 0.0,
             ) else Decoder.Config(languagePower = if (bigrams != null) Decoder.LANGUAGE_POWER_CONTEXT else Decoder.LANGUAGE_POWER_UNIGRAM),
