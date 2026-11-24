@@ -121,13 +121,26 @@ class LanguagePack private constructor(val manifest: PackManifest, private val a
          * built into the app; the exact tag, then the language alone ("es"). Null when there is none.
          */
         fun find(context: android.content.Context, tag: String): LanguagePack? {
-            val candidates = listOf(tag, tag.substringBefore('-')).distinct()
-            for (t in candidates) {
+            for (t in candidates(tag)) {
                 openDir(java.io.File(context.filesDir, "packs/$t"))?.let { return it }
                 if (runCatching { context.assets.list("dogboard/packs/$t")?.contains("manifest.json") == true }.getOrDefault(false))
                     open(context.assets, t)?.let { return it }
             }
-            return null
+            // another region's pack of the language (an "en-GB" keyboard: the "en-US" pack), the built-in default first
+            val language = java.util.Locale.forLanguageTag(tag).language
+            return all(context).filter { java.util.Locale.forLanguageTag(it.tag).language == language }
+                .minByOrNull { if (it.tag == DEFAULT_TAG) 0 else 1 }
+        }
+
+        /**
+         * The pack folders to try for a keyboard language, exact first: the tag without its Unicode extensions, then the
+         * language alone. Android adds the system's regional preferences to the tag ("en-US-u-fw-mon", first day of the
+         * week): looked up as is, no pack matched, a switch back to English kept the language before loaded (Bulgarian,
+         * which has no word list: no autocorrect until a force stop, tester's Pixel 10, 2026-11-24).
+         */
+        internal fun candidates(tag: String): List<String> {
+            val locale = java.util.Locale.forLanguageTag(tag).stripExtensions()
+            return listOf(locale.toLanguageTag(), locale.language).filter { it.isNotEmpty() && it != "und" }.distinct()
         }
 
         /** Every pack: built into the app and downloaded (a downloaded one replaces a built-in one of the same tag), by tag. */
