@@ -69,7 +69,7 @@ fun PrivacyScreen() {
                 SetLinkRow("pv:words", { nav.navigate(Routes.Settings.Dictionary) }) {
                     TitleSub("Your words", "See, export or forget the words DogBoard learned", Modifier.weight(1f))
                 }
-                SetLinkRow("pv:clipboard", { nav.navigate(Routes.Settings.Clipboard) }) {
+                SetLinkRow("pv:clipboard", { nav.navigate(Routes.Settings.DogClipboard) }) {
                     TitleSub("Clipboard history", "How long copied text is kept, and passwords clearing themselves", Modifier.weight(1f))
                 }
             }
