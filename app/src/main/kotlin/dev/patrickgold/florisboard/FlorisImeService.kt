@@ -354,6 +354,9 @@ class FlorisImeService : LifecycleInputMethodService() {
             // one job, the latest: early values (the default before the saved languages load) woke with the real one
             // and the stale one won (es -> en-US); the language is read when the job runs, not when it was queued
             languageJob?.cancel()
+            // the old language's words leave the bar at once (a Russian keyboard showed Spanish "El La En" for the
+            // second or so its dictionary took to load, emulator 2026-11-24); the new ones come with the refresh below
+            if (io.github.sillypuppyy.dogboard.engine.TypingEngine.isReady) imeController.suggestionSink?.invoke(emptyList())
             languageJob = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 // the saved language often arrives while the first load (which saw the default) is still running
                 while (!io.github.sillypuppyy.dogboard.engine.TypingEngine.isReady) kotlinx.coroutines.delay(200)
