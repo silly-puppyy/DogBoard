@@ -100,10 +100,10 @@ fun HomeScreen() {
         // the Languages row's line: your languages (every keyboard's, each once), the first three by name
         val homeSubtypes by dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.subtypesFlow.collectFlowAsState()
         val homeLanguages = androidx.compose.runtime.remember(homeSubtypes) {
-            // in the app's language, short: "English (US)" ("English (United States)" was long for one line)
+            // each in its own name, a region only to tell two apart (as the Languages page)
+            val two = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.twoRegions(homeSubtypes)
             val names = homeSubtypes.flatMap { listOf(it.primaryLocale) + it.secondaryLocales }.map { l ->
-                val loc = java.util.Locale.forLanguageTag(l.languageTag())
-                loc.getDisplayLanguage(java.util.Locale.ENGLISH) + (loc.country.takeIf { it.isNotEmpty() }?.let { " ($it)" } ?: "")
+                io.github.sillypuppyy.dogboard.ime.SystemSubtypes.nativeName(l.languageTag(), l.language in two)
             }.distinct()
             when {
                 names.isEmpty() -> null

@@ -85,13 +85,15 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
         return lang !in langs && offersDictionary(tag) && hasDictionary(s.primaryLocale.languageTag()) && scriptOfTag(tag) == script(s) &&
             langs.size < io.github.sillypuppyy.dogboard.ime.EngineLoader.MAX_TOGETHER
     }
+    val regionsNeeded = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.twoRegions(list)
     val rows = list.map { s ->
         val tag = s.primaryLocale.languageTag()
         val layout = layoutOfEntry(s)
         LangRow(
-            // the pack's own name (English (US)) where there is a pack, else the locale's
-            s.id, joined(listOf(packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName()) + s.secondaryLocales.map { nameOfTag(it.languageTag()) }),
-            s.primaryLocale.displayName(s.primaryLocale).takeIf { !tag.startsWith("en") && s.secondaryLocales.isEmpty() },
+            // each language in its own name, as Gboard ("English + Français"); a region only to tell two apart
+            s.id, (listOf(s.primaryLocale) + s.secondaryLocales).joinToString(" + ") { l ->
+                io.github.sillypuppyy.dogboard.ime.SystemSubtypes.nativeName(l.languageTag(), l.language in regionsNeeded) },
+            null,
             // each entry's own layout (a language can be added with several)
             layoutLabel(layout, s.primaryLocale.language),
             io.github.sillypuppyy.dogboard.engine.swipe.SwipeSupport.layoutSwipes(layout),
@@ -154,8 +156,10 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             val s = list.firstOrNull { it.id == id }
             val langs = (listOfNotNull(s?.primaryLocale?.language) + s?.secondaryLocales.orEmpty().map { it.language } + tag.substringBefore('-')).distinct()
             val current = s?.let { layoutOfEntry(it) }
-            langs.flatMap { lang -> GeneratedLayouts.all.filter { it.language == lang }.sortedByDescending { it.default } }.distinctBy { it.id }
-                .sortedByDescending { it.id == current }.map { LayoutChoice(it.id, it.label, it.rows, added = false) }
+            // each language brings its own copy of a layout: one per name, a language's own first (French's AZERTY with
+            // its ' key, English's Colemak with ;) over the generic copies ("-aa") other languages carry
+            langs.flatMap { lang -> GeneratedLayouts.all.filter { it.language == lang }.sortedByDescending { it.default } }
+                .sortedWith(compareBy({ it.id != current }, { it.id.endsWith("-aa") })).distinctBy { it.label }.map { LayoutChoice(it.id, it.label, it.rows, added = false) }
         },
         // combined: the language joins the keyboard, which takes the chosen layout; one keyboard of that language alone
         // is folded in (the one with that layout, else the first): another layout of it stays

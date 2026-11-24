@@ -165,8 +165,9 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                         val (bg, fg) = SetColors.container(s.bg, s.fg)
                         // a status, not a description (drop the descriptions to avoid clutter, as Gboard,
                         // whose home shows only the language under Languages)
-                        // (live: your own languages; the design's sample line named English for everyone)
-                        val sub = if (s.title == "Languages") actions?.languages ?: s.sub else ""
+                        // no line under any row, Languages included (user 2026-11-24: "remove the description from the
+                        // languages tab"; it was the design's sample "English (US), QWERTY", then your languages)
+                        val sub = ""
                         SetSectionRow(s.icon, s.title, sub, bg, fg, actions?.let { a -> { a.onSection(s.title) } })
                     }
                 }

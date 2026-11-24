@@ -356,7 +356,8 @@ private fun PickLayoutPage(
             }
             Row(Modifier.fillMaxWidth().background(SetColors.screen).padding(16.dp).windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.navigationBars),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                DText(if (chosen.isEmpty()) "" else "${chosen.size} selected", Modifier.weight(1f), style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = START))
+                // a count only where several can be chosen (one layout of one: "1 selected" said nothing)
+                DText(if (chosen.isEmpty() || single) "" else "${chosen.size} selected", Modifier.weight(1f), style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = START))
                 Box(Modifier.height(48.dp).clip(RoundedCornerShape(24.dp)).border(1.dp, SetColors.outline, RoundedCornerShape(24.dp)).clickable { onBack() }.padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
                     DText("Cancel", style = setText(15f, 500, SetColors.primary))
                 }
