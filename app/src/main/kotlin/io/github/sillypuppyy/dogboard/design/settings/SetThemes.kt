@@ -441,6 +441,42 @@ private fun ThemeSheet(id: String, seed: Int, primary: Color, onUse: () -> Unit,
     }
 }
 
+/**
+ * Holding one of your own themes: a large picture of the keyboard in it, what it is (the photo's credit), and what
+ * can be done with it, as the built-in themes' sheet.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun UserThemeSheet(
+    name: String, about: String, sel: Boolean, primary: Color, actions: List<Pair<String, () -> Unit>>,
+    onUse: () -> Unit, onDismiss: () -> Unit, picture: @Composable (Float) -> Unit,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = SetColors.screen) {
+        Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            val w = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp - 40f
+            Box(Modifier.size(w.dp, tileH(w).dp).clip(RoundedCornerShape(TILE_R)).background(SetColors.surfaceContainerHighest)) { picture(w) }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                DText(name, style = setText(24f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                DText(about, style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+            }
+            SetRows {
+                for ((label, act) in actions) Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).background(SetColors.row).clickable { onDismiss(); act() }.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    DText(label, Modifier.weight(1f), style = setText(15f, color = SetColors.onSurface).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).clickable(onClick = onDismiss).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                    DText("Close", style = setText(14f, 500, primary))
+                }
+                Box(Modifier.height(44.dp).clip(RoundedCornerShape(22.dp)).background(primary).clickable { onDismiss(); onUse() }.padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
+                    DText(if (sel) "Edit" else "Use this theme", style = setText(14f, 500, SetColors.screen))
+                }
+            }
+        }
+    }
+}
+
 /** New theme: a photo, a gradient or a solid colour, as a bottom sheet in the page's colours. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -649,11 +685,26 @@ private fun UserPackSections(state: SetThemesState, primary: Color, which: (io.g
                                     DText(t.name, Modifier.weight(1f), style = setText(15f, 600).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
                                     if (sel) Symbol("edit", 18.sp, SetColors.onSurfaceVariant)
                                 }
-                                DText(if (sel) "In use. Tap to edit" else if (t.spec != null) "Gradient. Hold for more" else t.credit?.let { "Photo: $it" } ?: "Photo. Hold for more", Modifier.fillMaxWidth().padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
+                                // the name only, as the built-in tiles; what it is and the photo credit are in the hold sheet
+                                if (sel) DText("In use. Tap to edit", Modifier.fillMaxWidth().padding(horizontal = 2.dp), style = setText(13f, color = if (sel) primary else SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start, lineHeight = (13 * 1.35f).sp), maxLines = 3)
                             }
-                            SetMenu(menu, { menu = false }, if (pack.shared) listOf("Copy to my themes" to { state.onThemeAction(t.id, "copy") }) else listOf<Pair<String, () -> Unit>>("Rename" to { state.onThemeAction(t.id, "rename") }) +
-                                state.userPacks.filter { it.id != pack.id }.map { other -> "Move to ${other.name}" to { state.onThemeAction(t.id, "move:${other.id}") } } +
-                                listOf("Delete" to { state.onThemeAction(t.id, "delete") }))
+                            if (menu) UserThemeSheet(
+                                name = t.name,
+                                about = if (t.spec != null) "Gradient" else t.credit?.let { "Photo: $it" } ?: "Your photo",
+                                sel = sel, primary = primary,
+                                actions = if (pack.shared) listOf("Copy to my themes" to { state.onThemeAction(t.id, "copy") }) else listOf<Pair<String, () -> Unit>>("Rename" to { state.onThemeAction(t.id, "rename") }) +
+                                    state.userPacks.filter { it.id != pack.id }.map { other -> "Move to ${other.name}" to { state.onThemeAction(t.id, "move:${other.id}") } } +
+                                    listOf("Delete" to { state.onThemeAction(t.id, "delete") }),
+                                onUse = { if (sel) state.onEditUser(t.id) else state.onPickUser(t.id) },
+                                onDismiss = { menu = false },
+                            ) { w ->
+                                if (t.spec != null) Box(Modifier.fillMaxSize()) {
+                                    Preview(t.spec, io.github.sillypuppyy.dogboard.design.GradientSpec.parse(t.spec)?.white == true, 0, w, tileH(w), w / 375f, null)
+                                } else thumb?.let { (imgs, tile) ->
+                                    val first = tile?.versions.orEmpty().firstOrNull()
+                                    imgs[0]?.let { PhotoPreview(if (first?.second == true) imgs[1] ?: it else it, first?.first, t.name, w, w / 375f) }
+                                }
+                            }
 
                         }
                     }

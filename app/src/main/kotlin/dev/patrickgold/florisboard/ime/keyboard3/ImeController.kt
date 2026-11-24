@@ -134,6 +134,8 @@ class ImeController(
 
     /** DogBoard: the space before the cursor was added by the keyboard (after a picked suggestion). */
     private var autoSpace = false
+    /** DogBoard: a mark just went before a space it moved ("it ." -> "it. "): the next typed space is that one. */
+    private var markSwapped = false
     // DogBoard: word tracking, autocorrect and suggestions
     private class PendingTap(val tap: Tap?, val keys: Map<Char, KeyTarget>, val params: GaussianTouch.Params?)
     private class LastCorrection(val word: CurrentWord, val corrected: String, val separator: String)
@@ -604,6 +606,7 @@ class ImeController(
             }
             lastSpaceUptime = null
             autoSpace = false
+            markSwapped = false
             // the new text and cursor first: resetWordTracking refreshes the bar from them (in the
             // other order the bar described the old cursor position after a tap into another word)
             resetContent(newSelection, state.editor.getSurroundingText(SURROUNDING_BEFORE, SURROUNDING_AFTER))
@@ -647,6 +650,13 @@ class ImeController(
                 val tb = state.content.surroundingText.textBefore
                 if (tb.length >= 2 && tb.last() == ' ' && tb[tb.length - 2].isLetterOrDigit()) autoSpace = true
             }
+            // the space after a moved mark is already there: a space typed next (out of habit) doesn't add a second
+            // one ("it ." + space gave "it.  ", 2026-11-24)
+            if (markSwapped) {
+                markSwapped = false
+                // (the sentence-start capital is still worked out, as after any key)
+                if (value == SPACE && state.content.surroundingText.textBefore.endsWith(" ")) { autoSpace = false; reevaluateInputShiftState(); return }
+            }
             if (autoSpace) {
                 autoSpace = false
                 if (text in SWAP_WITH_AUTO_SPACE || text in REPLACE_AUTO_SPACE) {
@@ -657,7 +667,10 @@ class ImeController(
                             emitText(" ".asK3String())
                             lastSpaceUptime = null // not a typed space: no double-space period
                             autoSpace = true // "?!" swaps again
+                            markSwapped = true
                         }
+                        // the next sentence's capital ("it ." -> "it. " left the keys in lowercase, 2026-11-24)
+                        reevaluateInputShiftState()
                         return
                     }
                 }
