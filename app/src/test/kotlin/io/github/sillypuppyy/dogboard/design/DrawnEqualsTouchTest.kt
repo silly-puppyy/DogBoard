@@ -48,6 +48,23 @@ class DrawnEqualsTouchTest : FunSpec({
             println("TOUCH " + rows[0].filter { it.kind == "char" }.joinToString { "%s@%.1f".format(it.base, targets[it.base[0]]?.centerX ?: -1f) })
         }
         off.shouldBeEmpty()
+        // with the number row on too (Bangla's full layout once drew a row above its touch: taps landed a row up)
+        val kbN = coroutineScope { computeTouchModel(result.model, TouchModelOptions.Default.copy(showNumberRow = true)) }.selectKeyboard(deviceWidthMm = 70)
+        val (targetsN, _) = kbN.letterTargets(ImeLayerIds.Base, w, h, 0.3)
+        val rN = KbSpec.render(KbProps(width = w, keyH = h, only = "live", letterRows = rows, numberRow = true, numRow = "on"))
+        val digitRows = rN.rows.size - r.rows.size
+        val offN = buildList {
+            rN.rows.drop(digitRows).take(rows.size).forEachIndexed { i, row ->
+                val ri = i + digitRows
+                for (k in row.keys) {
+                    if (k.gap || k.kind != "char" || !k.base[0].isLetter()) continue
+                    val t = targetsN[k.base.lowercase()[0]] ?: continue
+                    val dy = rN.rowTops[ri] + rN.rowHs[ri] / 2 - t.centerY
+                    if (abs(dy) > 0.5f) add("%s: number row on, drawn - touch dy = %.1f dp".format(k.base, dy))
+                }
+            }
+        }
+        offN.take(3).shouldBeEmpty()
         // and English drawn from its layout = the built-in English rows (previews keep today's drawing)
         if (path.endsWith("qwerty-en.xml")) {
             val builtIn = KbSpec.render(KbProps(width = w, keyH = h, only = "live"))
