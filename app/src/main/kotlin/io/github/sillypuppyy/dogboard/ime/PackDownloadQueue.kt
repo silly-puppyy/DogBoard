@@ -63,7 +63,10 @@ object PackDownloadQueue {
                 // a pack on the phone is fetched again only when the host has a newer version of it (a downloaded one:
                 // a built-in pack updates with the app)
                 val have = LanguagePack.find(app, entry.tag)?.takeIf { it.hasWords }
-                if (have != null && (have.bundled || _index.value?.let { PackDownloads.of(app).updateFor(have, it) } == null)) continue
+                // a built-in pack without its big optional files (a build from source: the English trigram and neural
+                // model aren't in git) takes the hosted pack, which has them
+                val lacking = have != null && have.bundled && (!have.has("ngrams") || !have.has("lm_model"))
+                if (have != null && !lacking && (have.bundled || _index.value?.let { PackDownloads.of(app).updateFor(have, it) } == null)) continue
                 start(app, entry)
             }
         }
