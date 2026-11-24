@@ -126,7 +126,8 @@ def load_training(per_layout, futo_shards, random_share=0.0):
     for lay, (lang, asp) in TRAIN_LAYOUTS.items():
         syn = [it for f in sorted(glob.glob(f"{D}/swipe/synth-cvae2-{lay}/train-*.pt")) for it in torch.load(f)]
         random.Random(1).shuffle(syn)
-        n_rand = int(per_layout * random_share)
+        # random strings exist for FUTO's layouts only (synth-random-LAYOUT); the app's layouts are words alone
+        n_rand = 0 if lay.startswith("app-") else int(per_layout * random_share)
         for x, w in syn[:per_layout - n_rand]:
             items.add(x, w, lay, 10 * asp)
         del syn
