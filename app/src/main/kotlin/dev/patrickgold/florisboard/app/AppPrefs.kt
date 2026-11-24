@@ -711,9 +711,10 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
         // DogBoard: the settings take the keyboard theme's light or dark (Dalmatian in dark mode
         // -> bright settings), else the system's; colours stay Material either way
         val settingsFollowKeyboard = boolean(key = "other__settings_follow_keyboard", default = true)
-        // DogBoard: the settings app's colours: "keyboard" (light or dark and colours from the
-        // keyboard theme, the default), "wallpaper" (Material You), "none" (DogBoard's default colours)
-        val settingsColours = string(key = "other__settings_colours", default = "keyboard")
+        // DogBoard: the settings app's colours: "wallpaper" (Material You, Android's own; the default since
+        // 2026-11-24: a Rainbow keyboard tinted every page green), "keyboard" (from the keyboard theme), "none"
+        // (DogBoard's default colours)
+        val settingsColours = string(key = "other__settings_colours", default = "wallpaper")
         val settingsTheme = enum(
             key = "other__settings_theme",
             default = AppTheme.AUTO,
