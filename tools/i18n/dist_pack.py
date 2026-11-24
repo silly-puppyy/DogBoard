@@ -52,7 +52,9 @@ def dist(pack_dir, out, tag=None, base_url=''):
     # one archive per language for release hosts: xz takes the n-grams to a third (Spanish 56.4 ->
     # 22.0 MB); manifest first, so the phone reads the checksums before the files stream past
     archive = os.path.join(out, f'{tag}.tar.xz')
-    with tarfile.open(archive + '.tmp', 'w:xz', preset=9) as t:
+    # preset 6 (an 8 MiB dictionary): the phone's decoder allocates the whole dictionary, and preset 9's 64 MiB, three
+    # updates at a time, ran the app out of heap (2026-11-24; the archives grow ~5 %)
+    with tarfile.open(archive + '.tmp', 'w:xz', preset=6) as t:
         for name in ['manifest.json'] + sorted(v['path'] for v in files.values()):
             t.add(os.path.join(dest, name), arcname=name)
     os.replace(archive + '.tmp', archive)

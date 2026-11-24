@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Dictionaries that arrive in the background (Gboard's way, adding a language never waits on a download).
@@ -19,6 +20,12 @@ import kotlinx.coroutines.launch
  */
 object PackDownloadQueue {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * One install at a time: each holds an xz decoder, a download and its checks; several languages at once (a first
+     * start, or updates of every installed pack) ran the app out of heap (2026-11-24).
+     */
+    private val installLock = kotlinx.coroutines.sync.Mutex()
     private val _index = MutableStateFlow<PackIndex?>(null)
     private val _pending = MutableStateFlow<Set<String>>(emptySet())
 
@@ -70,7 +77,7 @@ object PackDownloadQueue {
             try {
                 for ((attempt, wait) in RETRY_WAITS_MS.withIndex()) {
                     if (attempt > 0) delay(wait)
-                    val r = PackDownloads.of(app).install(entry.tag, entry = entry)
+                    val r = installLock.withLock { PackDownloads.of(app).install(entry.tag, entry = entry) }
                     if (r is PackInstaller.Result.Installed) {
                         android.util.Log.i("DogBoardPerf", "pack ${r.tag} ${r.version} installed in the background")
                         _installed.update { it + 1 }
