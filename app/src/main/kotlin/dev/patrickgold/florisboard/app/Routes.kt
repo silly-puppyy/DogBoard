@@ -390,10 +390,12 @@ object Routes {
                 val payload = navBackStack.toRoute<Settings.LanguagePackManager>()
                 LanguagePackManagerScreen(payload.action)
             }
-            composableWithDeepLink(Settings.SubtypeAdd::class) { SubtypeEditorScreen(null) }
+            // DogBoard: FlorisBoard's keyboard editor links open DogBoard's Languages pages (the old editor opened blank
+            // and closed): adding goes to Add a language, editing to that keyboard's own page
+            composableWithDeepLink(Settings.SubtypeAdd::class) { io.github.sillypuppyy.dogboard.settings.LanguagesScreen(startPage = "") }
             composableWithDeepLink(Settings.SubtypeEdit::class) { navBackStack ->
                 val payload = navBackStack.toRoute<Settings.SubtypeEdit>()
-                SubtypeEditorScreen(payload.id)
+                io.github.sillypuppyy.dogboard.settings.LanguagesScreen(startPage = "kb:${payload.id}")
             }
 
             composableWithDeepLink(Settings.Theme::class) { ThemeScreen() }
