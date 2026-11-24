@@ -1,0 +1,6 @@
+DogBoard 1.0, the first public release.
+- Autocorrect that looks back, learns on the device and keeps names as typed
+- 27 languages to download, with next-word models for eight; combine two or three on one keyboard
+- Keys, space bar and the language menu in each keyboard's own language
+- Themes: wallpaper colours, breeds, gradients, Pride flags, mechanical keys, photos, and a theme editor
+- A setup that walks through every setting with the keyboard live below

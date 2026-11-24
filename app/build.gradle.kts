@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import java.util.Properties
 import com.android.build.api.dsl.ApplicationExtension
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -106,6 +107,20 @@ configure<ApplicationExtension> {
         compose = true
     }
 
+    // DogBoard: the GitHub build's key, outside the repository (~/.config/dogboard/release-signing.properties: storeFile,
+    // storePassword, keyAlias, keyPassword); without the file the github build comes out unsigned. F-Droid signs its own.
+    val releaseSigning = file(System.getProperty("user.home") + "/.config/dogboard/release-signing.properties").takeIf { it.isFile }?.let { f ->
+        Properties().apply { f.inputStream().use { load(it) } }
+    }
+    signingConfigs {
+        if (releaseSigning != null) create("dogboardRelease") {
+            storeFile = file(releaseSigning.getProperty("storeFile"))
+            storePassword = releaseSigning.getProperty("storePassword")
+            keyAlias = releaseSigning.getProperty("keyAlias")
+            keyPassword = releaseSigning.getProperty("keyPassword")
+        }
+    }
+
     buildTypes {
         named("debug") {
             applicationIdSuffix = ".debug"
@@ -137,6 +152,7 @@ configure<ApplicationExtension> {
         create("github") {
             initWith(getByName("release"))
             buildConfigField("boolean", "SELF_UPDATE", "true")
+            signingConfigs.findByName("dogboardRelease")?.let { signingConfig = it }
             matchingFallbacks += listOf("release")
         }
 
