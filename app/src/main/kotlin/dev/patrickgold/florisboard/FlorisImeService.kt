@@ -331,7 +331,8 @@ class FlorisImeService : LifecycleInputMethodService() {
                 val savedId = prefs.localization.activeSubtypeId.get()
                 val first = saved?.let { list -> list.firstOrNull { it.id == savedId } ?: list.first() } ?: subtypeManager.activeSubtype
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.prefer(this@FlorisImeService, first.primaryLocale.languageTag())
-                io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService)
+                try { io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this@FlorisImeService) }
+                finally { io.github.sillypuppyy.dogboard.ime.EngineLoader.firstLoadDone = true }
             }
             // DogBoard: the names of the apps on the phone are words too (iOS does this)
             io.github.sillypuppyy.dogboard.engine.TypingEngine.addAppNames(io.github.sillypuppyy.dogboard.apps.AppNames.read(this@FlorisImeService))
@@ -484,6 +485,8 @@ class FlorisImeService : LifecycleInputMethodService() {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         io.github.sillypuppyy.dogboard.perf.Perf.mark("onStartInputView") // DogBoard: startup timing
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            // an engine a failed load left empty is loaded again here: typing heals without restarting the app
+            if (io.github.sillypuppyy.dogboard.ime.EngineLoader.firstLoadDone) io.github.sillypuppyy.dogboard.ime.EngineLoader.heal(this@FlorisImeService)
             io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureNeural(this@FlorisImeService)
             io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureSwipe(this@FlorisImeService)
         }

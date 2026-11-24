@@ -109,9 +109,11 @@ object PackDownloadQueue {
                         _installed.update { it + 1 }
                         // in use now: load it (the language typed with its layout alone until here), or load it again (updated)
                         val active = dev.patrickgold.florisboard.FlorisApplication.getHack().subtypeManager.value.activeSubtype
-                        if (!EngineLoader.reloadIfLoaded(app, entry.tag) &&
-                            active.primaryLocale.languageTag().substringBefore('-').equals(entry.tag.substringBefore('-'), true)
-                        ) EngineLoader.switchTo(app, active.primaryLocale.languageTag())
+                        runCatching {
+                            if (!EngineLoader.reloadIfLoaded(app, entry.tag) &&
+                                active.primaryLocale.languageTag().substringBefore('-').equals(entry.tag.substringBefore('-'), true)
+                            ) EngineLoader.switchTo(app, active.primaryLocale.languageTag())
+                        }.onFailure { android.util.Log.w("DogBoardPerf", "pack ${entry.tag}: loading after install failed: ${it.javaClass.simpleName} ${it.message}") }
                         return@launch
                     }
                     android.util.Log.w("DogBoardPerf", "pack ${entry.tag}: attempt ${attempt + 1} failed: ${(r as PackInstaller.Result.Failed).reason}")

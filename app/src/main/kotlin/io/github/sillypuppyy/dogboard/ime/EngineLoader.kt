@@ -35,7 +35,7 @@ object EngineLoader {
         TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
         pack = next
         System.gc() // the old language's words go before the new one's are parsed (its first start parses the word lists)
-        ensureLoaded(app)
+        loadOrFallBack(app)
         return true
     }
 
@@ -105,7 +105,7 @@ object EngineLoader {
         TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
         pack = LanguagePack.find(app, tag)
         System.gc()
-        ensureLoaded(app)
+        loadOrFallBack(app)
         return true
     }
 
@@ -126,9 +126,41 @@ object EngineLoader {
         TypingEngine.attachNgrams(null); TypingEngine.attachNeuralLm(null); TypingEngine.attachSwipeNet(null); TypingEngine.attachCharModel(null)
         pack = tag?.let { LanguagePack.find(app, it) }
         System.gc()
-        ensureLoaded(app)
+        loadOrFallBack(app)
         if (together.isNotEmpty()) setSecondaries(app, together)
         android.util.Log.i("DogBoardPerf", "reload all: engine ${if (TypingEngine.isReady) "ready" else "NOT READY"}")
+    }
+
+    /**
+     * [ensureLoaded], and when it throws (a pack missing a part, memory) the built-in pack of the same language, then the
+     * default: an engine left empty gave no suggestions and no autocorrect until the app restarted (user 2026-11-24:
+     * autocorrect stopped after a pack update and stayed off).
+     */
+    private fun loadOrFallBack(app: Context) {
+        val tried = pack
+        runCatching { ensureLoaded(app) }.onSuccess { return }.onFailure {
+            android.util.Log.w("DogBoardPerf", "language ${tried?.tag} failed to load: ${it.javaClass.simpleName} ${it.message}")
+        }
+        TypingEngine.unload()
+        val builtIn = tried?.let { t -> LanguagePack.all(app).firstOrNull { it.bundled && it.tag == t.tag && it.hasWords && it !== t } }
+        pack = builtIn
+        runCatching { ensureLoaded(app) }.onSuccess {
+            android.util.Log.w("DogBoardPerf", "language ${pack?.tag}: loaded ${if (builtIn != null) "its built-in pack" else "the default"} instead")
+        }.onFailure { android.util.Log.w("DogBoardPerf", "fallback failed too: ${it.javaClass.simpleName} ${it.message}") }
+    }
+
+    /**
+     * An empty engine (a load that failed earlier) loaded again when a text field opens, so typing heals itself without
+     * restarting the app. Cheap when loaded. Off the main thread.
+     */
+    /** The start-up load has run (done or failed): healing waits for it, so the two never load at once. */
+    @Volatile var firstLoadDone = false
+
+    @Synchronized
+    fun heal(context: Context) {
+        if (TypingEngine.isReady) return
+        android.util.Log.w("DogBoardPerf", "engine empty at a text field: loading again")
+        loadOrFallBack(context.applicationContext)
     }
 
     /** Before the first load: start with [tag]'s pack when one with a dictionary exists (else the default, English). */
