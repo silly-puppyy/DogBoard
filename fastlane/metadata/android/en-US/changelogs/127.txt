@@ -1,0 +1,1 @@
+- Fix: after updating to 1.2.4, English's word statistics and prediction model could wait to download until you opened Languages; they now download as soon as you type

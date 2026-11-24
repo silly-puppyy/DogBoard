@@ -370,6 +370,10 @@ class FlorisImeService : LifecycleInputMethodService() {
                     ?: if (own == null) io.github.sillypuppyy.dogboard.ime.LanguageLayouts.forLanguage(tag, prefs.keyboard.layoutId.get(), prefs.keyboard.layoutByLanguage.get()) else null)
                     ?.let { prefs.keyboard.layoutId.set(it) }
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.switchTo(this@FlorisImeService, tag)
+                // the keyboards' missing packs (English's word statistics since 1.2.4): asked here too, where the saved
+                // languages are known; at app start the list can still be the default (no download on the emulator,
+                // 2026-11-25). Nothing is fetched when every pack is in place
+                io.github.sillypuppyy.dogboard.ime.PackDownloadQueue.ensureKeyboards(this@FlorisImeService)
                 // a language typed together with this one ("Type together with"): both decoded, candidates merged
                 io.github.sillypuppyy.dogboard.ime.EngineLoader.setSecondaries(this@FlorisImeService, active.secondaryLocales.map { it.languageTag() })
                 // every language change: the new language's shift (Korean has no capitals: the automatic shift of the one
