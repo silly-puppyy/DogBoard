@@ -56,6 +56,24 @@ object RecentClip {
     private val URL = Regex("""^(https?://)?([\w-]+\.)+[a-zA-Z]{2,}(/\S*)?$""")
     private val CODE = Regex("""^\d{4,8}$""")
 
+    /** Generic top-level domains people type without a scheme; with a scheme or www. any domain is a link. */
+    private val GTLDS = setOf(
+        "com", "org", "net", "edu", "gov", "int", "mil", "info", "biz", "name", "pro", "app", "dev", "page", "blog", "shop",
+        "store", "online", "site", "tech", "xyz", "art", "design", "news", "media", "live", "tv", "music", "cloud", "games",
+        "social", "chat", "email", "link", "wiki", "museum", "travel", "jobs", "eco", "gay", "lgbt", "moe", "zone", "world",
+    )
+
+    /** Country domains: ISO 3166 codes, plus uk and eu ("main.kt" is no link: kt is no country). */
+    private val CCTLDS: Set<String> by lazy { java.util.Locale.getISOCountries().map { it.lowercase() }.toSet() + setOf("uk", "eu") }
+
+    /** A link, not a file name: "example.org/x" or "https://anything", not "index.html" or "e.g". */
+    private fun isLink(word: String): Boolean {
+        if (!URL.matches(word) || !word.contains('.') || word.contains('@')) return false
+        if (word.startsWith("http://", true) || word.startsWith("https://", true) || word.startsWith("www.", true)) return true
+        val tld = word.substringBefore('/').substringAfterLast('.').lowercase()
+        return tld in CCTLDS || tld in GTLDS
+    }
+
     /**
      * Gboard's second extractor (its clipboard entity regexes, notes/research/gboard-clipboard-entities.md): a phone
      * number anywhere, and whole words that are an email, a link or a 4-8 digit code; (order, icon, text) as entities().
@@ -67,7 +85,7 @@ object RecentClip {
             val word = w.trim('(', ')', ',', ';', ':', '!', '?', '"', '\'', '“', '”').trimEnd('.')
             when {
                 EMAIL.matches(word) -> out.add(Triple(1, "mail", word))
-                URL.matches(word) && word.contains('.') && !word.contains('@') -> out.add(Triple(2, "link", word))
+                isLink(word) -> out.add(Triple(2, "link", word))
                 CODE.matches(word) && out.none { it.second == "call" && word in it.third } -> out.add(Triple(6, "pin", word))
             }
         }

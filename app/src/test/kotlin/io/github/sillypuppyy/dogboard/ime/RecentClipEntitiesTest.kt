@@ -27,4 +27,11 @@ class RecentClipEntitiesTest : FunSpec({
         of("1732451234567").none { it.first == "call" } shouldBe true
         of("call 555-123-4567 now") shouldContain ("call" to "555-123-4567")
     }
+    test("a file name or an abbreviation is no link; a domain or a scheme is") {
+        of("open index.html and main.kt").none { it.first == "link" } shouldBe true
+        of("e.g. this").none { it.first == "link" } shouldBe true
+        of("try dogboard.dev today") shouldContain ("link" to "dogboard.dev")
+        of("see bbc.co.uk") shouldContain ("link" to "bbc.co.uk")
+        of("https://intranet.local/x") shouldContain ("link" to "https://intranet.local/x")
+    }
 })
