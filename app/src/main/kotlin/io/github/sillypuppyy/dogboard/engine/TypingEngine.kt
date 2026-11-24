@@ -243,7 +243,7 @@ object TypingEngine {
                 if (!lexicon.contains(w)) {
                     learnedWords.add(w.lowercase())
                     lexicon.addWord(w, engine.userWordLogProb)
-                } else if (!keptCasing(lexicon, w)) lexicon.addWord(w, engine.userWordLogProb)
+                } else if (!shouted(w) && !keptCasing(lexicon, w)) lexicon.addWord(w, engine.userWordLogProb)
             }
         }
         userWordsFile = userWords
@@ -752,6 +752,10 @@ object TypingEngine {
         if (word.isBlank() || word.length > 48 || !word.all { isWordChar(it) }) return
         val isNew = lock.write {
             val wasKnown = engine.lexicon.contains(word)
+            // a known word kept in capitals ("NEAT" in caps lock) is emphasis, not a spelling: learned as a form it
+            // turned a later "Neat," into "NEAT" (tester report, 2026-11-25). An unknown all-caps word (an acronym)
+            // is still learned
+            if (wasKnown && shouted(word)) return@write false
             if (!wasKnown) learnedWords.add(word.lowercase())
             val newCasing = wasKnown && keptCasing(engine.lexicon, word)
             engine.lexicon.addWord(word, engine.userWordLogProb)
@@ -1516,6 +1520,9 @@ object TypingEngine {
      * added as a casing, so keeping it no longer lifts the capitalised form over what was typed (emulator
      * 2026-11-19: "hom" kept twice was then corrected to "Hom"). True when it was added.
      */
+    /** [word] is all capitals (two letters or more): typed in caps lock, not a casing of its own. */
+    private fun shouted(word: String): Boolean = word.count { it.isLetter() } > 1 && word.none { it.isLowerCase() }
+
     private fun keptCasing(lexicon: Lexicon, word: String): Boolean =
         word == word.lowercase() && lexicon.addCasing(word)
 

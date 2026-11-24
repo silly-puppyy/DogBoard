@@ -174,6 +174,17 @@ class FilterStackTest : FunSpec({
         }
     }
 
+    test("a known word kept in capitals isn't learned as a form of its own (NEAT, then neat stays neat)") {
+        TypingEngine.unloadForTest()
+        TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
+        try {
+            TypingEngine.learn("NEAT")
+            finished("neat") shouldBe "neat"
+        } finally {
+            TypingEngine.unloadForTest()
+        }
+    }
+
     test("an extra first tap is dropped, as iOS does (ghello → hello, gthe → the)") {
         TypingEngine.unloadForTest()
         TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })
