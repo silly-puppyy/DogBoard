@@ -35,6 +35,27 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/** SkinPanels .i6-bb: a bordered bar button of the era's navigation bar. */
+@Composable
+private fun GlossBarButton(modifier: Modifier, content: @Composable () -> Unit) {
+    val shape = RoundedCornerShape(5.dp)
+    Box(
+        modifier.height(30.dp).widthIn(min = 30.dp).cssShadow(GLOSS_BAR_BTN_SH, shape).background(GLOSS_BAR_BTN.brush(), shape)
+            .cssShadow(GLOSS_BAR_INSET, shape).padding(horizontal = 9.dp),
+        contentAlignment = Alignment.Center,
+    ) { content() }
+}
+
+private val GLOSS_NAV = CssGradient.parse("linear-gradient(#b0bccd, #889bb3 50%, #8195af 51%, #6d84a2)")!!
+private val GLOSS_NAV_SH = CssShadow.parse("inset 0 1px 0 #cdd5df, inset 0 -1px 0 #2d3642")
+private val GLOSS_BAR_BTN = CssGradient.parse("linear-gradient(#8fa1b9, #6a82a1 50%, #5f7898 51%, #4f6a8f)")!!
+private val GLOSS_BAR_BTN_SH = CssShadow.parse("0 1px 0 rgba(255,255,255,0.3), inset 0 0 0 1px rgba(0,0,0,0.4)")
+private val GLOSS_BAR_INSET = CssShadow.parse("inset 0 1px 0 rgba(255,255,255,0.3)")
+private val GLOSS_SEG_SH = CssShadow.parse("0 1px 0 rgba(255,255,255,0.3), 0 0 0 1px rgba(0,0,0,0.45)")
+private val GLOSS_SEG_ON = CssGradient.parse("linear-gradient(#556d8e, #425b7f 50%, #3b5376 51%, #344b6c)")!!
+private val GLOSS_SEG_ON_SH = CssShadow.parse("inset 0 1px 4px rgba(0,0,0,0.55)")
+private val GLOSS_TEXT_SH = androidx.compose.ui.graphics.Shadow(Color(0x80000000), androidx.compose.ui.geometry.Offset(0f, -1f), 0f)
+
 /** canvas Kb cc (SkinPanels): the Gloss paste chip's fill and edges, the Mechanical one's front edge. */
 private val GLOSS_CHIP_BG = CssGradient.parse("linear-gradient(#ffffff, #eef0f3 50%, #dcdfe5)")!!
 private val GLOSS_CHIP_SH = CssShadow.parse("inset 0 1px 0 #ffffff, 0 0 0 1px rgba(40,45,60,0.55), 0 1px 1px rgba(255,255,255,0.6), 0 2px 3px rgba(0,0,0,0.2)")
@@ -60,6 +81,30 @@ fun KbPanelHeader(r: KbRender) {
     val t = r.t; val x = r.x
     Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
         when {
+            x.pClip && t.seg -> {
+                // SkinPanels .i6-nav: the era's blue-grey navigation bar, bordered bar buttons, the All / Links / Media
+                // filter as its segmented control in place of a title
+                val actions = LocalKbActions.current
+                Row(
+                    Modifier.fillMaxSize().background(GLOSS_NAV.brush()).cssShadow(GLOSS_NAV_SH, androidx.compose.ui.graphics.RectangleShape).padding(horizontal = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    GlossBarButton(Modifier.tap(actions?.onBack)) { Symbol("keyboard", 20.sp, Color.White) }
+                    Row(Modifier.weight(1f).height(30.dp).cssShadow(GLOSS_SEG_SH, RoundedCornerShape(5.dp)).clip(RoundedCornerShape(5.dp))) {
+                        for ((i, label) in listOf("All", "Links", "Media").withIndex()) {
+                            val on = i == x.clipFilter
+                            if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(Color(0x73000000)))
+                            Box(
+                                Modifier.weight(1f).fillMaxHeight().background((if (on) GLOSS_SEG_ON else GLOSS_BAR_BTN).brush())
+                                    .cssShadow(if (on) GLOSS_SEG_ON_SH else GLOSS_BAR_INSET, androidx.compose.ui.graphics.RectangleShape)
+                                    .tap(actions?.let { a -> { a.onClipFilter(i) } }),
+                                contentAlignment = Alignment.Center,
+                            ) { DText(label, style = designTextStyle(12.5.sp, 700, Color.White).copy(shadow = GLOSS_TEXT_SH)) }
+                        }
+                    }
+                    GlossBarButton(Modifier) { DText("Clear", style = designTextStyle(12.5.sp, 700, Color.White).copy(shadow = GLOSS_TEXT_SH)) }
+                }
+            }
             x.pClip -> {
                 // Kb:37-46
                 Row(Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {

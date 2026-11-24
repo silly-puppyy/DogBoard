@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -128,11 +129,18 @@ private fun text(size: Int, weight: Int, color: Color) = designTextStyle(size.sp
 @Composable
 fun KbClipList(t: KbTokens, rows: List<KbClipRow>, modifier: Modifier = Modifier, state: LazyListState = rememberLazyListState(), initialHeld: Int = -1) {
     var held by remember(initialHeld) { mutableStateOf(initialHeld) }
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxSize()) {
+    val gloss = t.seg
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxSize().then(if (gloss) Modifier.drawBehind {
+        // SkinPanels .i6-pin: the era's pinstripes, 5 px light, 2 px lighter
+        drawRect(GLOSS_STRIPE_A)
+        val w = 2.dp.toPx(); val step = 7.dp.toPx(); var x = 5.dp.toPx()
+        while (x < size.width) { drawRect(GLOSS_STRIPE_B, Offset(x, 0f), androidx.compose.ui.geometry.Size(w, size.height)); x += step }
+    } else Modifier)) {
         LazyColumn(
             Modifier.fillMaxSize(), state = state,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            contentPadding = if (gloss) androidx.compose.foundation.layout.PaddingValues(start = 9.dp, end = 9.dp, top = 10.dp, bottom = 9.dp)
+                else androidx.compose.foundation.layout.PaddingValues(start = 8.dp, end = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(if (gloss) 0.dp else 2.dp),
         ) {
             itemsIndexed(rows) { i, r ->
                 ClipRow(t, r, i, rows.size, state, held == i) { held = if (held == i) -1 else i }
@@ -158,7 +166,11 @@ fun KbClipList(t: KbTokens, rows: List<KbClipRow>, modifier: Modifier = Modifier
 @Composable
 private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListState, held: Boolean, onHold: () -> Unit) {
     val actions = LocalKbClipActions.current
-    val shape = rowShape(i, n)
+    val gloss = t.seg
+    val shape = if (gloss) RoundedCornerShape(
+        topStart = if (i == 0) 9.dp else 0.dp, topEnd = if (i == 0) 9.dp else 0.dp,
+        bottomStart = if (i == n - 1) 9.dp else 0.dp, bottomEnd = if (i == n - 1) 9.dp else 0.dp,
+    ) else rowShape(i, n)
     val density = LocalDensity.current
     val img by produceState<ImageBitmap?>(null, r.image) {
         value = r.image?.let { load -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { load(with(density) { (if (r.window) 400 else 80).dp.roundToPx() }) } }
@@ -168,7 +180,18 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
     val id = "cliprow:$i"
     Box(
         Modifier.fillMaxWidth().height(ROW_H.dp).clip(shape)
-            .then(if (held) Modifier.background(t.pressKey) else Modifier.themedSurface(t, "key", shape, t.key, shadow = false))
+            .then(when {
+                gloss -> Modifier.background(if (held) GLOSS_CELL_HELD else Color.White).drawBehind {
+                    // SkinPanels .i6-grp / .i6-cell: the group's grey edge, a light rule between cells
+                    val px = 1.dp.toPx()
+                    drawRect(GLOSS_EDGE, Offset.Zero, androidx.compose.ui.geometry.Size(px, size.height))
+                    drawRect(GLOSS_EDGE, Offset(size.width - px, 0f), androidx.compose.ui.geometry.Size(px, size.height))
+                    if (i == n - 1) drawRect(GLOSS_EDGE, Offset(0f, size.height - px), androidx.compose.ui.geometry.Size(size.width, px))
+                    drawRect(if (i == 0) GLOSS_EDGE else GLOSS_RULE, Offset.Zero, androidx.compose.ui.geometry.Size(size.width, px))
+                }
+                held -> Modifier.background(t.pressKey)
+                else -> Modifier.themedSurface(t, "key", shape, t.key, shadow = false)
+            })
             .tap({ actions?.onPaste?.invoke(i) }, onHold).lint(id),
     ) { LintParent(id) {
         if (window) WindowImage(r, img, list, i)
@@ -305,7 +328,8 @@ private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean
       }
         // P:145-149
         Slot(if (r.pinned) "Pinned. Tap to unpin" else "Pin", { actions?.onPin?.invoke(i) }) {
-            Box(Modifier.size(28.dp).background(if (r.pinned) t.act else if (window) t.key else Color.Transparent, PILL), contentAlignment = Alignment.Center) {
+            if (t.seg) GlossButton("keep", r.pinned)
+            else Box(Modifier.size(28.dp).background(if (r.pinned) t.act else if (window) t.key else Color.Transparent, PILL), contentAlignment = Alignment.Center) {
                 Symbol("keep", 18.sp, if (r.pinned) t.actFg else t.hint, fill = if (r.pinned) 1 else 0, weight = 500)
             }
         }
@@ -320,6 +344,8 @@ private fun Slot(label: String, onTap: () -> Unit, modifier: Modifier = Modifier
 /** P:136-139: a 28 dp mark; [bg] null = no fill (undone: a 1 dp ring); [slash] = the trackers' crossed bug (P:138). */
 @Composable
 private fun Mark(bg: Color?, t: KbTokens, icon: String, slash: Boolean, ring: Boolean = false) {
+    // Gloss: the era's small round glossy button (SkinPanels .i6-b), the mark crossed out when undone
+    if (t.seg) { GlossButton(icon, false, crossed = slash); return }
     val fg = if (bg == null && ring) t.hint else t.fnFg
     val behind = bg ?: t.key
     Box(
@@ -337,6 +363,35 @@ private fun Mark(bg: Color?, t: KbTokens, icon: String, slash: Boolean, ring: Bo
         contentAlignment = Alignment.Center,
     ) { Symbol(icon, 18.sp, fg, weight = 500) }
 }
+
+/** SkinPanels .i6-b: a 30 dp round glossy button; [on] lit blue (a pinned clip). */
+@Composable
+private fun GlossButton(icon: String, on: Boolean, crossed: Boolean = false) {
+    Box(
+        Modifier.size(30.dp).cssShadow(if (on) GLOSS_BTN_ON_SH else GLOSS_BTN_SH, PILL)
+            .background((if (on) GLOSS_BTN_ON else GLOSS_BTN).brush(), PILL).cssShadow(GLOSS_BTN_INSET, PILL)
+            .drawWithContent {
+                drawContent()
+                if (!crossed) return@drawWithContent
+                val half = 8.dp.toPx(); val a = Math.toRadians(-45.0)
+                val c = Offset(size.width / 2, size.height / 2); val d = Offset((cos(a) * half).toFloat(), (sin(a) * half).toFloat())
+                drawLine(GLOSS_ICON, c - d, c + d, strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
+            },
+        contentAlignment = Alignment.Center,
+    ) { Symbol(icon, 18.sp, if (on) Color.White else GLOSS_ICON, fill = if (on) 1 else 0, weight = if (on) 500 else 400) }
+}
+
+private val GLOSS_STRIPE_A = css("#c5ccd4")
+private val GLOSS_STRIPE_B = css("#cbd2d8")
+private val GLOSS_EDGE = css("#a8adb4")
+private val GLOSS_RULE = css("#e0e0e0")
+private val GLOSS_CELL_HELD = css("#e8eef8")
+private val GLOSS_ICON = css("#5b606b")
+private val GLOSS_BTN = CssGradient.parse("linear-gradient(#fdfdfe, #e3e5ea 50%, #d3d6dc)")!!
+private val GLOSS_BTN_ON = CssGradient.parse("linear-gradient(#69a8f8, #2c7be5 50%, #1660d8)")!!
+private val GLOSS_BTN_SH = CssShadow.parse("0 0 0 1px rgba(0,0,0,0.28), 0 1px 1px rgba(0,0,0,0.25)")
+private val GLOSS_BTN_ON_SH = CssShadow.parse("0 0 0 1px rgba(10,50,120,0.6), 0 1px 1px rgba(0,0,0,0.3)")
+private val GLOSS_BTN_INSET = CssShadow.parse("inset 0 1px 0 rgba(255,255,255,0.5)")
 
 /** H:30-37: a Material menu under the held row, right-aligned 8 dp; Delete in the error colour. */
 @Composable
