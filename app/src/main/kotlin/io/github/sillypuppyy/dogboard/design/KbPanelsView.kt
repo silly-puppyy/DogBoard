@@ -46,15 +46,19 @@ private fun GlossBarButton(modifier: Modifier, content: @Composable () -> Unit) 
     ) { content() }
 }
 
+private val GLOSS_FIELD_SH = CssShadow.parse("inset 0 1px 2px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.9)")
+private val GLOSS_FIELD_HINT = Color(0xFF8E939C)
 private val LED = Color(0xFFFF9A5C)
 private val LED_SH = CssShadow.parse("0 0 2px #ffc29a, 0 0 5px rgba(255,140,70,0.8)")
 private val GLOSS_NAV = CssGradient.parse("linear-gradient(#b0bccd, #889bb3 50%, #8195af 51%, #6d84a2)")!!
 private val GLOSS_NAV_SH = CssShadow.parse("inset 0 1px 0 #cdd5df, inset 0 -1px 0 #2d3642")
 private val GLOSS_BAR_BTN = CssGradient.parse("linear-gradient(#8fa1b9, #6a82a1 50%, #5f7898 51%, #4f6a8f)")!!
-private val GLOSS_BAR_BTN_SH = CssShadow.parse("0 1px 0 rgba(255,255,255,0.3), inset 0 0 0 1px rgba(0,0,0,0.4)")
-private val GLOSS_BAR_INSET = CssShadow.parse("inset 0 1px 0 rgba(255,255,255,0.3)")
+private val GLOSS_BAR_BTN_SH = CssShadow.parse("0 1px 0 rgba(255,255,255,0.3)")
+// drawn over the fill: the button's dark rim and its top highlight
+private val GLOSS_BAR_INSET = CssShadow.parse("inset 0 0 0 1px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3)")
 private val GLOSS_SEG_SH = CssShadow.parse("0 1px 0 rgba(255,255,255,0.3), 0 0 0 1px rgba(0,0,0,0.45)")
 private val GLOSS_SEG_ON = CssGradient.parse("linear-gradient(#556d8e, #425b7f 50%, #3b5376 51%, #344b6c)")!!
+private val GLOSS_SEG_INSET = CssShadow.parse("inset 0 1px 0 rgba(255,255,255,0.3)")
 private val GLOSS_SEG_ON_SH = CssShadow.parse("inset 0 1px 4px rgba(0,0,0,0.55)")
 private val GLOSS_TEXT_SH = androidx.compose.ui.graphics.Shadow(Color(0x80000000), androidx.compose.ui.geometry.Offset(0f, -1f), 0f)
 
@@ -98,7 +102,7 @@ fun KbPanelHeader(r: KbRender) {
                             if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(Color(0x73000000)))
                             Box(
                                 Modifier.weight(1f).fillMaxHeight().background((if (on) GLOSS_SEG_ON else GLOSS_BAR_BTN).brush())
-                                    .cssShadow(if (on) GLOSS_SEG_ON_SH else GLOSS_BAR_INSET, androidx.compose.ui.graphics.RectangleShape)
+                                    .cssShadow(if (on) GLOSS_SEG_ON_SH else GLOSS_SEG_INSET, androidx.compose.ui.graphics.RectangleShape)
                                     .tap(actions?.let { a -> { a.onClipFilter(i) } }),
                                 contentAlignment = Alignment.Center,
                             ) { DText(label, style = designTextStyle(12.5.sp, 700, Color.White).copy(shadow = GLOSS_TEXT_SH)) }
@@ -144,12 +148,18 @@ fun KbPanelHeader(r: KbRender) {
                         return@Row
                     }
                     val actions = LocalKbActions.current
+                    // SkinPanels: Gloss a sunken white field (.g-search), Mechanical a dark slot cut into the plate (.m-slot)
+                    val (field, hint) = when {
+                        t.seg -> RoundedCornerShape(16.dp).let { s -> Modifier.height(32.dp).sunken(GLOSS_FIELD_SH, Color.White, s).clip(s) } to GLOSS_FIELD_HINT
+                        t.face != null -> RoundedCornerShape(8.dp).let { s -> Modifier.height(34.dp).sunken(mechSlotSh(t), mechSlot(t), s).clip(s) } to MECH_SLOT_HINT
+                        else -> Modifier.height(36.dp).themedSurface(t, "chip", PILL, t.tile).clip(PILL) to t.barMuted
+                    }
                     Row(
-                        Modifier.weight(1f).height(36.dp).themedSurface(t, "chip", PILL, t.tile).clip(PILL).tap(actions?.onEmojiSearch).padding(horizontal = 12.dp),
+                        Modifier.weight(1f).then(field).tap(actions?.onEmojiSearch).padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Symbol("search", 20.sp, t.barMuted)
-                        DText("Search emoji", style = text(15, 400, t.barMuted), overflow = TextOverflow.Visible)
+                        Symbol("search", if (t.seg || t.face != null) 19.sp else 20.sp, hint)
+                        DText("Search emoji", style = text(15, 400, hint), overflow = TextOverflow.Visible)
                     }
                     // the canvas's skin-tone dot (a static circle) is left out: as Gboard, a tone is picked by
                     // long press on each emoji and stays with it
