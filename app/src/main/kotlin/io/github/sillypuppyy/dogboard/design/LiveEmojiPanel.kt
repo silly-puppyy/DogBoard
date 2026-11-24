@@ -126,7 +126,7 @@ fun LiveEmojiPanel(
             Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.height(36.dp).background(t.fn, shape).clickable(onClick = onAbc).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.height(36.dp).themedSurface(t, "fn", shape, t.fn).clickable(onClick = onAbc).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
                 DText("ABC", style = designTextStyle(14.sp, 500, t.fnFg))
             }
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceAround) {
@@ -144,7 +144,7 @@ fun LiveEmojiPanel(
                     }
                 }
             }
-            Box(Modifier.size(44.dp, 36.dp).background(t.fn, shape).clickable(onClick = onDelete), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(44.dp, 36.dp).themedSurface(t, "fn", shape, t.fn).clickable(onClick = onDelete), contentAlignment = Alignment.Center) {
                 Symbol("backspace", 20.sp, t.fnFg)
             }
         }

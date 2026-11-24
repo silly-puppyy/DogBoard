@@ -65,7 +65,12 @@ fun KbPanelHeader(r: KbRender) {
                         val actions = LocalKbActions.current
                         for ((i, label) in listOf("All", "Links", "Media").withIndex()) {
                             val on = i == x.clipFilter
-                            Chip(label, if (on) t.chip else Color.Transparent, if (on) t.chipFg else t.barFg, if (on) null else t.div,
+                            // a theme with styled keys: the filters are its keys (the picked one a function key)
+                            if (t.styledSurfaces) Box(
+                                Modifier.height(32.dp).themedSurface(t, if (on) "fn" else "key", PILL, t.key).tap(actions?.let { a -> { a.onClipFilter(i) } })
+                                    .padding(horizontal = 12.dp), contentAlignment = Alignment.Center,
+                            ) { DText(label, style = text(13, 500, if (on) t.fnFg else t.keyFg)) }
+                            else Chip(label, if (on) t.chip else Color.Transparent, if (on) t.chipFg else t.barFg, if (on) null else t.div,
                                 Modifier.tap(actions?.let { a -> { a.onClipFilter(i) } }))
                         }
                     }
@@ -83,7 +88,7 @@ fun KbPanelHeader(r: KbRender) {
                     }
                     val actions = LocalKbActions.current
                     Row(
-                        Modifier.weight(1f).height(36.dp).clip(PILL).tap(actions?.onEmojiSearch).background(t.tile, PILL).padding(horizontal = 12.dp),
+                        Modifier.weight(1f).height(36.dp).themedSurface(t, "chip", PILL, t.tile).clip(PILL).tap(actions?.onEmojiSearch).padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Symbol("search", 20.sp, t.barMuted)

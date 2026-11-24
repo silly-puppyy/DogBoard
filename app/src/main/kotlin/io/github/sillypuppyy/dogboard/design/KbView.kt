@@ -463,6 +463,28 @@ private fun KbPopups(r: KbRender) {
     }
 }
 
+/**
+ * Themes whose keys are drawn objects (a gradient key, sculpted caps: Gloss, Mechanical): their panels' surfaces follow
+ * the keys. Flat and see-through themes (gradients, photos) keep their panels as designed (Dusk's clear function tone
+ * made a picked filter look unpicked).
+ */
+val KbTokens.styledSurfaces: Boolean get() = grad.containsKey("keyG") || face != null
+
+/**
+ * A panel surface in the theme's own key style (clipboard rows, the emoji bar's ABC and delete, filter chips, search
+ * fields): [role] "key" or "fn" (the keys' gradient and shadow) or "chip" (the suggestion chip's: Mechanical's well).
+ * Plain themes keep their flat colour. [shadow] false where the surface is clipped (grouped rows).
+ */
+fun Modifier.themedSurface(t: KbTokens, role: String, shape: Shape, flat: Color, shadow: Boolean = true): Modifier {
+    if (!t.styledSurfaces) return background(flat, shape)
+    val grad = t.grad[role + "G"]
+    val colour = when (role) { "key" -> t.key; "fn" -> t.fn; else -> t.chip }
+    val layers = when (role) { "key" -> t.keyShadow; "fn" -> t.fnShadow; else -> t.chipShadow }
+    return (if (shadow) cssShadow(layers.filter { !it.inset }, shape) else this)
+        .then(grad?.let { Modifier.background(it.brush(), shape) } ?: Modifier.background(colour, shape))
+        .cssShadow(layers.filter { it.inset }, shape)
+}
+
 /** CSS box-shadow layers: outer layers as drop shadows, `inset` layers as inner shadows. */
 fun Modifier.cssShadow(layers: List<CssShadow>, shape: Shape): Modifier {
     var m = this

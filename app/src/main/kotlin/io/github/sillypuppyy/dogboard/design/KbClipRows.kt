@@ -168,7 +168,7 @@ private fun ClipRow(t: KbTokens, r: KbClipRow, i: Int, n: Int, list: LazyListSta
     val id = "cliprow:$i"
     Box(
         Modifier.fillMaxWidth().height(ROW_H.dp).clip(shape)
-            .background(if (held) t.pressKey else t.key)
+            .then(if (held) Modifier.background(t.pressKey) else Modifier.themedSurface(t, "key", shape, t.key, shadow = false))
             .tap({ actions?.onPaste?.invoke(i) }, onHold).lint(id),
     ) { LintParent(id) {
         if (window) WindowImage(r, img, list, i)
@@ -286,7 +286,7 @@ private fun RowScope.Controls(t: KbTokens, r: KbClipRow, i: Int, window: Boolean
             Box(Modifier.fillMaxHeight().tap({ actions?.onFormat?.invoke(i, k) }).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
                 // P:130
                 Box(
-                    Modifier.height(28.dp).then(if (on) Modifier.background(t.fn, PILL) else Modifier.border(1.dp, t.hint, PILL)).padding(horizontal = 9.dp),
+                    Modifier.height(28.dp).then(if (on) Modifier.themedSurface(t, "fn", PILL, t.fn) else Modifier.border(1.dp, t.hint, PILL)).padding(horizontal = 9.dp),
                     contentAlignment = Alignment.Center,
                 ) { DText(f, style = text(12, 500, if (on) t.fnFg else t.barMuted)) }
             }
