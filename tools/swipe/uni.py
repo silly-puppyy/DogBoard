@@ -41,13 +41,16 @@ TRAIN_LAYOUTS = {  # layout: (language, aspect of its synthetic set)
     "qwerty": ("en", 0.674), "german": ("de", 0.68), "dvorak": ("en", 0.674), "azerty": ("fr", 0.694),
     "spanish": ("es", 0.674), "qwertz": ("de", 0.68), "clearflow": ("en", 0.756),
 }
+APP = f"{D}/swipe/app"  # the app's own layouts (export_app_layouts.py), synthetic only: no one has swiped on them yet
+APP_ASPECT = 0.46
 FUTO_ASPECT = 0.42  # FUTO's main collection: canvas h / w
 MAX_KEYS = 40
 
 
 def layout_keys(name):
     """Letters (sorted, the label order) and per key (cx, cy, rx, ry) in 0..1 units."""
-    keys = sorted(json.load(open(f"{LAYOUTS}/{name}.json"))["keys"], key=lambda k: k["letter"])
+    path = f"{APP}/layouts/{name}.json" if name.startswith("app-") else f"{LAYOUTS}/{name}.json"
+    keys = sorted(json.load(open(path))["keys"], key=lambda k: k["letter"])
     return "".join(k["letter"] for k in keys), torch.tensor([[k["cx"], k["cy"], k["rx"], k["ry"]] for k in keys])
 
 
@@ -134,7 +137,7 @@ def load_training(per_layout, futo_shards, random_share=0.0):
                 items.add(x, w, lay, 10 * asp)
             del rnd
         real = []
-        if lay != "qwerty":
+        if lay != "qwerty" and not lay.startswith("app-"):
             real = torch.load(f"{D}/swipe/split-{lay}-{lang}/train-0.pt")
             for _ in range(5):
                 for x, w, sy in real:
@@ -169,6 +172,9 @@ def batches(items, idx, size, shuffle, tables):
 def train(a):
     sys.path.insert(0, os.path.join(HERE, ".."))
     import track
+    # --app ar,ru,...: the app's layouts join the training set (their synthetic sets: synth-cvae2-app-LANG)
+    for lang in filter(None, a.app.split(",")):
+        TRAIN_LAYOUTS[f"app-{lang}"] = (lang, APP_ASPECT)
     torch.set_num_threads(2)
     random.seed(0)
     tables = {lay: layout_keys(lay) for lay in TRAIN_LAYOUTS}
@@ -184,8 +190,8 @@ def train(a):
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=steps, pct_start=0.1)
     ctc = nn.CTCLoss(blank=0, zero_infinity=True)
     run = track.start("swipe", "multi", os.path.basename(a.out.rstrip("/")), layout="universal",
-                      data="futo-real+swipe5-halves+cvae2x7", config=dict(epochs=a.epochs, batch=a.batch, lr=a.lr,
-                      train_swipes=len(train_idx), params=sum(p.numel() for p in model.parameters()), held_out_layout="kasroz"))
+                      data="futo-real+swipe5-halves+cvae2x7" + (f"+app:{a.app}" if a.app else ""), config=dict(epochs=a.epochs, batch=a.batch, lr=a.lr,
+                      train_swipes=len(train_idx), params=sum(p.numel() for p in model.parameters()), held_out_layout="kasroz" + (",app-bg" if a.app else "")))
     best = 1e9
     for epoch in range(a.epochs):
         t0, total, n = time.time(), 0.0, 0
@@ -264,6 +270,7 @@ def main():
     ap.add_argument("--futo-shards", type=int, default=5, help="FUTO real QWERTY shards (200k swipes each)")
     ap.add_argument("--random-share", type=float, default=0.0, help="share of each layout's synthetic swipes drawn as random letter strings (synth-random-LAYOUT)")
     ap.add_argument("--model", default="")
+    ap.add_argument("--app", default="", help="the app's layouts to train on as well (languages, comma-separated)")
     ap.add_argument("-n", type=int, default=3000)
     a = ap.parse_args()
     train(a) if a.mode == "train" else evaluate(a)
