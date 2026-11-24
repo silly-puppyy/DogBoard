@@ -258,7 +258,9 @@ dependencies {
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     // LiteRT (Apache-2.0): runs the neural language model (engine/lm)
-    implementation("com.google.ai.edge.litert:litert:2.3.2")
+    // without Google Play's model delivery (ai-delivery: proprietary, which F-Droid refuses); our models load from
+    // our own files, so nothing calls it
+    implementation("com.google.ai.edge.litert:litert:2.3.2") { exclude(group = "com.google.android.play") }
     // testImplementation(composeBom)
     // androidTestImplementation(composeBom)
     // My connection security code is: 9 8 5 0, check that you see the same numbers in my connection approval dialog.
