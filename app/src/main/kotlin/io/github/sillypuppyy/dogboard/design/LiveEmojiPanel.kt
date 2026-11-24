@@ -2,6 +2,9 @@ package io.github.sillypuppyy.dogboard.design
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -80,7 +83,7 @@ fun LiveEmojiPanel(
     }
     var skinPicker by remember { mutableStateOf<EmojiSet?>(null) }
 
-    Column(modifier.fillMaxSize().themeBg(t)) {
+    Column(modifier.fillMaxSize().then(if (t.seg) Modifier.background(GLOSS_EMOJI_BG.brush()) else Modifier.themeBg(t))) {
         Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp)) {
             LazyVerticalGrid(GridCells.Fixed(8), state = grid, modifier = Modifier.fillMaxSize()) {
                 for (s in sections) {
@@ -121,6 +124,10 @@ fun LiveEmojiPanel(
                 }
             }
         }
+        if (t.seg) { GlossEmojiTabs(r, activeCategory, onAbc, onDelete) { ci ->
+            val target = sections.indexOfFirst { it.category == ci }
+            if (target >= 0) scope.launch { grid.scrollToItem(headerIndex[target]) }
+        }; return@Column }
         // Kb:241-247 bottom row: ABC, the nine categories, delete
         Row(
             Modifier.fillMaxWidth().height(44.dp).padding(horizontal = 4.dp),
@@ -150,6 +157,46 @@ fun LiveEmojiPanel(
         }
     }
 }
+
+/**
+ * Gloss (SkinPanels .i6-tabs): the bottom row as the era's tab strip, glossy cells edge to edge, ABC and delete the
+ * darker ends, the shown category lit blue with a glowing icon.
+ */
+@Composable
+private fun GlossEmojiTabs(r: KbRender, active: Int, onAbc: () -> Unit, onDelete: () -> Unit, onCategory: (Int) -> Unit) {
+    Row(Modifier.fillMaxWidth().height(46.dp).drawBehind { drawRect(GLOSS_TAB_EDGE, size = androidx.compose.ui.geometry.Size(size.width, 1.dp.toPx())) }) {
+        @Composable fun RowScope.tab(weight: Float, kind: Int, onTap: () -> Unit, content: @Composable () -> Unit) {
+            val (bg, sh) = when (kind) { 1 -> GLOSS_TAB_DARK to GLOSS_TAB_DARK_SH; 2 -> GLOSS_TAB_ON to GLOSS_TAB_ON_SH; else -> GLOSS_TAB to GLOSS_TAB_SH }
+            Box(
+                Modifier.weight(weight).fillMaxHeight().background(bg.brush()).cssShadow(sh, androidx.compose.ui.graphics.RectangleShape).clickable(onClick = onTap),
+                contentAlignment = Alignment.Center,
+            ) { content() }
+        }
+        tab(1.5f, 1, onAbc) { DText("ABC", style = designTextStyle(14.sp, 700, Color.White).copy(shadow = GLOSS_DARK_TEXT_SH)) }
+        for ((ci, c) in r.x.emojiCats.withIndex()) {
+            val on = ci == active
+            tab(1f, if (on) 2 else 0, { onCategory(ci) }) {
+                val fg = if (on) Color.White else GLOSS_TAB_FG
+                Box(if (on) Modifier.cssShadow(GLOSS_GLOW, RoundedCornerShape(50)) else Modifier) {
+                    if (c.icon == "pets") PawIcon(18.dp, 17.dp, fg) else Symbol(c.icon, 21.sp, fg, fill = if (on) 1 else 0, weight = if (on) 400 else 300)
+                }
+            }
+        }
+        tab(1.5f, 1, onDelete) { Symbol("backspace", 22.sp, Color.White, fill = 1) }
+    }
+}
+
+private val GLOSS_EMOJI_BG = CssGradient.parse("linear-gradient(#f5f6f8, #e4e6ea)")!!
+private val GLOSS_TAB_EDGE = Color(0xFF8F949C)
+private val GLOSS_TAB_FG = Color(0xFF62666F)
+private val GLOSS_TAB = CssGradient.parse("linear-gradient(#fbfbfc, #e6e7ea 45%, #c8cbd1)")!!
+private val GLOSS_TAB_SH = CssShadow.parse("inset 1px 0 0 #ffffff, inset -1px 0 0 #9da2ab")
+private val GLOSS_TAB_DARK = CssGradient.parse("linear-gradient(#a7acb5, #868c97 50%, #7a808b)")!!
+private val GLOSS_TAB_DARK_SH = CssShadow.parse("inset 1px 0 0 rgba(255,255,255,0.35), inset -1px 0 0 #5d626c")
+private val GLOSS_TAB_ON = CssGradient.parse("linear-gradient(#4b8ff2, #1d63d6 55%, #1350bf)")!!
+private val GLOSS_TAB_ON_SH = CssShadow.parse("inset 0 2px 5px rgba(0,0,0,0.35)")
+private val GLOSS_GLOW = CssShadow.parse("0 0 7px rgba(210,230,255,0.6)")
+private val GLOSS_DARK_TEXT_SH = androidx.compose.ui.graphics.Shadow(Color(0x73000000), androidx.compose.ui.geometry.Offset(0f, -1f), 0f)
 
 /**
  * Emoji search, as Gboard (measured 2026-11-15): a rounded card with two
