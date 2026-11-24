@@ -103,6 +103,9 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
      */
     var otherLexicons: List<Lexicon> = emptyList()
 
+    /** Benchmarks: [Level.correctionDominance] for every level (DOGBOARD_CORRECTION_DOMINANCE). */
+    var correctionDominanceOverride: Double? = null
+
     /** [typed] is a word as typed: a casing of it is stored, or it is a common enough name typed in lowercase. */
     /** [typed] is a spelling of its own in a word list (not only a folding of another spelling onto its entry). */
     private fun isListedForm(typed: String): Boolean = (listOf(lexicon) + otherLexicons).any { l ->
@@ -151,6 +154,11 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
          * of typos, at 98.8 % vs 99.0 % of correct words kept (Strong's trade).
          */
         val languagePower: Double? = null,
+        /**
+         * A correction (not a completion) must be this many times more likely than the next different word, else the
+         * typed word stays; null = taken as is (iOS's rule 4).
+         */
+        val correctionDominance: Double? = null,
     ) {
         companion object {
             // minStemEndOmission 3 ("that counts as a typo"): real phone typos fixed 47.5 -> 47.9 %,
@@ -263,8 +271,15 @@ class Autocorrect(private val lexicon: Lexicon, private val defaultLevel: Level 
             val asTyped = ranked.firstOrNull { it.words == 1 && it.word.equals(typed, ignoreCase = true) }
             if (asTyped != null && top.score - asTyped.score < ln(accentTwinLead ?: level.leadOverTyped)) return keptAsTyped(typed, asTyped, case)
         }
-        // Rule 4: a correction that is not a completion of what was typed is taken as is.
-        if (!(t.length >= typed.length && t.startsWith(typed))) return t
+        // Rule 4: a correction that is not a completion of what was typed is taken as is, unless another word is nearly
+        // as likely (correctionDominance): then the typed word stays and the bar offers both, instead of a guess
+        // ("foces": foxes or forces; real typos 2026-11-24: most wrong words were such near ties)
+        if (!(t.length >= typed.length && t.startsWith(typed))) {
+            val r = correctionDominanceOverride ?: level.correctionDominance ?: return t
+            val rival = cased.drop(1).firstOrNull { (c, w) -> !c.isTypedString && !w.equals(t, ignoreCase = true) && !w.equals(typed, ignoreCase = true) }
+                ?: return t
+            return if (r * exp(rival.first.score) < exp(top.score)) t else null
+        }
         // Rule 5: a completion needs a long enough stem (or a contraction-like ending, or the same
         // choice as one keystroke earlier) and must clearly beat the runner-up.
         val gain = t.length - typed.length

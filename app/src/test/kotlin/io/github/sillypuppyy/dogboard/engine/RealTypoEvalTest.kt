@@ -97,6 +97,8 @@ class RealTypoEvalTest : FunSpec({
         System.getenv("DOGBOARD_NAME_RANK")?.toIntOrNull()?.let { autocorrect.nameAsTypedRank = it }
         // DOGBOARD_CONTEXT_END_OMISSION=0: Autocorrect.contextEndOmission off (2026-11-19 on: fixed 49.5 -> 49.6 %, broken 0.4 % both)
         autocorrect.contextEndOmission = System.getenv("DOGBOARD_CONTEXT_END_OMISSION") != "0"
+        // DOGBOARD_CORRECTION_DOMINANCE=r: a correction must be r times as likely as the next different word
+        autocorrect.correctionDominanceOverride = System.getenv("DOGBOARD_CORRECTION_DOMINANCE")?.toDoubleOrNull()
         // the app loads the word-pair model into the engine; the app path here loads it apart (above)
         if (appPath) autocorrect.pairSupport = Autocorrect.pairSupport(lexicon, bigrams)
         autocorrect.nonWordMargin = System.getenv("DOGBOARD_NONWORD_MARGIN") == "1"
