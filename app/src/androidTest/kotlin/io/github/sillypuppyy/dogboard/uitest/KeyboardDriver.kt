@@ -247,7 +247,9 @@ class KeyboardDriver(
         private const val MODE_CENTER_X = 1.24f / 2
         private const val SHIFT_CENTER_X = 1.5f / 2
         private const val DIGITS = "1234567890"
-        private const val SYM_ROW2 = "-/:;()$&@\""
+        // the symbols page's second row as the default (Android-style, 2026-11-23) lays it out; the iPhone-style row was
+        // "-/:;()$&@\"" (a test typed "-" for ")" on a Galaxy S24, 2026-11-24)
+        private const val SYM_ROW2 = "@#\$_&-+()/"
         private const val WIDE_PUNCT = ".,?!'"
     }
 }
