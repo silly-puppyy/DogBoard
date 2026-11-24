@@ -22,17 +22,22 @@ object KeySounds {
     private class Packet(val f: Double, val centre: Double, val width: Double)
 
     /**
-     * Shaped noise: white noise through band-pass filters (centre Hz to gain, Q [q]) summed, then a low-pass at [lowPass]
-     * twice (steep), under a decay of [decay] s over a held [floor] level for the voice's whole length.
+     * A body that rings: an all-pole filter (coefficients a1..aN, fitted at [rate] Hz) struck once and kept ringing by
+     * noise of level [noise] that falls by [decay] s to a held [floor], for the voice's whole length.
      */
-    private class Bank(val bands: List<Pair<Double, Double>>, val q: Double, val lowPass: Double, val decay: Double, val floor: Double)
+    private class Resonator(val a: DoubleArray, val noise: Double, val decay: Double, val floor: Double, val rate: Int = 48000)
 
     private class Voice(val length: Double, val partials: List<Partial> = emptyList(), val packet: Packet? = null, val noiseDecay: Double = 0.0,
-                        val bank: Bank? = null)
+                        val res: Resonator? = null)
 
     private class Style(val key: Voice, val delete: Voice, val modifier: Voice, val space: Voice)
 
-    private val TOCK = Voice(.0215, bank = Bank(listOf(1500.0 to .358, 2500.0 to .165, 3500.0 to 1.0), q = 1.4, lowPass = 4500.0, decay = .0022, floor = .06))
+    // the resonances of the early iPhone's click (linear prediction, order 20, on the measured sound; ours to play,
+    // not the recording: notes/research/key-sounds.md)
+    private val TOCK = Voice(.0215, res = Resonator(doubleArrayOf(
+        -4.309983, 9.029249, -11.641592, 9.810875, -5.478585, 2.723841, -2.680261, 2.916048, -1.486692, -0.448830,
+        0.980930, -0.288028, -0.075367, -0.326875, 0.667253, -0.372071, -0.129311, 0.299744, -0.157226, 0.024547,
+    ), noise = .2, decay = .001, floor = .05))
 
     /** The styles by preference value; "system" is Android's own click and isn't here. */
     private val STYLES = mapOf(
@@ -136,7 +141,7 @@ object KeySounds {
         val jitter = java.util.Random(seed * 131 + variant * 7919L)
         val pf = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.07 * amount
         val df = if (variant == 0) 1.0 else 1.0 + (jitter.nextDouble() * 2 - 1) * 0.24 * amount
-        val shaped = v.bank?.let { shapedNoise(it, n, noise, df) }
+        val shaped = v.res?.let { ring(it, n, noise, df) }
         val x = DoubleArray(n) { i ->
             val t = i.toDouble() / SR
             var s = 0.0
@@ -151,41 +156,26 @@ object KeySounds {
         return ShortArray(n) { i -> ((x[i] - mean) / peak * 0.4 * Short.MAX_VALUE).toInt().toShort() }
     }
 
-    /** [b]'s noise for [n] samples, its envelope applied (a 0.3 ms rise, a 0.8 ms fall at the end). */
-    private fun shapedNoise(b: Bank, n: Int, rng: java.util.Random, decayFactor: Double): DoubleArray {
-        val white = DoubleArray(n) { rng.nextGaussian() }
-        val sum = DoubleArray(n)
-        for ((f, g) in b.bands) {
-            val y = biquad(white, bandPass(f, b.q))
-            for (i in 0 until n) sum[i] += g * y[i]
+    /**
+     * [r] struck and kept ringing for [n] samples, peak 1, a 0.8 ms fade at the end. At another output rate the
+     * filter's own rate is kept (rendered at it, then resampled), so the pitch stays.
+     */
+    private fun ring(r: Resonator, n: Int, rng: java.util.Random, decayFactor: Double): DoubleArray {
+        val m = (n.toDouble() * r.rate / SR).toInt().coerceAtLeast(2)
+        val y = DoubleArray(m)
+        for (i in 0 until m) {
+            val t = i.toDouble() / r.rate
+            var acc = (if (i == 0) 1.0 else 0.0) + r.noise * rng.nextGaussian() * (exp(-t / (r.decay * decayFactor)) + r.floor)
+            for (k in r.a.indices) if (i - k - 1 >= 0) acc -= r.a[k] * y[i - k - 1]
+            y[i] = acc
         }
-        val lp = lowPass(b.lowPass)
-        val out = biquad(biquad(sum, lp), lp)
-        val peak = out.maxOf { kotlin.math.abs(it) }.takeIf { it > 0 } ?: 1.0
+        val peak = y.maxOf { kotlin.math.abs(it) }.takeIf { it > 0 } ?: 1.0
         val len = n.toDouble() / SR
-        for (i in 0 until n) {
-            val t = i.toDouble() / SR
-            out[i] = out[i] / peak * (exp(-t / (b.decay * decayFactor)) + b.floor) * minOf(1.0, t / 0.0003) * minOf(1.0, (len - t) / 0.0008)
-        }
-        return out
-    }
-
-    /** RBJ biquad coefficients (b0, b1, b2, a1, a2), normalised. */
-    private fun bandPass(f: Double, q: Double): DoubleArray {
-        val w = 2 * PI * f / SR; val al = sin(w) / (2 * q); val a0 = 1 + al
-        return doubleArrayOf(al / a0, 0.0, -al / a0, -2 * kotlin.math.cos(w) / a0, (1 - al) / a0)
-    }
-
-    private fun lowPass(f: Double, q: Double = 0.707): DoubleArray {
-        val w = 2 * PI * f / SR; val al = sin(w) / (2 * q); val c = kotlin.math.cos(w); val a0 = 1 + al
-        return doubleArrayOf((1 - c) / 2 / a0, (1 - c) / a0, (1 - c) / 2 / a0, -2 * c / a0, (1 - al) / a0)
-    }
-
-    private fun biquad(x: DoubleArray, k: DoubleArray): DoubleArray {
-        var x1 = 0.0; var x2 = 0.0; var y1 = 0.0; var y2 = 0.0
-        return DoubleArray(x.size) { i ->
-            val o = k[0] * x[i] + k[1] * x1 + k[2] * x2 - k[3] * y1 - k[4] * y2
-            x2 = x1; x1 = x[i]; y2 = y1; y1 = o; o
+        return DoubleArray(n) { j ->
+            val pos = j.toDouble() * (m - 1) / (n - 1).coerceAtLeast(1)
+            val i0 = pos.toInt().coerceAtMost(m - 2); val f = pos - i0
+            val t = j.toDouble() / SR
+            (y[i0] * (1 - f) + y[i0 + 1] * f) / peak * minOf(1.0, (len - t) / 0.0008)
         }
     }
 
