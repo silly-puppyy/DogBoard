@@ -325,11 +325,38 @@ private val POPUP_SHADOW = CssShadow.parse("0 1px 3px rgba(0,0,0,0.16), 0 6px 18
 private val MENU_SHADOW = CssShadow.parse("0 1px 3px rgba(0,0,0,0.16), 0 8px 24px rgba(0,0,0,0.16)")
 
 /** Kb:296-320: key preview, long-press bar, language menu. */
+/** Kb mech: the raised cap's shadow (it floats above the keys). */
+private val RAISED_CAP_SHADOW = CssShadow.parse("0 0 0 0.5px rgba(0,0,0,0.9), 0 6px 10px rgba(0,0,0,0.55), 0 2px 3px rgba(0,0,0,0.5)")
+
 @Composable
 private fun KbPopups(r: KbRender) {
     val t = r.t
     val popShape = RoundedCornerShape(16.dp)
-    r.pv?.let { pv ->
+    // canvas Kb mech: on sculpted caps the pop-up is a raised copy of the cap (same slopes and face, lifted)
+    val face = t.face
+    if (face != null) r.pv?.let { pv ->
+        val capShape = RoundedCornerShape(9.dp); val faceShape = RoundedCornerShape(5.dp)
+        val bv = face.bevel.getValue("key")
+        Box(
+            Modifier.offset(pv.x.dp, pv.y.dp).size(pv.w.dp, 58.dp).graphicsLayer { alpha = pv.alpha }.cssShadow(RAISED_CAP_SHADOW, capShape)
+                .clip(capShape).then(t.grad["keyG"]?.let { Modifier.background(it.brush()) } ?: Modifier.background(t.key))
+                .drawBehind {
+                    val w = size.width; val h = size.height
+                    val L = 5.dp.toPx(); val R = w - 5.dp.toPx(); val T = 3.dp.toPx(); val B = h - 8.dp.toPx()
+                    fun poly(vararg q: Float) = androidx.compose.ui.graphics.Path().apply { moveTo(q[0], q[1]); var i = 2; while (i < q.size) { lineTo(q[i], q[i + 1]); i += 2 }; close() }
+                    drawPath(poly(0f, 0f, w, 0f, R, T, L, T), bv[0]); drawPath(poly(w, 0f, w, h, R, B, R, T), bv[1])
+                    drawPath(poly(0f, 0f, L, T, L, B, 0f, h), bv[3])
+                    drawPath(poly(L, B, R, B, w, h, 0f, h), Brush.verticalGradient(listOf(bv[2], bv[4]), startY = B, endY = h))
+                }
+                .lint("preview", DesignLint.Kind.FLOATING),
+        ) { LintParent("preview") {
+            Box(Modifier.padding(start = 5.dp, end = 5.dp, top = 3.dp, bottom = 8.dp).fillMaxSize().clip(faceShape).background(face.key.brush())
+                .cssShadow(face.sh.filter { it.inset }, faceShape)) {
+                DText(pv.label, Modifier.align(Alignment.TopStart).padding(start = 7.dp, top = 6.dp), style = designTextStyle(22.sp, 500, t.keyFg), overflow = TextOverflow.Visible)
+            }
+        } }
+    }
+    if (face == null) r.pv?.let { pv ->
         Box(
             Modifier.offset(pv.x.dp, pv.y.dp).size(pv.w.dp, 58.dp).graphicsLayer { alpha = pv.alpha }.cssShadow(POPUP_SHADOW, popShape).background(t.pop, popShape)
                 .lint("preview", DesignLint.Kind.FLOATING),
