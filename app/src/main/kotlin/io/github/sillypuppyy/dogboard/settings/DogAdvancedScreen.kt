@@ -71,6 +71,15 @@ fun DogAdvancedScreen() {
             }
             SetPageLink("adv:backup", "Back up settings and words", "Save them to a file") { nav.navigate(Routes.Settings.Backup) }
             SetPageLink("adv:restore", "Restore from a backup", "Load a saved file") { nav.navigate(Routes.Settings.Restore()) }
+            // a problem on the phone, no cable: versions, keyboards, packs, engine state and the keyboard's own log lines
+            // to the clipboard (nothing typed; nothing sent)
+            val context = androidx.compose.ui.platform.LocalContext.current
+            SetPageLink("adv:report", "Copy a report", "For sending when something goes wrong", icon = "content_copy") {
+                scope.launch {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Report.copy(context) }
+                    android.widget.Toast.makeText(context, "Report copied. Paste it where you were asked.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
             // (moved from About: redoing the setup is a settings task, not information about the app)
             SetPageLink("adv:setup", "Set up again", "Walk through the first-run setup once more") {
                 scope.launch { noBackupPrefs.isImeSetUp.set(false) }
