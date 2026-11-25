@@ -195,15 +195,15 @@
         <key id="I-alt0" output="Í" />
         <key id="o" output="o" longPressKeyIds="o-alt0 o-alt1 o-alt2 o-alt3 o-alt4" longPressDefaultKeyId="o-alt0" />
         <key id="o-alt0" output="ö" />
-        <key id="o-alt1" output="ō" />
-        <key id="o-alt2" output="ó" />
-        <key id="o-alt3" output="õ" />
+        <key id="o-alt1" output="õ" />
+        <key id="o-alt2" output="ō" />
+        <key id="o-alt3" output="ó" />
         <key id="o-alt4" output="ô" />
         <key id="O" output="O" longPressKeyIds="O-alt0 O-alt1 O-alt2 O-alt3 O-alt4" longPressDefaultKeyId="O-alt0" />
         <key id="O-alt0" output="Ö" />
-        <key id="O-alt1" output="Ō" />
-        <key id="O-alt2" output="Ó" />
-        <key id="O-alt3" output="Õ" />
+        <key id="O-alt1" output="Õ" />
+        <key id="O-alt2" output="Ō" />
+        <key id="O-alt3" output="Ó" />
         <key id="O-alt4" output="Ô" />
         <key id="p" output="p" />
         <key id="P" output="P" />

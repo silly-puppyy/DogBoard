@@ -39,23 +39,24 @@ NO_DECOMPOSITION = {"ł": "l", "ı": "i", "ø": "o", "æ": "a", "œ": "o", "ß":
 
 def with_language_letters(rows, accents: dict[str, str], letters: list[str]) -> dict[str, str]:
     """[accents] with each of the language's [letters] that no key types put first on its base letter's long-press
-    (ä on a, ñ on n, ё on е, أ on ا), most frequent first. Only where the base letter is a key: a word list's stray
-    letters of another script (Latin in Greek text) aren't added."""
+    (ä on a, ñ on n, ё on е, أ on ا), most frequent first, moved there when the set already has it (German ü sat second
+    on u, after û, so a long-press needed a slide while ä and ö were the default, 2026-11-25). Only where the base
+    letter is a key: a word list's stray letters of another script (Latin in Greek text) aren't added."""
     keys = {c for r in rows for c in r}
     extra: dict[str, list[str]] = {}
     for ch in letters:
         b = NO_DECOMPOSITION.get(ch) or unicodedata.normalize("NFD", ch)[0]
-        if ch in keys or b == ch or b not in keys or ch in accents.get(b, "").split() or ch in extra.get(b, []):
+        if ch in keys or b == ch or b not in keys or ch in extra.get(b, []):
             continue
         extra.setdefault(b, []).append(ch)
     if not extra:
         return accents
     out = dict(accents)
     for b, chs in extra.items():
-        out[b] = " ".join(chs + out.get(b, "").split())
+        out[b] = " ".join(chs + [c for c in out.get(b, "").split() if c not in chs])
         up = b.upper()
         if len(up) == 1 and up != b and all(len(c.upper()) == 1 for c in chs):
-            out[up] = " ".join([c.upper() for c in chs] + out.get(up, "").split())
+            out[up] = " ".join([c.upper() for c in chs] + [c for c in out.get(up, "").split() if c not in [x.upper() for x in chs]])
     return out
 
 

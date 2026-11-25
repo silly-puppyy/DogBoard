@@ -190,8 +190,8 @@
         <key id="Z-alt1" output="Ž" />
         <key id="Z-alt2" output="Ż" />
         <key id="e" output="e" longPressKeyIds="e-alt0 e-alt1 e-alt2 e-alt3 e-alt4 e-alt5 e-alt6 e-alt7 e-alt8" longPressDefaultKeyId="e-alt0" />
-        <key id="e-alt0" output="è" />
-        <key id="e-alt1" output="é" />
+        <key id="e-alt0" output="é" />
+        <key id="e-alt1" output="è" />
         <key id="e-alt2" output="ê" />
         <key id="e-alt3" output="ë" />
         <key id="e-alt4" output="ě" />
@@ -200,8 +200,8 @@
         <key id="e-alt7" output="ė" />
         <key id="e-alt8" output="ę" />
         <key id="E" output="E" longPressKeyIds="E-alt0 E-alt1 E-alt2 E-alt3 E-alt4 E-alt5 E-alt6 E-alt7 E-alt8" longPressDefaultKeyId="E-alt0" />
-        <key id="E-alt0" output="È" />
-        <key id="E-alt1" output="É" />
+        <key id="E-alt0" output="É" />
+        <key id="E-alt1" output="È" />
         <key id="E-alt2" output="Ê" />
         <key id="E-alt3" output="Ë" />
         <key id="E-alt4" output="Ě" />

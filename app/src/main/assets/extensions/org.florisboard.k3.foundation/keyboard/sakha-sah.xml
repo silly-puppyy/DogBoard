@@ -162,13 +162,13 @@
         <key id="u0446" output="ц" width="0.909" />
         <key id="U0426" output="Ц" width="0.909" />
         <key id="u0443" output="у" width="0.909" longPressKeyIds="u0443-alt0 u0443-alt1 u0443-alt2 u0443-alt3" longPressDefaultKeyId="u0443-alt0" />
-        <key id="u0443-alt0" output="ю" />
-        <key id="u0443-alt1" output="ӱ" />
+        <key id="u0443-alt0" output="ӱ" />
+        <key id="u0443-alt1" output="ю" />
         <key id="u0443-alt2" output="у́" />
         <key id="u0443-alt3" output="ю́" />
         <key id="U0423" output="У" width="0.909" longPressKeyIds="U0423-alt0 U0423-alt1 U0423-alt2 U0423-alt3" longPressDefaultKeyId="U0423-alt0" />
-        <key id="U0423-alt0" output="Ю" />
-        <key id="U0423-alt1" output="Ӱ" />
+        <key id="U0423-alt0" output="Ӱ" />
+        <key id="U0423-alt1" output="Ю" />
         <key id="U0423-alt2" output="У́" />
         <key id="U0423-alt3" output="Ю́" />
         <key id="u043a" output="к" width="0.909" longPressKeyIds="u043a-alt0" longPressDefaultKeyId="u043a-alt0" />
@@ -220,13 +220,13 @@
         <key id="U0412" output="В" width="0.909" longPressKeyIds="U0412-alt0" longPressDefaultKeyId="U0412-alt0" />
         <key id="U0412-alt0" output="Ф" />
         <key id="u0430" output="а" width="0.909" longPressKeyIds="u0430-alt0 u0430-alt1 u0430-alt2 u0430-alt3" longPressDefaultKeyId="u0430-alt0" />
-        <key id="u0430-alt0" output="я" />
-        <key id="u0430-alt1" output="ӑ" />
+        <key id="u0430-alt0" output="ӑ" />
+        <key id="u0430-alt1" output="я" />
         <key id="u0430-alt2" output="а́" />
         <key id="u0430-alt3" output="я́" />
         <key id="U0410" output="А" width="0.909" longPressKeyIds="U0410-alt0 U0410-alt1 U0410-alt2 U0410-alt3" longPressDefaultKeyId="U0410-alt0" />
-        <key id="U0410-alt0" output="Я" />
-        <key id="U0410-alt1" output="Ӑ" />
+        <key id="U0410-alt0" output="Ӑ" />
+        <key id="U0410-alt1" output="Я" />
         <key id="U0410-alt2" output="А́" />
         <key id="U0410-alt3" output="Я́" />
         <key id="u043f" output="п" width="0.909" />

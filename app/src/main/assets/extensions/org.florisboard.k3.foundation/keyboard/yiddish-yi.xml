@@ -164,10 +164,10 @@
         <key id="U05d0-alt1" output="אַ" />
         <key id="U05d8" output="ט" />
         <key id="U05d5" output="ו" longPressKeyIds="U05d5-alt0 U05d5-alt1 U05d5-alt2 U05d5-alt3" longPressDefaultKeyId="U05d5-alt0" />
-        <key id="U05d5-alt0" output="ױ" />
-        <key id="U05d5-alt1" output="װ" />
-        <key id="U05d5-alt2" output="וּ" />
-        <key id="U05d5-alt3" output="וֹ" />
+        <key id="U05d5-alt0" output="וּ" />
+        <key id="U05d5-alt1" output="וֹ" />
+        <key id="U05d5-alt2" output="ױ" />
+        <key id="U05d5-alt3" output="װ" />
         <key id="U05df" output="ן" />
         <key id="U05dd" output="ם" />
         <key id="U05e4" output="פ" longPressKeyIds="U05e4-alt0 U05e4-alt1" longPressDefaultKeyId="U05e4-alt0" />
@@ -183,8 +183,8 @@
         <key id="U05db-alt0" output="כּ" />
         <key id="U05e2" output="ע" />
         <key id="U05d9" output="י" longPressKeyIds="U05d9-alt0 U05d9-alt1 U05d9-alt2" longPressDefaultKeyId="U05d9-alt0" />
-        <key id="U05d9-alt0" output="ײַ" />
-        <key id="U05d9-alt1" output="יִ" />
+        <key id="U05d9-alt0" output="יִ" />
+        <key id="U05d9-alt1" output="ײַ" />
         <key id="U05d9-alt2" output="ײ" />
         <key id="U05d7" output="ח" longPressKeyIds="U05d7-alt0" longPressDefaultKeyId="U05d7-alt0" />
         <key id="U05d7-alt0" output="ח׳" />

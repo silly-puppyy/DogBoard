@@ -195,17 +195,17 @@
         <key id="U06cc-alt1" output="ى" />
         <key id="U0626" output="ئ" />
         <key id="U06c1" output="ہ" longPressKeyIds="U06c1-alt0 U06c1-alt1 U06c1-alt2" longPressDefaultKeyId="U06c1-alt0" />
-        <key id="U06c1-alt0" output="ۃ" />
-        <key id="U06c1-alt1" output="ه" />
-        <key id="U06c1-alt2" output="ۂ" />
+        <key id="U06c1-alt0" output="ۂ" />
+        <key id="U06c1-alt1" output="ۃ" />
+        <key id="U06c1-alt2" output="ه" />
         <key id="U067e" output="پ" longPressKeyIds="U067e-alt0 U067e-alt1" longPressDefaultKeyId="U067e-alt0" />
         <key id="U067e-alt0" output="۷" />
         <key id="U067e-alt1" output="7" />
         <key id="U0627" output="ا" longPressKeyIds="U0627-alt0 U0627-alt1 U0627-alt2 U0627-alt3" longPressDefaultKeyId="U0627-alt0" />
         <key id="U0627-alt0" output="آ" />
-        <key id="U0627-alt1" output="۹" />
-        <key id="U0627-alt2" output="9" />
-        <key id="U0627-alt3" output="أ" />
+        <key id="U0627-alt1" output="أ" />
+        <key id="U0627-alt2" output="۹" />
+        <key id="U0627-alt3" output="9" />
         <key id="U0633" output="س" />
         <key id="U062f" output="د" />
         <key id="U0641" output="ف" />

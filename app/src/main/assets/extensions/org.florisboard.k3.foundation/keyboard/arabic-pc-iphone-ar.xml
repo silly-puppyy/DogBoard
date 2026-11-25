@@ -205,10 +205,10 @@
         <key id="U0644-alt2" output="لإ" />
         <key id="U0644-alt3" output="لآ" />
         <key id="U0627" output="ا" longPressKeyIds="U0627-alt0 U0627-alt1 U0627-alt2 U0627-alt3 U0627-alt4" longPressDefaultKeyId="U0627-alt0" />
-        <key id="U0627-alt0" output="آ" />
-        <key id="U0627-alt1" output="ء" />
-        <key id="U0627-alt2" output="أ" />
-        <key id="U0627-alt3" output="إ" />
+        <key id="U0627-alt0" output="أ" />
+        <key id="U0627-alt1" output="إ" />
+        <key id="U0627-alt2" output="آ" />
+        <key id="U0627-alt3" output="ء" />
         <key id="U0627-alt4" output="ٱ" />
         <key id="U062a" output="ت" />
         <key id="U0646" output="ن" />

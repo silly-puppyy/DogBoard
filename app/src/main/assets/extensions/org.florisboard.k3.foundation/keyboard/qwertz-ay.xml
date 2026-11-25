@@ -178,11 +178,11 @@
         <key id="Z" output="Z" longPressKeyIds="Z-alt0" longPressDefaultKeyId="Z-alt0" />
         <key id="Z-alt0" output="Ž" />
         <key id="u" output="u" longPressKeyIds="u-alt0 u-alt1" longPressDefaultKeyId="u-alt0" />
-        <key id="u-alt0" output="ú" />
-        <key id="u-alt1" output="ü" />
+        <key id="u-alt0" output="ü" />
+        <key id="u-alt1" output="ú" />
         <key id="U" output="U" longPressKeyIds="U-alt0 U-alt1" longPressDefaultKeyId="U-alt0" />
-        <key id="U-alt0" output="Ú" />
-        <key id="U-alt1" output="Ü" />
+        <key id="U-alt0" output="Ü" />
+        <key id="U-alt1" output="Ú" />
         <key id="i" output="i" longPressKeyIds="i-alt0" longPressDefaultKeyId="i-alt0" />
         <key id="i-alt0" output="í" />
         <key id="I" output="I" longPressKeyIds="I-alt0" longPressDefaultKeyId="I-alt0" />

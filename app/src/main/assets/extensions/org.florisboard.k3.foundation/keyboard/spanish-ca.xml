@@ -268,13 +268,13 @@
         <key id="k" output="k" />
         <key id="K" output="K" />
         <key id="l" output="l" longPressKeyIds="l-alt0 l-alt1 l-alt2" longPressDefaultKeyId="l-alt0" />
-        <key id="l-alt0" output="l·l" />
-        <key id="l-alt1" output="·" />
-        <key id="l-alt2" output="ł" />
+        <key id="l-alt0" output="ł" />
+        <key id="l-alt1" output="l·l" />
+        <key id="l-alt2" output="·" />
         <key id="L" output="L" longPressKeyIds="L-alt0 L-alt1 L-alt2" longPressDefaultKeyId="L-alt0" />
-        <key id="L-alt0" output="L·L" />
-        <key id="L-alt1" output="·" />
-        <key id="L-alt2" output="Ł" />
+        <key id="L-alt0" output="Ł" />
+        <key id="L-alt1" output="L·L" />
+        <key id="L-alt2" output="·" />
         <key id="u00e7" output="ç" />
         <key id="U00c7" output="Ç" />
         <key id="z" output="z" />
@@ -282,13 +282,13 @@
         <key id="x" output="x" />
         <key id="X" output="X" />
         <key id="c" output="c" longPressKeyIds="c-alt0 c-alt1 c-alt2" longPressDefaultKeyId="c-alt0" />
-        <key id="c-alt0" output="ç" />
-        <key id="c-alt1" output="ć" />
-        <key id="c-alt2" output="č" />
+        <key id="c-alt0" output="ć" />
+        <key id="c-alt1" output="č" />
+        <key id="c-alt2" output="ç" />
         <key id="C" output="C" longPressKeyIds="C-alt0 C-alt1 C-alt2" longPressDefaultKeyId="C-alt0" />
-        <key id="C-alt0" output="Ç" />
-        <key id="C-alt1" output="Ć" />
-        <key id="C-alt2" output="Č" />
+        <key id="C-alt0" output="Ć" />
+        <key id="C-alt1" output="Č" />
+        <key id="C-alt2" output="Ç" />
         <key id="v" output="v" />
         <key id="V" output="V" />
         <key id="b" output="b" />

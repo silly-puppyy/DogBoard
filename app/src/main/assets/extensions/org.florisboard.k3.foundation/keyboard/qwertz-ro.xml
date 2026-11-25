@@ -201,16 +201,16 @@
         <key id="P" output="P" />
         <key id="a" output="a" longPressKeyIds="a-alt0 a-alt1 a-alt2 a-alt3 a-alt4" longPressDefaultKeyId="a-alt0" />
         <key id="a-alt0" output="ă" />
-        <key id="a-alt1" output="á" />
-        <key id="a-alt2" output="ã" />
-        <key id="a-alt3" output="à" />
-        <key id="a-alt4" output="â" />
+        <key id="a-alt1" output="â" />
+        <key id="a-alt2" output="á" />
+        <key id="a-alt3" output="ã" />
+        <key id="a-alt4" output="à" />
         <key id="A" output="A" longPressKeyIds="A-alt0 A-alt1 A-alt2 A-alt3 A-alt4" longPressDefaultKeyId="A-alt0" />
         <key id="A-alt0" output="Ă" />
-        <key id="A-alt1" output="Á" />
-        <key id="A-alt2" output="Ã" />
-        <key id="A-alt3" output="À" />
-        <key id="A-alt4" output="Â" />
+        <key id="A-alt1" output="Â" />
+        <key id="A-alt2" output="Á" />
+        <key id="A-alt3" output="Ã" />
+        <key id="A-alt4" output="À" />
         <key id="s" output="s" longPressKeyIds="s-alt0" longPressDefaultKeyId="s-alt0" />
         <key id="s-alt0" output="ș" />
         <key id="S" output="S" longPressKeyIds="S-alt0" longPressDefaultKeyId="S-alt0" />

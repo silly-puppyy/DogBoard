@@ -190,18 +190,18 @@
         <key id="U041a-alt1" output="К҄" />
         <key id="U041a-alt2" output="ⷦ" />
         <key id="u0435" output="е" width="0.8333" longPressKeyIds="u0435-alt0 u0435-alt1 u0435-alt2 u0435-alt3 u0435-alt4 u0435-alt5 u0435-alt6" longPressDefaultKeyId="u0435-alt0" />
-        <key id="u0435-alt0" output="є" />
-        <key id="u0435-alt1" output="э" />
-        <key id="u0435-alt2" output="ѥ" />
-        <key id="u0435-alt3" output="ё" />
+        <key id="u0435-alt0" output="ё" />
+        <key id="u0435-alt1" output="є" />
+        <key id="u0435-alt2" output="э" />
+        <key id="u0435-alt3" output="ѥ" />
         <key id="u0435-alt4" output="ⷷ" />
         <key id="u0435-alt5" output="ꙴ" />
         <key id="u0435-alt6" output="ꚟ" />
         <key id="U0415" output="Е" width="0.8333" longPressKeyIds="U0415-alt0 U0415-alt1 U0415-alt2 U0415-alt3 U0415-alt4 U0415-alt5 U0415-alt6" longPressDefaultKeyId="U0415-alt0" />
-        <key id="U0415-alt0" output="Є" />
-        <key id="U0415-alt1" output="Э" />
-        <key id="U0415-alt2" output="Ѥ" />
-        <key id="U0415-alt3" output="Ё" />
+        <key id="U0415-alt0" output="Ё" />
+        <key id="U0415-alt1" output="Є" />
+        <key id="U0415-alt2" output="Э" />
+        <key id="U0415-alt3" output="Ѥ" />
         <key id="U0415-alt4" output="ⷷ" />
         <key id="U0415-alt5" output="ꙴ" />
         <key id="U0415-alt6" output="ꚟ" />

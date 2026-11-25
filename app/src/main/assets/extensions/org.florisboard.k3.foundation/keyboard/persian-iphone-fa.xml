@@ -199,11 +199,11 @@
         <key id="U0628" output="ب" width="0.909" />
         <key id="U0644" output="ل" width="0.909" />
         <key id="U0627" output="ا" width="0.909" longPressKeyIds="U0627-alt0 U0627-alt1 U0627-alt2 U0627-alt3 U0627-alt4" longPressDefaultKeyId="U0627-alt0" />
-        <key id="U0627-alt0" output="ٱ" />
-        <key id="U0627-alt1" output="ء" />
-        <key id="U0627-alt2" output="آ" />
-        <key id="U0627-alt3" output="أ" />
-        <key id="U0627-alt4" output="إ" />
+        <key id="U0627-alt0" output="آ" />
+        <key id="U0627-alt1" output="أ" />
+        <key id="U0627-alt2" output="إ" />
+        <key id="U0627-alt3" output="ٱ" />
+        <key id="U0627-alt4" output="ء" />
         <key id="U062a" output="ت" width="0.909" longPressKeyIds="U062a-alt0" longPressDefaultKeyId="U062a-alt0" />
         <key id="U062a-alt0" output="ة" />
         <key id="U0646" output="ن" width="0.909" />

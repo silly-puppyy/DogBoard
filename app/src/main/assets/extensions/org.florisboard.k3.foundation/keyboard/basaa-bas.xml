@@ -262,45 +262,45 @@
         <key id="I-alt6" output="I᷆" />
         <key id="I-alt7" output="I᷇" />
         <key id="o" output="o" longPressKeyIds="o-alt0 o-alt1 o-alt2 o-alt3 o-alt4 o-alt5 o-alt6 o-alt7 o-alt8" longPressDefaultKeyId="o-alt0" />
-        <key id="o-alt0" output="õ" />
-        <key id="o-alt1" output="ò" />
-        <key id="o-alt2" output="ó" />
-        <key id="o-alt3" output="ô" />
-        <key id="o-alt4" output="ō" />
-        <key id="o-alt5" output="ǒ" />
-        <key id="o-alt6" output="œ" />
+        <key id="o-alt0" output="ò" />
+        <key id="o-alt1" output="ó" />
+        <key id="o-alt2" output="ô" />
+        <key id="o-alt3" output="ō" />
+        <key id="o-alt4" output="ǒ" />
+        <key id="o-alt5" output="œ" />
+        <key id="o-alt6" output="õ" />
         <key id="o-alt7" output="o᷆" />
         <key id="o-alt8" output="o᷇" />
         <key id="O" output="O" longPressKeyIds="O-alt0 O-alt1 O-alt2 O-alt3 O-alt4 O-alt5 O-alt6 O-alt7 O-alt8" longPressDefaultKeyId="O-alt0" />
-        <key id="O-alt0" output="Õ" />
-        <key id="O-alt1" output="Ò" />
-        <key id="O-alt2" output="Ó" />
-        <key id="O-alt3" output="Ô" />
-        <key id="O-alt4" output="Ō" />
-        <key id="O-alt5" output="Ǒ" />
-        <key id="O-alt6" output="Œ" />
+        <key id="O-alt0" output="Ò" />
+        <key id="O-alt1" output="Ó" />
+        <key id="O-alt2" output="Ô" />
+        <key id="O-alt3" output="Ō" />
+        <key id="O-alt4" output="Ǒ" />
+        <key id="O-alt5" output="Œ" />
+        <key id="O-alt6" output="Õ" />
         <key id="O-alt7" output="O᷆" />
         <key id="O-alt8" output="O᷇" />
         <key id="p" output="p" />
         <key id="P" output="P" />
         <key id="a" output="a" longPressKeyIds="a-alt0 a-alt1 a-alt2 a-alt3 a-alt4 a-alt5 a-alt6 a-alt7 a-alt8" longPressDefaultKeyId="a-alt0" />
-        <key id="a-alt0" output="ã" />
-        <key id="a-alt1" output="à" />
-        <key id="a-alt2" output="á" />
-        <key id="a-alt3" output="â" />
-        <key id="a-alt4" output="ā" />
-        <key id="a-alt5" output="ǎ" />
-        <key id="a-alt6" output="æ" />
+        <key id="a-alt0" output="à" />
+        <key id="a-alt1" output="á" />
+        <key id="a-alt2" output="â" />
+        <key id="a-alt3" output="ā" />
+        <key id="a-alt4" output="ǎ" />
+        <key id="a-alt5" output="æ" />
+        <key id="a-alt6" output="ã" />
         <key id="a-alt7" output="a᷆" />
         <key id="a-alt8" output="a᷇" />
         <key id="A" output="A" longPressKeyIds="A-alt0 A-alt1 A-alt2 A-alt3 A-alt4 A-alt5 A-alt6 A-alt7 A-alt8" longPressDefaultKeyId="A-alt0" />
-        <key id="A-alt0" output="Ã" />
-        <key id="A-alt1" output="À" />
-        <key id="A-alt2" output="Á" />
-        <key id="A-alt3" output="Â" />
-        <key id="A-alt4" output="Ā" />
-        <key id="A-alt5" output="Ǎ" />
-        <key id="A-alt6" output="Æ" />
+        <key id="A-alt0" output="À" />
+        <key id="A-alt1" output="Á" />
+        <key id="A-alt2" output="Â" />
+        <key id="A-alt3" output="Ā" />
+        <key id="A-alt4" output="Ǎ" />
+        <key id="A-alt5" output="Æ" />
+        <key id="A-alt6" output="Ã" />
         <key id="A-alt7" output="A᷆" />
         <key id="A-alt8" output="A᷇" />
         <key id="s" output="s" />
@@ -344,11 +344,11 @@
         <key id="N-alt2" output="Ń" />
         <key id="N-alt3" output="Ň" />
         <key id="m" output="m" longPressKeyIds="m-alt0 m-alt1" longPressDefaultKeyId="m-alt0" />
-        <key id="m-alt0" output="m̀" />
-        <key id="m-alt1" output="ḿ" />
+        <key id="m-alt0" output="ḿ" />
+        <key id="m-alt1" output="m̀" />
         <key id="M" output="M" longPressKeyIds="M-alt0 M-alt1" longPressDefaultKeyId="M-alt0" />
-        <key id="M-alt0" output="M̀" />
-        <key id="M-alt1" output="Ḿ" />
+        <key id="M-alt0" output="Ḿ" />
+        <key id="M-alt1" output="M̀" />
         <key id="gap1-basaa-bas" gap="true" width="3.5" />
         <key id="gap3-basaa-bas" gap="true" width="0.5" />
 

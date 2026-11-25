@@ -158,17 +158,17 @@
 
         <!-- Letters -->
         <key id="a" output="a" width="0.909" longPressKeyIds="a-alt0 a-alt1 a-alt2 a-alt3 a-alt4" longPressDefaultKeyId="a-alt0" />
-        <key id="a-alt0" output="ã" />
-        <key id="a-alt1" output="æ" />
-        <key id="a-alt2" output="à" />
-        <key id="a-alt3" output="á" />
-        <key id="a-alt4" output="â" />
+        <key id="a-alt0" output="æ" />
+        <key id="a-alt1" output="à" />
+        <key id="a-alt2" output="á" />
+        <key id="a-alt3" output="â" />
+        <key id="a-alt4" output="ã" />
         <key id="A" output="A" width="0.909" longPressKeyIds="A-alt0 A-alt1 A-alt2 A-alt3 A-alt4" longPressDefaultKeyId="A-alt0" />
-        <key id="A-alt0" output="Ã" />
-        <key id="A-alt1" output="Æ" />
-        <key id="A-alt2" output="À" />
-        <key id="A-alt3" output="Á" />
-        <key id="A-alt4" output="Â" />
+        <key id="A-alt0" output="Æ" />
+        <key id="A-alt1" output="À" />
+        <key id="A-alt2" output="Á" />
+        <key id="A-alt3" output="Â" />
+        <key id="A-alt4" output="Ã" />
         <key id="z" output="z" width="0.909" />
         <key id="Z" output="Z" width="0.909" />
         <key id="e" output="e" width="0.909" longPressKeyIds="e-alt0 e-alt1 e-alt2 e-alt3 e-alt4" longPressDefaultKeyId="e-alt0" />
@@ -200,30 +200,30 @@
         <key id="U-alt2" output="Ù" />
         <key id="U-alt3" output="Ú" />
         <key id="i" output="i" width="0.909" longPressKeyIds="i-alt0 i-alt1 i-alt2 i-alt3" longPressDefaultKeyId="i-alt0" />
-        <key id="i-alt0" output="í" />
-        <key id="i-alt1" output="î" />
-        <key id="i-alt2" output="ï" />
-        <key id="i-alt3" output="ì" />
+        <key id="i-alt0" output="î" />
+        <key id="i-alt1" output="ï" />
+        <key id="i-alt2" output="ì" />
+        <key id="i-alt3" output="í" />
         <key id="I" output="I" width="0.909" longPressKeyIds="I-alt0 I-alt1 I-alt2 I-alt3" longPressDefaultKeyId="I-alt0" />
-        <key id="I-alt0" output="Í" />
-        <key id="I-alt1" output="Î" />
-        <key id="I-alt2" output="Ï" />
-        <key id="I-alt3" output="Ì" />
+        <key id="I-alt0" output="Î" />
+        <key id="I-alt1" output="Ï" />
+        <key id="I-alt2" output="Ì" />
+        <key id="I-alt3" output="Í" />
         <key id="o" output="o" width="0.909" longPressKeyIds="o-alt0 o-alt1 o-alt2 o-alt3 o-alt4 o-alt5 o-alt6" longPressDefaultKeyId="o-alt0" />
-        <key id="o-alt0" output="ó" />
-        <key id="o-alt1" output="õ" />
-        <key id="o-alt2" output="œ" />
-        <key id="o-alt3" output="ô" />
-        <key id="o-alt4" output="ö" />
-        <key id="o-alt5" output="ò" />
+        <key id="o-alt0" output="œ" />
+        <key id="o-alt1" output="ô" />
+        <key id="o-alt2" output="ö" />
+        <key id="o-alt3" output="ò" />
+        <key id="o-alt4" output="ó" />
+        <key id="o-alt5" output="õ" />
         <key id="o-alt6" output="ɔ" />
         <key id="O" output="O" width="0.909" longPressKeyIds="O-alt0 O-alt1 O-alt2 O-alt3 O-alt4 O-alt5 O-alt6" longPressDefaultKeyId="O-alt0" />
-        <key id="O-alt0" output="Ó" />
-        <key id="O-alt1" output="Õ" />
-        <key id="O-alt2" output="Œ" />
-        <key id="O-alt3" output="Ô" />
-        <key id="O-alt4" output="Ö" />
-        <key id="O-alt5" output="Ò" />
+        <key id="O-alt0" output="Œ" />
+        <key id="O-alt1" output="Ô" />
+        <key id="O-alt2" output="Ö" />
+        <key id="O-alt3" output="Ò" />
+        <key id="O-alt4" output="Ó" />
+        <key id="O-alt5" output="Õ" />
         <key id="O-alt6" output="Ɔ" />
         <key id="p" output="p" width="0.909" />
         <key id="P" output="P" width="0.909" />

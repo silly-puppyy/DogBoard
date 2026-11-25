@@ -190,13 +190,13 @@
         <key id="U041a-alt1" output="К҄" />
         <key id="U041a-alt2" output="ⷦ" />
         <key id="u0435" output="е" width="0.909" longPressKeyIds="u0435-alt0 u0435-alt1 u0435-alt2 u0435-alt3" longPressDefaultKeyId="u0435-alt0" />
-        <key id="u0435-alt0" output="є" />
-        <key id="u0435-alt1" output="ё" />
+        <key id="u0435-alt0" output="ё" />
+        <key id="u0435-alt1" output="є" />
         <key id="u0435-alt2" output="ꙴ" />
         <key id="u0435-alt3" output="ⷷ" />
         <key id="U0415" output="Е" width="0.909" longPressKeyIds="U0415-alt0 U0415-alt1 U0415-alt2 U0415-alt3" longPressDefaultKeyId="U0415-alt0" />
-        <key id="U0415-alt0" output="Є" />
-        <key id="U0415-alt1" output="Ё" />
+        <key id="U0415-alt0" output="Ё" />
+        <key id="U0415-alt1" output="Є" />
         <key id="U0415-alt2" output="ꙴ" />
         <key id="U0415-alt3" output="ⷷ" />
         <key id="u043d" output="н" width="0.909" longPressKeyIds="u043d-alt0 u043d-alt1" longPressDefaultKeyId="u043d-alt0" />
