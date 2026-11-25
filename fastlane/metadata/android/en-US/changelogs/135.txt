@@ -1,0 +1,2 @@
+- Updates show their download progress: a percentage and progress bar on the home page and in About's update window, and a notification with a progress bar
+- Language downloads for Bulgarian, Czech, German, Italian, Polish, Portuguese, Swedish, Turkish and Ukrainian: predictions trained on more everyday text (they update by themselves)
