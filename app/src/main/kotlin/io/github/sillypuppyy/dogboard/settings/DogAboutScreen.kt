@@ -13,6 +13,8 @@ import io.github.sillypuppyy.dogboard.design.settings.SetGroup
 import kotlinx.coroutines.launch
 import dev.patrickgold.jetpref.datastore.model.collectAsState
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.unit.dp
 
 /**
  * About (settings tree v3). FlorisBoard's About linked to FlorisBoard's changelog, repository and
@@ -70,16 +72,32 @@ fun DogAboutScreen() {
                     Toast.makeText(context, listOfNotNull(appLine, langs).joinToString(". "), Toast.LENGTH_LONG).show()
                 }
             }
+            // the offer stays open while the update downloads, with its progress (also in the notification shade);
+            // Hide leaves the download running there; the installer opens when it's done
+            var downloading by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Float?>(null) }
             offer?.let { r ->
                 androidx.compose.material3.AlertDialog(
                     onDismissRequest = { offer = null },
                     title = { androidx.compose.material3.Text("DogBoard ${r.version} is out") },
-                    text = { androidx.compose.material3.Text("Download it now? Android asks before it installs.") },
-                    confirmButton = { androidx.compose.material3.TextButton({
-                        offer = null
-                        scope.launch { if (!io.github.sillypuppyy.dogboard.settings.AppUpdates.install(context, r)) Toast.makeText(context, "The download didn’t work. Try again later", Toast.LENGTH_SHORT).show() }
-                    }) { androidx.compose.material3.Text("Update") } },
-                    dismissButton = { androidx.compose.material3.TextButton({ offer = null }) { androidx.compose.material3.Text("Later") } },
+                    text = {
+                        val done = downloading
+                        if (done == null) androidx.compose.material3.Text("Download it now? Android asks before it installs.")
+                        else androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                            androidx.compose.material3.Text("Downloading… ${(done * 100).toInt()} %")
+                            androidx.compose.material3.LinearProgressIndicator(progress = { done.coerceIn(0f, 1f) }, modifier = androidx.compose.ui.Modifier.fillMaxWidth())
+                        }
+                    },
+                    confirmButton = {
+                        if (downloading == null) androidx.compose.material3.TextButton({
+                            downloading = 0f
+                            scope.launch {
+                                val ok = io.github.sillypuppyy.dogboard.settings.AppUpdates.install(context, r) { f -> downloading = f }
+                                downloading = null; offer = null
+                                if (!ok) Toast.makeText(context, "The download didn’t work. Try again later", Toast.LENGTH_SHORT).show()
+                            }
+                        }) { androidx.compose.material3.Text("Update") }
+                    },
+                    dismissButton = { androidx.compose.material3.TextButton({ offer = null }) { androidx.compose.material3.Text(if (downloading == null) "Later" else "Hide") } },
                 )
             }
             if (io.github.sillypuppyy.dogboard.settings.AppUpdates.supported) {
