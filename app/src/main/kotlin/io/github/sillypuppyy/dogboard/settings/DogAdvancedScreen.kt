@@ -43,7 +43,7 @@ fun DogAdvancedScreen() {
     SetPage("Advanced") {
         SetGroup("Typing") {
             SetSliderRow(
-                "adv:bartap", "Taps on the suggestion bar", "A tap on the bar this soon after a key is read as the top-row key under it, as typing fast often lands there. 0 turns it off.",
+                "adv:bartap", "Bar taps right after typing", "A tap on the bar this soon after a key is read as the top-row key under it, as typing fast often lands there. 0 turns it off.",
                 barTap.toFloat(), prefs.typing.barTapWindowMs.default.toFloat(), 0f..800f, 50f, { v -> "${v.toInt()} ms" },
             ) { v -> scope.launch { prefs.typing.barTapWindowMs.set(v.toInt()) } }
             SetSwitchRow("adv:popup", "Key preview", "The letter shows above your finger while you press a key.", popup) { v ->

@@ -73,13 +73,13 @@ fun FineTuningScreen() {
                 capsMs.toFloat(), capsDefault, 150f..600f, 10f, ms,
             ) { v -> scope.launch { prefs.typing.capsLockDoubleTapMs.set(v.toInt()) } }
             SetSliderRow(
-                "ft:dbl", "Double-space for a full stop", "Two spaces within this time type “. ”.",
+                "ft:dbl", "Double-space speed", "Two spaces within this time type “. ”.",
                 dbl / 1000f, prefs.typing.doubleSpaceMs.default / 1000f, 0.4f..2.0f, 0.1f, { v -> "%.1f s".format(v) },
             ) { v -> scope.launch { prefs.typing.doubleSpaceMs.set(Math.round(v * 1000)) } }
         }
         SetGroup("Space-bar cursor") {
             SetSliderRow(
-                "ft:tphold", "Hold time", "Hold space this long to move the cursor instead.",
+                "ft:tphold", "Hold space for", "Hold space this long to move the cursor instead.",
                 tpHold.toFloat(), prefs.typing.trackpadHoldMs.default.toFloat(), 200f..800f, 5f, ms,
             ) { v -> scope.launch { prefs.typing.trackpadHoldMs.set(v.toInt()) } }
             SetSliderRow(

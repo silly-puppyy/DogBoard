@@ -46,7 +46,7 @@ fun DogClipboardScreen() {
             SetSwitchRow("cb:suggest", "Suggest what you copied", "For 2 minutes after you copy something, the bar offers to paste it.", suggest) { v ->
                 scope.launch { c.suggestionEnabled.set(v) }
             }
-            SetSwitchRow("cb:smart", "Smart chips", "Phone numbers, links, emails and addresses in what you copied get chips of their own, to paste just that part.", smart) { v ->
+            SetSwitchRow("cb:smart", "Link and address chips", "Phone numbers, links, emails and addresses in what you copied get chips of their own, to paste just that part.", smart) { v ->
                 scope.launch { c.smartChips.set(v) }
             }
             SetSwitchRow("cb:strip", "Strip trackers from links", "Tracking tags like utm_source and fbclid are removed from links you paste with DogBoard (Brave’s list and DogBoard’s own).", strip) { v ->
@@ -70,45 +70,44 @@ fun DogClipboardScreen() {
             if (history) SetSwitchRow("cb:merge", "Bring repeats to the top", "Copying something already in the history moves it to the top instead of adding it again.", merge) { v ->
                 scope.launch { c.mergeRepeats.set(v) }
             }
-            if (history) SetSwitchRow("cb:passwords", "Passwords clear themselves", "Copied passwords are removed from the clipboard and the history.", cleanPasswords) { v ->
-                scope.launch { c.historyAutoCleanSensitiveEnabled.set(v) }
+            // one choice for the switch and its time (was "Passwords clear themselves" + "Clear passwords after")
+            if (history) {
+                val seconds = listOf(30, 60, 300)
+                val at = if (!cleanPasswords) 0 else 1 + seconds.indexOfFirst { passwordsAfter <= it }.let { if (it < 0) 2 else it }
+                ChoiceRow("cb:pwafter", "Clear passwords after", "How long a copied password stays in the clipboard and the history.",
+                    listOf("Never", "30 s", "1 min", "5 min"), at) { i ->
+                    scope.launch {
+                        c.historyAutoCleanSensitiveEnabled.set(i > 0)
+                        if (i > 0) c.historyAutoCleanSensitiveAfter.set(seconds[i - 1])
+                    }
+                }
             }
-            if (history) SetSliderRow(
-                "cb:pwafter", "Clear passwords after", "How long a copied password stays.",
-                passwordsAfter.toFloat(), c.historyAutoCleanSensitiveAfter.default.toFloat(), 10f..600f, 10f, { v -> "${v.toInt()} s" },
-                enabled = cleanPasswords,
-            ) { v -> scope.launch { c.historyAutoCleanSensitiveAfter.set(v.toInt()) } }
         }
         if (history) {
             SetGroup("Keeping clips") {
-                SetSwitchRow("cb:old", "Delete old clips", "Unpinned clips are deleted after a while.", cleanOld) { v ->
-                    scope.launch { c.historyAutoCleanOldEnabled.set(v) }
-                }
-                // the setup's choices (an hour, a day, a week); the old 5-240 minute slider couldn't reach a day
-                if (cleanOld) {
-                    val minutes = listOf(60, 1440, 10080)
-                    val at = minutes.indexOfFirst { oldAfter <= it }.let { if (it < 0) 2 else it }
-                    androidx.compose.foundation.layout.Column(
-                        androidx.compose.ui.Modifier.fillMaxWidth().background(io.github.sillypuppyy.dogboard.design.settings.SetColors.row).padding(16.dp),
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
-                    ) {
-                        io.github.sillypuppyy.dogboard.design.settings.TitleSub("Keep clips for", "How long unpinned clips are kept.")
-                        io.github.sillypuppyy.dogboard.design.settings.Segmented("cb:oldafter", listOf("1 hour", "1 day", "1 week"), at) { i ->
-                            scope.launch { c.historyAutoCleanOldAfter.set(minutes[i]) }
-                        }
+                // one choice for the switch and its time (was "Delete old clips" + "Keep clips for"); the setup's times
+                val minutes = listOf(60, 1440, 10080)
+                val at = if (!cleanOld) 0 else 1 + minutes.indexOfFirst { oldAfter <= it }.let { if (it < 0) 2 else it }
+                ChoiceRow("cb:oldafter", "Delete clips after", "Unpinned clips are deleted after this long.",
+                    listOf("Never", "1 hour", "1 day", "1 week"), at) { i ->
+                    scope.launch {
+                        c.historyAutoCleanOldEnabled.set(i > 0)
+                        if (i > 0) c.historyAutoCleanOldAfter.set(minutes[i - 1])
                     }
                 }
             }
             // the rarely changed ones, below the common settings
             SetGroup("History details") {
-                SetSwitchRow("cb:limit", "Limit the history", "Keep only the most recent clips.", limitOn) { v ->
-                    scope.launch { c.historySizeLimitEnabled.set(v) }
+                // one choice for the switch and its count (was "Limit the history" + "Clips to keep")
+                val counts = listOf(10, 20, 50)
+                val at = if (!limitOn) 3 else counts.indexOfFirst { limit <= it }.let { if (it < 0) 2 else it }
+                ChoiceRow("cb:limitn", "Clips to keep", "Older unpinned clips make room for new ones.",
+                    listOf("10", "20", "50", "No limit"), at) { i ->
+                    scope.launch {
+                        c.historySizeLimitEnabled.set(i < 3)
+                        if (i < 3) c.historySizeLimit.set(counts[i])
+                    }
                 }
-                SetSliderRow(
-                    "cb:limitn", "Clips to keep", "Older unpinned clips make room for new ones.",
-                    limit.toFloat(), c.historySizeLimit.default.toFloat(), 5f..100f, 5f, { v -> "${v.toInt()}" },
-                    enabled = limitOn,
-                ) { v -> scope.launch { c.historySizeLimit.set(v.toInt()) } }
                 SetSwitchRow("cb:hidepaste", "Close after pasting", "The clipboard panel closes once you paste a clip.", hideOnPaste) { v ->
                     scope.launch { c.historyHideOnPaste.set(v) }
                 }
@@ -123,5 +122,17 @@ fun DogClipboardScreen() {
                 }
             }
         }
+    }
+}
+
+/** A setting with a few named choices: title and line above, the choices below (as the setup's). */
+@androidx.compose.runtime.Composable
+private fun ChoiceRow(id: String, title: String, sub: String, options: List<String>, selected: Int, onPick: (Int) -> Unit) {
+    androidx.compose.foundation.layout.Column(
+        androidx.compose.ui.Modifier.fillMaxWidth().background(io.github.sillypuppyy.dogboard.design.settings.SetColors.row).padding(16.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+    ) {
+        io.github.sillypuppyy.dogboard.design.settings.TitleSub(title, sub)
+        io.github.sillypuppyy.dogboard.design.settings.Segmented(id, options, selected, onSelect = onPick)
     }
 }

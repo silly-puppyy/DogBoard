@@ -107,7 +107,7 @@ fun AutocorrectScreen() {
             SetSwitchRow("ac:adapt", "Learn from your undos", "Autocorrect gets more careful when you often undo it, and bolder when you keep its fixes.", adaptive) { v ->
                 scope.launch { prefs.correction.adaptiveStrength.set(v) }
             }
-            if (adaptive) SetSwitchRow("ac:notify", "Tell me when it changes", "A notification each time autocorrect gets more careful or bolder.", notify) { v ->
+            if (adaptive) SetSwitchRow("ac:notify", "Notify when strength changes", "A notification each time autocorrect gets more careful or bolder.", notify) { v ->
                 scope.launch { prefs.correction.adaptiveNotify.set(v) }
             }
         }
@@ -142,7 +142,7 @@ internal fun AutocorrectGroup(title: String = "Autocorrect", lookBack: Boolean =
     val L = AutocorrectLevel.entries
     SetGroup(title) {
         Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            TitleSub("How readily", "How readily typos are fixed when you press space. Off: only suggestions, nothing changed as you type.")
+            TitleSub("Correction strength", "How readily typos are fixed when you press space. Off: only suggestions, nothing changed as you type.")
             Segmented("ac:level", listOf("Off", "Gentle", "Standard", "Strong"), if (!autocorrectOn) 0 else 1 + L.indexOf(level)) { i ->
                 scope.launch {
                     prefs.correction.autocorrect.set(i > 0)

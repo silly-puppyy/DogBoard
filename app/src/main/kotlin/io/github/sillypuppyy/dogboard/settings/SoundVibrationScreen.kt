@@ -62,7 +62,7 @@ fun SoundVibrationScreen() {
                 if (vibration) {
                     Column(Modifier.fillMaxWidth().background(SetColors.row).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         TitleSub(
-                            "Style",
+                            "Vibration style",
                             when (style) {
                                 HapticStyle.CRISP -> "Short, sharp clicks, a little different for letters, space and delete."
                                 HapticStyle.PHONE -> "Your phone’s own key click, the same for every key. Its strength follows Android’s touch feedback setting."
@@ -114,7 +114,7 @@ fun SoundVibrationScreen() {
                     }
                     // how much each press differs from the last (DogBoard's sounds only; Android's click is one fixed sound)
                     if (soundStyle != "system") SetSliderRow(
-                        "sv:variation", "Variation", "How much each press differs, like a real keyboard where no two clicks sound alike.",
+                        "sv:variation", "Sound variation", "How much each press differs, like a real keyboard where no two clicks sound alike.",
                         variation.toFloat(), fb.audioVariation.default.toFloat(), 0f..100f, 10f, { v -> "${v.toInt()} %" },
                     ) { v ->
                         // the slider reports every move: one preview per new value, the last one cut short

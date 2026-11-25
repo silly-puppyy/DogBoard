@@ -208,7 +208,7 @@ fun SetLayout(state: SetLayoutState) {
                     BottomRowCard(st.bottom == "simple", "123, emoji, space, action", listOf(Mk("123", 1.24f, 'f'), Mk("emo", 1.25f, 'f'), Mk("", 5f, 'k'), Mk("ret", 2.5f, 'a'))) { state.onChange(st.copy(bottom = "simple")) }
                     BottomRowCard(st.bottom == "classic", "?123, comma, emoji, space, period, action", listOf(Mk("?123", 1.5f, 'f'), Mk(",", 1f, 'k'), Mk("emo", 1f, 'f'), Mk("", 4f, 'k'), Mk(".", 1f, 'k'), Mk("ret", 1.5f, 'a'))) { state.onChange(st.copy(bottom = "classic")) }
                 }
-                ElementRow("Symbols", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.DEFAULT.symbols, { state.onChange(st.copy(symbols = LayoutElements.DEFAULT.symbols)) }) {
+                ElementRow("Symbol pages", "The punctuation pages behind 123: iPhone-style (123 and #+=) or Android-style (?123 and =\\<).", st.symbols != LayoutElements.DEFAULT.symbols, { state.onChange(st.copy(symbols = LayoutElements.DEFAULT.symbols)) }) {
                     ElementSeg("symbols", listOf("iphone" to "iPhone-style", "android" to "Android-style"), st.symbols) { state.onChange(st.copy(symbols = it)) }
                 }
                 ElementRow("Return to letters", "After you type on the 123 page, it can switch back to letters by itself: after any key, after a space, or never (you tap ABC).", st.symbolsReturn != LayoutElements.DEFAULT.symbolsReturn, { state.onChange(st.copy(symbolsReturn = LayoutElements.DEFAULT.symbolsReturn)) }) {
@@ -226,7 +226,7 @@ fun SetLayout(state: SetLayoutState) {
                 ElementRow("Action key", "Icons read the same in every language; words say exactly what happens.", st.action != LayoutElements.DEFAULT.action, { state.onChange(st.copy(action = LayoutElements.DEFAULT.action)) }) {
                     ElementSeg("action", listOf("icon" to "Icon", "word" to "Word"), st.action) { state.onChange(st.copy(action = it)) }
                 }
-                ElementRow("Letter case", "Whether letters on keys follow shift or always show capitals.", st.caseMode != LayoutElements.DEFAULT.caseMode, { state.onChange(st.copy(caseMode = LayoutElements.DEFAULT.caseMode)) }) {
+                ElementRow("Capital letters on keys", "Whether letters on keys follow shift or always show capitals.", st.caseMode != LayoutElements.DEFAULT.caseMode, { state.onChange(st.copy(caseMode = LayoutElements.DEFAULT.caseMode)) }) {
                     ElementSeg("case", listOf("shift" to "Follows shift", "caps" to "Always capitals"), st.caseMode) { state.onChange(st.copy(caseMode = it)) }
                 }
             }
