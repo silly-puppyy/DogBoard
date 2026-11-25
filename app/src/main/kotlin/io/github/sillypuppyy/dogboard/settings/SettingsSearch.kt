@@ -16,7 +16,7 @@ object SettingsSearch {
         Entry("Bottom row", "Layout", "layout", "comma period 123 emoji action"),
         Entry("Symbols", "Layout", "layout", "123 punctuation pages iphone android"),
         Entry("Round keys", "Layout", "layout", "pill rounded 123 action"),
-        Entry("Hold for symbols", "Layout", "layout", "long-press hints hint corner accents symbols whole page"),
+        Entry("Key hints", "Layout", "layout", "hold for symbols long-press hints hint corner accents symbols whole page"),
         Entry("Space-bar label", "Layout", "layout", "space bar language name blank"),
         Entry("Action key", "Layout", "layout", "enter return send search go done icon word label"),
         Entry("Letter case", "Layout", "layout", "capitals uppercase caps labels"),

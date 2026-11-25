@@ -217,7 +217,7 @@ fun SetLayout(state: SetLayoutState) {
                 ElementRow("Round keys", "123 and the action key as round pills.", st.pill != LayoutElements.DEFAULT.pill, { state.onChange(st.copy(pill = LayoutElements.DEFAULT.pill)) }) {
                     ElementSeg("pill", listOf("off" to "Off", "on" to "On"), if (st.pill) "on" else "off") { state.onChange(st.copy(pill = it == "on")) }
                 }
-                ElementRow("Hold for symbols", "A symbol or accent in each key’s corner, typed by holding the key.", st.hints != LayoutElements.DEFAULT.hints, { state.onChange(st.copy(hints = LayoutElements.DEFAULT.hints)) }) {
+                ElementRow("Key hints", "A symbol or accent in each key’s corner, typed by holding the key.", st.hints != LayoutElements.DEFAULT.hints, { state.onChange(st.copy(hints = LayoutElements.DEFAULT.hints)) }) {
                     ElementSeg("hints", listOf("off" to "Off", "accents" to "Accents", "symbols" to "Whole page"), st.hints) { state.onChange(st.copy(hints = it)) }
                 }
                 ElementRow("Space-bar label", "Auto shows the language name only when you have more than one.", st.space != LayoutElements.DEFAULT.space, { state.onChange(st.copy(space = LayoutElements.DEFAULT.space)) }) {
