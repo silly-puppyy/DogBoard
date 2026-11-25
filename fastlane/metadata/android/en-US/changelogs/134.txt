@@ -1,0 +1,2 @@
+- Misspellings with letters out of order are found: tap back into a word that isn't in the dictionary (or tap its red underline) and the words spelled like it come first ("rethorical" offers "rhetorical")
+- Setup stays on the Android page until the spell checker step is done too
