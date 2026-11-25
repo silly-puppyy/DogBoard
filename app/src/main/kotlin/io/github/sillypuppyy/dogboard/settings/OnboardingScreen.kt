@@ -135,7 +135,9 @@ fun OnboardingScreen() {
             // Onboarding S.enable: when both system steps become done, the page moves on by itself
             val wasDone = remember { mutableStateOf(enabled && selected) }
             LaunchedEffect(enabled && selected) {
-                if (enabled && selected && !wasDone.value && id == "enable") i++
+                // not past the spell checker step (3) while it's left: moving on hid it (Next still skips it)
+                val spellDone = SpellCheckers.current(context)?.let { it.enabled && it.ours } ?: true
+                if (enabled && selected && spellDone && !wasDone.value && id == "enable") i++
                 wasDone.value = enabled && selected
             }
             StepFrame(
