@@ -108,6 +108,12 @@ object TypingEngine {
     private val CHEAP_LETTER_EDITS = setOf("en", "es", "fr", "ru")
 
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, val rules: LanguageRules) {
+        /** The scripts the language's keys type (Latin for English's default rows). */
+        val scripts: Set<Character.UnicodeScript> by lazy {
+            rules.letterRows.rows.flatMap { it.asIterable() }.filter { it.isLetter() }.map { Character.UnicodeScript.of(it.code) }
+                .toSet().ifEmpty { setOf(Character.UnicodeScript.LATIN) }
+        }
+
         val decoder = Decoder(
             lexicon,
             // skipped and extra letters cheaper than iOS's costs (-1.0 / -2.0, no extra language cost) where measured to
@@ -1593,13 +1599,20 @@ object TypingEngine {
     /**
      * The system spell checker's question: is [word] known, and if not, what was likely meant (up
      * to [max], best first)? Null while the word data loads. Numbers and words with other symbols
-     * are never flagged; a curly apostrophe counts as a straight one.
+     * are never flagged; a curly apostrophe counts as a straight one. A word is known when any of the keyboard's
+     * languages has it, and a word in a script none of them writes is not judged (English "shows" was underlined
+     * while German was the first language, Arabic words while a Latin one was, 2026-11-25).
      */
     fun spell(word: String, max: Int): Pair<Boolean, List<String>>? {
         val engine = loaded ?: return null
         val w = word.replace('’', '\'')
         if (w.isEmpty() || !w.all { isWordChar(it) } || w.none { it.isLetter() }) return true to emptyList()
-        if (lock.read { engine.lexicon.contains(w) }) return true to emptyList()
+        val languages = listOf(engine) + secondaries
+        val script = Character.UnicodeScript.of(w.first { it.isLetter() }.code)
+        if (languages.none { script in it.scripts }) return true to emptyList()
+        if (languages.any { l -> lock.read { l.lexicon.contains(w) } }) return true to emptyList()
+        // fixes from the first language's decoder (its keys and words); for a word in another language's script, none
+        if (script !in engine.scripts) return false to emptyList()
         // the letters on their key centres, as for a word the cursor rests in
         val typed = CurrentWord().apply { for (c in w) addLetter(c, null, SPELL_KEYS, SPELL_PARAMS) }
         val fixes = candidates(typed, null, max + 3)
