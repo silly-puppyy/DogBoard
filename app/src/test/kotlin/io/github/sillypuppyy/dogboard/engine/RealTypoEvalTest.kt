@@ -27,6 +27,9 @@ class RealTypoEvalTest : FunSpec({
         // optional file reads as empty), DOGBOARD_ROWS its letter rows ("qwertyuiop,asdfghjklñ,zxcvbnm")
         val packDir = System.getenv("DOGBOARD_PACK_DIR")?.trimEnd('/')?.plus('/') ?: "src/main/assets/dogboard/"
         val lang = System.getenv("DOGBOARD_PACK_LANG") ?: "en"
+        // the pack's casing rules, as EngineLoader sets them: the root locale lowercases Azerbaijani "İ" to "i" + U+0307,
+        // a letter no key types (the az controls failed on it, 2026-11-25)
+        CaseAdapt.locale = java.util.Locale.forLanguageTag(lang)
         fun packFile(name: String) = File("$packDir$lang.$name")
         // another language's own rules (its rules.json; English: the built-in ones): with the English rules every pack was
         // scored with English possessives (Czech "stanices" -> "stanice's") and the always-capital "I" (2026-11-23).
@@ -215,11 +218,11 @@ class RealTypoEvalTest : FunSpec({
         val pool = java.util.concurrent.ForkJoinPool(System.getenv("DOGBOARD_EVAL_THREADS")?.toIntOrNull() ?: 3)
         val outcomes = pool.submit(java.util.concurrent.Callable {
             sample.parallelStream().map { row ->
-                val typed = row[3].lowercase(); val intended = row[4]
+                val typed = row[3].lowercase(CaseAdapt.locale); val intended = row[4]
                 // the true words before it; a sentence end restarts the context, as on the keyboard
                 val raw = row[2].split(' ').filter { it.isNotEmpty() }
                 val ends = { w: String -> w.last() in ".!?" }
-                val clean = { w: String -> w.trim('.', ',', '!', '?', ';', ':', '"', '(', ')').lowercase() }
+                val clean = { w: String -> w.trim('.', ',', '!', '?', ';', ':', '"', '(', ')').lowercase(CaseAdapt.locale) }
                 val prev = raw.lastOrNull()?.takeUnless(ends)?.let(clean) ?: Bigrams.START
                 val prev2 = raw.getOrNull(raw.size - 2)?.takeIf { prev != Bigrams.START && !ends(it) }?.let(clean)
                 // taps at the key centres read as certain letters, which makes autocorrect shy;

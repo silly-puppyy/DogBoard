@@ -21,9 +21,18 @@ WORD = re.compile(L + r"+(?:['’]" + L + r"+)*")
 SENTENCE_END = re.compile(r"[.!?¿¡\n]+")
 
 
+def lower(word, lang=""):
+    """Lowercase as the keyboard does (CaseAdapt.locale): Python gives "i" + U+0307 for "İ", a letter no key types (the
+    Turkish pack's n-grams held 355,000 such words, "i̇stanbul", 2026-11-25); in Turkish and Azerbaijani "I" is "ı"."""
+    if lang in ("tr", "az"):
+        word = word.replace("I", "ı")
+    return word.replace("İ", "i").lower()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--heldout", required=True)
+    ap.add_argument("--lang", default="")
     ap.add_argument("files", nargs="+")
     args = ap.parse_args()
     out = sys.stdout
@@ -36,7 +45,7 @@ def main():
                         held.write(text + "\n")
                         continue
                     for part in SENTENCE_END.split(text):
-                        words = [w.lower().replace("’", "'") for w in WORD.findall(part)]
+                        words = [lower(w, args.lang).replace("’", "'") for w in WORD.findall(part)]
                         if words:
                             out.write(" ".join(words) + "\n")
 
