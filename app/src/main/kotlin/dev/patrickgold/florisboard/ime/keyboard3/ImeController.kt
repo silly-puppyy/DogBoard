@@ -1235,6 +1235,12 @@ class ImeController(
             suggestionJob = scope.launch {
                 val candidates = TypingEngine.candidates(word, context, previous2 = context2)
                 var strip = SuggestionStrip.build(whole, candidates, null, TypingEngine.caseFor(word, curly), null)
+                // a word no dictionary has: the words spelled like it first, whatever keys were hit (Gboard's chips:
+                // "rethorical" -> rhetorical, historical, electrical; the key-centre decoder found "methodical")
+                TypingEngine.spell(whole, SuggestionStrip.SLOTS)?.takeIf { !it.first }?.second?.takeIf { it.isNotEmpty() }?.let { spelled ->
+                    strip = (spelled.map { w -> Suggestion(w, Suggestion.Kind.WORD).also { it.forTyped = whole } } + strip)
+                        .distinctBy { it.word.lowercase() }.take(SuggestionStrip.SLOTS)
+                }
                 if (recent != null) {
                     val undo = Suggestion(recent.original, Suggestion.Kind.LITERAL).also { it.revertOf = recent.corrected; it.forTyped = whole }
                     val case = TypingEngine.caseFor(word, curly)

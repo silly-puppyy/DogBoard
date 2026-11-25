@@ -1603,7 +1603,7 @@ object TypingEngine {
      * languages has it, and a word in a script none of them writes is not judged (English "shows" was underlined
      * while German was the first language, Arabic words while a Latin one was, 2026-11-25).
      */
-    fun spell(word: String, max: Int): Pair<Boolean, List<String>>? {
+    fun spell(word: String, max: Int, sources: SpellSources = SpellSources.BOTH): Pair<Boolean, List<String>>? {
         val engine = loaded ?: return null
         val w = word.replace('’', '\'')
         if (w.isEmpty() || !w.all { isWordChar(it) } || w.none { it.isLetter() }) return true to emptyList()
@@ -1611,17 +1611,22 @@ object TypingEngine {
         val script = Character.UnicodeScript.of(w.first { it.isLetter() }.code)
         if (languages.none { script in it.scripts }) return true to emptyList()
         if (languages.any { l -> lock.read { l.lexicon.contains(w) } }) return true to emptyList()
-        // fixes from the first language's decoder (its keys and words); for a word in another language's script, none
-        if (script !in engine.scripts) return false to emptyList()
-        // the letters on their key centres, as for a word the cursor rests in
-        val typed = CurrentWord().apply { for (c in w) addLetter(c, null, SPELL_KEYS, SPELL_PARAMS) }
-        val fixes = candidates(typed, null, max + 3)
-            .filter { !it.isTypedString && !it.isCompletion && !it.word.equals(w, ignoreCase = true) }
-            .map { if (w.first().isUpperCase()) it.word.replaceFirstChar(Char::uppercaseChar) else it.word }
-            .distinct()
-            .take(max)
-        return false to fixes
+        fun cased(s: String) = if (w.first().isUpperCase()) s.replaceFirstChar(Char::uppercaseChar) else s
+        // words spelled like it, whatever keys were hit (letters out of order: "rethorical" -> "rhetorical"), in the
+        // languages that write its script; first, as the spell checker gets text, not taps
+        val spelled = if (sources == SpellSources.DECODER) emptyList() else languages.filter { script in it.scripts }
+            .flatMap { l -> lock.read { SpellCandidates.of(l.lexicon, w, max) } }
+        // then the first language's decoder on the letters' key centres (its keys and words), as for a word the
+        // cursor rests in; for a word in another language's script, none
+        val fixes = if (sources == SpellSources.SPELLING || script !in engine.scripts) emptyList() else {
+            val typed = CurrentWord().apply { for (c in w) addLetter(c, null, SPELL_KEYS, SPELL_PARAMS) }
+            candidates(typed, null, max + 3).filter { !it.isTypedString && !it.isCompletion && !it.word.equals(w, ignoreCase = true) }.map { it.word }
+        }
+        return false to (spelled + fixes).map(::cased).distinctBy { it.lowercase() }.take(max)
     }
+
+    /** Where [spell]'s suggestions come from (both by default; one alone to measure them). */
+    enum class SpellSources { BOTH, SPELLING, DECODER }
 
     private val SPELL_KEYS = QwertyGeometry.letterKeys(375f, 216f)
     private val SPELL_PARAMS = io.github.sillypuppyy.dogboard.touch.GaussianTouch.params(medianKeyHalfWidth = 18.75, typingInterval = 0.3)
