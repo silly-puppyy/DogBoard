@@ -110,6 +110,7 @@ object AppUpdates {
 
     /** Downloads [r]'s APK (checked) and opens Android's installer; false when the download or its check failed. */
     suspend fun install(context: Context, r: Release, onProgress: (Float) -> Unit = {}): Boolean = withContext(Dispatchers.IO) {
+        val shade = DownloadNotice(context, r.version)
         val dir = File(context.cacheDir, "updates").apply { deleteRecursively(); mkdirs() }
         val apk = File(dir, "dogboard-${r.version}.apk")
         val ok = runCatching {
@@ -123,7 +124,7 @@ object AppUpdates {
                         while (true) {
                             val n = input.read(buf); if (n < 0) break
                             out.write(buf, 0, n); digest.update(buf, 0, n); done += n
-                            if (r.apkSize > 0) onProgress(done.toFloat() / r.apkSize)
+                            if (r.apkSize > 0) (done.toFloat() / r.apkSize).let { f -> onProgress(f); shade.progress(f) }
                         }
                     }
                 }
@@ -133,6 +134,7 @@ object AppUpdates {
             val sha = digest.digest().joinToString("") { "%02x".format(it) }
             r.sha256 == null || sha.equals(r.sha256, ignoreCase = true)
         }.getOrDefault(false)
+        shade.done()
         if (!ok) { apk.delete(); return@withContext false }
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider.file", apk)
         withContext(Dispatchers.Main) {
@@ -143,5 +145,43 @@ object AppUpdates {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
         }
         true
+    }
+}
+
+/**
+ * The update's download in the notification shade, with a progress bar (as Android's own downloads), so it stays in
+ * view outside DogBoard's settings; gone when the download ends (the installer opens, or the home says it failed).
+ * Low importance: no sound. Needs POST_NOTIFICATIONS on Android 13+; without it nothing is shown.
+ */
+private class DownloadNotice(private val context: Context, private val version: String) {
+    private val nm = context.getSystemService(android.app.NotificationManager::class.java)?.takeIf {
+        android.os.Build.VERSION.SDK_INT < 33 || androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }?.also {
+        it.createNotificationChannel(android.app.NotificationChannel(CHANNEL, "Updates", android.app.NotificationManager.IMPORTANCE_LOW))
+    }
+    private var shown = -1
+
+    /** [f] of the download done; posted in steps of 2 % (Android drops notifications updated faster). */
+    fun progress(f: Float) {
+        val nm = nm ?: return
+        val pct = (f.coerceIn(0f, 1f) * 100).toInt()
+        if (shown >= 0 && pct < shown + 2) return
+        shown = pct
+        nm.notify(ID, androidx.core.app.NotificationCompat.Builder(context, CHANNEL)
+            .setSmallIcon(dev.patrickgold.florisboard.R.drawable.ic_app_icon_monochrome)
+            .setContentTitle("Downloading DogBoard $version")
+            .setContentText("$pct %")
+            .setProgress(100, pct, false)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .build())
+    }
+
+    fun done() { nm?.cancel(ID) }
+
+    companion object {
+        const val CHANNEL = "dogboard_updates"
+        const val ID = 4208
     }
 }

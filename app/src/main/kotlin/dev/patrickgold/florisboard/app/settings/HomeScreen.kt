@@ -95,6 +95,7 @@ fun HomeScreen() {
         // DogBoard: the GitHub build's update check (once a day) and its home card
         val update by io.github.sillypuppyy.dogboard.settings.AppUpdates.available.collectFlowAsState()
         var updating by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+        var updateProgress by androidx.compose.runtime.remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
         androidx.compose.runtime.LaunchedEffect(Unit) { io.github.sillypuppyy.dogboard.settings.AppUpdates.checkIfDue() }
         val updateContext = androidx.compose.ui.platform.LocalContext.current
         // the Languages row's line: your languages (every keyboard's, each once), the first three by name
@@ -129,11 +130,12 @@ fun HomeScreen() {
                 languages = homeLanguages,
                 update = update?.version,
                 updating = updating,
+                updateProgress = updateProgress,
                 onUpdate = {
                     val r = update
                     if (r != null && !updating) scope.launch {
-                        updating = true
-                        val ok = io.github.sillypuppyy.dogboard.settings.AppUpdates.install(updateContext, r)
+                        updating = true; updateProgress = 0f
+                        val ok = io.github.sillypuppyy.dogboard.settings.AppUpdates.install(updateContext, r) { f -> updateProgress = f }
                         updating = false
                         if (!ok) android.widget.Toast.makeText(updateContext, "The download didn’t work. Try again later", android.widget.Toast.LENGTH_SHORT).show()
                     }

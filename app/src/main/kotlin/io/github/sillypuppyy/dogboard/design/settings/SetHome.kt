@@ -111,6 +111,8 @@ class SetHomeActions(
     /** A newer DogBoard on GitHub (AppUpdates), its version; null: none. [updating]: its download is running. */
     val update: String? = null,
     val updating: Boolean = false,
+    /** The download's share done while [updating] (0 to 1). */
+    val updateProgress: Float = 0f,
     val onUpdate: () -> Unit = {},
     /** The phone's spell checker when it isn't DogBoard's (its name); null: no card. */
     val otherChecker: String? = null,
@@ -153,34 +155,23 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                 }
                 // a newer DogBoard (the GitHub build checks its releases once a day)
                 actions?.update?.let { v ->
-                    Row(
-                        Modifier.fillMaxWidth().background(SetColors.secondaryContainer, RoundedCornerShape(24.dp)).padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        DText("DogBoard $v is out", Modifier.weight(1f), style = setText(16f, 500, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        Box(
-                            Modifier.height(40.dp).background(SetColors.primary, RoundedCornerShape(20.dp)).then(if (actions.updating) Modifier else Modifier.clickable { actions.onUpdate() }).padding(horizontal = 18.dp),
-                            contentAlignment = Alignment.Center,
-                        ) { DText(if (actions.updating) "Downloading" else "Update", style = setText(14f, 500, SetColors.screen)) }
-                    }
-                }
-                // DogBoard is the keyboard but another app checks spelling (its underlines in every app)
-                actions?.otherChecker?.let { name ->
                     Column(
-                        Modifier.fillMaxWidth().background(SetColors.secondaryContainer, RoundedCornerShape(24.dp)).padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 12.dp),
+                        Modifier.fillMaxWidth().background(SetColors.secondaryContainer, RoundedCornerShape(24.dp)).padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        DText("Spell checking uses $name", style = setText(16f, 500, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        DText("Underlines in your apps come from it, in its own languages. Pick DogBoard to check in your keyboard’s languages.",
-                            style = setText(14f, 400, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 4)
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                            Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).clickable { actions.onCheckerDismiss() }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
-                                DText("Not now", style = setText(14f, 500, SetColors.onSecondaryContainer))
-                            }
-                            Box(Modifier.height(40.dp).background(SetColors.primary, RoundedCornerShape(20.dp)).clickable { actions.onChecker() }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
-                                DText("Change", style = setText(14f, 500, SetColors.screen))
-                            }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            DText("DogBoard $v is out", Modifier.weight(1f), style = setText(16f, 500, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                            Box(
+                                Modifier.height(40.dp).background(SetColors.primary, RoundedCornerShape(20.dp)).then(if (actions.updating) Modifier else Modifier.clickable { actions.onUpdate() }).padding(horizontal = 18.dp),
+                                contentAlignment = Alignment.Center,
+                            ) { DText(if (actions.updating) "${(actions.updateProgress * 100).toInt()} %" else "Update", style = setText(14f, 500, SetColors.screen)) }
                         }
+                        // the download's progress, as Android's own downloads show it (also in the notification shade)
+                        if (actions.updating) androidx.compose.material3.LinearProgressIndicator(
+                            progress = { actions.updateProgress.coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth().padding(end = 8.dp).height(4.dp).clip(RoundedCornerShape(2.dp)),
+                            color = SetColors.primary, trackColor = SetColors.screen,
+                        )
                     }
                 }
                 // settings tree v3 in Gboard's order, split into cards as Gboard's home is
