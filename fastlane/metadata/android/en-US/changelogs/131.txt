@@ -1,0 +1,3 @@
+- German: ü is the first letter on a long-press of u, like ä on a and ö on o (it needed a slide before); the same for every language's own letters
+- Danish and Norwegian: words with æ are no longer "corrected" into other words (typing "være" or "lærer" on the æ key kept them)
+- 18 new language downloads: Bosnian, Catalan, Croatian, Danish, Estonian, Galician, Kazakh, Latvian, Lithuanian, Macedonian, Malay, Norwegian Bokmål, Albanian, Serbian, Slovak, Slovenian, Tamil, Urdu (45 languages in all)
