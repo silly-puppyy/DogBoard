@@ -7,6 +7,7 @@ import dev.patrickgold.florisboard.ime.keyboard3.touch.computeTouchModel
 import dev.patrickgold.florisboard.ime.text.key.KeyVariation
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.coroutineScope
 import org.k3lp.lib.text.K3String
@@ -52,4 +53,29 @@ class SymbolPagesTouchTest : FunSpec({
                 wrong.shouldBeEmpty()
             }
         }
+
+    // the number pages: the letters' numeric layer and the number / phone fields' pads, drawn key for key
+    for (plane in listOf("numeric", "numpad", "telpad", "telpad2")) test("$plane: each drawn key types itself") {
+        val result = compileLayout("keyboard/qwerty-en.xml")
+        result.shouldBeInstanceOf<K3CompileResult.Success>()
+        val keyboard = coroutineScope { computeTouchModel(result.model, TouchModelOptions.Default) }.selectKeyboard(deviceWidthMm = 70)
+        keyboard.layers.keys.map { it.toString() }.any { it.contains(plane) } shouldBe true
+        val w = 375f
+        val r = KbSpec.render(KbProps(width = w, keyH = 216f, plane = plane, numRow = "off"))
+        val h = r.rowTops.last() + r.rowHs.last()
+        var checked = 0
+        val wrong = buildList {
+            r.rows.forEachIndexed { ri, row ->
+                for (k in row.keys) {
+                    if (k.gap || k.kind !in setOf("char", "pad") || k.base.isBlank()) continue
+                    checked++
+                    val at = Offset((k.x + k.w / 2) / w, (r.rowTops[ri] + r.rowHs[ri] / 2) / h)
+                    val typed = keyboard.findKey(K3LayerId(plane), at)?.let { (it.attrs.output as? K3String)?.toText() }
+                    if (typed != k.base) add("row $ri: drawn \"${k.base}\" types \"$typed\"")
+                }
+            }
+        }
+        wrong.shouldBeEmpty()
+        (checked >= 10) shouldBe true // the digits at least: an empty match would pass anything
+    }
 })
