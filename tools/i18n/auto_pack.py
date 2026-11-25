@@ -168,7 +168,7 @@ LANGS = {
                layout=('gboard', 'azerbaijani'), gboard_tag='az-AZ', script='Latn', compounds=False),
     'kk': dict(name='Kazakh', leipzig=['kaz_newscrawl_2016_1M', 'kaz_wikipedia_2021_300K'], tatoeba='kaz',
                layout=('gboard', 'kazakh'), gboard_tag='kk-KZ', script='Cyrl', compounds=False),
-    'mr': dict(name='Marathi', leipzig=['mar_newscrawl_2016_1M', 'mar_news_2020_300K', 'mar_wikipedia_2021_300K'], tatoeba='mar',
+    'mr': dict(name='Marathi', letters_extra='ँऍ', leipzig=['mar_newscrawl_2016_1M', 'mar_news_2020_300K', 'mar_wikipedia_2021_300K'], tatoeba='mar',
                layout=('gboard', 'marathi_india'), gboard_tag='mr-IN', script='Deva', compounds=False,
                rules_extra={'path': 'rules:devanagari', 'sentence_end': '.!?।'}),
     'hy': dict(name='Armenian', leipzig=['hye_wikipedia_2021_1M', 'hye_wikipedia_2016_300K'], tatoeba='hye',
@@ -181,10 +181,17 @@ LANGS = {
                layout=('gboard', 'macedonian'), gboard_tag='mk-MK', script='Cyrl', compounds=False),
     'gl': dict(name='Galician', leipzig=['glg_wikipedia_2021_300K', 'glg_wikipedia_2016_300K', 'glg_newscrawl_2016_100K'], tatoeba='glg',
                layout=('gboard', 'spanish'), gboard_tag='gl-ES', script='Latn', compounds=False),
-    'af': dict(name='Afrikaans', leipzig=['afr_wikipedia_2021_300K', 'afr_wikipedia_2016_300K'], tatoeba='afr',
+    'af': dict(name='Afrikaans', letters_extra='áéèêëíîïóôöúûŉ', leipzig=['afr_wikipedia_2021_300K', 'afr_wikipedia_2016_300K'], tatoeba='afr',
                layout=('gboard', 'qwerty'), gboard_tag='af-ZA', script='Latn', compounds=False),
 }
 CLDR_URL = 'https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/{}.xml'
+
+
+def lower(word, lang):
+    """Lowercase as the keyboard does (tools/data/leipzig_sentences.py lower: "İ" is "i", Turkish "I" is "ı")."""
+    if lang in ('tr', 'az'):
+        word = word.replace('I', 'ı')
+    return word.replace('İ', 'i').lower()
 
 
 def letters_of(lang):
@@ -278,7 +285,10 @@ class Pack:
                         text = line.rstrip('\n').split('\t')[-1]
                         # a Cyrillic pack drops the sentences written mostly in Latin (Serbian Wikipedia carries a few: 0.13 %)
                         latin = self.cfg['script'] != 'Latn' and 2 * sum('a' <= c.lower() <= 'z' for c in text) > sum(c.isalpha() for c in text)
-                        if not latin and all(c in ok for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
+                        # a letter written precomposed is checked by its parts: CLDR lists Bengali য় as য + ় and Armenian
+                        # և is ե + ւ (73 % of Bengali news and 46 % of Armenian Wikipedia were dropped, 2026-11-25)
+                        if not latin and all(c in ok or all(d in ok for d in unicodedata.normalize('NFKD', c))
+                                             for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
                         else: dropped += 1
                 os.rename(out + '.tmp', out)
                 log(f'{os.path.basename(f)}: kept {kept:,}, dropped {dropped:,} ({100 * dropped / max(1, kept + dropped):.1f} %) with foreign letters')
@@ -290,7 +300,7 @@ class Pack:
     def text(self):
         if os.path.exists(self.p('train.txt')): return
         with open(self.p('train.txt'), 'w', encoding='utf-8') as out:
-            subprocess.run([sys.executable, '-I', f'{REPO}/tools/data/leipzig_sentences.py', '--heldout', self.p(f'{self.lang}.heldout.txt')]
+            subprocess.run([sys.executable, '-I', f'{REPO}/tools/data/leipzig_sentences.py', '--heldout', self.p(f'{self.lang}.heldout.txt'), '--lang', self.lang]
                            + self.corpus_files, stdout=out, check=True)
         log('training text', sum(1 for _ in open(self.p('train.txt'), encoding='utf-8')), 'lines')
 
@@ -358,11 +368,11 @@ class Pack:
                 self.p(f'{self.lang}.lexicon.tsv'), '--out', out, '--lang', self.lang])
         else:
             # too little Tatoeba: word pairs from the corpus training text instead (same format)
-            lex = {l.split('\t')[0].lower() for l in open(self.p(f'{self.lang}.lexicon.tsv'), encoding='utf-8') if not l.startswith('#')}
+            lex = {lower(l.split('\t')[0], self.lang) for l in open(self.p(f'{self.lang}.lexicon.tsv'), encoding='utf-8') if not l.startswith('#')}
             pairs = Counter(); W = re.compile(L + r"+(?:['’]" + L + r"+)*")
             for i, line in enumerate(open(self.p('train.txt'), encoding='utf-8')):
                 if i >= 400000: break
-                ws = ['<s>'] + [w.lower() for w in W.findall(line)]
+                ws = ['<s>'] + [lower(w, self.lang) for w in W.findall(line)]
                 for a, b in zip(ws, ws[1:]):
                     if (a == '<s>' or a in lex) and b in lex: pairs[(a, b)] += 1
             with open(out, 'w', encoding='utf-8') as o:
@@ -376,13 +386,13 @@ class Pack:
         out = self.p(f'{self.lang}.charlm.bin')
         if os.path.exists(out): return
         lexf = self.p(f'{self.lang}.lexicon.tsv')
-        words = [l.split('\t')[0].lower() for l in open(lexf, encoding='utf-8') if not l.startswith('#')][:50000]
+        words = [lower(l.split('\t')[0], self.lang) for l in open(lexf, encoding='utf-8') if not l.startswith('#')][:50000]
         alphabet = ''.join(sorted({fold(c) for w in words for c in w if c.isalpha()}, key=lambda c: -sum(w.count(c) for w in words[:5000])))
         alphabet = ''.join(c for c in alphabet if c.isalpha())[:60]
         uni = self.p(f'{self.lang}.unigrams.tsv')
         if not os.path.exists(uni):
             cnt = Counter(); W = re.compile(L + r"+")
-            for line in open(self.p('train.txt'), encoding='utf-8'): cnt.update(w.lower() for w in W.findall(line))
+            for line in open(self.p('train.txt'), encoding='utf-8'): cnt.update(lower(w, self.lang) for w in W.findall(line))
             with open(uni, 'w', encoding='utf-8') as o:
                 for w, c in cnt.most_common(): o.write(f'{w}\t{c}\n')
         latin_az = set(alphabet) <= set('abcdefghijklmnopqrstuvwxyz')
@@ -415,7 +425,9 @@ class Pack:
         # a letter with its own key that folds to another letter of the layout (å ä ö in Finnish) stays distinct;
         # letters typed by long-press (Czech č ř ž on qwertz) fold, as accents do
         on_keys = set(''.join(letters))
-        distinct = ''.join(sorted(c for c in on_keys if fold(c) != c and fold(c) in on_keys))
+        # æ œ ß with a key of their own (Danish, Norwegian æ ø) are letters too: unmarked, the trie spelled æ as "ae", so
+        # typing "stærke" on the æ key was read as the typo "starke" (Danish broke 1.15 % of correct words, 2026-11-25)
+        distinct = ''.join(sorted(c for c in on_keys if (fold(c) != c and fold(c) in on_keys) or c in 'æœß'))
         w = max(len(r) for r in letters)
         rules = {'sentence_end': '.!?' + ('؟' if self.cfg.get('rtl') else ''), 'compounds': self.cfg.get('compounds', False),
                  'letter_rows': {'rows': letters, 'offsets': [round((w - len(r)) / 2 * 2) / 2 for r in letters]},

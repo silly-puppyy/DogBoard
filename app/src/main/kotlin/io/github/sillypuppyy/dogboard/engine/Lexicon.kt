@@ -589,9 +589,10 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
          * A ligature as the two letters people type for it, or null: the trie holds "cœur" on the path c-o-e-u-r, so
          * "coeur" reaches it (French: few long-press for œ; the word keeps its spelling as its surface form). German ß
          * the same as "ss" (ß is a long-press on QWERTZ, people type "ss"): "strasse" reaches the node of "Straße" and
-         * of the Swiss "Strasse", the more frequent spelling wins (2026-11-23: "strasse" stayed "Strasse").
+         * of the Swiss "Strasse", the more frequent spelling wins (2026-11-23: "strasse" stayed "Strasse"). None for a
+         * letter with a key of its own ([distinctLetters]: Danish and Norwegian æ).
          */
-        fun ligature(c: Char): String? = when (c) {
+        fun ligature(c: Char): String? = if (c.lowercaseChar() in distinctLetters) null else when (c) {
             'œ', 'Œ' -> "oe"
             'æ', 'Æ' -> "ae"
             'ß', 'ẞ' -> "ss"
