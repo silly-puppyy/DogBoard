@@ -35,13 +35,15 @@ object LinkInfo {
         val version: Int = 0,
         /** When the page couldn't be read at all (no network, a timeout): asked again after [RETRY_MS]. */
         val failedAt: Long = 0,
-    )
+    ) {
+        val hasContent: Boolean get() = title != null || image != null || icon != null
+    }
 
     /** A failed preview is asked again this long after (on copy or when the clipboard opens), not on every open. */
     private const val RETRY_MS = 10 * 60 * 1000L
 
     /** 3: short links followed first, platform oEmbed endpoints, TikTok's page data, PNG icons (2026-11-21: TikTok showed its generic page title). */
-    private const val VERSION = 5 // one "platform, author" line; GitHub, Wikipedia, Steam (2026-11-24)
+    private const val VERSION = 6 // 6: a failed fetch is no longer a finished preview (2026-11-25); 5: one "platform, author" line
 
     private val json = Json { ignoreUnknownKeys = true }
     private val infos = ConcurrentHashMap<String, Info>()
@@ -74,14 +76,16 @@ object LinkInfo {
      * Learns about the links in [text] (off the main thread): their targets when [expand], their previews
      * when [previews]; a link already known at that level is not asked again.
      */
-    fun fetchAll(context: Context, text: String, expand: Boolean, previews: Boolean) {
+    fun fetchAll(context: Context, text: String, expand: Boolean, previews: Boolean, retryNow: Boolean = false) {
         if (!expand && !previews) return
         load(context)
         for (m in URL_RE.findAll(text)) {
             val url = m.value
             val known = infos[url]
-            if (known != null && ((known.previews && known.version >= VERSION) || !previews)) continue
-            if (known != null && known.failedAt > System.currentTimeMillis() - RETRY_MS) continue
+            // version 5's empty previews were fetches that failed (kept as done until 2026-11-25): asked once more
+            val done = known != null && known.previews && (known.version >= VERSION || (known.version == 5 && known.hasContent))
+            if (known != null && (done || !previews)) continue
+            if (!retryNow && known != null && known.failedAt > System.currentTimeMillis() - RETRY_MS) continue
             val target = if (expand) resolve(url) else null
             val page = target ?: url
             var info = Info(url, target = target?.takeIf { it != url })

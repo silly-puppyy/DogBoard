@@ -92,6 +92,21 @@ class ClipboardManager(
     private val systemClipboardManager = context.systemService(AndroidClipboardManager::class)
 
     private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private var networkWatch: android.net.ConnectivityManager.NetworkCallback? = null
+
+    /** DogBoard: every saved link whose preview or expansion failed, asked again now (a network is back). */
+    private fun retryLinkPreviews(context: Context) {
+        val expand = prefs.clipboard.expandShortLinks.get()
+        val previews = prefs.clipboard.linkPreviews.get()
+        if (!expand && !previews) return
+        ioScope.launch {
+            val items = runCatching { clipHistoryDao?.getAll() }.getOrNull() ?: currentHistory.all
+            for (item in items) {
+                if (item.type != ItemType.TEXT || item.isSensitive) continue
+                item.text?.toString()?.let { io.github.sillypuppyy.dogboard.ime.LinkInfo.fetchAll(context, it, expand, previews, retryNow = true) }
+            }
+        }
+    }
     private val cleanUpJob: Job
     private var clipHistoryDb: ClipboardHistoryDatabase? = null
     private val clipHistoryDao: ClipboardHistoryDao? get() = clipHistoryDb?.clipboardItemDao()
@@ -126,6 +141,22 @@ class ClipboardManager(
     }
 
     fun initializeForContext(context: Context) {
+        // DogBoard: the links whose preview couldn't load (copied without a network) are asked again when the phone has a
+        // working connection again, not only on the next copy (a TikTok link stayed bare, 2026-11-25)
+        if (networkWatch == null) runCatching {
+            val cm = context.getSystemService(android.net.ConnectivityManager::class.java) ?: return@runCatching
+            val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+                private var online = false
+                override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) {
+                    val now = caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                    if (now && !online) retryLinkPreviews(context.applicationContext)
+                    online = now
+                }
+                override fun onLost(network: android.net.Network) { online = false }
+            }
+            cm.registerDefaultNetworkCallback(cb)
+            networkWatch = cb
+        }
         ioScope.launch {
             if (clipHistoryDb == null) {
                 clipHistoryDb = ClipboardHistoryDatabase.new(context.applicationContext)

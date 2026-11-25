@@ -7,6 +7,8 @@
     <!-- DogBoard: only for opt-in features: Settings > Clipboard > Expand short links (ShortLinks,
          known link services only); GIFs later -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- DogBoard: link previews that failed for want of a network are asked again when one is back (no prompt) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- DogBoard: contact names as words, opt-in (asked in onboarding); read into memory only -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
 
