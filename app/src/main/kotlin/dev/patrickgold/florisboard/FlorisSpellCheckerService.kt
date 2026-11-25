@@ -44,9 +44,15 @@ class FlorisSpellCheckerService : SpellCheckerService() {
         super.onCreate()
         dictionaryManager.loadUserDictionariesIfNecessary()
         // DogBoard: spelling comes from the typing engine; load it if the keyboard hasn't (until
-        // then words are "unspecified", not flagged)
+        // then words are "unspecified", not flagged), in the keyboard's saved languages: alone the
+        // spell checker loaded the built-in English, so an app opened before the keyboard had every
+        // Bulgarian word underlined (2026-11-25)
         kotlin.concurrent.thread(name = "dogboard-spell-load") {
-            io.github.sillypuppyy.dogboard.ime.EngineLoader.ensureLoaded(this)
+            val loader = io.github.sillypuppyy.dogboard.ime.EngineLoader
+            loader.ensureLoaded(this)
+            val active = subtypeManager.activeSubtype
+            loader.switchTo(this, active.primaryLocale.languageTag())
+            loader.setSecondaries(this, active.secondaryLocales.map { it.languageTag() })
         }
     }
 
