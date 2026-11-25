@@ -20,6 +20,23 @@ exists (re-run after a failure; delete a file to redo its step):
  10 eval       RealTypoEvalTest on the sets -> report.md (fixed / wrong / broken)
 
 Usage: auto_pack.py LANG [--through STEP] [--n 2000]     packs land in keyboard-data/packs-work/<lang>/
+
+Options (all off by default, the default build is unchanged):
+  --work DIR      build in DIR instead of packs-work/<lang>
+  --from DIR      seed DIR from an older pack folder first: its held-out text, training text, lexicon, bigrams, rules and test
+                  sets are copied and its clean-* corpora linked, so only what depends on the text is rebuilt (the older
+                  pack's inputs are reproduced, not guessed; a hand-tuned lexicon stays as it is)
+  --conv          step 2 appends a conversational slice to train.txt (variant "D" of notes/research/conversational-sources.md):
+                  FineWeb-2 (ODC-By) documents ranked by first/second-person pronouns and question marks, fetched by
+                  tools/data/conv_fw2_slice.py (needs LANGS[lang]["fw2"] and a pronoun list in conv_common.py), cleaned like the
+                  Leipzig text (same letter filter and tokens), minus the hosts in LANGS[lang]["conv_drop_hosts"], minus every line
+                  that is a held-out sentence (Leipzig held-out, Tatoeba ids ending in 0, local chat test sets); --conv-share
+                  (default 0.4) x the old line count are added. The lexicon stays from the Leipzig corpora (casing needs written
+                  text); the n-grams, the unigram counts and the letter model see the added text.
+  --conv-fetch-only   download the slice, print its top hosts, stop (to look at the hosts before adding the text)
+  --only STEP     run just that step (eval of an already built folder)
+Environment: PACK_CPUS (cores of lmplz / the lexicon, default 3-6), PACK_GRADLE_CPUS (default 10-15), PACK_GUARD=1 (before each
+heavy command wait until `free -g` available >= 8 GB and the CPU is below 88 C).
 LANGS holds what can't be derived (corpus names, Tatoeba code, layout choice); everything else is computed."""
 import argparse, glob, gzip, hashlib, json, shutil, math, os, re, subprocess, sys, tarfile, time, unicodedata, urllib.request, zlib
 from collections import Counter
@@ -39,6 +56,7 @@ PREDBENCH = f'{REPO}/tools/i18n/sim'
 LAYOUTS = os.path.join(REPO, '..', 'notes', 'design', 'data', 'layouts')
 TATOEBA = os.path.join(REPO, '..', 'data', 'tatoeba')
 CPU = os.environ.get('PACK_CPUS', '3-6')
+GRADLE_CPU = os.environ.get('PACK_GRADLE_CPUS', '10-15')
 LEIPZIG_URL = 'https://downloads.wortschatz-leipzig.de/corpora/{}.tar.gz'
 TATOEBA_URL = 'https://downloads.tatoeba.org/exports/per_language/{0}/{0}_sentences.tsv.bz2'
 
@@ -184,6 +202,17 @@ LANGS = {
     'af': dict(name='Afrikaans', letters_extra='áéèêëíîïóôöúûŉ', leipzig=['afr_wikipedia_2021_300K', 'afr_wikipedia_2016_300K'], tatoeba='afr',
                layout=('gboard', 'qwerty'), gboard_tag='af-ZA', script='Latn', compounds=False),
 }
+FW2_CONFIG = {'bg': 'bul_Cyrl', 'es': 'spa_Latn', 'ru': 'rus_Cyrl', 'de': 'deu_Latn', 'fr': 'fra_Latn', 'it': 'ita_Latn', 'pt': 'por_Latn',
+              'pl': 'pol_Latn', 'cs': 'ces_Latn', 'nl': 'nld_Latn', 'tr': 'tur_Latn', 'sv': 'swe_Latn', 'ro': 'ron_Latn', 'uk': 'ukr_Cyrl'}
+for _l, _c in FW2_CONFIG.items(): LANGS[_l]['fw2'] = _c
+# hosts left out of the conversational slice after reading its top 30 (adult, dating, gambling, personal-data sites), per language
+CONV_DROP_HOSTS = {
+    # read in the top 30 hosts of each slice (2026-11-25), beyond what conv_common.unwanted_hosts finds: a brothel listing,
+    # a teen sex-and-dating Q&A, a love-and-sex advice forum, warez boards, a people-and-phone directory
+    'de': ('6profis.de', 'planet-liebe.de', 'freesoft-board.to', 'digital-eliteboard.com'),
+    'tr': ('kizlarsoruyor.com',),
+    'sv': ('eniro.se',),
+}
 CLDR_URL = 'https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/{}.xml'
 
 
@@ -218,7 +247,21 @@ STEPS = ['corpora', 'text', 'lexicon', 'ngrams', 'bigrams', 'charlm', 'rules', '
 def log(*a): print(time.strftime('%H:%M:%S'), *a, flush=True)
 
 
+def guard():
+    """PACK_GUARD=1: wait until memory and temperature allow a heavy step (shared machine)."""
+    if os.environ.get('PACK_GUARD') != '1': return
+    while True:
+        try:
+            avail = int(subprocess.run(['free', '-g'], capture_output=True, text=True).stdout.splitlines()[1].split()[6])
+            t = re.search(r'Tctl:\s*\+?([\d.]+)', subprocess.run(['sensors'], capture_output=True, text=True).stdout)
+            temp = float(t.group(1)) if t else 0.0
+        except Exception: avail, temp = 99, 0.0
+        if avail >= 8 and temp < 88: return
+        log(f'waiting: {avail} GB available, CPU {temp} C'); time.sleep(60)
+
+
 def sh(cmd, **kw):
+    guard()
     log('$', cmd if isinstance(cmd, str) else ' '.join(cmd))
     subprocess.run(cmd, shell=isinstance(cmd, str), check=True, **kw)
 
@@ -227,12 +270,18 @@ def fold(c):
     return unicodedata.normalize('NFD', c)[0]
 
 
+SEED_COPY = ('{l}.heldout.txt', 'train.txt', '{l}.lexicon.tsv', '{l}.bigrams.tsv', 'rules.json', '{l}-typos.tsv', '{l}-accents-clear.tsv',
+             '{l}-accents-twin.tsv', '{l}-controls.tsv')
+
+
 class Pack:
-    def __init__(self, lang, n):
+    def __init__(self, lang, n, work=None, seed=None, conv=False, conv_share=0.4):
         self.lang, self.cfg, self.n = lang, LANGS[lang], n
-        self.dir = f'{DATA}/packs-work/{lang}' + os.environ.get('PACK_SUFFIX', '')
+        self.conv, self.conv_share = conv, conv_share
+        self.dir = work or f'{DATA}/packs-work/{lang}' + os.environ.get('PACK_SUFFIX', '')
         os.makedirs(self.dir, exist_ok=True)
         self.p = lambda name: os.path.join(self.dir, name)
+        if seed: self.seed(seed)
         # CORPUS_FRACTION=0.25: a learning-curve point (is there enough text?): seeded from the full build in
         # packs-work/<lang>: the same held-out text and test sets, a fixed share of its training text and corpora
         # (by a hash of each line, so 25 % is inside 50 %)
@@ -249,6 +298,24 @@ class Pack:
                     with open(src, encoding='utf-8') as f, open(dst + '.tmp', 'w', encoding='utf-8') as o:
                         o.writelines(l for l in f if keep(l))
                     os.rename(dst + '.tmp', dst)
+
+    def seed(self, src):
+        """Copies an older pack's text-independent inputs into this folder (missing files only) and links its clean-* corpora."""
+        for pat in SEED_COPY:
+            name = pat.format(l=self.lang)
+            if os.path.exists(os.path.join(src, name)) and not os.path.exists(self.p(name)):
+                shutil.copyfile(os.path.join(src, name), self.p(name))
+        for name in os.listdir(src):
+            if name.startswith('clean-') and not os.path.lexists(self.p(name)): os.symlink(os.path.join(src, name), self.p(name))
+
+    def text_ok(self, text):
+        """The corpus letter filter: no letter foreign to the language, no mostly-Latin text in a non-Latin script."""
+        ok = self.__dict__.setdefault('_letters', letters_of(self.lang))
+        latin = self.cfg['script'] != 'Latn' and 2 * sum('a' <= c.lower() <= 'z' for c in text) > sum(c.isalpha() for c in text)
+        # a letter written precomposed is checked by its parts: CLDR lists Bengali য় as য + ় and Armenian
+        # և is ե + ւ (73 % of Bengali news and 46 % of Armenian Wikipedia were dropped, 2026-11-25)
+        return not latin and all(c in ok or all(d in ok for d in unicodedata.normalize('NFKD', c))
+                                 for c in text if c.isalpha() or unicodedata.category(c) == 'Mn')
 
     # 1
     def corpora(self):
@@ -271,7 +338,7 @@ class Pack:
             files += hit
         assert files, 'no corpus'
         # sentences with letters foreign to the language dropped (mis-encoding, other languages), into the pack dir
-        ok = letters_of(self.lang); cleaned = []
+        cleaned = []
         # letters written with another language's code point (Persian news in Arabic ي / ك for ی / ک: 20 % of one corpus
         # was dropped as foreign, 2026-11-23) replaced first
         norm = str.maketrans(self.cfg.get('normalize', {}))
@@ -283,12 +350,8 @@ class Pack:
                     for line in src:
                         line = line.translate(norm)
                         text = line.rstrip('\n').split('\t')[-1]
-                        # a Cyrillic pack drops the sentences written mostly in Latin (Serbian Wikipedia carries a few: 0.13 %)
-                        latin = self.cfg['script'] != 'Latn' and 2 * sum('a' <= c.lower() <= 'z' for c in text) > sum(c.isalpha() for c in text)
-                        # a letter written precomposed is checked by its parts: CLDR lists Bengali য় as য + ় and Armenian
-                        # և is ե + ւ (73 % of Bengali news and 46 % of Armenian Wikipedia were dropped, 2026-11-25)
-                        if not latin and all(c in ok or all(d in ok for d in unicodedata.normalize('NFKD', c))
-                                             for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
+                        # (text_ok: a Cyrillic pack drops the sentences written mostly in Latin: Serbian Wikipedia carries a few, 0.13 %)
+                        if self.text_ok(text): dst.write(line); kept += 1
                         else: dropped += 1
                 os.rename(out + '.tmp', out)
                 log(f'{os.path.basename(f)}: kept {kept:,}, dropped {dropped:,} ({100 * dropped / max(1, kept + dropped):.1f} %) with foreign letters')
@@ -298,11 +361,79 @@ class Pack:
 
     # 2
     def text(self):
-        if os.path.exists(self.p('train.txt')): return
-        with open(self.p('train.txt'), 'w', encoding='utf-8') as out:
-            subprocess.run([sys.executable, '-I', f'{REPO}/tools/data/leipzig_sentences.py', '--heldout', self.p(f'{self.lang}.heldout.txt'), '--lang', self.lang]
-                           + self.corpus_files, stdout=out, check=True)
-        log('training text', sum(1 for _ in open(self.p('train.txt'), encoding='utf-8')), 'lines')
+        if not os.path.exists(self.p('train.txt')):
+            with open(self.p('train.txt'), 'w', encoding='utf-8') as out:
+                subprocess.run([sys.executable, '-I', f'{REPO}/tools/data/leipzig_sentences.py', '--heldout', self.p(f'{self.lang}.heldout.txt'), '--lang', self.lang]
+                               + self.corpus_files, stdout=out, check=True)
+            log('training text', sum(1 for _ in open(self.p('train.txt'), encoding='utf-8')), 'lines')
+        if self.conv: self.conv_text()
+
+    def conv_fetch(self):
+        """The FineWeb-2 chatty slice (conv_fw2_slice.py: 700 spread row groups, ~1.4 GB streamed, nothing stored but the output)."""
+        d = self.p('conv')
+        if not os.path.exists(f'{d}/chatty.txt'):
+            guard()
+            sh(['taskset', '-c', CPU, 'nice', sys.executable, '-I', f'{REPO}/tools/data/conv_fw2_slice.py', self.lang, self.cfg['fw2'], d,
+                '--groups', os.environ.get('CONV_GROUPS', '700'), '--no-control'])
+        return d
+
+    def conv_text(self):
+        """Appends the cleaned conversational slice to train.txt (once: conv-lines.txt records it)."""
+        mark = self.p('conv-lines.txt')
+        if os.path.exists(mark): return
+        sys.path.insert(0, f'{REPO}/tools/data')
+        from leipzig_sentences import WORD, SENTENCE_END
+        d = self.conv_fetch(); lang = self.lang
+        toks = lambda part: ' '.join(lower(w, lang).replace('’', "'") for w in WORD.findall(part))
+        # sentences never to train on: the pack's held-out text, Tatoeba ids ending in 0 and the local chat test sets (WildChat,
+        # oasst2, Aya prompts), as pack tokens
+        test = set()
+        def add(text):
+            for part in SENTENCE_END.split(text):
+                t = toks(part)
+                if t: test.add(t)
+        for l in open(self.p(f'{lang}.heldout.txt'), encoding='utf-8', newline='\n'): add(l.rstrip('\n'))
+        tat = f'{TATOEBA}/{self.cfg["tatoeba"]}_sentences.tsv'
+        if os.path.exists(tat):
+            for l in open(tat, encoding='utf-8', newline='\n'):
+                t = l.rstrip('\n').split('\t')
+                if len(t) >= 3 and t[0].endswith('0'): add(t[-1])
+        for src in ('wildchat', 'oasst2', 'aya-in'):
+            f = f'{DATA}/conv-sources/local/{src}-{lang}.tsv'
+            if os.path.exists(f):
+                for l in open(f, encoding='utf-8', newline='\n'): add(l.rstrip('\n').partition('\t')[2])
+        drop = tuple(CONV_DROP_HOSTS.get(lang, ())) + tuple(self.cfg.get('conv_drop_hosts', ()))
+        drop = tuple(h.lower() for h in drop)
+        # adult / gambling / dating hosts found by name or by their lines (conv_common.unwanted_hosts), listed in conv/dropped-hosts.tsv
+        from conv_common import unwanted_hosts
+        lines = [l.rstrip('\n') for l in open(f'{d}/chatty.txt', encoding='utf-8', newline='\n')]
+        hostl = [l.rstrip('\n') for l in open(f'{d}/chatty.hosts', encoding='utf-8', newline='\n')]
+        auto, counts = unwanted_hosts(lines, hostl)
+        with open(f'{d}/dropped-hosts.tsv', 'w', encoding='utf-8') as o:
+            for h, why in sorted(auto.items(), key=lambda x: -counts[x[0]]): o.write(f'{h}\t{counts[h]}\t{why}\n')
+            for h in drop: o.write(f'{h}\t{counts.get(h, 0)}\tlisted\n')
+        log(f'hosts dropped: {len(auto)} by name or content ({sum(counts[h] for h in auto):,} lines), {len(drop)} listed')
+        dropset = set(auto) | set(drop)
+        cand = []; n_host = n_letters = n_test = 0; gone = {}
+        def host_gone(host):
+            if host not in gone: gone[host] = any(p in dropset for p in (host.split('.', i)[-1] for i in range(host.count('.') + 1)))
+            return gone[host]
+        if True:
+            for line, host in zip(lines, hostl):
+                if host_gone(host): n_host += 1; continue
+                if not self.text_ok(line): n_letters += 1; continue
+                if line in test: n_test += 1; continue
+                cand.append(line)
+        import random
+        random.Random(7).shuffle(cand)
+        base = sum(1 for _ in open(self.p('train.txt'), encoding='utf-8', newline='\n'))
+        k = min(len(cand), int(self.conv_share * base))
+        log(f'conversational slice: {len(cand):,} lines usable ({n_host:,} dropped by host, {n_letters:,} foreign letters, {n_test:,} test sentences), adding {k:,} to {base:,}')
+        tmp = self.p('train.txt.conv')
+        shutil.copyfile(self.p('train.txt'), tmp)
+        with open(tmp, 'a', encoding='utf-8', newline='\n') as o: o.writelines(l + '\n' for l in cand[:k])
+        os.replace(tmp, self.p('train.txt'))
+        open(mark, 'w').write(f'{base}\t{k}\t{len(cand)}\n')
 
     # 3
     def lexicon(self):
@@ -467,7 +598,7 @@ class Pack:
         if not os.path.exists(self.p(f'{self.lang}-lexicon.dgz')):
             env = dict(os.environ, DOGBOARD_TEST_HEAP='3g', DOGBOARD_EXPORT_PACK_DIR=self.dir, DOGBOARD_EXPORT_PACK_LANG=self.lang,
                        ANDROID_USER_HOME=os.path.expanduser('~/.config/.android'))
-            sh(['taskset', '-c', '10-15', 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
+            sh(['taskset', '-c', GRADLE_CPU, 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
                 '--tests', 'io.github.sillypuppyy.dogboard.engine.SnapshotExportTest', '--rerun', '-q'], env=env, cwd=REPO)
         files = {'lexicon': f'{self.lang}.lexicon.tsv', 'bigrams': f'{self.lang}.bigrams.tsv', 'ngrams': f'{self.lang}.ngrams.bin',
                  'charlm': f'{self.lang}.charlm.bin', 'rules': 'rules.json', 'snapshot_lexicon': f'{self.lang}-lexicon.dgz',
@@ -502,7 +633,8 @@ class Pack:
                        DOGBOARD_EVAL_ERRORS=self.p(f'{self.lang}-{s}.errors.tsv'),
                        ANDROID_USER_HOME=os.path.expanduser('~/.config/.android'))
             # only the eval (other probe tests switch on with the same variables: NgramFileProbeTest is English-only)
-            r = subprocess.run(['taskset', '-c', '10-15', 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
+            guard()
+            r = subprocess.run(['taskset', '-c', GRADLE_CPU, 'nice', './gradlew', '--no-daemon', '--max-workers=5', ':app:testDebugUnitTest',
                                 '--tests', 'io.github.sillypuppyy.dogboard.engine.RealTypoEvalTest', '--rerun', '-i'],
                                env=env, cwd=REPO, capture_output=True, text=True)
             m = re.search(r'(\d+) typos: fixed ([\d.]+|NaN)%, left ([\d.]+|NaN)%, wrong word ([\d.]+|NaN)% \| (\d+) correct words: '
@@ -525,7 +657,7 @@ class Pack:
             # text; a stricter correction threshold barely helped (1.0 %, two points of fixed typos lost), 2026-11-23
             report += ['', f'NOT READY TO SHIP: {broken_high} % of correct words changed into other words (at most 0.5 %; restored '
                        f'accents and hamza not counted): read {self.lang}-controls.errors.tsv; unknown real words want more text']
-        sizes = {k: v['size'] for k, v in json.load(open(self.p('manifest.json')))['files'].items()}
+        sizes = {k: v.get('size') or (os.path.getsize(self.p(v['path'])) if os.path.exists(self.p(v['path'])) else 0) for k, v in json.load(open(self.p('manifest.json')))['files'].items()}
         report += ['', 'Download size without the text lists: %.1f MB' % (sum(v for k, v in sizes.items() if k not in ('lexicon', 'bigrams')) / 1e6)]
         open(self.p('report.md'), 'w').write('\n'.join(report) + '\n')
         print('\n'.join(report))
@@ -542,8 +674,17 @@ def main():
     ap.add_argument('lang', choices=sorted(LANGS))
     ap.add_argument('--through', default='eval', choices=STEPS)
     ap.add_argument('--n', type=int, default=2000)
+    ap.add_argument('--work'); ap.add_argument('--from', dest='seed'); ap.add_argument('--only', choices=STEPS)
+    ap.add_argument('--conv', action='store_true'); ap.add_argument('--conv-share', type=float, default=0.4)
+    ap.add_argument('--conv-fetch-only', action='store_true')
     a = ap.parse_args()
-    pack = Pack(a.lang, a.n)
+    pack = Pack(a.lang, a.n, a.work, a.seed, a.conv or a.conv_fetch_only, a.conv_share)
+    if a.conv_fetch_only:
+        d = pack.conv_fetch()
+        print(open(f'{d}/hosts.tsv', encoding='utf-8').read()[:3000]); return
+    if a.only:
+        if a.only != 'eval': pack.corpora()
+        log('==', a.only); getattr(pack, a.only)(); return
     for step in STEPS:
         if step != 'corpora' and not hasattr(pack, 'corpus_files'): pack.corpora()
         log('==', step); getattr(pack, step)()

@@ -7,7 +7,9 @@ random control sample, as KenLM training lines (the packs' tokens: lowercase wor
 Reads row groups of data/<CONFIG>/train/000_00000.parquet over HTTP (1000 documents each, ~2 MB), nothing is stored but
 the output. A document is "chatty" when first/second-person pronouns + 2 x question marks per 100 tokens are in the top
 P percent of the sampled documents (threshold from the first 40 groups) and its sentences average <= 22 tokens. Writes
-OUT_DIR/chatty.txt, control.txt, hosts.tsv (domains of the chatty documents), stats.json."""
+OUT_DIR/chatty.txt, control.txt, hosts.tsv (domains of the chatty documents), stats.json. Also chatty.hosts: the host of
+every line of chatty.txt (same order), so a host found unwanted afterwards can be dropped without a new download.
+--no-control skips the control sample (control.txt stays empty)."""
 import argparse, collections, hashlib, json, multiprocessing as mp, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from conv_common import PRON, WORD, lower, Chat, SPLIT
@@ -39,8 +41,9 @@ def worker(args):
     import pyarrow.parquet as pq
     pf = pq.ParquetFile(HfFileSystem().open(f'datasets/HuggingFaceFW/fineweb-2/data/{cfg}/train/000_00000.parquet', 'rb'))
     pron = PRON[lang]
-    nc = nr = 0; hosts = collections.Counter(); chat = Chat(lang)
-    with open(out + '.chatty', 'w', encoding='utf-8') as fc, open(out + '.control', 'w', encoding='utf-8') as fr:
+    nc = 0; nr = 0 if ctrl_mod else cap; hosts = collections.Counter(); chat = Chat(lang)
+    with open(out + '.chatty', 'w', encoding='utf-8') as fc, open(out + '.control', 'w', encoding='utf-8') as fr, \
+            open(out + '.chattyhost', 'w', encoding='utf-8') as fh:
         for g in groups:
             if nc >= cap and nr >= cap: break
             for i, r in enumerate(pf.read_row_group(g, columns=['text', 'url']).to_pylist()):
@@ -49,11 +52,11 @@ def worker(args):
                 if sc is None: continue
                 if nc < cap and sc[0] >= thr and sc[1] <= 22:
                     ls = lines_of(text, lang)
-                    for l in ls: fc.write(l + '\n')
+                    host = re.sub(r'^https?://(www\.)?', '', r['url']).split('/')[0].lower()
+                    for l in ls: fc.write(l + '\n'); fh.write(host + '\n')
                     nc += len(ls)
-                    host = re.sub(r'^https?://(www\.)?', '', r['url']).split('/')[0]
                     hosts[host] += 1
-                elif nr < cap and (g * 1000 + i) % ctrl_mod == 0:
+                elif ctrl_mod and nr < cap and (g * 1000 + i) % ctrl_mod == 0:
                     ls = lines_of(text, lang)
                     for l in ls: fr.write(l + '\n')
                     nr += len(ls)
@@ -66,6 +69,7 @@ def main():
     ap.add_argument('--groups', type=int, default=600); ap.add_argument('--cap', type=int, default=1_600_000)
     ap.add_argument('--workers', type=int, default=5); ap.add_argument('--percent', type=float, default=12)
     ap.add_argument('--ctrl-mod', type=int, default=6)
+    ap.add_argument('--no-control', action='store_true')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     from huggingface_hub import HfFileSystem
@@ -81,18 +85,22 @@ def main():
     scores.sort(); thr = scores[int(len(scores) * (1 - a.percent / 100))]
     print('threshold', thr, 'of', len(scores), 'docs', flush=True)
     order = [int(i * n / a.groups) for i in range(a.groups)]
-    jobs = [(a.lang, a.config, order[w::a.workers], thr, f'{a.out}/part{w}', a.cap // a.workers, a.ctrl_mod) for w in range(a.workers)]
+    jobs = [(a.lang, a.config, order[w::a.workers], thr, f'{a.out}/part{w}', a.cap // a.workers, 0 if a.no_control else a.ctrl_mod) for w in range(a.workers)]
     with mp.Pool(a.workers) as pool: res = pool.map(worker, jobs)
     hosts = collections.Counter()
     for _, _, h in res: hosts.update(h)
     for kind in ('chatty', 'control'):
         seen = set(); kept = 0
-        with open(f'{a.out}/{kind}.txt', 'w', encoding='utf-8') as out:
+        with open(f'{a.out}/{kind}.txt', 'w', encoding='utf-8') as out, open(f'{a.out}/{kind}.hosts', 'w', encoding='utf-8') as outh:
             for w in range(a.workers):
+                hostf = open(f'{a.out}/part{w}.chattyhost', encoding='utf-8') if kind == 'chatty' else None
                 for l in open(f'{a.out}/part{w}.{kind}', encoding='utf-8'):
+                    host = hostf.readline() if hostf else None
                     h = hashlib.md5(l.encode()).digest()
                     if h in seen: continue
                     seen.add(h); out.write(l); kept += 1
+                    if hostf: outh.write(host)
+                if hostf: hostf.close(); os.remove(f'{a.out}/part{w}.chattyhost')
                 os.remove(f'{a.out}/part{w}.{kind}')
         print(kind, kept, 'lines after exact dedup', flush=True)
     with open(f'{a.out}/hosts.tsv', 'w') as f:
