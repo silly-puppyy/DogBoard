@@ -527,19 +527,25 @@ object TypingEngine {
     }
 
     /** Both languages' candidates as one list, best first: each word once, at its best score (plain merging). */
-    private fun mergeLanguages(first: List<Candidate>, second: List<Candidate>): List<Candidate> {
+    private fun mergeLanguages(first: List<Candidate>, second: List<Candidate>, typed: String): List<Candidate> {
         if (second.isEmpty()) return first
         val best = LinkedHashMap<String, Candidate>()
         for (c in first + second) {
             val k = c.word.lowercase()
             val old = best[k]
             // the typed letters are a non-word only if neither language knows them
-            best[k] = when {
+            val better = when {
                 old == null -> c
                 c.isTypedString != old.isTypedString -> if (c.isTypedString) old else c
                 c.score > old.score -> c
                 else -> old
             }
+            // a word both languages have in different casings keeps the one typed, if either has it, at the better score:
+            // English's names "Los", "El" (one casing) won over Spanish's "los", "el" (English + Spanish: "que los" came out
+            // "Los", 2026-11-25)
+            val other = if (better === c) old else c
+            best[k] = if (other != null && other.word == typed && better.word != typed && better.word.equals(typed, ignoreCase = true) &&
+                other.isTypedString == better.isTypedString) better.copy(word = typed) else better
         }
         return best.values.sortedByDescending { it.score }
     }
@@ -839,7 +845,7 @@ object TypingEngine {
                     previous2 = if (previous == null || previous == Bigrams.START) -1 else sec.contextId(previous2),
                 )
             }
-            mergeLanguages(first, others)
+            mergeLanguages(first, others, word.text)
                 .let { withTypedApostrophes(word, it) }
                 .let { decoded -> withSpellings(word, decoded) { shortTaps, shortTyped ->
                     engine.decoder.decode(

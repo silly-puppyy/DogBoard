@@ -844,7 +844,7 @@ class Decoder(
                     // casing, so English takes the old path.
                     if (ctx == null || forms.size < 2 || forms.all { it.first.equals(forms[0].first, ignoreCase = true) }) {
                         for ((form, formLp) in forms) {
-                            val lf = before + l + (formLp - nodeLp)
+                            val lf = before + l + (formLp - nodeLp) - capitalTie(form)
                             add(Candidate(words(form), sGeometry + w * lf, sGeometry, lf, sEdits, isCompletion = false, words = count, contextSupport = support))
                         }
                     } else {
@@ -853,7 +853,7 @@ class Decoder(
                             var spellingLp = Double.NEGATIVE_INFINITY // the spelling's share: all its casings
                             for ((f2, lp2) in forms) if (f2.equals(form, ignoreCase = true)) spellingLp = logAdd(spellingLp, lp2)
                             val own = ctx.formLogProb(prev2, prev, key)
-                            val lf = before + (if (own != null) own + (formLp - spellingLp) else l + (formLp - nodeLp))
+                            val lf = before + (if (own != null) own + (formLp - spellingLp) else l + (formLp - nodeLp)) - capitalTie(form)
                             add(Candidate(words(form), sGeometry + w * lf, sGeometry, lf, sEdits, isCompletion = false, words = count, contextSupport = support))
                         }
                     }
@@ -1029,3 +1029,10 @@ internal fun logAdd(a: Double, b: Double): Double = when {
     a > b -> a + kotlin.math.ln1p(kotlin.math.exp(b - a))
     else -> b + kotlin.math.ln1p(kotlin.math.exp(a - b))
 }
+
+/**
+ * A capitalised casing's hair of a penalty: casings tied in a pack's list (its builder gave every casing the word's
+ * count: Spanish Línea / línea, French ET / et) rank lower case first, whatever order the beam keeps ties in.
+ * Far below any real difference in frequency.
+ */
+private fun capitalTie(form: String): Double = if (form == form.lowercase()) 0.0 else 1e-9

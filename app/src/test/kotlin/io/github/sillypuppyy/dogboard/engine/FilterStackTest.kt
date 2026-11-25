@@ -185,6 +185,13 @@ class FilterStackTest : FunSpec({
         }
     }
 
+    test("casings tied in the list (the pack builder's equal counts) give the lower-case form mid-sentence") {
+        val lex = Lexicon.parse(java.io.StringReader("#dogboard-lexicon 1\nLínea\t1000\nlínea\t1000\nla\t500\n").buffered())
+        lex.forms(lex.find("línea")).first().first shouldBe "línea"
+        lex.formsOf("linea").first() shouldBe "línea"
+        lex.word(lex.find("línea")) shouldBe "línea"
+    }
+
     test("an extra first tap is dropped, as iOS does (ghello → hello, gthe → the)") {
         TypingEngine.unloadForTest()
         TypingEngine.load(openLexicon = { File("src/main/assets/dogboard/en.lexicon.tsv").bufferedReader() })

@@ -197,6 +197,9 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     }
 
     private fun buildWord(node: Int): String {
+        // casings tied in the list (the pack builder's equal counts): the lower-case one, as forms() lists it first; the
+        // stored first casing made a typed "la" "La", "el" "El" mid-sentence (English + Spanish, 2026-11-25)
+        if (hasCasings.get(node)) forms(node).let { f -> if (f.size > 1 && f[0].second == f[1].second) return f[0].first }
         if (hasSurface.get(node)) surfaceOf(node)?.let { return it }
         val chars = CharArray(gDepth(node).toInt())
         var n = node
@@ -213,9 +216,18 @@ class Lexicon private constructor(capacity: Int, withRoot: Boolean = true) {
     /** Every casing of the word at [node] with its own ln P, most likely first. */
     fun forms(node: Int): List<Pair<String, Double>> {
         if (gWordId(node) == NONE) return emptyList()
-        if (hasCasings.get(node)) casingsOf(node)?.let { list -> return list.map { (w, lp) -> w to lp.toDouble() } }
+        if (hasCasings.get(node)) casingsOf(node)?.let { list ->
+            val out = list.map { (w, lp) -> w to lp.toDouble() }
+            // casings with the very same ln P are the pack builder's (it gave every casing the word's count: French ET / et,
+            // Spanish La / la, Línea / línea): the lower-case one first, so a tie never capitalises a word mid-sentence
+            // ("linea" -> "Línea", code-switching test 2026-11-25)
+            // (anywhere in the list: with an accent twin, "él" first, the tied El / el pair sat below it)
+            return if (out.size > 1) out.sortedWith(FORM_ORDER) else out
+        }
         return listOf(word(node)!! to gLogP(node).toDouble())
     }
+
+    private val FORM_ORDER = compareByDescending<Pair<String, Double>> { it.second }.thenBy { if (it.first == it.first.lowercase()) 0 else 1 }
 
     /** The surface form stored for [node]: added after loading, else packed, else null. */
     private fun surfaceOf(node: Int): String? {

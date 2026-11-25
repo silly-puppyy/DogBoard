@@ -1,0 +1,2 @@
+- Fix: on keyboards that type two languages (English + French, English + Spanish), common words could get a capital mid-sentence ("et" became "ET", "la" became "La"); the word now keeps the casing you typed
+- Accents restored by autocorrect keep lower case ("linea" becomes "línea", not "Línea")
