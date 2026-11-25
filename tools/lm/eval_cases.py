@@ -24,6 +24,9 @@ else:
     import sentencepiece as spm
     sp = spm.SentencePieceProcessor(model_file=os.path.join(s['tokdir'], 'sp16k.model'))
     def encode(t): return caps.encode(sp, t)
+    if os.environ.get('PREFIX_TOKEN'):  # a language token after BOS (bilingual recipe 3)
+        _enc, _pid = encode, sp.piece_to_id(os.environ['PREFIX_TOKEN'])
+        def encode(t): return [_pid] + _enc(t)
     VARIANT = os.path.basename(s['tokdir'])
 starts = caps.word_starts(sp)
 boundary = torch.tensor([i for i in range(sp.vocab_size()) if starts[i]] + [2], device='cuda')

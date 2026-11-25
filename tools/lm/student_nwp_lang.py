@@ -29,6 +29,9 @@ starts = torch.tensor([bool(re.match(r"^▁[^\W\d_]", p)) for p in pieces], devi
 letter_cont = torch.tensor([bool(re.match(r"^[^\W\d_'’]+$|^[^\W\d_][^\W\d_'’]*$", p)) for p in pieces], device=DEV)
 WORD = re.compile(r"[^\W\d_][^\W\d_'’]*")
 CTX = Config(**s['config']).ctx
+# PREFIX_TOKEN=<es>: a language token after BOS (bilingual recipe 3); PREFIX_FILE: one token per sentence (en / es -> <en> / <es>)
+PREFIX = os.environ.get('PREFIX_TOKEN')
+PFILE = [l.strip() for l in open(os.environ['PREFIX_FILE'])] if os.environ.get('PREFIX_FILE') else None
 
 @torch.no_grad()
 def logits(ids):
@@ -63,6 +66,7 @@ with open(out, 'w') as f:
             target = words[i].strip('.,!?;:"()\'¡¿«»')
             if not WORD.fullmatch(target): continue
             ctx = ' '.join(words[:i])
-            ids = [1] + (capsmod.encode(sp, ctx) if CAPS else sp.encode(ctx))
+            pre = PREFIX if PFILE is None else {'en': '<en>', 'es': '<es>'}[PFILE[si]]
+            ids = [1] + ([sp.piece_to_id(pre)] if pre else []) + (capsmod.encode(sp, ctx) if CAPS else sp.encode(ctx))
             f.write(f"{si}\t{i}\t{target}\t{'|'.join(next_words(ids))}\n"); rows += 1
 print(f'student {ckpt}: {rows} predictions in {time.time()-t0:.0f} s', file=sys.stderr)

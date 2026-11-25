@@ -66,6 +66,7 @@ def clean_batch(n, gen):
 def train_batch(n, gen):
     k = int(round(AUG * n))
     if k == 0: return clean_batch(n, gen)
+    if k == n: return batch(aug, n, gen, aug_mask)  # AUG=1: only the masked stream (bilingual recipe 3)
     (x1, y1), (x2, y2) = clean_batch(n - k, gen), batch(aug, k, gen, aug_mask)
     return torch.cat([x1, x2]), torch.cat([y1, y2])
 
