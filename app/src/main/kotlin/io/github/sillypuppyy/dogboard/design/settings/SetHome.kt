@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -111,6 +112,10 @@ class SetHomeActions(
     val update: String? = null,
     val updating: Boolean = false,
     val onUpdate: () -> Unit = {},
+    /** The phone's spell checker when it isn't DogBoard's (its name); null: no card. */
+    val otherChecker: String? = null,
+    val onChecker: () -> Unit = {},
+    val onCheckerDismiss: () -> Unit = {},
 )
 
 @Composable
@@ -157,6 +162,25 @@ fun SetHome(modifier: Modifier = Modifier, actions: SetHomeActions? = null) {
                             Modifier.height(40.dp).background(SetColors.primary, RoundedCornerShape(20.dp)).then(if (actions.updating) Modifier else Modifier.clickable { actions.onUpdate() }).padding(horizontal = 18.dp),
                             contentAlignment = Alignment.Center,
                         ) { DText(if (actions.updating) "Downloading" else "Update", style = setText(14f, 500, SetColors.screen)) }
+                    }
+                }
+                // DogBoard is the keyboard but another app checks spelling (its underlines in every app)
+                actions?.otherChecker?.let { name ->
+                    Column(
+                        Modifier.fillMaxWidth().background(SetColors.secondaryContainer, RoundedCornerShape(24.dp)).padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        DText("Spell checking uses $name", style = setText(16f, 500, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        DText("Underlines in your apps come from it, in its own languages. Pick DogBoard to check in your keyboard’s languages.",
+                            style = setText(14f, 400, SetColors.onSecondaryContainer).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 4)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                            Box(Modifier.height(40.dp).clip(RoundedCornerShape(20.dp)).clickable { actions.onCheckerDismiss() }.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) {
+                                DText("Not now", style = setText(14f, 500, SetColors.onSecondaryContainer))
+                            }
+                            Box(Modifier.height(40.dp).background(SetColors.primary, RoundedCornerShape(20.dp)).clickable { actions.onChecker() }.padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
+                                DText("Change", style = setText(14f, 500, SetColors.screen))
+                            }
+                        }
                     }
                 }
                 // settings tree v3 in Gboard's order, split into cards as Gboard's home is

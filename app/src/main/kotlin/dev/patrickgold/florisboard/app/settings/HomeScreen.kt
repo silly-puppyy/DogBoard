@@ -111,9 +111,21 @@ fun HomeScreen() {
                 else -> names.take(2).joinToString(", ") + " and ${names.size - 2} more"
             }
         }
+        // the phone's spell checker (read again on return from Android's page); a card while DogBoard is the keyboard
+        // and spell checking is on with another app's checker, until dismissed for that checker
+        var checker by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(io.github.sillypuppyy.dogboard.settings.SpellCheckers.current(context)) }
+        androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+            checker = io.github.sillypuppyy.dogboard.settings.SpellCheckers.current(context)
+            onPauseOrDispose { }
+        }
+        val dismissedFor by prefs.spelling.otherCheckerDismissed.collectAsState()
+        val otherChecker = checker?.takeIf { isFlorisBoardEnabled && it.enabled && !it.ours && it.pkg != dismissedFor }?.name
         io.github.sillypuppyy.dogboard.design.settings.SetHome(
             modifier = androidx.compose.ui.Modifier.fillMaxSize(),
             actions = io.github.sillypuppyy.dogboard.design.settings.SetHomeActions(
+                otherChecker = otherChecker,
+                onChecker = { io.github.sillypuppyy.dogboard.settings.SpellCheckers.open(context) },
+                onCheckerDismiss = { checker?.let { c -> scope.launch { prefs.spelling.otherCheckerDismissed.set(c.pkg) } } },
                 languages = homeLanguages,
                 update = update?.version,
                 updating = updating,

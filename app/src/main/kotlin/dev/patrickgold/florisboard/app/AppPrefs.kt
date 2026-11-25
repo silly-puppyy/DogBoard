@@ -791,6 +791,12 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "spelling__language_mode",
             default = SpellingLanguageMode.USE_KEYBOARD_SUBTYPES,
         )
+        // DogBoard: the home's "spell checking uses ..." card, dismissed for this spell checker (its package); it comes
+        // back when another one is picked
+        val otherCheckerDismissed = string(
+            key = "spelling__other_checker_dismissed",
+            default = "",
+        )
         // DogBoard: also contact names as suggestions; opt-in (off until the user turns it on in onboarding)
         val useContacts = boolean(
             key = "spelling__use_contacts",

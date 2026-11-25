@@ -376,6 +376,21 @@ private fun EnableStep(enabled: Boolean, selected: Boolean) {
     Status(2, "Switch to DogBoard", if (selected) "Done" else "Pick it in the keyboard list", selected, "Open") {
         InputMethodUtils.showImePicker(context)
     }
+    // the phone's spell checker is picked apart from the keyboard (the underlines in apps); read again on return
+    var checker by remember { mutableStateOf(SpellCheckers.current(context)) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        checker = SpellCheckers.current(context)
+        onPauseOrDispose { }
+    }
+    val c = checker
+    val ours = c?.let { it.enabled && it.ours } == true
+    Status(3, "Use DogBoard’s spell checker",
+        when {
+            ours -> "Done"
+            c == null -> "Pick DogBoard under Spell checker"
+            !c.enabled -> "Spell checking is off"
+            else -> "Now: ${c.name}"
+        }, ours, "Open") { SpellCheckers.open(context) }
     }
 }
 
