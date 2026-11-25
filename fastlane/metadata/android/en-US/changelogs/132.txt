@@ -1,0 +1,4 @@
+- Key hints show the letter that holding the key picks first (German showed à on a while holding picked ä)
+- Spell checking (red underlines in apps): a word is correct if any of your keyboard's languages knows it, and words in another alphabet (Arabic while typing English) are no longer underlined
+- Clearer setting names, and the clipboard's on/off switches and their times are now one choice each ("Delete clips after: Never / 1 hour / 1 day / 1 week")
+- Language downloads: Bengali, Armenian, Afrikaans, Azerbaijani and Marathi added (50 languages); Turkish improved (words starting with İ are now recognised)
