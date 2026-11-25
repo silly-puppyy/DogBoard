@@ -17,7 +17,8 @@ import kotlin.math.roundToInt
  * bksp, [base] and [shifted] the character on the base and shift layers, [w] its width in units.
  */
 @androidx.compose.runtime.Immutable
-data class KbLetterKey(val kind: String, val base: String = "", val shifted: String = "", val w: Float = 1f)
+/** A live layout's letter key; [hint] is its long-press default (what holding the key picks first), "" for none. */
+data class KbLetterKey(val kind: String, val base: String = "", val shifted: String = "", val w: Float = 1f, val hint: String = "")
 
 data class KbProps(
     val theme: String = "dogboard",
@@ -519,6 +520,7 @@ object KbSpec {
         val numRow = P.numRow ?: if (P.numberRow) "on" else if (kstyle == "android") "hints" else "off"
         // every theme follows the hint setting (the canvas's Mechanical always printed the long-press character)
         val hintKind = P.hintKind ?: if (hints) (if (kstyle == "android") "symbols" else "accents") else "off"
+        val liveHints = P.letterRows.orEmpty().flatten().filter { it.kind == "char" && it.hint.isNotEmpty() }.associate { it.base to it.hint }
         val panel = P.panel
         val dev = P.dev && panel.isEmpty()
         // Kb:604-605: with Ctrl armed, letters show what Ctrl + letter does
@@ -710,7 +712,10 @@ object KbSpec {
                     // Kb:747-751
                     if (plane == "base" && hintKind != "off") {
                         if (hintKind == "symbols") hint = letterPlace[base]?.let { (r, j) -> positionalHint(r, j) } ?: ""
-                        else if (base in LP && base != URL_DOT) hint = LP.getValue(base)[0].let { if (upper) up(it) else it }
+                        // a live layout's own long-press default (German ä before à: the hint showed à while holding
+                        // the key picked ä, 2026-11-25), else the design's set
+                        else liveHints[base]?.let { hint = if (upper) up(it) else it }
+                            ?: run { if (base in LP && base != URL_DOT) hint = LP.getValue(base)[0].let { if (upper) up(it) else it } }
                     }
                     if (plane == "base" && numRow == "hints") topRow.indexOf(base).takeIf { it in 0..9 }?.let { "1234567890"[it].toString().let { d -> hint = P.symbolLabels[d] ?: d } }
                 }

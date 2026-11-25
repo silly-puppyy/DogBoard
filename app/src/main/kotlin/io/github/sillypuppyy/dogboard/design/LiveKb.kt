@@ -50,7 +50,10 @@ object LiveKb {
                         fun nfc(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFC)
                         val text = nfc((key.output as? K3String)?.toText() ?: return null)
                         val shifted = nfc(shift?.getOrNull(i)?.getOrNull(j)?.let { model.keys.byKeyId[it]?.output as? K3String }?.toText().orEmpty())
-                        KbLetterKey("char", text, shifted, w)
+                        // the long-press default as the popup picks it (TouchModel: the layout's default, else the first)
+                        val hint = (key.longPressDefaultKeyId ?: key.longPressKeyIds?.firstOrNull())
+                            ?.let { model.keys.byKeyId[it]?.output as? K3String }?.toText()?.let(::nfc).orEmpty()
+                        KbLetterKey("char", text, shifted, w, hint)
                     }
                 }
             }
