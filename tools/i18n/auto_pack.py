@@ -414,21 +414,39 @@ class Pack:
             for h in drop: o.write(f'{h}\t{counts.get(h, 0)}\tlisted\n')
         log(f'hosts dropped: {len(auto)} by name or content ({sum(counts[h] for h in auto):,} lines), {len(drop)} listed')
         dropset = set(auto) | set(drop)
-        cand = []; n_host = n_letters = n_test = 0; gone = {}
+        # Romanian's s and t with a comma below (ș ț) were long written with a cedilla (ş ţ), a third of the slice's: the
+        # pack's text has only the comma forms, so the letter filter dropped those lines; written as the comma forms
+        fix = str.maketrans({'ş': 'ș', 'ţ': 'ț', 'Ş': 'Ș', 'Ţ': 'Ț'}) if lang == 'ro' else None
+        # informal text often leaves a language's accents out ("si" for "și"): 27 % of the Romanian slice's lines of 8+ words
+        # had none, 8 % of its news, and the accent twins it restored fell from 86.4 to 76.2 %. Where the pack's own text
+        # nearly always has them (under 15 % of long lines without), slice lines of 8+ words without any are left out
+        marks = {c for c in letters_of(lang) if c.islower() and not ('a' <= c <= 'z')} if self.cfg['script'] == 'Latn' else set()
+        def plain(line): return len(line.split()) >= 8 and not any(c in marks for c in line.lower())
+        if marks:
+            long_lines = n_plain_base = 0
+            for l in open(self.p('train.txt'), encoding='utf-8', newline='\n'):
+                if len(l.split()) < 8: continue
+                long_lines += 1; n_plain_base += plain(l)
+                if long_lines >= 200000: break
+            if not long_lines or n_plain_base / long_lines >= 0.15: marks = set()
+            else: log(f'accents: {100 * n_plain_base / long_lines:.1f} % of the text\'s long lines have none: slice lines without any left out')
+        cand = []; n_host = n_letters = n_test = n_plain = 0; gone = {}
         def host_gone(host):
             if host not in gone: gone[host] = any(p in dropset for p in (host.split('.', i)[-1] for i in range(host.count('.') + 1)))
             return gone[host]
         if True:
             for line, host in zip(lines, hostl):
                 if host_gone(host): n_host += 1; continue
+                if fix: line = line.translate(fix)
                 if not self.text_ok(line): n_letters += 1; continue
+                if marks and plain(line): n_plain += 1; continue
                 if line in test: n_test += 1; continue
                 cand.append(line)
         import random
         random.Random(7).shuffle(cand)
         base = sum(1 for _ in open(self.p('train.txt'), encoding='utf-8', newline='\n'))
         k = min(len(cand), int(self.conv_share * base))
-        log(f'conversational slice: {len(cand):,} lines usable ({n_host:,} dropped by host, {n_letters:,} foreign letters, {n_test:,} test sentences), adding {k:,} to {base:,}')
+        log(f'conversational slice: {len(cand):,} lines usable ({n_host:,} dropped by host, {n_letters:,} foreign letters, {n_plain:,} without accents, {n_test:,} test sentences), adding {k:,} to {base:,}')
         tmp = self.p('train.txt.conv')
         shutil.copyfile(self.p('train.txt'), tmp)
         with open(tmp, 'a', encoding='utf-8', newline='\n') as o: o.writelines(l + '\n' for l in cand[:k])
