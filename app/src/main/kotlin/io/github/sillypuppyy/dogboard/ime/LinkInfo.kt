@@ -33,7 +33,12 @@ object LinkInfo {
         val previews: Boolean = false,
         /** [VERSION] of the code that read the preview: older ones are read again. */
         val version: Int = 0,
+        /** When the page couldn't be read at all (no network, a timeout): asked again after [RETRY_MS]. */
+        val failedAt: Long = 0,
     )
+
+    /** A failed preview is asked again this long after (on copy or when the clipboard opens), not on every open. */
+    private const val RETRY_MS = 10 * 60 * 1000L
 
     /** 3: short links followed first, platform oEmbed endpoints, TikTok's page data, PNG icons (2026-11-21: TikTok showed its generic page title). */
     private const val VERSION = 5 // one "platform, author" line; GitHub, Wikipedia, Steam (2026-11-24)
@@ -76,6 +81,7 @@ object LinkInfo {
             val url = m.value
             val known = infos[url]
             if (known != null && ((known.previews && known.version >= VERSION) || !previews)) continue
+            if (known != null && known.failedAt > System.currentTimeMillis() - RETRY_MS) continue
             val target = if (expand) resolve(url) else null
             val page = target ?: url
             var info = Info(url, target = target?.takeIf { it != url })
@@ -179,6 +185,9 @@ object LinkInfo {
         val icons = (listOfNotNull(serverIcon) + html?.let { iconHrefs(it.substringBefore("</head>")) }.orEmpty().mapNotNull { runCatching { URL(URL(page), it).toString() }.getOrNull() } +
             "https://${URL(page).host}/favicon.ico").distinct()
         val icon = icons.asSequence().take(4).mapNotNull { saveImage(it, "$key-icon.png", 128) }.firstOrNull()
+        // nothing read at all (no network, a timeout, the site down): not a preview, asked again later; a page that answered
+        // without a title keeps what it gave (a failed fetch was kept as done, so its link never got a preview, 2026-11-25)
+        if (html == null && title == null && banner == null) return info.copy(failedAt = System.currentTimeMillis())
         return info.copy(title = title?.take(200), site = site?.take(80), duration = duration, image = banner, icon = icon, previews = true, version = VERSION)
     }
 
