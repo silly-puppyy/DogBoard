@@ -120,8 +120,10 @@ object LinkInfo {
     private fun open(u: String, ua: String = UA): HttpURLConnection = (URL(u).openConnection() as HttpURLConnection).apply {
         instanceFollowRedirects = false
         useCaches = false
-        connectTimeout = 5000
-        readTimeout = 5000
+        // 10 s each: a short link is two or three requests (link, redirect, page, picture), and on a phone one of them
+        // past 5 s left the clip without a preview (a TikTok link on Wi-Fi, 2026-11-25; the page reads fine on a desktop)
+        connectTimeout = 10_000
+        readTimeout = 10_000
         setRequestProperty("User-Agent", ua)
         setRequestProperty("Accept-Language", "en")
     }
