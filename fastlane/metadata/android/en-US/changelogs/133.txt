@@ -1,0 +1,2 @@
+- Spell checking: Android picks the spell checker separately from the keyboard (on Pixels it stays Google's, in the phone's languages, so other languages get underlined). DogBoard now says so on its home page and in setup, with a button to switch
+- DogBoard's spell checker uses your keyboard languages even when an app checks spelling before the keyboard opens
