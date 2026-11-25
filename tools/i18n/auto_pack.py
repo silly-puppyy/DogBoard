@@ -132,6 +132,57 @@ LANGS = {
                layout=('gboard', 'bulgarian_phonetic'), gboard_tag='bg-BG', script='Cyrl', compounds=False),
     'ar': dict(name='Arabic', leipzig=['ara_news_2022_1M', 'ara_wikipedia_2021_1M'], tatoeba='ara',
                layout=('gboard', 'arabic'), script='Arab', compounds=False, rtl=True),
+    # 2026-11-25: 23 more languages (batch 8); layouts from Gboard's languages.json, corpora checked to exist
+    'ca': dict(name='Catalan', leipzig=['cat_wikipedia_2021_1M', 'cat_newscrawl_2016_1M', 'cat_news_2022_300K'], tatoeba='cat',
+               layout=('gboard', 'spanish'), gboard_tag='ca', script='Latn', compounds=False),
+    'da': dict(name='Danish', leipzig=['dan_news_2020_1M', 'dan_newscrawl_2017_1M', 'dan_wikipedia_2021_1M'], tatoeba='dan',
+               layout=('gboard', 'nordic'), gboard_tag='da-DK', script='Latn', compounds=True),
+    'nb': dict(name='Norwegian Bokmål', leipzig=['nor_wikipedia_2021_1M', 'nor_wikipedia_2016_1M', 'nor_news_2023_300K'], tatoeba='nob',
+               layout=('gboard', 'nordic'), gboard_tag='nb-NO', script='Latn', compounds=True, cldr='no'),
+    'sk': dict(name='Slovak', leipzig=['slk_newscrawl_2016_1M', 'slk_wikipedia_2021_300K', 'slk_news_2020_100K'], tatoeba='slk',
+               layout=('gboard', 'qwerty'), gboard_tag='sk-SK', script='Latn', compounds=False),
+    'sl': dict(name='Slovenian', leipzig=['slv_news_2020_1M', 'slv_newscrawl_2016_1M', 'slv_wikipedia_2021_1M'], tatoeba='slv',
+               layout=('gboard', 'qwerty'), gboard_tag='sl-SI', script='Latn', compounds=False),
+    'hr': dict(name='Croatian', leipzig=['hrv_news_2020_1M', 'hrv_newscrawl_2016_1M', 'hrv_wikipedia_2021_1M'], tatoeba='hrv',
+               layout=('gboard', 'croatian'), gboard_tag='hr-HR', script='Latn', compounds=False),
+    'sr': dict(name='Serbian', leipzig=['srp_wikipedia_2021_1M', 'srp_wikipedia_2016_1M'], tatoeba='srp',
+               layout=('gboard', 'serbian'), gboard_tag='sr-Cyrl-RS', script='Cyrl', compounds=False),
+    'lt': dict(name='Lithuanian', leipzig=['lit_news_2020_1M', 'lit_newscrawl_2016_1M', 'lit_wikipedia_2021_300K'], tatoeba='lit',
+               layout=('gboard', 'qwerty'), gboard_tag='lt-LT', script='Latn', compounds=False),
+    'lv': dict(name='Latvian', leipzig=['lav_newscrawl_2016_1M', 'lav_news_2020_300K'], tatoeba='lvs',
+               layout=('gboard', 'qwerty'), gboard_tag='lv-LV', script='Latn', compounds=False),
+    'et': dict(name='Estonian', leipzig=['est_newscrawl_2017_1M', 'est_newscrawl_2016_1M', 'est_news_2022_300K'], tatoeba='est',
+               layout=('gboard', 'estonian'), gboard_tag='et-EE', script='Latn', compounds=True),
+    'bn': dict(name='Bengali', leipzig=['ben_newscrawl_2017_1M', 'ben_wikipedia_2021_1M', 'ben_news_2020_300K'], tatoeba='ben',
+               layout=('gboard', 'bengali_india'), gboard_tag='bn-IN', script='Beng', compounds=False,
+               rules_extra={'path': 'rules:bengali', 'sentence_end': '.!?।'}),
+    'ta': dict(name='Tamil', leipzig=['tam_wikipedia_2021_1M', 'tam_news_2020_100K'], tatoeba='tam',
+               layout=('gboard', 'tamil'), gboard_tag='ta-SG', script='Taml', compounds=False,
+               rules_extra={'path': 'rules:tamil'}),
+    'ur': dict(name='Urdu', leipzig=['urd_newscrawl_2016_1M', 'urd_wikipedia_2021_300K'], tatoeba='urd',
+               layout=('gboard', 'urdu_in'), gboard_tag='ur-IN', script='Arab', compounds=False, rtl=True,
+               letters_extra='ںئآؤ'),
+    'sq': dict(name='Albanian', leipzig=['sqi_news_2020_1M', 'sqi_wikipedia_2021_300K'], tatoeba='sqi',
+               layout=('gboard', 'albanian'), gboard_tag='sq-x-standard', script='Latn', compounds=False),
+    'az': dict(name='Azerbaijani', leipzig=['aze_wikipedia_2021_1M', 'aze_wikipedia_2016_300K'], tatoeba='aze',
+               layout=('gboard', 'azerbaijani'), gboard_tag='az-AZ', script='Latn', compounds=False),
+    'kk': dict(name='Kazakh', leipzig=['kaz_newscrawl_2016_1M', 'kaz_wikipedia_2021_300K'], tatoeba='kaz',
+               layout=('gboard', 'kazakh'), gboard_tag='kk-KZ', script='Cyrl', compounds=False),
+    'mr': dict(name='Marathi', leipzig=['mar_newscrawl_2016_1M', 'mar_news_2020_300K', 'mar_wikipedia_2021_300K'], tatoeba='mar',
+               layout=('gboard', 'marathi_india'), gboard_tag='mr-IN', script='Deva', compounds=False,
+               rules_extra={'path': 'rules:devanagari', 'sentence_end': '.!?।'}),
+    'hy': dict(name='Armenian', leipzig=['hye_wikipedia_2021_1M', 'hye_wikipedia_2016_300K'], tatoeba='hye',
+               layout=('gboard', 'armenian_armenia_phonetic'), gboard_tag='hy-AM', script='Armn', compounds=False),
+    'bs': dict(name='Bosnian', leipzig=['bos_news_2020_300K', 'bos_wikipedia_2021_300K', 'bos_newscrawl_2017_100K'], tatoeba='bos',
+               layout=('gboard', 'serbian_qwertz'), gboard_tag='bs-BA', script='Latn', compounds=False),
+    'ms': dict(name='Malay', leipzig=['msa_newscrawl_2016_300K', 'msa_wikipedia_2021_300K', 'msa_wikipedia_2016_300K'], tatoeba='zsm',
+               layout=('gboard', 'qwerty'), gboard_tag='ms-MY', script='Latn', compounds=False),
+    'mk': dict(name='Macedonian', leipzig=['mkd_wikipedia_2021_300K', 'mkd_wikipedia_2016_300K', 'mkd_news_2020_100K'], tatoeba='mkd',
+               layout=('gboard', 'macedonian'), gboard_tag='mk-MK', script='Cyrl', compounds=False),
+    'gl': dict(name='Galician', leipzig=['glg_wikipedia_2021_300K', 'glg_wikipedia_2016_300K', 'glg_newscrawl_2016_100K'], tatoeba='glg',
+               layout=('gboard', 'spanish'), gboard_tag='gl-ES', script='Latn', compounds=False),
+    'af': dict(name='Afrikaans', leipzig=['afr_wikipedia_2021_300K', 'afr_wikipedia_2016_300K'], tatoeba='afr',
+               layout=('gboard', 'qwerty'), gboard_tag='af-ZA', script='Latn', compounds=False),
 }
 CLDR_URL = 'https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/{}.xml'
 
@@ -140,6 +191,7 @@ def letters_of(lang):
     """The language's letters (CLDR's main exemplar characters, Unicode licence) in both cases, plus basic Latin for
     names and brands: a corpus sentence with any other letter is mis-encoded or another language ("tøeba" for
     "třeba" in Leipzig's Czech news, 2026-11-22)."""
+    orig, lang = lang, LANGS.get(lang, {}).get('cldr', lang)  # nb's exemplar set is in no.xml
     path = f'{DATA}/cldr/main/{lang}.xml'
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True); urllib.request.urlretrieve(CLDR_URL.format(lang), path)
@@ -148,6 +200,8 @@ def letters_of(lang):
     # ranges ("가-힣": Korean lists its syllables so): every letter between the ends
     body = re.sub(r'(\S)-(\S)', lambda r: ''.join(chr(c) for c in range(ord(r.group(1)), ord(r.group(2)) + 1)), body)
     chars = {c for c in body if c.isalpha() or unicodedata.category(c) == 'Mn'}
+    # letters CLDR's main set leaves out (Urdu's ں ئ آ ؤ sit in its auxiliary set: 95 % of the news was dropped without them)
+    chars |= set(LANGS.get(orig, {}).get('letters_extra', ''))
     return chars | {c.upper() for c in chars} | set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
 
@@ -222,7 +276,9 @@ class Pack:
                     for line in src:
                         line = line.translate(norm)
                         text = line.rstrip('\n').split('\t')[-1]
-                        if all(c in ok for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
+                        # a Cyrillic pack drops the sentences written mostly in Latin (Serbian Wikipedia carries a few: 0.13 %)
+                        latin = self.cfg['script'] != 'Latn' and 2 * sum('a' <= c.lower() <= 'z' for c in text) > sum(c.isalpha() for c in text)
+                        if not latin and all(c in ok for c in text if c.isalpha() or unicodedata.category(c) == 'Mn'): dst.write(line); kept += 1
                         else: dropped += 1
                 os.rename(out + '.tmp', out)
                 log(f'{os.path.basename(f)}: kept {kept:,}, dropped {dropped:,} ({100 * dropped / max(1, kept + dropped):.1f} %) with foreign letters')
