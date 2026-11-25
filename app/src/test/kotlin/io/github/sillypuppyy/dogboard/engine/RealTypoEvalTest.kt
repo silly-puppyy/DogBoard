@@ -168,12 +168,12 @@ class RealTypoEvalTest : FunSpec({
                         val w = w0.trim('.', ',', '!', '?', ';', ':', '"', '(', ')')
                         if (w.none { it == '\'' || it == '’' } || !aposSeen.add("${row[0]}\t$j")) continue
                         val bare = w.filter { it != '\'' && it != '’' }
-                        if (bare.isEmpty() || !bare.all { c -> c.lowercaseChar() in keys }) continue
+                        if (bare.isEmpty() || !bare.lowercase(CaseAdapt.locale).all { c -> c in keys }) continue
                         val r = listOf(row[0], j.toString(), words.take(j).joinToString(" "), bare, w, "apos")
                         if (apos.size < aposN) apos.add(r) else (aposRng.nextDouble() * ++seenApos).toLong().let { if (it < aposN) apos[it.toInt()] = r }
                     }
                 }
-                if (row.size != 5 || row[3].isEmpty() || !row[3].all { c -> c.lowercaseChar() in keys }) continue
+                if (row.size != 5 || row[3].isEmpty() || !row[3].lowercase(CaseAdapt.locale).all { c -> c in keys }) continue
                 val typo = !row[3].equals(row[4], ignoreCase = true)
                 val (bucket, seen) = if (typo) typos to ++seenTypos else correct to ++seenCorrect
                 if (bucket.size < n) bucket.add(row)
@@ -192,7 +192,7 @@ class RealTypoEvalTest : FunSpec({
             pairs.bufferedReader().useLines { lines ->
                 for (line in lines) {
                     val row = line.split('\t')
-                    if (row.size == 5 && "${row[0]}\t${row[1]}" in want && row[3].isNotEmpty() && row[3].all { c -> c.lowercaseChar() in keys && c != ' ' }) nextTyped["${row[0]}\t${row[1]}"] = row[3].lowercase()
+                    if (row.size == 5 && "${row[0]}\t${row[1]}" in want && row[3].isNotEmpty() && row[3].lowercase(CaseAdapt.locale).all { c -> c in keys && c != ' ' }) nextTyped["${row[0]}\t${row[1]}"] = row[3].lowercase(CaseAdapt.locale)
                 }
             }
         }

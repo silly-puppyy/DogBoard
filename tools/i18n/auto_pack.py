@@ -168,7 +168,7 @@ LANGS = {
                layout=('gboard', 'azerbaijani'), gboard_tag='az-AZ', script='Latn', compounds=False),
     'kk': dict(name='Kazakh', leipzig=['kaz_newscrawl_2016_1M', 'kaz_wikipedia_2021_300K'], tatoeba='kaz',
                layout=('gboard', 'kazakh'), gboard_tag='kk-KZ', script='Cyrl', compounds=False),
-    'mr': dict(name='Marathi', letters_extra='ँऍ', leipzig=['mar_newscrawl_2016_1M', 'mar_news_2020_300K', 'mar_wikipedia_2021_300K'], tatoeba='mar',
+    'mr': dict(name='Marathi', letters_extra='ँऍ़', leipzig=['mar_newscrawl_2016_1M', 'mar_news_2020_300K', 'mar_wikipedia_2021_300K'], tatoeba='mar',
                layout=('gboard', 'marathi_india'), gboard_tag='mr-IN', script='Deva', compounds=False,
                rules_extra={'path': 'rules:devanagari', 'sentence_end': '.!?।'}),
     'hy': dict(name='Armenian', leipzig=['hye_wikipedia_2021_1M', 'hye_wikipedia_2016_300K'], tatoeba='hye',
