@@ -590,7 +590,12 @@ object KbSpec {
             else listOf("1234567890".map { sym(it.toString()) }, "-/:;()$&@\"".map { sym(it.toString()) }, symRow3("#+=", true), bottom)
             "symbol-2" -> if (P.symbols == "android") listOf(listOf("~", "`", "|", "•", "√", "π", "÷", "×", "§", "Δ").map { ch(it) },
                 listOf("£", "¢", "€", "¥", "^", "°", "=", "{", "}", "\\").map { ch(it) },
-                listOf(mode("?123", 1.5f)) + listOf("%", "©", "®", "™", "✓", "[", "]").map { ch(it) } + listOf(bksp()), bottom)
+                listOf(mode("?123", 1.5f)) + listOf("%", "©", "®", "™", "✓", "[", "]").map { ch(it) } + listOf(bksp()),
+                // Gboard's =\< page: < and > in place of the comma and period beside space (photographed 2026-11-17; the
+                // Android-style pages had no < or > key at all)
+                sym(",", 1f).let { comma -> sym(".", 1f).let { dot ->
+                    bottom.map { k -> when (k) { comma -> ch("<", k.w); dot -> ch(">", k.w); else -> k } }
+                } })
             else listOf("[]{}#%^*+=".map { ch(it.toString()) }, listOf("_", "\\", "|", "~", "<", ">", "€", "£", "¥", "•").map { ch(it) }, symRow3("123", false), bottom)
             "numeric" -> {
                 fun f(l: String, w: Float) = K(l, "fnchar", w, label = l)

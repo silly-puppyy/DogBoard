@@ -1,0 +1,3 @@
+- Fix: on the symbols page with the Android-style bottom row, the period beside space pressed return instead of typing a period; the keys beside space now type what they show on every symbols page and in email and web address fields
+- The second symbols page (=\<) has < and > beside space, as on Gboard
+- Every language's letters can be typed on all of its layouts: letters missing from the keys are on a long-press of their base letter (ä and ö on German QWERTZ (basic), ñ for Spanish, ł ę ż for Polish, ё for Russian, ї for Ukrainian and more)

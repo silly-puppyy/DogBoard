@@ -48,6 +48,9 @@
         <key id="space-classic" output="\u{0020}" width="4" />
         <key id="period-classic" output="." width="1" />
         <key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />
+        <key id="to-base-classic" layerId="base" width="1.5" />
+        <key id="lt-classic" output="&lt;" width="1" />
+        <key id="gt-classic" output="&gt;" width="1" />
         <key id="at-email" output="@" width="1.25" />
         <key id="period-email" output="." width="1.25" />
         <!-- URL fields keep a space bar (Android address bars are search boxes too; Gboard keeps one):
@@ -158,10 +161,16 @@
         <key id="X" output="X" width="0.909" />
         <key id="v" output="v" width="0.909" />
         <key id="V" output="V" width="0.909" />
-        <key id="l" output="l" width="0.909" />
-        <key id="L" output="L" width="0.909" />
-        <key id="c" output="c" width="0.909" />
-        <key id="C" output="C" width="0.909" />
+        <key id="l" output="l" width="0.909" longPressKeyIds="l-alt0" longPressDefaultKeyId="l-alt0" />
+        <key id="l-alt0" output="ł" />
+        <key id="L" output="L" width="0.909" longPressKeyIds="L-alt0" longPressDefaultKeyId="L-alt0" />
+        <key id="L-alt0" output="Ł" />
+        <key id="c" output="c" width="0.909" longPressKeyIds="c-alt0 c-alt1" longPressDefaultKeyId="c-alt0" />
+        <key id="c-alt0" output="ç" />
+        <key id="c-alt1" output="ć" />
+        <key id="C" output="C" width="0.909" longPressKeyIds="C-alt0 C-alt1" longPressDefaultKeyId="C-alt0" />
+        <key id="C-alt0" output="Ç" />
+        <key id="C-alt1" output="Ć" />
         <key id="w" output="w" width="0.909" />
         <key id="W" output="W" width="0.909" />
         <key id="k" output="k" width="0.909" />
@@ -187,38 +196,48 @@
         <key id="U-alt2" output="Ù" />
         <key id="U-alt3" output="Ú" />
         <key id="U-alt4" output="Ū" />
-        <key id="i" output="i" width="0.909" />
-        <key id="I" output="I" width="0.909" />
-        <key id="a" output="a" width="0.909" longPressKeyIds="a-alt0 a-alt1 a-alt2 a-alt3 a-alt4 a-alt5 a-alt6 a-alt7" longPressDefaultKeyId="a-alt0" />
-        <key id="a-alt0" output="ä" />
-        <key id="a-alt1" output="â" />
-        <key id="a-alt2" output="à" />
-        <key id="a-alt3" output="á" />
-        <key id="a-alt4" output="æ" />
-        <key id="a-alt5" output="ã" />
-        <key id="a-alt6" output="å" />
-        <key id="a-alt7" output="ā" />
-        <key id="A" output="A" width="0.909" longPressKeyIds="A-alt0 A-alt1 A-alt2 A-alt3 A-alt4 A-alt5 A-alt6 A-alt7" longPressDefaultKeyId="A-alt0" />
-        <key id="A-alt0" output="Ä" />
-        <key id="A-alt1" output="Â" />
-        <key id="A-alt2" output="À" />
-        <key id="A-alt3" output="Á" />
-        <key id="A-alt4" output="Æ" />
-        <key id="A-alt5" output="Ã" />
-        <key id="A-alt6" output="Å" />
-        <key id="A-alt7" output="Ā" />
-        <key id="e" output="e" width="0.909" longPressKeyIds="e-alt0 e-alt1 e-alt2 e-alt3 e-alt4" longPressDefaultKeyId="e-alt0" />
-        <key id="e-alt0" output="é" />
-        <key id="e-alt1" output="è" />
-        <key id="e-alt2" output="ê" />
-        <key id="e-alt3" output="ë" />
-        <key id="e-alt4" output="ė" />
-        <key id="E" output="E" width="0.909" longPressKeyIds="E-alt0 E-alt1 E-alt2 E-alt3 E-alt4" longPressDefaultKeyId="E-alt0" />
-        <key id="E-alt0" output="É" />
-        <key id="E-alt1" output="È" />
-        <key id="E-alt2" output="Ê" />
-        <key id="E-alt3" output="Ë" />
-        <key id="E-alt4" output="Ė" />
+        <key id="i" output="i" width="0.909" longPressKeyIds="i-alt0 i-alt1 i-alt2" longPressDefaultKeyId="i-alt0" />
+        <key id="i-alt0" output="í" />
+        <key id="i-alt1" output="î" />
+        <key id="i-alt2" output="ï" />
+        <key id="I" output="I" width="0.909" longPressKeyIds="I-alt0 I-alt1 I-alt2" longPressDefaultKeyId="I-alt0" />
+        <key id="I-alt0" output="Í" />
+        <key id="I-alt1" output="Î" />
+        <key id="I-alt2" output="Ï" />
+        <key id="a" output="a" width="0.909" longPressKeyIds="a-alt0 a-alt1 a-alt2 a-alt3 a-alt4 a-alt5 a-alt6 a-alt7 a-alt8" longPressDefaultKeyId="a-alt0" />
+        <key id="a-alt0" output="ą" />
+        <key id="a-alt1" output="ä" />
+        <key id="a-alt2" output="â" />
+        <key id="a-alt3" output="à" />
+        <key id="a-alt4" output="á" />
+        <key id="a-alt5" output="æ" />
+        <key id="a-alt6" output="ã" />
+        <key id="a-alt7" output="å" />
+        <key id="a-alt8" output="ā" />
+        <key id="A" output="A" width="0.909" longPressKeyIds="A-alt0 A-alt1 A-alt2 A-alt3 A-alt4 A-alt5 A-alt6 A-alt7 A-alt8" longPressDefaultKeyId="A-alt0" />
+        <key id="A-alt0" output="Ą" />
+        <key id="A-alt1" output="Ä" />
+        <key id="A-alt2" output="Â" />
+        <key id="A-alt3" output="À" />
+        <key id="A-alt4" output="Á" />
+        <key id="A-alt5" output="Æ" />
+        <key id="A-alt6" output="Ã" />
+        <key id="A-alt7" output="Å" />
+        <key id="A-alt8" output="Ā" />
+        <key id="e" output="e" width="0.909" longPressKeyIds="e-alt0 e-alt1 e-alt2 e-alt3 e-alt4 e-alt5" longPressDefaultKeyId="e-alt0" />
+        <key id="e-alt0" output="ę" />
+        <key id="e-alt1" output="é" />
+        <key id="e-alt2" output="è" />
+        <key id="e-alt3" output="ê" />
+        <key id="e-alt4" output="ë" />
+        <key id="e-alt5" output="ė" />
+        <key id="E" output="E" width="0.909" longPressKeyIds="E-alt0 E-alt1 E-alt2 E-alt3 E-alt4 E-alt5" longPressDefaultKeyId="E-alt0" />
+        <key id="E-alt0" output="Ę" />
+        <key id="E-alt1" output="É" />
+        <key id="E-alt2" output="È" />
+        <key id="E-alt3" output="Ê" />
+        <key id="E-alt4" output="Ë" />
+        <key id="E-alt5" output="Ė" />
         <key id="o" output="o" width="0.909" longPressKeyIds="o-alt0 o-alt1 o-alt2 o-alt3 o-alt4 o-alt5 o-alt6 o-alt7" longPressDefaultKeyId="o-alt0" />
         <key id="o-alt0" output="ö" />
         <key id="o-alt1" output="ô" />
@@ -264,8 +283,12 @@
         <key id="U00c4" output="Ä" width="0.909" />
         <key id="p" output="p" width="0.909" />
         <key id="P" output="P" width="0.909" />
-        <key id="z" output="z" width="0.909" />
-        <key id="Z" output="Z" width="0.909" />
+        <key id="z" output="z" width="0.909" longPressKeyIds="z-alt0 z-alt1" longPressDefaultKeyId="z-alt0" />
+        <key id="z-alt0" output="ź" />
+        <key id="z-alt1" output="ż" />
+        <key id="Z" output="Z" width="0.909" longPressKeyIds="Z-alt0 Z-alt1" longPressDefaultKeyId="Z-alt0" />
+        <key id="Z-alt0" output="Ź" />
+        <key id="Z-alt1" output="Ż" />
         <key id="b" output="b" width="0.909" />
         <key id="B" output="B" width="0.909" />
         <key id="m" output="m" width="0.909" />
@@ -421,6 +444,146 @@
             <row keys="open-paren-numeric 4-numeric 5-numeric 6-numeric space-numeric" />
             <row keys="close-paren-numeric 7-numeric 8-numeric 9-numeric bksp-numeric" />
             <row keys="base-numeric comma-numeric symbols-numeric 0-numeric equal-numeric period-numeric enter-numeric" />
+        </layer>
+
+        <layer id="symbol-1-email">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-hyphen s-slash s-colon s-semicolon s-lparen s-rparen s-dollar s-amp s-at s-dquote" />
+            <row keys="to-symbol-2 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base fn-key space-email at-email period-email enter" />
+        </layer>
+
+        <layer id="symbol-1-url">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-hyphen s-slash s-colon s-semicolon s-lparen s-rparen s-dollar s-amp s-at s-dquote" />
+            <row keys="to-symbol-2 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base fn-key space-email slash-url period-url enter" />
+        </layer>
+
+        <layer id="symbol-1-classic">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-hyphen s-slash s-colon s-semicolon s-lparen s-rparen s-dollar s-amp s-at s-dquote" />
+            <row keys="to-symbol-2 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-1-classic-email">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-hyphen s-slash s-colon s-semicolon s-lparen s-rparen s-dollar s-amp s-at s-dquote" />
+            <row keys="to-symbol-2 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-1-classic-url">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-hyphen s-slash s-colon s-semicolon s-lparen s-rparen s-dollar s-amp s-at s-dquote" />
+            <row keys="to-symbol-2 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-2-email">
+            <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
+            <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base fn-key space-email at-email period-email enter" />
+        </layer>
+
+        <layer id="symbol-2-url">
+            <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
+            <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base fn-key space-email slash-url period-url enter" />
+        </layer>
+
+        <layer id="symbol-2-classic">
+            <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
+            <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-2-classic-email">
+            <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
+            <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-2-classic-url">
+            <row keys="s-lsquare s-rsquare s-lcurly s-rcurly s-hash s-percent s-caret s-asterisk s-plus s-equal" />
+            <row keys="s-underscore s-backslash s-pipe s-tilde s-less s-greater s-euro s-pound s-yen s-bullet" />
+            <row keys="to-symbol-1-row3 period-wide comma-wide question-wide bang-wide apos-wide bksp" />
+            <row keys="to-base-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-1-android-email">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-at s-hash s-dollar s-underscore s-amp s-hyphen s-plus s-lparen s-rparen s-slash" />
+            <row keys="to-symbol-2-android s-asterisk s-dquote s-apos s-colon s-semicolon s-excl s-question bksp" />
+            <row keys="to-base fn-key space-email at-email period-email enter" />
+        </layer>
+
+        <layer id="symbol-1-android-url">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-at s-hash s-dollar s-underscore s-amp s-hyphen s-plus s-lparen s-rparen s-slash" />
+            <row keys="to-symbol-2-android s-asterisk s-dquote s-apos s-colon s-semicolon s-excl s-question bksp" />
+            <row keys="to-base fn-key space-email slash-url period-url enter" />
+        </layer>
+
+        <layer id="symbol-1-android-classic">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-at s-hash s-dollar s-underscore s-amp s-hyphen s-plus s-lparen s-rparen s-slash" />
+            <row keys="to-symbol-2-android s-asterisk s-dquote s-apos s-colon s-semicolon s-excl s-question bksp" />
+            <row keys="to-base-classic comma-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-1-android-classic-email">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-at s-hash s-dollar s-underscore s-amp s-hyphen s-plus s-lparen s-rparen s-slash" />
+            <row keys="to-symbol-2-android s-asterisk s-dquote s-apos s-colon s-semicolon s-excl s-question bksp" />
+            <row keys="to-base-classic at-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-1-android-classic-url">
+            <row keys="s-1 s-2 s-3 s-4 s-5 s-6 s-7 s-8 s-9 s-0" />
+            <row keys="s-at s-hash s-dollar s-underscore s-amp s-hyphen s-plus s-lparen s-rparen s-slash" />
+            <row keys="to-symbol-2-android s-asterisk s-dquote s-apos s-colon s-semicolon s-excl s-question bksp" />
+            <row keys="to-base-classic slash-classic fn-key-classic space-classic period-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-2-android-email">
+            <row keys="s-tilde s-backtick s-pipe s-bullet s-sqrt s-pi s-divide s-times s-section s-delta" />
+            <row keys="s-pound s-cent s-euro s-yen s-caret s-degree s-equal s-lcurly s-rcurly s-backslash" />
+            <row keys="to-symbol-1-android s-percent s-copy s-reg s-tm s-check s-lsquare s-rsquare bksp" />
+            <row keys="to-base fn-key space-email at-email period-email enter" />
+        </layer>
+
+        <layer id="symbol-2-android-url">
+            <row keys="s-tilde s-backtick s-pipe s-bullet s-sqrt s-pi s-divide s-times s-section s-delta" />
+            <row keys="s-pound s-cent s-euro s-yen s-caret s-degree s-equal s-lcurly s-rcurly s-backslash" />
+            <row keys="to-symbol-1-android s-percent s-copy s-reg s-tm s-check s-lsquare s-rsquare bksp" />
+            <row keys="to-base fn-key space-email slash-url period-url enter" />
+        </layer>
+
+        <layer id="symbol-2-android-classic">
+            <row keys="s-tilde s-backtick s-pipe s-bullet s-sqrt s-pi s-divide s-times s-section s-delta" />
+            <row keys="s-pound s-cent s-euro s-yen s-caret s-degree s-equal s-lcurly s-rcurly s-backslash" />
+            <row keys="to-symbol-1-android s-percent s-copy s-reg s-tm s-check s-lsquare s-rsquare bksp" />
+            <row keys="to-base-classic lt-classic fn-key-classic space-classic gt-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-2-android-classic-email">
+            <row keys="s-tilde s-backtick s-pipe s-bullet s-sqrt s-pi s-divide s-times s-section s-delta" />
+            <row keys="s-pound s-cent s-euro s-yen s-caret s-degree s-equal s-lcurly s-rcurly s-backslash" />
+            <row keys="to-symbol-1-android s-percent s-copy s-reg s-tm s-check s-lsquare s-rsquare bksp" />
+            <row keys="to-base-classic at-classic fn-key-classic space-classic gt-classic enter-classic" />
+        </layer>
+
+        <layer id="symbol-2-android-classic-url">
+            <row keys="s-tilde s-backtick s-pipe s-bullet s-sqrt s-pi s-divide s-times s-section s-delta" />
+            <row keys="s-pound s-cent s-euro s-yen s-caret s-degree s-equal s-lcurly s-rcurly s-backslash" />
+            <row keys="to-symbol-1-android s-percent s-copy s-reg s-tm s-check s-lsquare s-rsquare bksp" />
+            <row keys="to-base-classic slash-classic fn-key-classic space-classic gt-classic enter-classic" />
         </layer>
     </layers>
 </keyboard3>

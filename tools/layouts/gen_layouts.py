@@ -26,6 +26,38 @@ FLORIS_LAYOUTS = Path("app/src/main/assets/ime/keyboard/org.florisboard.layouts/
 
 UNIT = 37.5  # dp per keyboard3 width unit on the reference keyboard
 
+# The letters each language with a dictionary writes (>= 0.05 % of its words' letters, most frequent first; from the
+# packs' word lists). A layout's long-press lists came from Gboard's data for the layout file, not the language: the
+# generic QWERTZ shared by 300 languages had u -> ü but no a -> ä, so German on it had no ä or ö (user, 2026-11-25).
+LANG_LETTERS: dict[str, list[str]] = json.loads((Path(__file__).parent / "language_letters.json").read_text(encoding="utf-8"))
+
+
+# letters with no Unicode decomposition, by the key they sit on in Gboard's and iOS's long-press lists (Polish ł on l,
+# Turkish ı on i)
+NO_DECOMPOSITION = {"ł": "l", "ı": "i", "ø": "o", "æ": "a", "œ": "o", "ß": "s", "đ": "d", "ð": "d", "þ": "t", "ŋ": "n", "ħ": "h", "ى": "ي"}
+
+
+def with_language_letters(rows, accents: dict[str, str], letters: list[str]) -> dict[str, str]:
+    """[accents] with each of the language's [letters] that no key types put first on its base letter's long-press
+    (ä on a, ñ on n, ё on е, أ on ا), most frequent first. Only where the base letter is a key: a word list's stray
+    letters of another script (Latin in Greek text) aren't added."""
+    keys = {c for r in rows for c in r}
+    extra: dict[str, list[str]] = {}
+    for ch in letters:
+        b = NO_DECOMPOSITION.get(ch) or unicodedata.normalize("NFD", ch)[0]
+        if ch in keys or b == ch or b not in keys or ch in accents.get(b, "").split() or ch in extra.get(b, []):
+            continue
+        extra.setdefault(b, []).append(ch)
+    if not extra:
+        return accents
+    out = dict(accents)
+    for b, chs in extra.items():
+        out[b] = " ".join(chs + out.get(b, "").split())
+        up = b.upper()
+        if len(up) == 1 and up != b and all(len(c.upper()) == 1 for c in chs):
+            out[up] = " ".join([c.upper() for c in chs] + out.get(up, "").split())
+    return out
+
 
 def w(dp: float) -> str:
     return f"{dp / UNIT:.4f}".rstrip("0").rstrip(".")
@@ -393,6 +425,15 @@ FIELD_ROWS = {
 }
 
 
+def sym_bottom(layer: str, row: str) -> str:
+    """A letter layer's bottom row ([row], FIELD_ROWS) for a symbol page: ABC in place of ?123 / 123, and on the
+    Android-style second page < > in place of the comma and period (Gboard's =\\< page)."""
+    swap = {"to-symbol-1": "to-base", "to-symbol-1-classic": "to-base-classic"}
+    if layer == "symbol-2-android":
+        swap.update({"comma-classic": "lt-classic", "period-classic": "gt-classic"})
+    return " ".join(swap.get(k, k) for k in row.split())
+
+
 def build(lay: Layout) -> str:
     keys = [
         "",
@@ -422,6 +463,10 @@ def build(lay: Layout) -> str:
         '<key id="space-classic" output="\\u{0020}" width="4" />',
         *key_with_alts("period-classic", *lay.symbols.get("period-classic", (".", "")), "1"),
         '<key id="enter-classic" output="@k3:action/enter" width="1.5" longPressKeyIds="newline" />',
+        # the symbol pages' Classic row: ABC where ?123 is; Gboard's =\< page has < and > in place of , and .
+        '<key id="to-base-classic" layerId="base" width="1.5" />',
+        '<key id="lt-classic" output="&lt;" width="1" />',
+        '<key id="gt-classic" output="&gt;" width="1" />',
         f'<key id="at-email" output="@" width="{EMAIL_KEY}" />',
         f'<key id="period-email" output="." width="{EMAIL_KEY}" />',
         "<!-- URL fields keep a space bar (Android address bars are search boxes too; Gboard keeps one):",
@@ -488,6 +533,11 @@ def build(lay: Layout) -> str:
             "base-numeric comma-numeric symbols-numeric 0-numeric equal-numeric period-numeric enter-numeric",
         ]),
     ]
+    # the symbol pages with each variant's bottom row too (the design draws the field's and the Classic row on them;
+    # their touch row was always to-base fn-key space enter, so a tap on the drawn period of ?123 hit the return key,
+    # 2026-11-25)
+    layers += [(f"{name}-{variant}", rows[:-1] + [sym_bottom(name, row)])
+               for name, rows in list(layers) if name.startswith("symbol-") for variant, row in FIELD_ROWS.items()]
 
     out = [
         f'<keyboard3 xmlns="https://schemas.unicode.org/cldr/45/keyboard3" conformsTo="45" locale="{lay.locale}">',
@@ -689,12 +739,17 @@ def all_layouts() -> list[Layout]:
         have.setdefault(lay.locale, []).append(letters_only(lay.rows))
         first_name.setdefault(lay.locale, lay.layout)
     files: dict[str, str] = {}  # keyboard content -> file id
+    own_letters: dict[str, list[str]] = {}  # language -> the letters of its own layouts (filled per language below)
+    for lay in LAYOUTS:
+        lay.accents = with_language_letters(lay.rows, lay.accents, LANG_LETTERS.get(lay.locale, []))
     out: list[Layout] = []
     ids = {lay.id for lay in LAYOUTS}
 
     def add(base: str, language: str, name: str, rows: list[list[str]], accents: dict[str, str], hint: str):
         if letters_only(rows) in have.get(base, []):
             return
+        # the language's own letters on long-press, before the file is shared (the key below tells files apart)
+        accents = with_language_letters(rows, accents, LANG_LETTERS.get(base, []) + own_letters.get(base, []))
         have.setdefault(base, []).append(letters_only(rows))
         # a second layout of the same name: its own letters in brackets ("QWERTY (ñ)"), or "basic" when it only lacks some
         other = named.get((base, name))
@@ -755,6 +810,19 @@ def all_layouts() -> list[Layout]:
         own = {script_of(g_lays.get(v["layout_id"], {}).get("rows")) for v in d["variants"] if v["variant"] not in NAMED}
         own.discard(None)
         latin_ok = base in DIGRAPHIC or not own or "LATIN" in own
+        # the letters of the language's own layouts (keys and long-presses), for its generic ones (languages with no
+        # dictionary: LANG_LETTERS has none)
+        seen: list[str] = []
+        for v in variants:
+            L = g_lays.get(v["layout_id"]) or {}
+            for r in (L.get("rows") or []):
+                for c in (r if isinstance(r, list) else [r]):
+                    for ch in str(c):
+                        if ch.isalpha() and ch not in seen: seen.append(ch)
+            for alts in (L.get("longpress") or {}).values():
+                for ch in alts.replace(",", ""):
+                    if ch.isalpha() and ch not in seen: seen.append(ch)
+        own_letters[base] = [c.lower() for c in seen if len(c.lower()) == 1]
         g_lp = {}
         for v in variants:
             L = g_lays.get(v["layout_id"])

@@ -386,12 +386,15 @@ private fun computeTouchKeyboard(
                 put(layer.id, TouchLayer.Empty)
                 continue
             }
+            val isSymbol = layer.id.value.startsWith("symbol-")
+            // DogBoard: Android-style symbol pages (Settings > Layout > Symbols): "symbol-1-android" / "-2-android"
+            val pageLayer = layers[K3LayerId(layer.id.value + "-android")]?.takeIf { options.symbolsAndroid && isSymbol } ?: layer
             val sourceLayer = variantSuffix
-                ?.takeIf { layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift }
-                ?.let { layers[K3LayerId(layer.id.value + it)] }
-                // DogBoard: Android-style symbol pages (Settings > Layout > Symbols): "symbol-1-android" / "-2-android"
-                ?: layers[K3LayerId(layer.id.value + "-android")]?.takeIf { options.symbolsAndroid && layer.id.value.startsWith("symbol-") }
-                ?: layer
+                ?.takeIf { layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift || isSymbol }
+                // the symbol pages with the variant's bottom row too, as the design draws them ("symbol-1-classic",
+                // "symbol-2-android-classic-email"; a tap on ?123's drawn period hit the return key, 2026-11-25)
+                ?.let { layers[K3LayerId(pageLayer.id.value + it)] }
+                ?: pageLayer
             val rows = buildList {
                 // DogBoard: also on caps lock, so the row doesn't vanish when caps lock is on
                 if (numberRow != null && (layer.id == ImeLayerIds.Base || layer.id == ImeLayerIds.Shift || layer.id == ImeLayerIds.Caps)) {
