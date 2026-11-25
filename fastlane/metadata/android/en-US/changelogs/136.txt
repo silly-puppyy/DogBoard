@@ -1,0 +1,2 @@
+- Link previews that failed to load (a weak or busy connection) are tried again: as soon as the phone is back online, and otherwise a few minutes later when you copy or open the clipboard. Links already stuck without a preview get one more try
+- Link previews wait a little longer for slow pages
