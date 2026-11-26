@@ -73,9 +73,6 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
     fun script(s: Subtype) = GeneratedLayouts.all.firstOrNull { it.id == layoutOfEntry(s) }?.rows?.firstOrNull()?.firstOrNull { it.isLetter() }
         ?.let { Character.UnicodeScript.of(it.code) } ?: Character.UnicodeScript.LATIN
     fun packName(tag: String, s: Subtype) = packs.firstOrNull { it.tag == tag }?.manifest?.name ?: s.primaryLocale.displayName()
-    fun nameOfTag(tag: String) = packs.firstOrNull { it.tag == tag }?.manifest?.name ?: FlorisLocale.fromTag(tag).displayName()
-    // a combined keyboard is named by its languages: "English and French (France)", "A, B and C"
-    fun joined(names: List<String>) = if (names.size <= 1) names.joinToString() else names.dropLast(1).joinToString(", ") + " and " + names.last()
     fun scriptOfTag(tag: String) = GeneratedLayouts.all.filter { it.language == tag.substringBefore('-') }.sortedByDescending { it.default }
         .firstOrNull()?.rows?.firstOrNull()?.firstOrNull { it.isLetter() }?.let { Character.UnicodeScript.of(it.code) } ?: Character.UnicodeScript.LATIN
     fun offersDictionary(tag: String) = hasDictionary(tag) || index?.packs.orEmpty().any { it.tag.equals(tag, true) || it.tag.equals(tag.substringBefore('-'), true) }
@@ -89,6 +86,7 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
     val regionsNeeded = io.github.sillypuppyy.dogboard.ime.SystemSubtypes.twoRegions(list)
     val rows = list.map { s ->
         val tag = s.primaryLocale.languageTag()
+        val rowTags = (listOf(s.primaryLocale) + s.secondaryLocales).map { it.languageTag() }
         val layout = layoutOfEntry(s)
         LangRow(
             // each language in its own name, as Gboard ("English + Français"); a region only to tell two apart
@@ -99,9 +97,10 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             layoutLabel(layout, s.primaryLocale.language),
             io.github.sillypuppyy.dogboard.engine.swipe.SwipeSupport.layoutSwipes(layout),
             s.id == active.id || list.size == 1,
-            // the host has its dictionary and the phone doesn't yet: downloading, or waiting to try again
-            gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,
-            dictionaryProgress = PackDownloadQueue.offered(tag)?.let { downloading[it.tag] },
+            // the host has a dictionary of one of its languages and the phone doesn't yet: downloading, or waiting to
+            // try again (any of a combined keyboard's languages: English + Français showed nothing while French came)
+            gettingDictionary = index != null && rowTags.any { t -> !hasDictionary(t) && PackDownloadQueue.offered(t) != null },
+            dictionaryProgress = rowTags.firstNotNullOfOrNull { t -> PackDownloadQueue.offered(t)?.let { downloading[it.tag] } },
             together = s.secondaryLocales.map { second -> list.firstOrNull { it.primaryLocale == second }?.let { packName(second.languageTag(), it) } ?: second.displayName() },
             togetherTags = s.secondaryLocales.map { it.languageTag() },
             tag = tag,
@@ -150,7 +149,11 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
         },
         combineChoices = { id -> list.firstOrNull { it.id == id }?.let { s -> choices.filter { canCombine(it.tag, s) } }.orEmpty() },
         combineTargets = { tag ->
-            val targets = list.filter { canCombine(tag, it) }.map { it to joined(listOf(packName(it.primaryLocale.languageTag(), it)) + it.secondaryLocales.map { l -> nameOfTag(l.languageTag()) }) }
+            // named as their rows ("Español + English"; it said "Spanish (Spain)" beside the list's "Español")
+            val targets = list.filter { canCombine(tag, it) }.map { s ->
+                s to (listOf(s.primaryLocale) + s.secondaryLocales).joinToString(" + ") { l ->
+                    io.github.sillypuppyy.dogboard.ime.SystemSubtypes.nativeName(l.languageTag(), l.language in regionsNeeded) }
+            }
             // a language added with two layouts: the layout tells the keyboards apart
             targets.map { (s, name) -> s.id to if (targets.count { it.second == name } > 1) "$name, ${layoutLabel(layoutOfEntry(s), s.primaryLocale.language)}" else name }
         },
