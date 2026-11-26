@@ -98,7 +98,12 @@ DATING = _re.compile(r'dating|flirt|singles|знакомств|tanışma|randki|
 # (hu id ca da nb sk hr sr lt lv et fi), written from the obvious adult / gambling / dating words of each language, not checked by native
 # speakers. Words with an everyday meaning are left out (Arabic جنس "nationality / gender", Hebrew כוס "glass", Korean 보지 "not see",
 # Greek γαμ "marriage"), so a few explicit sites pass and the host list per language (CONV_DROP_HOSTS) covers them.
-HOST_WORDS = _re.compile(HOST_WORDS.pattern + r'|seks|szex|porno|bokep|togel|judi(?!c|t)|kasiino|kaszin|kazino|kazin|seksi|gokk|bet365|1xbet|xbet|fuck|pornhub|xvideos|redtube|sexo|sexe|sekss|sekas|сэкс|секс|порн|казино|casin|ставк')
+HOST_WORDS = _re.compile(HOST_WORDS.pattern + r'|seks|szex|porno|bokep|togel|judi(?!c|t)|kasiino|kaszin|kazino|kazin|seksi|gokk|bet365|1xbet|xbet|fuck|pornhub|xvideos|redtube|sexo|sexe|sekss|sekas|сэкс|секс|порн|казино|casin|ставк'
+    # Indonesian gambling and adult hosts too small for the share test (2026-11-26: 110 hosts, 3,600 lines in the id slice):
+    # online slots ("slot" alone is a castle in Danish / Norwegian / Swedish, so only in a gambling combination), "judi"
+    # before "tembak ikan", nude / obscene words, adult-story sites
+    r'|(?:agen|situs|daftar|demo|jud[i1]|dewa|hoki|lucky|joker|gacor|idn|macau|\d)slots?|slots?(?:\d|online|gacor|joker|pragmatic|deposit|pulsa|jackpot|game|gaming|club|id\b|rank|mania)'
+    r'|jud[i1](?:slot|tembak|capsa|online|corona|terpercaya)|gacor|sbobet|joker123|mega888|pussy888|918kiss|bugil|mesum|ngentot|ceritadewasa|cerita-?se[kx]s|taruhan')
 EXPLICIT = _re.compile(EXPLICIT.pattern +
     r'|سكس|بورن|إباحي|اباحي|نيك|شرموط|عاهر|قحب|ممحون|متناك'
     r'|سکس|پورن|جنده|کونی|کیری|شهوتی|ساک زدن'
