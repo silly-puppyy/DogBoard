@@ -684,6 +684,9 @@ object TypingEngine {
         lock.write { addedWords.add(w.lowercase()) }
     }
 
+    /** Set by the app: also drops [forgetWord]'s word from the other languages' learned words (EngineLoader). */
+    @Volatile var onForgetWord: ((String) -> Unit)? = null
+
     /**
      * The user removed [word] in settings: it goes back to being corrected (out of the learned
      * and added lists and the personal model; the word data is loaded again, as learned words
@@ -692,6 +695,7 @@ object TypingEngine {
     @Synchronized
     fun forgetWord(word: String) {
         loaded ?: return
+        onForgetWord?.let { f -> runCatching { f(word) } }
         val key = word.lowercase()
         for (f in listOfNotNull(userWordsFile, addedWordsFile)) {
             runCatching { if (f.exists()) f.writeTextAtomically(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" }) }

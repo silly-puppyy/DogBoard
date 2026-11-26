@@ -96,7 +96,7 @@ fun YourWordsScreen() {
             onDismissRequest = { dialog = null },
             title = { Text("Forget everything DogBoard learned?") },
             text = { Text("Learned words, your typing history and undone corrections are deleted. Text replacements and blocked words stay.") },
-            confirmButton = { TextButton({ dialog = null; change { TypingEngine.resetDictionary() } }) { Text("Forget") } },
+            confirmButton = { TextButton({ dialog = null; change { io.github.sillypuppyy.dogboard.ime.EngineLoader.forgetLearnedEverywhere(context); TypingEngine.resetDictionary() } }) { Text("Forget") } },
             dismissButton = { TextButton({ dialog = null }) { Text("Cancel") } },
         )
         "replacements" -> TwoFieldDialog(

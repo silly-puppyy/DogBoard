@@ -341,6 +341,47 @@ object EngineLoader {
     // one load at a time, and a language switch waits for it: a switch during the first load attached English's
     // trigram to Spanish and held both languages in memory (emulator OOM at 192 MB, 2026-11-22)
     @Synchronized
+    /**
+     * A language's own learned data (words learned from typing, the personal word-pair model, corrections turned down),
+     * as iOS and Gboard keep them: one shared list put a language's words into the others' suggestions. The shared file
+     * from before (2026-11-26) seeds each language once with its lines in the language's own scripts (a Bulgarian
+     * keyboard gets the Cyrillic words, a German one the Latin ones) and stays as it was. Explicitly added words, blocked
+     * words, text replacements and the touch calibration stay shared.
+     */
+    private fun languageFile(files: File, tag: String, name: String, scripts: Set<Character.UnicodeScript>): File {
+        val f = File(files, "dogboard/lang/$tag/$name")
+        val legacy = File(files, "dogboard/$name")
+        if (!f.exists() && legacy.exists()) runCatching {
+            f.parentFile?.mkdirs()
+            val kept = legacy.readLines().filter { line -> line.firstOrNull { it.isLetter() }?.let { Character.UnicodeScript.of(it.code) in scripts } == true }
+            f.writeText(kept.joinToString("") { it + "\n" })
+        }
+        return f
+    }
+
+    /** The learned data's file names kept per language ([languageFile]). */
+    private val PER_LANGUAGE = listOf("user_words.txt", "personal.tsv", "rejected_corrections.txt")
+
+    /**
+     * "Forget everything DogBoard learned" means every language's: their own files and the shared one from before (it
+     * would seed a language loaded later with the forgotten words). The loaded language's go with
+     * TypingEngine.resetDictionary.
+     */
+    fun forgetLearnedEverywhere(context: Context) {
+        val files = context.applicationContext.filesDir
+        runCatching { File(files, "dogboard/lang").deleteRecursively() }
+        for (name in PER_LANGUAGE) runCatching { File(files, "dogboard/$name").delete() }
+    }
+
+    /** A word forgotten in one language goes from the others' learned words too (and from the shared file). */
+    private fun forgetWordEverywhere(files: File, word: String) {
+        val key = word.lowercase()
+        val lists = (File(files, "dogboard/lang").listFiles().orEmpty().map { File(it, "user_words.txt") } + File(files, "dogboard/user_words.txt"))
+        for (f in lists) runCatching {
+            if (f.exists()) f.writeText(f.readLines().filter { it.isNotBlank() && it.trim().lowercase() != key }.joinToString("") { it + "\n" })
+        }
+    }
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
         nativeMark("start")
@@ -359,17 +400,20 @@ object EngineLoader {
         io.github.sillypuppyy.dogboard.engine.Lexicon.keyOf = rules.keyOfLetters
         // the language's casing (Turkish İ): automatic capitals follow it
         io.github.sillypuppyy.dogboard.engine.CaseAdapt.locale = java.util.Locale.forLanguageTag(p.tag)
+        TypingEngine.onForgetWord = { w -> forgetWordEverywhere(files, w) }
+        val scripts = rules.letterRows.rows.flatMap { it.asIterable() }.filter { it.isLetter() }
+            .map { Character.UnicodeScript.of(it.code) }.toSet().ifEmpty { setOf(Character.UnicodeScript.LATIN) }
         TypingEngine.load(
             openLexicon = { asset("lexicon").bufferedReader() },
             openBigrams = { asset("bigrams").bufferedReader() },
-            userWords = File(files, "dogboard/user_words.txt"),
+            userWords = languageFile(files, p.tag, "user_words.txt", scripts),
             blockedWords = File(files, "dogboard/blocked_words.txt"),
-            rejectedCorrections = File(files, "dogboard/rejected_corrections.txt"),
+            rejectedCorrections = languageFile(files, p.tag, "rejected_corrections.txt", scripts),
             autocorrectStrength = File(files, "dogboard/autocorrect_strength.txt"),
             personalOffsetsFile = File(files, "dogboard/personal_offsets.txt"),
             openAbbreviations = { optional("abbreviations").bufferedReader() },
             openNoSuggest = { optional("nosuggest").bufferedReader() },
-            personalModel = File(files, "dogboard/personal.tsv"),
+            personalModel = languageFile(files, p.tag, "personal.tsv", scripts),
             textReplacements = File(files, "dogboard/text_replacements.tsv"),
             openEmojiIndex = { optional("emoji").bufferedReader() },
             openEmojiTones = { optional("emoji_tones").bufferedReader() },
