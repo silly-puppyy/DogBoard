@@ -184,7 +184,7 @@ fun SetLayout(state: SetLayoutState) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DText("Each keyboard’s letters", style = setText(16f).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
-                        DText("QWERTY, AZERTY and others: tap a keyboard in Languages", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start))
+                        DText("QWERTY, AZERTY and others: tap a keyboard in Languages", style = setText(13f, color = SetColors.onSurfaceVariant).copy(textAlign = androidx.compose.ui.text.style.TextAlign.Start), maxLines = 3)
                     }
                     Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant)
                 }

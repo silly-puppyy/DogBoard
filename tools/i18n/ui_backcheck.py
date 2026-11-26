@@ -5,7 +5,7 @@ curly quotes. Rewrites MT_DIR/<lang>.json in place (the dropped ones show in Eng
 import difflib, json, os, re, sys
 import torch
 from transformers import MarianMTModel, MarianTokenizer
-MIN = 0.72
+MIN = float(os.environ.get("BACKCHECK_MIN", "0.72"))  # 0.72 for OPUS-MT; looser phrasings (an instruction model) need less
 BACK = {'de': 'Helsinki-NLP/opus-mt-de-en', 'es': 'Helsinki-NLP/opus-mt-es-en', 'fr': 'Helsinki-NLP/opus-mt-fr-en'}
 dev = 'cuda' if torch.cuda.is_available() else 'cpu'
 norm = lambda s: re.sub(r'[^\w ]', '', s.lower())

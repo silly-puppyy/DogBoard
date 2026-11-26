@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import dev.patrickgold.florisboard.app.FlorisPreferenceStore
 import dev.patrickgold.florisboard.app.components.FlorisScreenNg
 import dev.patrickgold.jetpref.datastore.model.collectAsState
+import io.github.sillypuppyy.dogboard.design.UiText
 import io.github.sillypuppyy.dogboard.design.settings.SetColors
 import io.github.sillypuppyy.dogboard.design.settings.SetGroup
 import io.github.sillypuppyy.dogboard.design.settings.SetSliderRow
@@ -108,7 +109,7 @@ fun SoundVibrationScreen() {
                     }
                     androidx.compose.foundation.layout.Box {
                         Column(Modifier.fillMaxWidth().background(SetColors.row).clickable { open = true }.padding(16.dp)) {
-                            TitleSub("Key sound", "${current.second}. Picking one plays it, even on silent.")
+                            TitleSub("Key sound", "${UiText.tr(current.second)}. ${UiText.tr("Picking one plays it, even on silent.")}") // translated in parts
                         }
                         SetMenu(open, { open = false }, names.map { (id, name) -> name to { preview(id) } })
                     }

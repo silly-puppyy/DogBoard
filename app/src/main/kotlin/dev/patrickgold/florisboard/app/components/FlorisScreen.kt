@@ -121,7 +121,8 @@ fun FlorisAppBar(
         navigationIcon = navigationIcon ?: {},
         title = {
             Text(
-                text = title,
+                // DogBoard: its pages pass English titles (UiText); FlorisBoard's are resource strings, left as they are
+                text = io.github.sillypuppyy.dogboard.design.UiText.tr(title),
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
             )

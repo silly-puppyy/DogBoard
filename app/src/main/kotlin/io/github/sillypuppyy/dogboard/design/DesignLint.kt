@@ -158,7 +158,11 @@ fun DText(
     squash: Boolean = false,
 ) {
     // DogBoard's screens in the phone's language (UiText: the English text is the key); never the keyboard's words
+    val english = text
     @Suppress("NAME_SHADOWING") val text = if (LocalTranslate.current) UiText.tr(text) else text
+    // a translation runs longer than the English the one-line design was drawn for: it ends in "…" instead of being cut
+    // mid-letter (German sweep, 2026-11-26)
+    @Suppress("NAME_SHADOWING") val overflow = if (text !== english && maxLines == 1 && overflow == TextOverflow.Visible) TextOverflow.Ellipsis else overflow
     if (squash) {
         SquashedText(text, modifier, style, id, kind)
         return
