@@ -1,0 +1,5 @@
+- DogBoard in German, Spanish and French: settings and setup follow your phone's language
+- Grammar check (French, Spanish): words that don't agree are underlined in blue, with the right form to tap ("le maison" becomes "la maison"); Autocorrect > Grammar check
+- Each language learns its own words: Bulgarian words no longer show up in German suggestions (your existing words are kept)
+- Two languages on one keyboard: the second language's letters come first when you hold a key (English + German: ä ö ü first)
+- 29 language downloads now trained on everyday text as well as news
