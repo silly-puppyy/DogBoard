@@ -11,6 +11,12 @@ import kotlinx.serialization.json.JsonPrimitive
  * Looked up where text is drawn (DText), so the code keeps passing English (section titles stay keys) and a string
  * without a translation shows as written.
  */
+/**
+ * Whether [DText] translates (UiText): on in the settings app, off by default, so the keyboard's suggestion bar and
+ * clipboard show words as typed (a German phone turned the suggestion "Send" into "Senden", 2026-11-26).
+ */
+val LocalTranslate = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 object UiText {
     @Volatile private var map: Map<String, String> = emptyMap()
     @Volatile private var language: String? = null

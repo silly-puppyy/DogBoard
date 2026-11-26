@@ -158,16 +158,23 @@ class FlorisSpellCheckerService : SpellCheckerService() {
                 val info = textInfos.getOrNull(i) ?: return@Array base
                 val flags = io.github.sillypuppyy.dogboard.engine.TypingEngine.grammarFlags(info.text ?: "")
                 if (flags.isEmpty() || base == null) return@Array base
-                val n = base.suggestionsCount
-                val taken = (0 until n).map { base.getOffsetAt(it) }.toSet()
-                val extra = flags.filter { it.start !in taken }
-                val infos = (0 until n).map { base.getSuggestionsInfoAt(it) } + extra.map { f ->
-                    SuggestionsInfo(SuggestionsInfo.RESULT_ATTR_LOOKS_LIKE_GRAMMAR_ERROR or SuggestionsInfo.RESULT_ATTR_HAS_RECOMMENDED_SUGGESTIONS,
-                        arrayOf(f.suggestion), info.cookie, info.sequence)
+                // the default lists every word, correct ones too: a grammar flag replaces its word's entry unless that
+                // entry is a typo (a misspelling comes first); a flagged word the default did not list is added
+                fun grammar(f: io.github.sillypuppyy.dogboard.engine.GrammarCheck.Flag) = SuggestionsInfo(
+                    SuggestionsInfo.RESULT_ATTR_LOOKS_LIKE_GRAMMAR_ERROR or SuggestionsInfo.RESULT_ATTR_HAS_RECOMMENDED_SUGGESTIONS,
+                    arrayOf(f.suggestion), info.cookie, info.sequence)
+                val byStart = flags.associateBy { it.start }
+                val infos = ArrayList<SuggestionsInfo>(); val offsets = ArrayList<Int>(); val lengths = ArrayList<Int>()
+                val used = HashSet<Int>()
+                for (k in 0 until base.suggestionsCount) {
+                    val entry = base.getSuggestionsInfoAt(k); val off = base.getOffsetAt(k)
+                    val f = byStart[off]
+                    val typo = entry != null && entry.suggestionsAttributes and SuggestionsInfo.RESULT_ATTR_LOOKS_LIKE_TYPO != 0
+                    if (f != null && !typo) { infos.add(grammar(f)); offsets.add(off); lengths.add(f.length); used.add(off) }
+                    else { infos.add(entry); offsets.add(off); lengths.add(base.getLengthAt(k)); if (f != null) used.add(off) }
                 }
-                SentenceSuggestionsInfo(infos.toTypedArray(),
-                    ((0 until n).map { base.getOffsetAt(it) } + extra.map { it.start }).toIntArray(),
-                    ((0 until n).map { base.getLengthAt(it) } + extra.map { it.length }).toIntArray())
+                for (f in flags) if (f.start !in used) { infos.add(grammar(f)); offsets.add(f.start); lengths.add(f.length) }
+                SentenceSuggestionsInfo(infos.toTypedArray(), offsets.toIntArray(), lengths.toIntArray())
             }
         }
 

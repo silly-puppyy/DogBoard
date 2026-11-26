@@ -209,6 +209,8 @@ class FlorisAppActivity : ComponentActivity() {
             LocalPreviewFieldController provides previewFieldController,
             LocalStorageController provides appContext.storageController,
             LocalThemeController provides appContext.themeController,
+            // DogBoard: the settings app's text in the phone's language (not the keyboard's: its suggestions are words)
+            io.github.sillypuppyy.dogboard.design.LocalTranslate provides true,
         ) {
             ProvideDefaultDialogPrefStrings(
                 confirmLabel = stringRes(R.string.action__ok),
