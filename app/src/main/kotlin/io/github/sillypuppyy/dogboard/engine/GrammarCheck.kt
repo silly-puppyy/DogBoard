@@ -9,14 +9,15 @@ import kotlin.math.ln
  * form is scored by its fit with the two words before and the word after (the trigram); the word is flagged when
  * another form fits clearly better, by [DET_MARGIN] (log10) for determiners and the stricter [ENDING_MARGIN] for
  * ending families (nouns and participles share the endings). With the packs' own pruned trigram (GrammarCheckEvalTest,
- * 2026-11-26): 0.07-0.20 % of correct sentences flagged (news and people's chat, 3,000 each, sentences the margins were
- * not chosen on), 31-40 % of agreement errors caught with the right form suggested; margins 2 / 3 caught 61-66 % but
- * flagged 1.3-2.3 % of correct sentences. French and Spanish only.
+ * 2026-11-26, news and people's chat, 3,000 sentences each the margins were not chosen on): margins 2.5 / 4.5 flag
+ * 0.13-0.17 % of chat sentences and 0.30-0.53 % of news ones, and catch 46-56 % of agreement errors with the right
+ * form; 3.5 / 4.5 flagged 0.07-0.20 % but caught 31-40 %, missing the common article errors ("le maison" fits "la" by
+ * 2.7, "un voiture" by 3.1); 2 / 3 caught 61-66 % but flagged 1.3-2.3 %. French and Spanish only.
  */
 object GrammarCheck {
     data class Flag(val start: Int, val length: Int, val suggestion: String)
 
-    @Volatile var DET_MARGIN = 3.5
+    @Volatile var DET_MARGIN = 2.5
     @Volatile var ENDING_MARGIN = 4.5
     private val LN10 = ln(10.0)
 

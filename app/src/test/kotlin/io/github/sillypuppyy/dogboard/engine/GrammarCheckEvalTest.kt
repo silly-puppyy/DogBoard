@@ -18,6 +18,31 @@ class GrammarCheckEvalTest : FunSpec({
         GrammarCheck.family("fr", "maison", known).first shouldBe emptyList()
     }
 
+    // DOGBOARD_GRAMMAR_PROBE="Je cherche le maison rouge|...": each sentence's flags, and per word how much better its
+    // family's best form fits (log10; flagged at DET_MARGIN / ENDING_MARGIN)
+    test("probe sentences").config(enabled = System.getenv("DOGBOARD_GRAMMAR_PROBE") != null) {
+        val dir = File(System.getenv("DOGBOARD_GRAMMAR_DIR")!!)
+        val lang = System.getenv("DOGBOARD_GRAMMAR_LANG")!!
+        val model = File(dir, "$lang.ngrams.bin").inputStream().use { NgramModel.readBinary(it) }!!
+        val lex = File(dir, "$lang.lexicon.tsv").useLines { ls -> ls.filter { !it.startsWith("#") }.map { it.substringBefore('\t').lowercase() }.toHashSet() }
+        val known = { w: String -> w in lex }
+        for (s in System.getenv("DOGBOARD_GRAMMAR_PROBE")!!.split('|')) {
+            val words = s.lowercase().split(' ').filter { it.isNotEmpty() }
+            val gaps = words.indices.mapNotNull { i ->
+                val (forms, _) = GrammarCheck.family(lang, words[i], known)
+                if (forms.isEmpty()) return@mapNotNull null
+                fun fit(w: String): Double {
+                    val a = if (i >= 2) model.idOf(words[i - 2]) else -1; val b = if (i >= 1) model.idOf(words[i - 1]) else -1
+                    val id = model.idOf(w); val next = if (i + 1 < words.size) model.idOf(words[i + 1]) else -1
+                    return model.logProbOf(a, b, id) + (if (next >= 0) model.logProbOf(b, id, next) else 0.0)
+                }
+                val own = fit(words[i]); val best = forms.filter { model.idOf(it) >= 0 }.maxByOrNull { fit(it) } ?: return@mapNotNull null
+                "${words[i]}->$best %.2f".format((fit(best) - own) / kotlin.math.ln(10.0))
+            }
+            println("PROBE $s: flags ${GrammarCheck.check(s, lang, model, known).map { s.substring(it.start, it.start + it.length) + "->" + it.suggestion }}; gaps $gaps")
+        }
+    }
+
     test("grammar check on real text").config(enabled = System.getenv("DOGBOARD_GRAMMAR_DIR") != null) {
         val dir = File(System.getenv("DOGBOARD_GRAMMAR_DIR")!!)
         val lang = System.getenv("DOGBOARD_GRAMMAR_LANG")!!

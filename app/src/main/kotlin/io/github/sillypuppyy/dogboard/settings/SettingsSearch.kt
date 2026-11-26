@@ -83,6 +83,7 @@ object SettingsSearch {
         Entry("Fix the previous word", "Autocorrect and typing › Autocorrect", "autocorrect", "hindsight look back retro previous word change later"),
         Entry("Neural look-back (experimental)", "Autocorrect and typing › Autocorrect", "autocorrect", "neural model retro hindsight experimental"),
         Entry("Grammar check", "Autocorrect and typing › Autocorrect", "autocorrect", "grammar agreement blue underline gender number article spell checker"),
+        Entry("Spell checker", "Autocorrect and typing › Autocorrect", "autocorrect", "spelling red underline typos misspelled system spell check"),
         Entry("Rejoin split words", "Autocorrect and typing › Autocorrect", "autocorrect", "join space split words missed space"),
         Entry("Correction strength", "Autocorrect and typing › Autocorrect", "autocorrect", "level strength gentle standard strong"),
         Entry("Notify when strength changes", "Autocorrect and typing › Autocorrect", "autocorrect", "notification adaptive strength"),

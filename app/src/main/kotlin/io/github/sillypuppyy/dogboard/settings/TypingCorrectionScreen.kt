@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -104,8 +105,23 @@ fun AutocorrectScreen() {
     val grammar by prefs.spelling.grammarCheck.collectAsState()
     SetPage("Autocorrect") {
         AutocorrectGroup()
-        // the spell checker's blue underline (Android 12+, DogBoard as the phone's spell checker)
-        SetGroup("Grammar") {
+        // the phone's spell checker (the underlines in apps) is Android's to pick: shown here, opened from here; the
+        // grammar check's blue underline needs it to be DogBoard's (Android 12+)
+        SetGroup("Spelling and grammar") {
+            val context = LocalContext.current
+            var checker by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(SpellCheckers.current(context)) }
+            androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+                checker = SpellCheckers.current(context)
+                onPauseOrDispose { }
+            }
+            val c = checker
+            SetPageLink("ac:spellchecker", "Spell checker",
+                when {
+                    c == null -> "Pick DogBoard under Spell checker"
+                    !c.enabled -> "Spell checking is off"
+                    c.ours -> "DogBoard: red underlines for typos, blue for grammar"
+                    else -> "Now: ${c.name}. Tap to use DogBoard’s"
+                }, icon = "open_in_new") { SpellCheckers.open(context) }
             SetSwitchRow("ac:grammar", "Grammar check", "Underlines words that don’t agree in blue, with the right form to tap: “le maison” becomes “la maison”. French and Spanish.", grammar) { v ->
                 scope.launch { prefs.spelling.grammarCheck.set(v) }
             }
