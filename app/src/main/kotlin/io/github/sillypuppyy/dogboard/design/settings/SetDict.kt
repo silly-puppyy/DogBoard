@@ -1,6 +1,12 @@
 package io.github.sillypuppyy.dogboard.design.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,166 +50,183 @@ class SetDictState(
     val added: List<SetDictRow>,
     val blocked: List<SetDictRow>,
     val undone: List<SetDictRow>,
-    /** Text replacements: (shortcut, phrase). */
-    val replacements: List<Pair<String, String>>,
+    /** Text replacements, the Shortcuts tab: the shortcut as the word, the phrase as why. */
+    val shortcuts: List<SetDictRow>,
+    /** The languages with learned words (tag, name), the shown one, and picking another: Learned and Undone are per language. */
+    val languages: List<Pair<String, String>>,
+    val language: String?,
+    val onLanguage: (String) -> Unit,
     val onBack: () -> Unit,
-    /** The row button: remove (learned, added) or restore (blocked, undone), by tab id. */
+    /** The row button: remove (learned, added, shortcuts) or restore (blocked, undone), by tab id. */
     val onRowAction: (tab: String, row: SetDictRow) -> Unit,
-    /** The tab's add row ("Add a word", "Block a word", "Add a rule"). */
+    /** The add button: a word, a blocked word, a rule or a shortcut, by tab id. */
     val onAdd: (tab: String) -> Unit,
-    val onManageReplacements: () -> Unit,
     val onExport: () -> Unit,
     val onForgetAll: () -> Unit,
 )
 
-/** SetDict.dc.html:77-84: each tab's id, label, blurb, add label and row icon. */
-private data class DictTab(val id: String, val label: String, val blurb: String, val add: String, val icon: String)
+/** Each tab's id, label, blurb, add label, row icon, and whether its rows are alphabetical (letter headers). */
+private data class DictTab(val id: String, val label: String, val blurb: String, val add: String, val icon: String, val letters: Boolean)
 
 private val TABS = listOf(
-    DictTab("learned", "Learned", "Words DogBoard picked up from your typing. Remove one and it goes back to being corrected.", "Add a word", "close"),
-    DictTab("added", "Added", "Words you added yourself. They are never corrected and can be suggested.", "Add a word", "close"),
-    DictTab("blocked", "Blocked", "Words you removed from suggestions with a long-press. They are never suggested again.", "Block a word", "undo"),
-    DictTab("rejected", "Undone", "Corrections you undid with delete. DogBoard won’t make these again.", "Add a rule", "undo"),
+    DictTab("learned", "Learned", "Words DogBoard picked up from your typing. Remove one and it goes back to being corrected.", "Add a word", "close", true),
+    DictTab("added", "Added", "Words you added yourself. They are never corrected and can be suggested.", "Add a word", "close", true),
+    DictTab("blocked", "Blocked", "Words you removed from suggestions with a long-press. They are never suggested again.", "Block a word", "undo", true),
+    DictTab("rejected", "Undone", "Corrections you undid with delete. DogBoard won’t make these again.", "Add a rule", "undo", false),
+    DictTab("shortcuts", "Shortcuts", "Type a shortcut and its phrase shows in the bar. Shortcuts beat autocorrect.", "Add a text replacement", "close", true),
 )
 
-/** SetDict.dc.html:16-70: Settings › Your words. */
+/**
+ * Settings › Your words, laid out like Gboard's personal dictionary for long lists: search, language and tabs pinned at
+ * the top, the words under letter headers, adding by a floating button, export and forgetting in the ⋮ menu (the design,
+ * SetDict.dc.html, had them under the list: 500 rows down with many learned words). Rows keep the design's look.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
     var tab by remember { mutableStateOf("learned") }
     var query by remember { mutableStateOf("") }
+    var menu by remember { mutableStateOf(false) }
+    var languageMenu by remember { mutableStateOf(false) }
     val cur = TABS.first { it.id == tab }
+    fun listOf(id: String) = when (id) {
+        "learned" -> state.learned
+        "added" -> state.added
+        "blocked" -> state.blocked
+        "rejected" -> state.undone
+        else -> state.shortcuts
+    }
     val rows = remember(tab, query, state) {
-        when (tab) {
-            "learned" -> state.learned
-            "added" -> state.added
-            "blocked" -> state.blocked
-            else -> state.undone
-        }.filter { query.isBlank() || it.word.contains(query.trim(), ignoreCase = true) }.distinctBy { it.word }
+        listOf(tab).filter { query.isBlank() || it.word.contains(query.trim(), ignoreCase = true) || it.why.contains(query.trim(), ignoreCase = true) }
+            .distinctBy { it.word }
+    }
+    // runs of rows under one letter (alphabetical tabs), each drawn as its own rounded group
+    val groups = remember(rows, cur) {
+        if (!cur.letters) listOf("" to rows)
+        else rows.groupBy { r -> r.word.firstOrNull()?.uppercaseChar()?.takeIf { it.isLetter() }?.toString() ?: "#" }.toList()
     }
 
-    // SetDict:16: 390 wide (the screen), bg, padding 40 0 32, gap 16
-    Box(Modifier.fillMaxSize()) {
+    Box(modifier.fillMaxSize().background(SetColors.screen)) {
     // a lazy list: only the rows on screen are built (a plain scrolling column built all of them: with 500 learned
-    // words, 34 % of scroll frames late and 40-50 ms per search keystroke, debug build, 2026-11-26)
-    LazyColumn(
-        modifier.fillMaxSize().background(SetColors.screen),
-        contentPadding = PaddingValues(top = 40.dp, bottom = 32.dp),
-    ) {
-        item(key = "head") {
-        Column(Modifier.padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // SetDict:18-22 top app bar: 64 tall, padding 0 4, gap 4
-        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton48("arrow_back", 24, SetColors.onSurface, state.onBack)
-            DText("Your words", Modifier.weight(1f), style = setText(22f))
-            IconButton48("more_vert", 24, SetColors.onSurface, state.onExport) // "Import or export"
-        }
-        // SetDict:24-27 search: margin 0 16, 56 tall, radius 28, gap 12, padding 0 18
-        Row(
-            Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(56.dp).background(SetColors.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(horizontal = 18.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Symbol("search", 24.sp, SetColors.onSurfaceVariant)
-            Box(Modifier.weight(1f)) {
-                if (query.isEmpty()) DText("Search your words", style = setText(16f, color = SetColors.onSurfaceVariant))
-                BasicTextField(query, { query = it }, singleLine = true, textStyle = setText(16f), cursorBrush = SolidColor(SetColors.primary), modifier = Modifier.fillMaxWidth())
-            }
-        }
-        // SetDict:29-36 tabs: padding 0 16, a 1 px divider under them
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                .cssShadow(listOf(CssShadow(true, 0f, -1f, 0f, 0f, SetColors.outlineVariant)), RoundedCornerShape(0.dp)),
-        ) {
-            for (t in TABS) {
-                val on = t.id == tab
-                Box(Modifier.weight(1f).height(48.dp).clickable { tab = t.id }, contentAlignment = Alignment.Center) {
-                    DText(t.label, style = setText(14f, 500, if (on) SetColors.primary else SetColors.onSurfaceVariant))
-                    // the indicator: bottom 0, left/right 20%, 3 tall, top corners rounded
-                    Box(
-                        Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.6f).height(3.dp)
-                            .background(if (on) SetColors.primary else Color.Transparent, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)),
-                    )
+    // words, switching back to Learned froze 400 ms, debug build, 2026-11-26)
+    // the 40 dp under the clock outside the list, so the pinned header stops below it
+    LazyColumn(Modifier.fillMaxSize().padding(top = 40.dp), contentPadding = PaddingValues(bottom = 112.dp)) {
+        item(key = "bar") {
+            // top app bar: 64 tall, padding 0 4, gap 4
+            Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton48("arrow_back", 24, SetColors.onSurface, state.onBack)
+                DText("Your words", Modifier.weight(1f), style = setText(22f))
+                Box {
+                    IconButton48("more_vert", 24, SetColors.onSurface) { menu = true }
+                    DropdownMenu(menu, { menu = false }) {
+                        DropdownMenuItem({ DText("Export your words", style = setText(15f)) }, { menu = false; state.onExport() })
+                        DropdownMenuItem({ DText("Forget everything DogBoard learned", style = setText(15f, color = SetColors.onErrorContainer)) }, { menu = false; state.onForgetAll() })
+                    }
                 }
             }
         }
-        // SetDict:38 blurb: margin 0 32, 14 / 1.5
-        DText(cur.blurb, Modifier.padding(horizontal = 32.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = 21.sp), maxLines = 8)
-        }
-        }
-        // SetDict:40-48 the list: margin 0 16, radius 20, rows 2 apart (SetRows' corners: 20 at the group's ends, 4 between)
-        itemsIndexed(rows, key = { _, w -> "$tab/${w.word}" }) { i, w ->
+        stickyHeader(key = "pinned") {
+            Column(Modifier.fillMaxWidth().background(SetColors.screen).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // search: margin 0 16, 56 tall, radius 28, gap 12, padding 0 18
                 Row(
-                    Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp).fillMaxWidth()
-                        .clip(RoundedCornerShape(if (i == 0) 20.dp else 4.dp, if (i == 0) 20.dp else 4.dp, 4.dp, 4.dp))
+                    Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(56.dp).background(SetColors.surfaceContainerHighest, RoundedCornerShape(28.dp)).padding(horizontal = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Symbol("search", 24.sp, SetColors.onSurfaceVariant)
+                    Box(Modifier.weight(1f)) {
+                        if (query.isEmpty()) DText("Search your words", style = setText(16f, color = SetColors.onSurfaceVariant))
+                        BasicTextField(query, { query = it }, singleLine = true, textStyle = setText(16f), cursorBrush = SolidColor(SetColors.primary), modifier = Modifier.fillMaxWidth())
+                    }
+                    if (query.isNotEmpty()) Box(Modifier.size(32.dp).clip(RoundedCornerShape(16.dp)).clickable { query = "" }, contentAlignment = Alignment.Center) {
+                        Symbol("close", 20.sp, SetColors.onSurfaceVariant)
+                    }
+                }
+                // the language whose learned words show: a chip (filter chip: 32 tall, radius 8, outlined)
+                val name = state.languages.firstOrNull { it.first == state.language }?.second
+                if (name != null) Box(Modifier.padding(horizontal = 16.dp)) {
+                    Row(
+                        Modifier.height(32.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp)).clickable(enabled = state.languages.size > 1) { languageMenu = true }.padding(start = 12.dp, end = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Symbol("language", 18.sp, SetColors.onSurfaceVariant)
+                        DText(name, style = setText(14f, 500))
+                        if (state.languages.size > 1) Symbol("arrow_drop_down", 18.sp, SetColors.onSurfaceVariant)
+                    }
+                    DropdownMenu(languageMenu, { languageMenu = false }) {
+                        for ((t, n) in state.languages) DropdownMenuItem({ DText(n, style = setText(15f, if (t == state.language) 600 else 400)) }, { languageMenu = false; state.onLanguage(t) })
+                    }
+                }
+                // tabs, scrollable (five with their counts): a 1 px divider under them
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp)
+                        .cssShadow(listOf(CssShadow(true, 0f, -1f, 0f, 0f, SetColors.outlineVariant)), RoundedCornerShape(0.dp)),
+                ) {
+                    for (t in TABS) {
+                        val on = t.id == tab
+                        val n = listOf(t.id).size
+                        Box(Modifier.height(48.dp).clickable { tab = t.id }.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                DText(t.label, style = setText(14f, 500, if (on) SetColors.primary else SetColors.onSurfaceVariant))
+                                if (n > 0) DText("$n", style = setText(12f, 500, if (on) SetColors.primary else SetColors.onSurfaceVariant))
+                            }
+                            // the indicator: bottom 0, as wide as the label, 3 tall, top corners rounded
+                            Box(
+                                Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp)
+                                    .background(if (on) SetColors.primary else Color.Transparent, RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item(key = "blurb") {
+            // blurb: margin 0 32, 14 / 1.5
+            DText(cur.blurb, Modifier.padding(start = 32.dp, end = 32.dp, top = 12.dp, bottom = 8.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = 21.sp), maxLines = 8)
+        }
+        if (rows.isEmpty()) item(key = "empty") {
+            DText(
+                if (query.isBlank()) "Nothing here yet." else "No matches.", Modifier.fillMaxWidth().padding(32.dp),
+                style = setText(15f, color = SetColors.onSurfaceVariant).copy(textAlign = TextAlign.Center),
+            )
+        }
+        for ((letter, group) in groups) {
+            if (letter.isNotEmpty()) item(key = "$tab/letter/$letter") {
+                DText(letter, Modifier.padding(start = 32.dp, top = 12.dp, bottom = 6.dp), style = setText(14f, 500, SetColors.primary))
+            }
+            // rows 2 apart, margin 0 16; SetRows' corners: 20 at the group's ends, 4 between
+            itemsIndexed(group, key = { _, w -> "$tab/${w.word}" }) { i, w ->
+                val top = if (i == 0) 20.dp else 4.dp
+                val bottom = if (i == group.lastIndex) 20.dp else 4.dp
+                Row(
+                    Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp).fillMaxWidth().clip(RoundedCornerShape(top, top, bottom, bottom))
                         .heightIn(min = 64.dp).background(SetColors.row).padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         DText(w.word, style = setText(16f))
-                        DText(w.why, style = setText(13f, color = SetColors.onSurfaceVariant))
+                        DText(w.why, style = setText(13f, color = SetColors.onSurfaceVariant), maxLines = 2)
                     }
                     IconButton48(cur.icon, 22, SetColors.onSurfaceVariant) { state.onRowAction(tab, w) }
                 }
             }
-        item(key = "add") {
-            val top = if (rows.isEmpty()) 20.dp else 4.dp
-            Row(
-                Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(top, top, 20.dp, 20.dp))
-                    .heightIn(min = 56.dp).background(SetColors.row).clickable { state.onAdd(tab) }.padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Symbol("add", 22.sp, SetColors.primary)
-                DText(cur.add, style = setText(15f, 500, SetColors.primary))
-            }
         }
-        item(key = "tail") {
-        Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        // SetDict:50-63 text replacements: padding 0 16, gap 8
-        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            DText("Text replacements", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
-            SetRows(Modifier.fillMaxWidth()) {
-                for ((shortcut, phrase) in state.replacements) {
-                    Row(
-                        Modifier.fillMaxWidth().background(SetColors.row).padding(horizontal = 16.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        DText(shortcut, Modifier.background(SetColors.secondaryContainer, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp), style = setText(15f, 600, SetColors.onSecondaryContainer))
-                        Symbol("arrow_forward", 18.sp, SetColors.onSurfaceVariant)
-                        DText(phrase, Modifier.weight(1f), style = setText(16f))
-                    }
-                }
-                Row(
-                    Modifier.fillMaxWidth().heightIn(min = 56.dp).background(SetColors.row).clickable(onClick = state.onManageReplacements).padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    DText("Shortcuts beat autocorrect and show in the bar.", Modifier.weight(1f), style = setText(15f, color = SetColors.onSurfaceVariant), maxLines = 8)
-                    DText("Manage", style = setText(14f, 500, SetColors.primary))
-                }
-            }
-        }
-        // SetDict:65-69 buttons: padding 8 32 0, gap 10
-        Column(Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                Modifier.fillMaxWidth().height(48.dp).cssShadow(listOf(CssShadow(true, 0f, 0f, 0f, 1f, SetColors.outline)), RoundedCornerShape(24.dp))
-                    .clip(RoundedCornerShape(24.dp)).clickable(onClick = state.onExport),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Symbol("ios_share", 20.sp, SetColors.primary)
-                DText("Export your words", style = setText(14f, 500, SetColors.primary))
-            }
-            Row(
-                Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(24.dp)).background(SetColors.errorContainer).clickable(onClick = state.onForgetAll),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Symbol("delete_forever", 20.sp, SetColors.onErrorContainer)
-                DText("Forget everything DogBoard learned", style = setText(14f, 600, SetColors.onErrorContainer))
-            }
+        item(key = "note") {
             DText(
-                "Your words stay on this phone. Nothing is sent anywhere.", Modifier.fillMaxWidth(),
+                "Your words stay on this phone. Nothing is sent anywhere.", Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 24.dp),
                 style = setText(13f, color = SetColors.onSurfaceVariant).copy(lineHeight = (13 * 1.45).sp, textAlign = TextAlign.Center),
             )
         }
-        }
-        }
+    }
+    // the add button (M3 extended FAB: 56 tall, radius 16, the secondary container), above the navigation bar
+    Row(
+        Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(16.dp).height(56.dp)
+            .cssShadow(listOf(CssShadow(false, 0f, 2f, 6f, 0f, Color.Black.copy(alpha = 0.25f))), RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp)).background(SetColors.secondaryContainer).clickable { state.onAdd(tab) }.padding(start = 16.dp, end = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Symbol("add", 24.sp, SetColors.onSecondaryContainer)
+        DText(cur.add, style = setText(15f, 500, SetColors.onSecondaryContainer))
     }
     StatusBarBand() // a scrolled page doesn't run under the clock
     }

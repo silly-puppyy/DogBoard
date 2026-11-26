@@ -387,6 +387,38 @@ object EngineLoader {
         }
     }
 
+    /** Your words' language chip: the loaded language first, then the others with learned data (dogboard/lang/<tag>). */
+    fun learnedLanguages(context: Context): List<String> {
+        val dirs = File(context.applicationContext.filesDir, "dogboard/lang").listFiles().orEmpty()
+            .filter { d -> d.listFiles().orEmpty().any { it.length() > 0 } }.map { it.name }.sorted()
+        return (listOfNotNull(pack?.tag) + dirs).distinct()
+    }
+
+    /**
+     * A language that isn't loaded, read from its files: its learned words (user_words.txt, less [added]; the loaded
+     * language also lists the typed words its lexicon lacks, which needs the lexicon) with their uses, and its undone
+     * corrections.
+     */
+    fun languageLists(context: Context, tag: String, added: Set<String>): Pair<List<Pair<String, Int>>, List<Triple<String, String, Int>>> {
+        val dir = File(context.applicationContext.filesDir, "dogboard/lang/$tag")
+        val personal = io.github.sillypuppyy.dogboard.engine.PersonalModel(File(dir, "personal.tsv"))
+        val words = File(dir, "user_words.txt").takeIf { it.exists() }?.readLines().orEmpty().map { it.trim() }
+            .filter { it.isNotEmpty() && it.lowercase() !in added }.distinctBy { it.lowercase() }.sortedBy { it.lowercase() }
+        return words.map { it to personal.uses(it) } to io.github.sillypuppyy.dogboard.engine.Rejections(File(dir, "rejected_corrections.txt")).undone()
+    }
+
+    /** Forgets [word] in a language that isn't loaded: every language's learned list and [tag]'s typing history. */
+    fun forgetWordIn(context: Context, tag: String, word: String) {
+        val files = context.applicationContext.filesDir
+        forgetWordEverywhere(files, word)
+        io.github.sillypuppyy.dogboard.engine.PersonalModel(File(files, "dogboard/lang/$tag/personal.tsv")).remove(word)
+    }
+
+    /** Takes back an undone correction in a language that isn't loaded. */
+    fun restoreCorrectionIn(context: Context, tag: String, typed: String, correction: String) =
+        io.github.sillypuppyy.dogboard.engine.Rejections(File(context.applicationContext.filesDir, "dogboard/lang/$tag/rejected_corrections.txt"))
+            .restore(typed, correction)
+
     fun ensureLoaded(context: Context) {
         if (TypingEngine.isReady) return
         nativeMark("start")

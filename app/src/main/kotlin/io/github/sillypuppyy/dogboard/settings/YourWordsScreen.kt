@@ -36,11 +36,23 @@ fun YourWordsScreen() {
     var version by remember { mutableIntStateOf(0) } // bumped after every change
     var lists by remember { mutableStateOf<TypingEngine.DictionaryLists?>(null) }
     var replacements by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
-    LaunchedEffect(version) {
+    var languages by remember { mutableStateOf(emptyList<String>()) }
+    // the language whose learned words show: null, the loaded one (its engine's lists); another is read from its files
+    var language by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(version, language) {
         withContext(Dispatchers.IO) {
             EngineLoader.ensureLoaded(context)
-            lists = TypingEngine.dictionaryLists()
+            val own = TypingEngine.dictionaryLists()
+            val other = language?.takeIf { it != EngineLoader.pack?.tag }
+            lists = if (other == null) own else {
+                val (learned, undone) = EngineLoader.languageLists(context, other, own.added.map { it.lowercase() }.toSet())
+                own.copy(
+                    learned = learned.map { (w, uses) -> w to if (uses > 0) "You used it $uses ${if (uses == 1) "time" else "times"}" else "You kept it as typed" },
+                    undone = undone,
+                )
+            }
             replacements = TypingEngine.textReplacements()
+            languages = EngineLoader.learnedLanguages(context)
         }
     }
     fun change(block: () -> Unit) = scope.launch {
@@ -49,6 +61,8 @@ fun YourWordsScreen() {
     }
     var dialog by remember { mutableStateOf<String?>(null) } // add:<tab>, replacements, forget
 
+    val shown = language ?: EngineLoader.pack?.tag
+    val other = shown?.takeIf { it != EngineLoader.pack?.tag }
     val l = lists ?: TypingEngine.DictionaryLists(emptyList(), emptyList(), emptyList(), emptyList())
     SetDict(
         SetDictState(
@@ -58,19 +72,29 @@ fun YourWordsScreen() {
             undone = l.undone.map { (typed, corr, n) ->
                 SetDictRow("$typed → $corr", if (n == 1) "Undone once" else "Undone $n times", typed to corr)
             },
-            replacements = replacements,
+            shortcuts = replacements.sortedBy { it.first.lowercase() }.map { (s, p) -> SetDictRow(s, p) },
+            languages = languages.map { t ->
+                val loc = java.util.Locale.forLanguageTag(t)
+                t to loc.getDisplayName(loc).replaceFirstChar { it.titlecase(loc) }
+            },
+            language = shown,
+            onLanguage = { language = it },
             onBack = { navController.popBackStack() },
             onRowAction = { tab, row ->
                 change {
-                    when (tab) {
-                        "learned", "added" -> TypingEngine.forgetWord(row.word)
-                        "blocked" -> TypingEngine.unblock(row.word)
-                        else -> (row.key as? Pair<*, *>)?.let { (t, c) -> TypingEngine.restoreCorrection(t as String, c as String) }
+                    when {
+                        tab == "shortcuts" -> TypingEngine.removeTextReplacement(row.word)
+                        tab == "blocked" -> TypingEngine.unblock(row.word)
+                        tab == "rejected" -> (row.key as? Pair<*, *>)?.let { (t, c) ->
+                            if (other == null) TypingEngine.restoreCorrection(t as String, c as String)
+                            else EngineLoader.restoreCorrectionIn(context, other, t as String, c as String)
+                        }
+                        tab == "learned" && other != null -> EngineLoader.forgetWordIn(context, other, row.word)
+                        else -> TypingEngine.forgetWord(row.word)
                     }
                 }
             },
-            onAdd = { tab -> dialog = "add:$tab" },
-            onManageReplacements = { dialog = "replacements" },
+            onAdd = { tab -> dialog = if (tab == "shortcuts") "replacements" else "add:$tab" },
             onExport = {
                 val text = buildString {
                     appendLine("DogBoard: your words")

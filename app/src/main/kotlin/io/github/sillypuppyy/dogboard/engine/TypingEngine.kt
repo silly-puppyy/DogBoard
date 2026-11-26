@@ -725,6 +725,8 @@ object TypingEngine {
     /** Adds a text replacement from settings. */
     fun addTextReplacement(shortcut: String, phrase: String) = replacements.put(shortcut, phrase)
 
+    fun removeTextReplacement(shortcut: String) = replacements.remove(shortcut)
+
     /** The user took back an undo in settings: [typed] -> [correction] may be made again. */
     fun restoreCorrection(typed: String, correction: String) = rejections.restore(typed, correction)
 
