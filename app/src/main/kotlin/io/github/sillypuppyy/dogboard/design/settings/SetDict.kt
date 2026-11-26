@@ -12,10 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,19 +72,25 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
     var tab by remember { mutableStateOf("learned") }
     var query by remember { mutableStateOf("") }
     val cur = TABS.first { it.id == tab }
-    val rows = when (tab) {
-        "learned" -> state.learned
-        "added" -> state.added
-        "blocked" -> state.blocked
-        else -> state.undone
-    }.filter { query.isBlank() || it.word.contains(query.trim(), ignoreCase = true) }
+    val rows = remember(tab, query, state) {
+        when (tab) {
+            "learned" -> state.learned
+            "added" -> state.added
+            "blocked" -> state.blocked
+            else -> state.undone
+        }.filter { query.isBlank() || it.word.contains(query.trim(), ignoreCase = true) }.distinctBy { it.word }
+    }
 
     // SetDict:16: 390 wide (the screen), bg, padding 40 0 32, gap 16
     Box(Modifier.fillMaxSize()) {
-    Column(
-        modifier.fillMaxSize().background(SetColors.screen).verticalScroll(rememberScrollState()).padding(top = 40.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    // a lazy list: only the rows on screen are built (a plain scrolling column built all of them: with 500 learned
+    // words, 34 % of scroll frames late and 40-50 ms per search keystroke, debug build, 2026-11-26)
+    LazyColumn(
+        modifier.fillMaxSize().background(SetColors.screen),
+        contentPadding = PaddingValues(top = 40.dp, bottom = 32.dp),
     ) {
+        item(key = "head") {
+        Column(Modifier.padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // SetDict:18-22 top app bar: 64 tall, padding 0 4, gap 4
         Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton48("arrow_back", 24, SetColors.onSurface, state.onBack)
@@ -120,11 +127,14 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
         }
         // SetDict:38 blurb: margin 0 32, 14 / 1.5
         DText(cur.blurb, Modifier.padding(horizontal = 32.dp), style = setText(14f, color = SetColors.onSurfaceVariant).copy(lineHeight = 21.sp), maxLines = 8)
-        // SetDict:40-48 the list: margin 0 16, radius 20, rows 2 apart
-        SetRows(Modifier.padding(horizontal = 16.dp).fillMaxWidth()) {
-            for (w in rows) {
+        }
+        }
+        // SetDict:40-48 the list: margin 0 16, radius 20, rows 2 apart (SetRows' corners: 20 at the group's ends, 4 between)
+        itemsIndexed(rows, key = { _, w -> "$tab/${w.word}" }) { i, w ->
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 64.dp).background(SetColors.row).padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
+                    Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp).fillMaxWidth()
+                        .clip(RoundedCornerShape(if (i == 0) 20.dp else 4.dp, if (i == 0) 20.dp else 4.dp, 4.dp, 4.dp))
+                        .heightIn(min = 64.dp).background(SetColors.row).padding(start = 16.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -134,14 +144,19 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
                     IconButton48(cur.icon, 22, SetColors.onSurfaceVariant) { state.onRowAction(tab, w) }
                 }
             }
+        item(key = "add") {
+            val top = if (rows.isEmpty()) 20.dp else 4.dp
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 56.dp).background(SetColors.row).clickable { state.onAdd(tab) }.padding(horizontal = 16.dp),
+                Modifier.padding(horizontal = 16.dp).fillMaxWidth().clip(RoundedCornerShape(top, top, 20.dp, 20.dp))
+                    .heightIn(min = 56.dp).background(SetColors.row).clickable { state.onAdd(tab) }.padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
                 Symbol("add", 22.sp, SetColors.primary)
                 DText(cur.add, style = setText(15f, 500, SetColors.primary))
             }
         }
+        item(key = "tail") {
+        Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // SetDict:50-63 text replacements: padding 0 16, gap 8
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             DText("Text replacements", Modifier.padding(horizontal = 16.dp, vertical = 4.dp), style = setText(14f, 500, SetColors.primary))
@@ -186,6 +201,8 @@ fun SetDict(state: SetDictState, modifier: Modifier = Modifier) {
                 "Your words stay on this phone. Nothing is sent anywhere.", Modifier.fillMaxWidth(),
                 style = setText(13f, color = SetColors.onSurfaceVariant).copy(lineHeight = (13 * 1.45).sp, textAlign = TextAlign.Center),
             )
+        }
+        }
         }
     }
     StatusBarBand() // a scrolled page doesn't run under the clock
