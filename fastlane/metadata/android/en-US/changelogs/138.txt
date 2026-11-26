@@ -1,0 +1,5 @@
+- Your words, redesigned for long lists: search, language and tabs stay at the top, words sorted under letters, a button to add, and text replacements in their own Shortcuts tab
+- Your words: see each language's learned words (pick the language at the top)
+- Your words: no more freezes with hundreds of words
+- Language downloads show their progress, on the Languages page and in a notification
+- Photo themes are called by their name on the Themes page (it said "Photo")
