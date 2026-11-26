@@ -10,26 +10,29 @@ P percent of the sampled documents (threshold from the first 40 groups) and its 
 OUT_DIR/chatty.txt, control.txt, hosts.tsv (domains of the chatty documents), stats.json. Also chatty.hosts: the host of
 every line of chatty.txt (same order), so a host found unwanted afterwards can be dropped without a new download.
 --no-control skips the control sample (control.txt stays empty)."""
-import argparse, collections, hashlib, json, multiprocessing as mp, os, re, sys
+import argparse, collections, hashlib, json, multiprocessing as mp, os, re, sys, unicodedata
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from conv_common import PRON, WORD, lower, Chat, SPLIT
 
-TOK = re.compile(r'\w+')
+# a word: letters, digits and the marks that belong to them (Devanagari vowel signs, Arabic and Hebrew points; Python's \w has
+# none, so Hindi words fell apart in tokens of one letter, 2026-11-25)
+TOK = re.compile('(?:\\w|[' + ''.join(chr(c) for c in range(0x300, 0x10000) if unicodedata.category(chr(c))[0] == 'M') + '])+')
 
 
 def doc_score(text, pron):
+    text = unicodedata.normalize('NFC', text)
     toks = [t for t in TOK.findall(text.lower())]
     n = len(toks)
     if n < 25 or n > 3000: return None
     p = sum(t in pron for t in toks)
-    q = text.count('?')
-    ends = max(1, len(re.findall(r'[.!?…]+(?:\s|$)|\n', text)))
+    q = text.count('?') + text.count('؟')
+    ends = max(1, len(re.findall(r'[.!?…।॥؟]+(?:\s|$)|\n', text)))
     return (100.0 * p / n + 200.0 * q / n), n / ends
 
 
 def lines_of(text, lang):
     out = []
-    for s in SPLIT.split(text):
+    for s in SPLIT.split(unicodedata.normalize('NFC', text)):
         w = [lower(x, lang).replace('’', "'") for x in WORD.findall(s)]
         if len(w) >= 2: out.append(' '.join(w))
     return out

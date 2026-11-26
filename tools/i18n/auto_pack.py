@@ -203,7 +203,11 @@ LANGS = {
                layout=('gboard', 'qwerty'), gboard_tag='af-ZA', script='Latn', compounds=False),
 }
 FW2_CONFIG = {'bg': 'bul_Cyrl', 'es': 'spa_Latn', 'ru': 'rus_Cyrl', 'de': 'deu_Latn', 'fr': 'fra_Latn', 'it': 'ita_Latn', 'pt': 'por_Latn',
-              'pl': 'pol_Latn', 'cs': 'ces_Latn', 'nl': 'nld_Latn', 'tr': 'tur_Latn', 'sv': 'swe_Latn', 'ro': 'ron_Latn', 'uk': 'ukr_Cyrl'}
+              'pl': 'pol_Latn', 'cs': 'ces_Latn', 'nl': 'nld_Latn', 'tr': 'tur_Latn', 'sv': 'swe_Latn', 'ro': 'ron_Latn', 'uk': 'ukr_Cyrl',
+              # 2026-11-25 second batch (config names listed from the dataset's data/ folder)
+              'fi': 'fin_Latn', 'hu': 'hun_Latn', 'el': 'ell_Grek', 'id': 'ind_Latn', 'he': 'heb_Hebr', 'ar': 'arb_Arab', 'fa': 'fas_Arab',
+              'hi': 'hin_Deva', 'vi': 'vie_Latn', 'ko': 'kor_Hang', 'ca': 'cat_Latn', 'da': 'dan_Latn', 'nb': 'nob_Latn', 'sk': 'slk_Latn',
+              'hr': 'hrv_Latn', 'sr': 'srp_Cyrl', 'lt': 'lit_Latn', 'lv': 'lvs_Latn', 'et': 'ekk_Latn'}
 for _l, _c in FW2_CONFIG.items(): LANGS[_l]['fw2'] = _c
 # hosts left out of the conversational slice after reading its top 30 (adult, dating, gambling, personal-data sites), per language
 CONV_DROP_HOSTS = {
@@ -212,6 +216,26 @@ CONV_DROP_HOSTS = {
     'de': ('6profis.de', 'planet-liebe.de', 'freesoft-board.to', 'digital-eliteboard.com'),
     'tr': ('kizlarsoruyor.com',),
     'sv': ('eniro.se',),
+    # second batch (2026-11-25): a company register, a teen sex-and-dating Q&A (hu); gibberish word-salad spam and a stranger-chat site
+    # (ar); an erotic-story site below the automatic share (fa)
+    'hu': ('bisnode.hu', 'kamaszpanasz.hu', 'intimzona.hu', 'feromonx.hu'),
+    # erotic-story, escort and gambling-spam hosts at 8 to 10 % explicit words, just under the automatic 10 % (hi)
+    'hi': ('kamuktahub.in', 'pinkgoa.in', 'hottestseductive.com', 'desikahani.net', 'freeclassifiedwebsitess.com', 'turku-piter.ru',
+           'agentsofishq.com', 'bienvenuechezleschtis-lefilm.com'),
+    'ar': ('ar.whatschat.org', 'theiu.org', 'sejrup-it.dk', 'macfixer.co.uk'),
+    'fa': ('shahvani.com', 'fa.videochat.world'),
+    # lottery-tip / online-casino hosts just under the automatic share (vi, nb), a machine-translated relationship-advice site (da)
+    'vi': ('win2888asia.com', 'soicaumienphi.org', 'soicau3s.me'),
+    'nb': ('spinpalace.com',),
+    # word-salad spam (ko)
+    'ko': ('whooskin.kr',),
+    # machine-translated dating-advice spam (ca)
+    # a web shop's boilerplate (31k lines, 2 % of the slice) and an erotic-story site (da)
+    'da': ('gucca.dk', 'pov.international', 'da.whattalking.com'),
+    # a machine-translated relationship-advice magazine (sr)
+    'sr': ('sr.lifesizemagazine.com', 'gamblingpapa.com'),
+    'lv': ('lv.lifesizemagazine.com',),
+    'ca': ('ca.whattalking.com', 'ca.clarksbarandrestaurant.com', 'ca.enverpasadergisi.com'),
 }
 CLDR_URL = 'https://raw.githubusercontent.com/unicode-org/cldr/main/common/main/{}.xml'
 
@@ -310,7 +334,9 @@ class Pack:
 
     def text_ok(self, text):
         """The corpus letter filter: no letter foreign to the language, no mostly-Latin text in a non-Latin script."""
-        ok = self.__dict__.setdefault('_letters', letters_of(self.lang))
+        # computed once (setdefault(.., letters_of(..)) re-read and re-parsed the CLDR file for every line: Korean's 11,172-syllable range took 35+ minutes)
+        if '_letters' not in self.__dict__: self._letters = letters_of(self.lang)
+        ok = self._letters
         latin = self.cfg['script'] != 'Latn' and 2 * sum('a' <= c.lower() <= 'z' for c in text) > sum(c.isalpha() for c in text)
         # a letter written precomposed is checked by its parts: CLDR lists Bengali য় as য + ় and Armenian
         # և is ե + ւ (73 % of Bengali news and 46 % of Armenian Wikipedia were dropped, 2026-11-25)

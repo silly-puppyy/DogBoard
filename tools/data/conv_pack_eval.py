@@ -7,7 +7,7 @@ OLD_DIR / NEW_DIR hold train.txt and <lang>.arpa (auto_pack.py's folders); OUT_D
 (pack tokens, 2 to 40 words, never a line of either training text): news = random sentences of NEW_DIR/<lang>.heldout.txt
 (Leipzig ids ending in 0), tatoeba = sentences with ids ending in 0, wildchat / oasst2 / aya = local user-turn sets
 (conv-sources/local), at most 6,000 each. Scoring: conv_pilot_eval.py (exact back-off ranking over the ARPA files)."""
-import os, random, subprocess, sys
+import os, random, subprocess, sys, unicodedata
 here = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, here); sys.path.insert(0, os.path.join(here, '..', 'i18n'))
 from leipzig_sentences import WORD, SENTENCE_END, lower
@@ -43,7 +43,8 @@ for name, ss in raw.items():
     for s in ss:
         for w in lines_of(s):
             if not 2 <= len(w) <= 40: continue
-            if name != 'news' and not set(''.join(w)) <= letters: continue
+            # letters and nonspacing marks only, as auto_pack.text_ok: Devanagari vowel signs (ा ि ी, category Mc) are in no letter set
+            if name != 'news' and not {c for c in ''.join(w) if c.isalpha() or unicodedata.category(c) == 'Mn'} <= letters: continue
             line = ' '.join(w)
             if line in train: dup += 1; continue
             got.append(line)
