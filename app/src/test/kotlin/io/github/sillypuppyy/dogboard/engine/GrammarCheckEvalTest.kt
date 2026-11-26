@@ -18,6 +18,15 @@ class GrammarCheckEvalTest : FunSpec({
         GrammarCheck.family("fr", "maison", known).first shouldBe emptyList()
     }
 
+    test("languageOf: the keyboard language that knows the most words, the first on a tie") {
+        val en = setOf("i", "am", "looking", "for", "the", "red", "house", "a", "la", "carte").let { s -> { w: String -> w in s } }
+        val fr = setOf("je", "cherche", "le", "la", "maison", "rouge", "a", "carte").let { s -> { w: String -> w in s } }
+        GrammarCheck.languageOf("Je cherche le maison rouge", listOf(en, fr)) shouldBe 1
+        GrammarCheck.languageOf("I am looking for the red house", listOf(en, fr)) shouldBe 0
+        GrammarCheck.languageOf("a la carte", listOf(en, fr)) shouldBe 0
+        GrammarCheck.languageOf("Je cherche", listOf(fr)) shouldBe 0
+    }
+
     // DOGBOARD_GRAMMAR_PROBE="Je cherche le maison rouge|...": each sentence's flags, and per word how much better its
     // family's best form fits (log10; flagged at DET_MARGIN / ENDING_MARGIN)
     test("probe sentences").config(enabled = System.getenv("DOGBOARD_GRAMMAR_PROBE") != null) {

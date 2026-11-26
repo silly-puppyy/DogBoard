@@ -48,6 +48,18 @@ object GrammarCheck {
 
     fun supports(lang: String) = lang.substringBefore('-') in DETS
 
+    /**
+     * Which of a keyboard's languages [text] is in: the one whose word list ([known], the first language's first) knows
+     * the most of its words, the first on a tie. A text is checked in that language only: Spanish rules on English text
+     * ("a la carte") would flag nonsense.
+     */
+    fun languageOf(text: String, known: List<(String) -> Boolean>): Int {
+        if (known.size < 2) return 0
+        val words = WORD.findAll(text).map { it.value.lowercase() }.toList()
+        val counts = known.map { k -> words.count(k) }
+        return counts.indices.maxByOrNull { counts[it] * 1000 - it } ?: 0
+    }
+
     /** The other forms of [w]'s family that [known] holds, and whether they are a determiner set. */
     internal fun family(lang: String, w: String, known: (String) -> Boolean): Pair<List<String>, Boolean> {
         DETS[lang]?.firstOrNull { w in it }?.let { set -> return set.filter { it != w } to true }

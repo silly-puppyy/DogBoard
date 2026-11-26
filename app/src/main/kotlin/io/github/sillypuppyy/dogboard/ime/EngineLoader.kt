@@ -74,6 +74,7 @@ object EngineLoader {
                     // the trigram only where the heap has room for more than one language's (M8 measures the phone)
                     ngrams = if (heapMb(app) > LOW_HEAP_MB) loadNgrams(app, p) else null,
                     letters = runCatching { p.open("charlm")?.use { CharModel.read(it) } }.getOrNull(),
+                    lang = p.tag,
                 )
                 secondaryPacks = secondaryPacks + p
                 io.github.sillypuppyy.dogboard.perf.EventLog.add("second language ${p.tag} loaded after ${android.os.SystemClock.uptimeMillis() - t0} ms")

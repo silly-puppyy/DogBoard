@@ -108,6 +108,10 @@ object TypingEngine {
     private val CHEAP_LETTER_EDITS = setOf("en", "es", "fr", "ru")
 
     private class Loaded(val lexicon: Lexicon, val bigrams: Bigrams?, val rules: LanguageRules) {
+        /** A second language's tag and trigram (grammarFlags checks text in it); the first's are CaseAdapt and ngramModel. */
+        var lang: String = ""
+        var ngrams: NgramModel? = null
+
         /** The scripts the language's keys type (Latin for English's default rows). */
         val scripts: Set<Character.UnicodeScript> by lazy {
             rules.letterRows.rows.flatMap { it.asIterable() }.filter { it.isLetter() }.map { Character.UnicodeScript.of(it.code) }
@@ -506,13 +510,14 @@ object TypingEngine {
         rules: LanguageRules,
         ngrams: NgramModel?,
         letters: CharModel?,
+        lang: String = "",
     ) {
         val (lexicon, bigrams, _) = wordData(openLexicon, openBigrams, snapshotDir, snapshotKey, openShipped, pathOf = pathOf(rules))
-        loadSecondary(lexicon, bigrams, rules, ngrams, letters)
+        loadSecondary(lexicon, bigrams, rules, ngrams, letters, lang)
     }
 
-    fun loadSecondary(lexicon: Lexicon, bigrams: Bigrams?, rules: LanguageRules, ngrams: NgramModel?, letters: CharModel?) {
-        val sec = Loaded(lexicon, bigrams, rules)
+    fun loadSecondary(lexicon: Lexicon, bigrams: Bigrams?, rules: LanguageRules, ngrams: NgramModel?, letters: CharModel?, lang: String = "") {
+        val sec = Loaded(lexicon, bigrams, rules).also { it.lang = lang; it.ngrams = ngrams }
         // its look back and its rejoining of split words run in its own words and context too
         val scorer = if (ngrams != null && bigrams != null) NgramScorer(ngrams, lexicon, bigrams.sentenceStart) else null
         for (d in listOf(sec.decoder, sec.retroDecoder, sec.joinDecoder)) {
@@ -1634,10 +1639,13 @@ object TypingEngine {
     /** Agreement errors in [text] for the spell checker's grammar underline (GrammarCheck); empty without a model. */
     fun grammarFlags(text: String): List<GrammarCheck.Flag> {
         val engine = loaded ?: return emptyList()
-        val model = ngramModel ?: return emptyList()
-        val lang = CaseAdapt.locale.language
-        if (!GrammarCheck.supports(lang)) return emptyList()
-        return runCatching { GrammarCheck.check(text, lang, model) { w -> lock.read { engine.lexicon.contains(w) } } }.getOrDefault(emptyList())
+        // the text's language among the keyboard's (English + Français: French text gets French's check, English none)
+        val langs = listOf(Triple(CaseAdapt.locale.language, ngramModel, engine.lexicon)) +
+            secondaries.map { Triple(it.lang.substringBefore('-'), it.ngrams, it.lexicon) }
+        val i = GrammarCheck.languageOf(text, langs.map { (_, _, lex) -> { w: String -> lock.read { lex.contains(w) } } })
+        val (lang, model, lexicon) = langs[i]
+        if (model == null || !GrammarCheck.supports(lang)) return emptyList()
+        return runCatching { GrammarCheck.check(text, lang, model) { w -> lock.read { lexicon.contains(w) } } }.getOrDefault(emptyList())
     }
 
     /** Where [spell]'s suggestions come from (both by default; one alone to measure them). */
