@@ -294,8 +294,10 @@ def fold(c):
     return unicodedata.normalize('NFD', c)[0]
 
 
+# the letter model too: it judges whether a typed unknown word looks like a word, and one retrained on a conversational slice kept
+# untoned Vietnamese ("gioi") as typed (tone restoration 29.9 -> 24.9 %; the older pack's letter model: 29.2 %, 2026-11-26)
 SEED_COPY = ('{l}.heldout.txt', 'train.txt', '{l}.lexicon.tsv', '{l}.bigrams.tsv', 'rules.json', '{l}-typos.tsv', '{l}-accents-clear.tsv',
-             '{l}-accents-twin.tsv', '{l}-controls.tsv')
+             '{l}-accents-twin.tsv', '{l}-controls.tsv', '{l}.charlm.bin', '{l}.charlm.tsv')
 
 
 class Pack:
@@ -565,9 +567,18 @@ class Pack:
         alphabet = ''.join(sorted({fold(c) for w in words for c in w if c.isalpha()}, key=lambda c: -sum(w.count(c) for w in words[:5000])))
         alphabet = ''.join(c for c in alphabet if c.isalpha())[:60]
         uni = self.p(f'{self.lang}.unigrams.tsv')
+        # the letter model learns from the written text only, not a conversational slice (--conv): it judges whether a typed
+        # unknown word looks like a word, and chat's untoned and sloppy spellings made "gioi" look like one (Vietnamese tone
+        # restoration 29.9 -> 24.9 %; with the written text's letter model 29.2 %, 2026-11-26)
+        written = None
+        if os.path.exists(self.p('conv-lines.txt')):
+            written = int(open(self.p('conv-lines.txt')).read().split('\t')[0])
+            uni = self.p(f'{self.lang}.unigrams-written.tsv')
         if not os.path.exists(uni):
             cnt = Counter(); W = re.compile(L + r"+")
-            for line in open(self.p('train.txt'), encoding='utf-8'): cnt.update(lower(w, self.lang) for w in W.findall(line))
+            for i, line in enumerate(open(self.p('train.txt'), encoding='utf-8')):
+                if written is not None and i >= written: break
+                cnt.update(lower(w, self.lang) for w in W.findall(line))
             with open(uni, 'w', encoding='utf-8') as o:
                 for w, c in cnt.most_common(): o.write(f'{w}\t{c}\n')
         latin_az = set(alphabet) <= set('abcdefghijklmnopqrstuvwxyz')
