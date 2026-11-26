@@ -353,7 +353,12 @@ object EngineLoader {
         val legacy = File(files, "dogboard/$name")
         if (!f.exists() && legacy.exists()) runCatching {
             f.parentFile?.mkdirs()
-            val kept = legacy.readLines().filter { line -> line.firstOrNull { it.isLetter() }?.let { Character.UnicodeScript.of(it.code) in scripts } == true }
+            // personal.tsv's lines start with a kind tag ("w", "p", "t" and a tab) before their words, and its "#" line
+            // holds the typed-word count: judged by the words, the header always kept (by the tag every line looked Latin)
+            fun words(line: String) = if (name == "personal.tsv") line.substringAfter('\t') else line
+            val kept = legacy.readLines().filter { line ->
+                line.startsWith("#") || words(line).firstOrNull { it.isLetter() }?.let { Character.UnicodeScript.of(it.code) in scripts } == true
+            }
             f.writeText(kept.joinToString("") { it + "\n" })
         }
         return f
