@@ -1629,6 +1629,15 @@ object TypingEngine {
         return false to (spelled + fixes).map(::cased).distinctBy { it.lowercase() }.take(max)
     }
 
+    /** Agreement errors in [text] for the spell checker's grammar underline (GrammarCheck); empty without a model. */
+    fun grammarFlags(text: String): List<GrammarCheck.Flag> {
+        val engine = loaded ?: return emptyList()
+        val model = ngramModel ?: return emptyList()
+        val lang = CaseAdapt.locale.language
+        if (!GrammarCheck.supports(lang)) return emptyList()
+        return runCatching { GrammarCheck.check(text, lang, model) { w -> lock.read { engine.lexicon.contains(w) } } }.getOrDefault(emptyList())
+    }
+
     /** Where [spell]'s suggestions come from (both by default; one alone to measure them). */
     enum class SpellSources { BOTH, SPELLING, DECODER }
 

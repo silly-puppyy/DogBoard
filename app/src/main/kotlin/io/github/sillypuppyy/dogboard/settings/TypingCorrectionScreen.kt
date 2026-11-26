@@ -101,8 +101,15 @@ fun AutocorrectScreen() {
     val fixPrevious by prefs.correction.fixPreviousWord.collectAsState()
     val joinSplit by prefs.correction.joinSplitWords.collectAsState()
     val neuralRetro by prefs.correction.neuralRetro.collectAsState()
+    val grammar by prefs.spelling.grammarCheck.collectAsState()
     SetPage("Autocorrect") {
         AutocorrectGroup()
+        // the spell checker's blue underline (Android 12+, DogBoard as the phone's spell checker)
+        SetGroup("Grammar") {
+            SetSwitchRow("ac:grammar", "Grammar check", "Underlines words that don’t agree in blue, with the right form to tap: “le maison” becomes “la maison”. French and Spanish.", grammar) { v ->
+                scope.launch { prefs.spelling.grammarCheck.set(v) }
+            }
+        }
         SetGroup("Learning") {
             SetSwitchRow("ac:adapt", "Learn from your undos", "Autocorrect gets more careful when you often undo it, and bolder when you keep its fixes.", adaptive) { v ->
                 scope.launch { prefs.correction.adaptiveStrength.set(v) }

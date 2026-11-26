@@ -149,8 +149,26 @@ class FlorisSpellCheckerService : SpellCheckerService() {
         ): Array<SentenceSuggestionsInfo> {
             flogInfo(LogTopic.SPELL_EVENTS)
 
-            // TODO: implement custom solution here instead of calling the default implementation
-            return super.onGetSentenceSuggestionsMultiple(textInfos, suggestionsLimit)
+            // the words' spelling (Android's default splits the sentences into words and asks onGetSuggestionsMultiple),
+            // DogBoard: and agreement errors as grammar ("le maison" -> "la maison": the blue underline, Android 12+)
+            val words = super.onGetSentenceSuggestionsMultiple(textInfos, suggestionsLimit)
+            if (textInfos == null || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S || !prefs.spelling.grammarCheck.get()) return words
+            return Array(words.size) { i ->
+                val base = words[i]
+                val info = textInfos.getOrNull(i) ?: return@Array base
+                val flags = io.github.sillypuppyy.dogboard.engine.TypingEngine.grammarFlags(info.text ?: "")
+                if (flags.isEmpty() || base == null) return@Array base
+                val n = base.suggestionsCount
+                val taken = (0 until n).map { base.getOffsetAt(it) }.toSet()
+                val extra = flags.filter { it.start !in taken }
+                val infos = (0 until n).map { base.getSuggestionsInfoAt(it) } + extra.map { f ->
+                    SuggestionsInfo(SuggestionsInfo.RESULT_ATTR_LOOKS_LIKE_GRAMMAR_ERROR or SuggestionsInfo.RESULT_ATTR_HAS_RECOMMENDED_SUGGESTIONS,
+                        arrayOf(f.suggestion), info.cookie, info.sequence)
+                }
+                SentenceSuggestionsInfo(infos.toTypedArray(),
+                    ((0 until n).map { base.getOffsetAt(it) } + extra.map { it.start }).toIntArray(),
+                    ((0 until n).map { base.getLengthAt(it) } + extra.map { it.length }).toIntArray())
+            }
         }
 
         override fun onCancel() {
