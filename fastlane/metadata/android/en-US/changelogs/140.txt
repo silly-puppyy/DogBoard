@@ -1,0 +1,1 @@
+- Grammar check in Italian and Portuguese too: words that don't agree are underlined in blue, with the right form to tap
