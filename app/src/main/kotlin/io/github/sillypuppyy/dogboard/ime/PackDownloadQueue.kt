@@ -35,6 +35,10 @@ object PackDownloadQueue {
     /** Pack tags downloading or waiting to retry ("Getting dictionary"). */
     val pending: StateFlow<Set<String>> = _pending.asStateFlow()
 
+    /** How far each downloading pack is (0..1), for its row on the Languages page; absent while waiting to retry. */
+    private val _progress = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val progress: StateFlow<Map<String, Float>> = _progress.asStateFlow()
+
     /** Bumped when a pack was installed, so screens re-read the installed packs. */
     private val _installed = MutableStateFlow(0)
     val installed: StateFlow<Int> = _installed.asStateFlow()
@@ -124,7 +128,24 @@ object PackDownloadQueue {
             try {
                 for ((attempt, wait) in RETRY_WAITS_MS.withIndex()) {
                     if (attempt > 0) delay(wait)
-                    val r = installLock.withLock { PackDownloads.of(app).install(entry.tag, entry = entry) }
+                    val shade = io.github.sillypuppyy.dogboard.settings.DownloadNotice(
+                        app, "Downloading ${entry.name}", io.github.sillypuppyy.dogboard.settings.DownloadNotice.PACK_ID)
+                    val r = try {
+                        installLock.withLock {
+                            _progress.update { it + (entry.tag to 0f) }
+                            PackDownloads.of(app).install(entry.tag, entry = entry, onProgress = { done, total ->
+                                if (total > 0) {
+                                    val f = done.toFloat() / total
+                                    // in whole per cent: a state update per buffer recomposed the page thousands of times
+                                    if ((f * 100).toInt() != ((_progress.value[entry.tag] ?: 0f) * 100).toInt()) _progress.update { it + (entry.tag to f) }
+                                    shade.progress(f)
+                                }
+                            })
+                        }
+                    } finally {
+                        _progress.update { it - entry.tag }
+                        shade.done()
+                    }
                     if (r is PackInstaller.Result.Installed) {
                         io.github.sillypuppyy.dogboard.perf.EventLog.add("pack ${r.tag} ${r.version} installed in the background")
                         _installed.update { it + 1 }

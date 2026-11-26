@@ -56,6 +56,7 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
     val scope = rememberCoroutineScope()
     val index by PackDownloadQueue.index.collectAsState()
     val installedCount by PackDownloadQueue.installed.collectAsState()
+    val downloading by PackDownloadQueue.progress.collectAsState()
     // the language packs, built in and downloaded (read again when one arrives in the background)
     val packs by produceState(emptyList<LanguagePack>(), installedCount) {
         value = withContext(Dispatchers.IO) { LanguagePack.all(context) }
@@ -100,6 +101,7 @@ fun LanguagesScreen(startPage: String? = null, embedded: Boolean = false) {
             s.id == active.id || list.size == 1,
             // the host has its dictionary and the phone doesn't yet: downloading, or waiting to try again
             gettingDictionary = index != null && !hasDictionary(tag) && PackDownloadQueue.offered(tag) != null,
+            dictionaryProgress = PackDownloadQueue.offered(tag)?.let { downloading[it.tag] },
             together = s.secondaryLocales.map { second -> list.firstOrNull { it.primaryLocale == second }?.let { packName(second.languageTag(), it) } ?: second.displayName() },
             togetherTags = s.secondaryLocales.map { it.languageTag() },
             tag = tag,

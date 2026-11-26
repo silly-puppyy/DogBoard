@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -46,6 +47,8 @@ data class LangRow(
     val id: Long, val name: String, val native: String?, val layout: String, val swipe: Boolean, val active: Boolean,
     /** Its dictionary is on its way (PackDownloadQueue): until then it types with its layout, without suggestions. */
     val gettingDictionary: Boolean = false,
+    /** How far its dictionary's download is (0..1), null while waiting to start or retry. */
+    val dictionaryProgress: Float? = null,
     /** The languages typed together with this one (all suggested and corrected at once), by name; empty: alone. */
     val together: List<String> = emptyList(),
     /** Their tags, in order. */
@@ -244,8 +247,15 @@ private fun LanguageRow(
             DText(l.name + (l.native?.takeIf { it != l.name }?.let { " ($it)" } ?: ""), style = setText(16f).copy(textAlign = START), maxLines = 2)
             // the layout as a line, not tags
             // the layout only (swipe works on nearly every layout now; "swipe typing" on each row was noise)
-            DText(listOfNotNull(l.layout, "getting dictionary…".takeIf { l.gettingDictionary }).joinToString(", "),
+            val pct = l.dictionaryProgress?.let { " ${(it * 100).toInt()} %" } ?: ""
+            DText(listOfNotNull(l.layout, "getting dictionary…".takeIf { l.gettingDictionary }?.plus(pct)).joinToString(", "),
                 style = setText(14f, color = SetColors.onSurfaceVariant).copy(textAlign = START), maxLines = 2)
+            // the download's bar (M3 linear progress: 4 tall, rounded, the track in the outline variant)
+            if (l.gettingDictionary && l.dictionaryProgress != null) Box(
+                Modifier.padding(top = 6.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(SetColors.outlineVariant),
+            ) {
+                Box(Modifier.fillMaxWidth(l.dictionaryProgress.coerceIn(0f, 1f)).fillMaxHeight().background(SetColors.primary, RoundedCornerShape(2.dp)))
+            }
         }
         // an arrow: the row opens the keyboard's own page (its layout, combining, splitting, removing)
         Symbol("chevron_right", 22.sp, SetColors.onSurfaceVariant)

@@ -110,7 +110,7 @@ object AppUpdates {
 
     /** Downloads [r]'s APK (checked) and opens Android's installer; false when the download or its check failed. */
     suspend fun install(context: Context, r: Release, onProgress: (Float) -> Unit = {}): Boolean = withContext(Dispatchers.IO) {
-        val shade = DownloadNotice(context, r.version)
+        val shade = DownloadNotice(context, "Downloading DogBoard ${r.version}", DownloadNotice.ID)
         val dir = File(context.cacheDir, "updates").apply { deleteRecursively(); mkdirs() }
         val apk = File(dir, "dogboard-${r.version}.apk")
         val ok = runCatching {
@@ -149,11 +149,12 @@ object AppUpdates {
 }
 
 /**
- * The update's download in the notification shade, with a progress bar (as Android's own downloads), so it stays in
- * view outside DogBoard's settings; gone when the download ends (the installer opens, or the home says it failed).
- * Low importance: no sound. Needs POST_NOTIFICATIONS on Android 13+; without it nothing is shown.
+ * A download in the notification shade, with a progress bar (as Android's own downloads), so it stays in view outside
+ * DogBoard's settings: an update ([ID]; gone when the installer opens, or the home says it failed) or a language's
+ * dictionary ([PACK_ID], PackDownloadQueue). Low importance: no sound. Needs POST_NOTIFICATIONS on Android 13+; without
+ * it nothing is shown.
  */
-private class DownloadNotice(private val context: Context, private val version: String) {
+internal class DownloadNotice(private val context: Context, private val title: String, private val id: Int) {
     private val nm = context.getSystemService(android.app.NotificationManager::class.java)?.takeIf {
         android.os.Build.VERSION.SDK_INT < 33 || androidx.core.content.ContextCompat.checkSelfPermission(
             context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -168,9 +169,9 @@ private class DownloadNotice(private val context: Context, private val version: 
         val pct = (f.coerceIn(0f, 1f) * 100).toInt()
         if (shown >= 0 && pct < shown + 2) return
         shown = pct
-        nm.notify(ID, androidx.core.app.NotificationCompat.Builder(context, CHANNEL)
+        nm.notify(id, androidx.core.app.NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(dev.patrickgold.florisboard.R.drawable.ic_app_icon_monochrome)
-            .setContentTitle("Downloading DogBoard $version")
+            .setContentTitle(title)
             .setContentText("$pct %")
             .setProgress(100, pct, false)
             .setOngoing(true)
@@ -178,10 +179,11 @@ private class DownloadNotice(private val context: Context, private val version: 
             .build())
     }
 
-    fun done() { nm?.cancel(ID) }
+    fun done() { nm?.cancel(id) }
 
     companion object {
         const val CHANNEL = "dogboard_updates"
         const val ID = 4208
+        const val PACK_ID = 4209
     }
 }
