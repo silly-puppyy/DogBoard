@@ -130,7 +130,13 @@ fun YourWordsScreen() {
         )
         "add:rejected" -> TwoFieldDialog(
             title = "Add a rule", first = "Typed", second = "Never correct it to",
-            onDone = { t, c -> dialog = null; if (t.isNotBlank() && c.isNotBlank()) change { TypingEngine.neverCorrect(t.trim(), c.trim()) } },
+            onDone = { t, c ->
+                dialog = null
+                // into the shown language's rules (learned words and rules are per language)
+                if (t.isNotBlank() && c.isNotBlank()) change {
+                    if (other == null) TypingEngine.neverCorrect(t.trim(), c.trim()) else EngineLoader.neverCorrectIn(context, other, t.trim(), c.trim())
+                }
+            },
             onCancel = { dialog = null },
         )
         else -> {
@@ -144,7 +150,14 @@ fun YourWordsScreen() {
                     TextButton({
                         dialog = null
                         val w = word.trim()
-                        if (w.isNotEmpty()) change { if (block) TypingEngine.block(w) else TypingEngine.addWord(w) }
+                        // Learned with another language shown: that language's words (Added and Blocked are shared)
+                        if (w.isNotEmpty()) change {
+                            when {
+                                block -> TypingEngine.block(w)
+                                d == "add:learned" && other != null -> EngineLoader.learnWordIn(context, other, w)
+                                else -> TypingEngine.addWord(w)
+                            }
+                        }
                     }) { Text(if (block) "Block" else "Add") }
                 },
                 dismissButton = { TextButton({ dialog = null }) { Text("Cancel") } },

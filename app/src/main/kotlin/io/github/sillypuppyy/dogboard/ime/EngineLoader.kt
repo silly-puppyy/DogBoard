@@ -415,6 +415,20 @@ object EngineLoader {
         io.github.sillypuppyy.dogboard.engine.PersonalModel(File(files, "dogboard/lang/$tag/personal.tsv")).remove(word)
     }
 
+    /** Adds [word] to the learned words of a language that isn't loaded (Your words, that language shown). */
+    fun learnWordIn(context: Context, tag: String, word: String) {
+        val f = File(context.applicationContext.filesDir, "dogboard/lang/$tag/user_words.txt")
+        runCatching {
+            f.parentFile?.mkdirs()
+            if (!f.exists() || f.readLines().none { it.trim().equals(word, ignoreCase = true) }) f.appendText(word + "\n")
+        }
+    }
+
+    /** A "never correct [typed] to [correction]" rule in a language that isn't loaded. */
+    fun neverCorrectIn(context: Context, tag: String, typed: String, correction: String) =
+        io.github.sillypuppyy.dogboard.engine.Rejections(File(context.applicationContext.filesDir, "dogboard/lang/$tag/rejected_corrections.txt"))
+            .neverCorrect(typed, correction)
+
     /** Takes back an undone correction in a language that isn't loaded. */
     fun restoreCorrectionIn(context: Context, tag: String, typed: String, correction: String) =
         io.github.sillypuppyy.dogboard.engine.Rejections(File(context.applicationContext.filesDir, "dogboard/lang/$tag/rejected_corrections.txt"))
