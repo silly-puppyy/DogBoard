@@ -122,7 +122,7 @@ fun AutocorrectScreen() {
                     c.ours -> "DogBoard: red underlines for typos, blue for grammar"
                     else -> "Now: ${c.name}. Tap to use DogBoard’s"
                 }, icon = "open_in_new") { SpellCheckers.open(context) }
-            SetSwitchRow("ac:grammar", "Grammar check", "Underlines words that don’t agree in blue, with the right form to tap: “le maison” becomes “la maison”. French and Spanish.", grammar) { v ->
+            SetSwitchRow("ac:grammar", "Grammar check", "Underlines words that don’t agree in blue, with the right form to tap: “le maison” becomes “la maison”. French, Spanish, Italian and Portuguese.", grammar) { v ->
                 scope.launch { prefs.spelling.grammarCheck.set(v) }
             }
         }

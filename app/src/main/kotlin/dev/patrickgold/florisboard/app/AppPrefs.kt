@@ -791,7 +791,7 @@ abstract class FlorisPreferenceModel : PreferenceModel() {
             key = "spelling__language_mode",
             default = SpellingLanguageMode.USE_KEYBOARD_SUBTYPES,
         )
-        // DogBoard: agreement errors underlined in blue by the spell checker (GrammarCheck; French and Spanish)
+        // DogBoard: agreement errors underlined in blue by the spell checker (GrammarCheck; French, Spanish, Italian, Portuguese)
         val grammarCheck = boolean(
             key = "spelling__grammar_check",
             default = true,

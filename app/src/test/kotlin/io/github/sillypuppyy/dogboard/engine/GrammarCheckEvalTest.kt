@@ -28,7 +28,7 @@ class GrammarCheckEvalTest : FunSpec({
     }
 
     // DOGBOARD_GRAMMAR_PROBE="Je cherche le maison rouge|...": each sentence's flags, and per word how much better its
-    // family's best form fits (log10; flagged at DET_MARGIN / ENDING_MARGIN)
+    // family's best form fits (log10; flagged at DET_MARGINS / ENDING_MARGIN)
     test("probe sentences").config(enabled = System.getenv("DOGBOARD_GRAMMAR_PROBE") != null) {
         val dir = File(System.getenv("DOGBOARD_GRAMMAR_DIR")!!)
         val lang = System.getenv("DOGBOARD_GRAMMAR_LANG")!!
@@ -58,8 +58,8 @@ class GrammarCheckEvalTest : FunSpec({
         val model = File(dir, "$lang.ngrams.bin").inputStream().use { NgramModel.readBinary(it) }!!
         val lex = File(dir, "$lang.lexicon.tsv").useLines { ls -> ls.filter { !it.startsWith("#") }.map { it.substringBefore('\t').lowercase() }.toHashSet() }
         val known = { w: String -> w in lex }
-        System.getenv("DOGBOARD_GRAMMAR_MARGINS")?.split(',')?.let { (d, e) -> GrammarCheck.DET_MARGIN = d.toDouble(); GrammarCheck.ENDING_MARGIN = e.toDouble() }
-        println("GRAMMAR margins ${GrammarCheck.DET_MARGIN} / ${GrammarCheck.ENDING_MARGIN}")
+        System.getenv("DOGBOARD_GRAMMAR_MARGINS")?.split(',')?.let { (d, e) -> GrammarCheck.DET_MARGINS[lang] = d.toDouble(); GrammarCheck.ENDING_MARGIN = e.toDouble() }
+        println("GRAMMAR margins ${GrammarCheck.DET_MARGINS[lang]} / ${GrammarCheck.ENDING_MARGIN}")
         val skip = System.getenv("DOGBOARD_GRAMMAR_SKIP")?.toIntOrNull() ?: 0 // 3000: the sentences the margins were not chosen on
         fun falseAlarms(name: String, lines: List<String>) {
             var flagged = 0; var words = 0; val ex = ArrayList<String>()

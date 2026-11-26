@@ -7,17 +7,24 @@ import kotlin.math.ln
  * none). A word is checked against the other forms of its family: a closed determiner set (le / la / les) or the same
  * stem with the language's adjective endings (petit / petite / petits / petites), the forms the word list has. Each
  * form is scored by its fit with the two words before and the word after (the trigram); the word is flagged when
- * another form fits clearly better, by [DET_MARGIN] (log10) for determiners and the stricter [ENDING_MARGIN] for
+ * another form fits clearly better, by [DET_MARGINS] (log10, per language) for determiners and the stricter [ENDING_MARGIN] for
  * ending families (nouns and participles share the endings). With the packs' own pruned trigram (GrammarCheckEvalTest,
  * 2026-11-26, news and people's chat, 3,000 sentences each the margins were not chosen on): margins 2.5 / 4.5 flag
  * 0.13-0.17 % of chat sentences and 0.30-0.53 % of news ones, and catch 46-56 % of agreement errors with the right
  * form; 3.5 / 4.5 flagged 0.07-0.20 % but caught 31-40 %, missing the common article errors ("le maison" fits "la" by
- * 2.7, "un voiture" by 3.1); 2 / 3 caught 61-66 % but flagged 1.3-2.3 %. French and Spanish only.
+ * 2.7, "un voiture" by 3.1); 2 / 3 caught 61-66 % but flagged 1.3-2.3 %. Italian and Portuguese at 3.5 / 4.5
+ * ([DET_MARGINS]): 0.10 / 0.23 % of chat, 0.37 / 0.27 % of news, 46 / 50 % caught. French, Spanish, Italian and
+ * Portuguese.
  */
 object GrammarCheck {
     data class Flag(val start: Int, val length: Int, val suggestion: String)
 
-    @Volatile var DET_MARGIN = 2.5
+    /**
+     * Per language: Italian's and Portuguese's articles follow the next word's sound (lo / il, dei / degli) or are
+     * prepositions too (pt a), so 2.5 flagged 0.57-0.83 % of chat sentences there; 3.5 flags 0.10-0.23 % and catches
+     * 46-50 % (2026-11-26, as below).
+     */
+    val DET_MARGINS = java.util.concurrent.ConcurrentHashMap(mapOf("fr" to 2.5, "es" to 2.5, "it" to 3.5, "pt" to 3.5))
     @Volatile var ENDING_MARGIN = 4.5
     private val LN10 = ln(10.0)
 
@@ -35,6 +42,22 @@ object GrammarCheck {
             listOf("vuestro", "vuestra", "vuestros", "vuestras"), listOf("otro", "otra", "otros", "otras"),
             listOf("todo", "toda", "todos", "todas"), listOf("mucho", "mucha", "muchos", "muchas"), listOf("poco", "poca", "pocos", "pocas"),
         ),
+        "it" to listOf(
+            listOf("il", "lo", "la", "i", "gli", "le"), listOf("un", "uno", "una"), listOf("questo", "questa", "questi", "queste"),
+            listOf("quel", "quello", "quella", "quei", "quegli", "quelle"), listOf("mio", "mia", "miei", "mie"),
+            listOf("tuo", "tua", "tuoi", "tue"), listOf("suo", "sua", "suoi", "sue"), listOf("nostro", "nostra", "nostri", "nostre"),
+            listOf("vostro", "vostra", "vostri", "vostre"), listOf("del", "dello", "della", "dei", "degli", "delle"),
+            listOf("al", "allo", "alla", "ai", "agli", "alle"), listOf("nel", "nello", "nella", "nei", "negli", "nelle"),
+            listOf("molto", "molta", "molti", "molte"), listOf("tutto", "tutta", "tutti", "tutte"), listOf("altro", "altra", "altri", "altre"),
+        ),
+        "pt" to listOf(
+            listOf("o", "a", "os", "as"), listOf("um", "uma", "uns", "umas"), listOf("este", "esta", "estes", "estas"),
+            listOf("esse", "essa", "esses", "essas"), listOf("aquele", "aquela", "aqueles", "aquelas"),
+            listOf("meu", "minha", "meus", "minhas"), listOf("teu", "tua", "teus", "tuas"), listOf("seu", "sua", "seus", "suas"),
+            listOf("nosso", "nossa", "nossos", "nossas"), listOf("do", "da", "dos", "das"), listOf("no", "na", "nos", "nas"),
+            listOf("pelo", "pela", "pelos", "pelas"), listOf("todo", "toda", "todos", "todas"), listOf("outro", "outra", "outros", "outras"),
+            listOf("muito", "muita", "muitos", "muitas"),
+        ),
     )
     private val ENDINGS = mapOf(
         "fr" to listOf(
@@ -43,6 +66,8 @@ object GrammarCheck {
             listOf("er", "ère", "ers", "ères"),
         ),
         "es" to listOf(listOf("o", "a", "os", "as"), listOf("e", "es"), listOf("", "es"), listOf("or", "ora", "ores", "oras"), listOf("z", "ces")),
+        "it" to listOf(listOf("o", "a", "i", "e"), listOf("e", "i"), listOf("co", "ca", "chi", "che"), listOf("go", "ga", "ghi", "ghe")),
+        "pt" to listOf(listOf("o", "a", "os", "as"), listOf("e", "es"), listOf("or", "ora", "ores", "oras"), listOf("ês", "esa", "eses", "esas")),
     )
     private val WORD = Regex("""[\p{L}\p{M}]+(?:['’][\p{L}\p{M}]+)*""")
 
@@ -99,7 +124,7 @@ object GrammarCheck {
             fun fit(id: Int) = model.logProbOf(a, b, id) + (if (next >= 0) model.logProbOf(b, id, next) else 0.0)
             val own = fit(ids[i])
             val best = forms.mapNotNull { f -> model.idOf(f).takeIf { it >= 0 }?.let { f to fit(it) } }.maxByOrNull { it.second } ?: continue
-            val margin = (if (det) DET_MARGIN else ENDING_MARGIN) * LN10
+            val margin = (if (det) DET_MARGINS[l] ?: 3.5 else ENDING_MARGIN) * LN10
             if (best.second - own >= margin) {
                 val orig = words[i].value
                 val suggestion = if (orig.first().isUpperCase()) best.first.replaceFirstChar(Char::uppercaseChar) else best.first

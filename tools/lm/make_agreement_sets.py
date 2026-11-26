@@ -4,18 +4,21 @@
 participles marked for gender or number become a case, their rivals the same stem with the other endings that are
 lexicon words (es o / a / os / as, fr - / e / s / es): "nuevo" vs nueva / nuevos / nuevas before "modelo".
 Writes <pack>/<lang>-agreement.tsv: context, word, rivals (|), next word, part of speech (3000 cases).
-Usage: make_agreement_sets.py PACKS_WORK_DIR"""
+Italian and Portuguese too (it_core_news_sm, pt_core_news_sm: it o / a / i / e, pt o / a / os / as; the grammar
+check's measure for those languages, 2026-11-26).
+Usage: make_agreement_sets.py PACKS_WORK_DIR [es fr it pt]"""
 import os, sys, random, collections, spacy
 
 random.seed(5)
-for lang, model in [('es', 'es_core_news_sm'), ('fr', 'fr_core_news_sm')]:
+for lang in sys.argv[2:] or ['es', 'fr']:
+    model = f'{lang}_core_news_sm'
     d = os.path.join(sys.argv[1], lang)
     nlp = spacy.load(model, disable=['parser', 'ner', 'lemmatizer'])
     lex = {}
     for l in open(os.path.join(d, f'{lang}.lexicon.tsv'), encoding='utf-8'):
         if not l.startswith('#'):
             w, c = l.rstrip('\n').split('\t')[:2]; lex[w.lower()] = max(lex.get(w.lower(), 0), int(c))
-    ENDS = ('os', 'as', 'o', 'a') if lang == 'es' else ('es', 'e', 's', '')
+    ENDS = {'es': ('os', 'as', 'o', 'a'), 'pt': ('os', 'as', 'o', 'a'), 'it': ('o', 'a', 'i', 'e'), 'fr': ('es', 'e', 's', '')}[lang]
 
     def variants(w):
         for a in ENDS:
