@@ -1,0 +1,3 @@
+- Grammar check catches the common article mistakes ("le maison", "un voiture"): about half of agreement errors in French and Spanish now, up from a third
+- Grammar check works on keyboards with several languages: French text on an English + Français keyboard is checked in French
+- Autocorrect > Spelling and grammar: see which spell checker your phone uses and switch to DogBoard's in one tap
