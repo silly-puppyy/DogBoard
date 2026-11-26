@@ -543,3 +543,53 @@ Spell checker	Rechtschreibprüfung	Corrector ortográfico	Correcteur orthographi
 DogBoard: red underlines for typos, blue for grammar	DogBoard: rot unterstrichen für Tippfehler, blau für Grammatik	DogBoard: subrayado rojo para erratas, azul para gramática	DogBoard : soulignement rouge pour les fautes de frappe, bleu pour la grammaire
 Pick DogBoard under Spell checker	Wählen Sie DogBoard unter Rechtschreibprüfung	Elija DogBoard en Corrector ortográfico	Choisissez DogBoard sous Correcteur orthographique
 Underlines words that don’t agree in blue, with the right form to tap: “le maison” becomes “la maison”. French, Spanish, Italian and Portuguese.	Unterstreicht Wörter, die grammatisch nicht passen, blau, mit der richtigen Form zum Antippen: „le maison“ wird zu „la maison“. Französisch, Spanisch, Italienisch und Portugiesisch.	Subraya en azul las palabras que no concuerdan, con la forma correcta para tocar: «le maison» pasa a ser «la maison». Francés, español, italiano y portugués.	Souligne en bleu les mots mal accordés, avec la bonne forme à toucher : « le maison » devient « la maison ». Français, espagnol, italien et portugais.
+# polish P9 (2026-11-26): labels and sentences still in English
+Links	Links	Enlaces	Liens
+Name	Name	Nombre	Nom
+Position	Position	Posición	Position
+Updates	Aktualisierungen	Actualizaciones	Mises à jour
+Version	Version	Versión	Version
+Engine	Engine	Motor	Moteur
+Diagonal	Diagonal	Diagonal	Diagonale
+Short link kept. Tap to expand	Kurzlink behalten. Tippen zum Erweitern	Enlace corto conservado. Toque para expandir	Lien court conservé. Touchez pour développer
+Swipe typing, delete and space-bar slides	Wischen zum Schreiben, Löschen und Leertaste	Deslizar para escribir, borrar y barra espaciadora	Écriture glissée, effacement et barre d'espace
+Whether letters on keys follow shift or always show capitals.	Ob die Buchstaben auf den Tasten der Umschalttaste folgen oder immer groß sind.	Si las letras de las teclas siguen a Mayús o siempre van en mayúscula.	Si les lettres des touches suivent Maj ou restent toujours en majuscules.
+Your colour. Tap it to change it.	Ihre Farbe. Tippen Sie darauf, um sie zu ändern.	Su color. Tóquelo para cambiarlo.	Votre couleur. Touchez-la pour la changer.
+New spots. They stay until you shuffle again.	Neue Punkte. Sie bleiben, bis Sie neu mischen.	Puntos nuevos. Se quedan hasta que vuelva a mezclar.	Nouveaux points. Ils restent jusqu'au prochain mélange.
+In landscape the text box can take the whole screen above the keyboard. “Auto” does it when there isn’t room otherwise.	Im Querformat kann das Textfeld den ganzen Bildschirm über der Tastatur nutzen. „Auto“ macht das, wenn sonst kein Platz ist.	En horizontal, el cuadro de texto puede ocupar toda la pantalla sobre el teclado. «Auto» lo hace cuando no hay sitio de otra forma.	En paysage, le champ de texte peut occuper tout l'écran au-dessus du clavier. « Auto » le fait quand il n'y a pas assez de place sinon.
+Walk through the first-run setup once more	Die Ersteinrichtung noch einmal durchgehen	Repetir la configuración inicial	Refaire la configuration initiale
+Touch areas, overlays and logs	Berührungsflächen, Overlays und Protokolle	Zonas táctiles, superposiciones y registros	Zones tactiles, superpositions et journaux
+Bring repeats to the top	Wiederholte nach oben	Subir los repetidos	Remonter les répétitions
+The panel’s recent row keeps this many emoji.	Die Zeile „Zuletzt“ im Bereich behält so viele Emoji.	La fila de recientes del panel guarda esta cantidad de emoji.	La rangée des récents du panneau garde ce nombre d'emoji.
+Switch to whole words after	Zu ganzen Wörtern wechseln nach	Pasar a palabras enteras tras	Passer aux mots entiers après
+Two spaces within this time type “. ”.	Zwei Leerzeichen in dieser Zeit ergeben „. “.	Dos espacios en este tiempo escriben «. ».	Deux espaces dans ce délai tapent « . ».
+Holding types a space, like a tap.	Halten tippt ein Leerzeichen, wie ein Antippen.	Mantener escribe un espacio, como un toque.	Maintenir tape une espace, comme un appui.
+Turn on in system settings	In den Systemeinstellungen einschalten	Activar en los ajustes del sistema	Activer dans les paramètres système
+A short tap on each key.	Ein kurzer Anschlag bei jeder Taste.	Un toque corto en cada tecla.	Une frappe courte à chaque touche.
+Nothing you type is learned or kept. “Automatic” turns it on in private browser tabs and fields that ask for it.	Nichts, was Sie tippen, wird gelernt oder gespeichert. „Automatisch“ schaltet es in privaten Browser-Tabs und Feldern ein, die darum bitten.	Nada de lo que escribe se aprende ni se guarda. «Automático» lo activa en pestañas privadas del navegador y en campos que lo piden.	Rien de ce que vous tapez n'est appris ni conservé. « Automatique » l'active dans les onglets de navigation privée et les champs qui le demandent.
+Off: the colours blend into each other.	Aus: Die Farben gehen ineinander über.	Desactivado: los colores se funden entre sí.	Désactivé : les couleurs se fondent les unes dans les autres.
+Auto, readable on its fill	Auto, lesbar auf der Füllung	Auto, legible sobre su relleno	Auto, lisible sur son remplissage
+Shown when someone long-presses the theme.	Wird angezeigt, wenn jemand das Design lange drückt.	Se muestra cuando alguien mantiene pulsado el tema.	Affiché quand quelqu'un appuie longuement sur le thème.
+Its themes are deleted with it.	Seine Designs werden mit gelöscht.	Sus temas se eliminan con él.	Ses thèmes sont supprimés avec lui.
+A notification each time autocorrect gets more careful or bolder.	Eine Benachrichtigung, wenn die Autokorrektur vorsichtiger oder mutiger wird.	Un aviso cada vez que la autocorrección se vuelve más prudente o más atrevida.	Une notification chaque fois que la correction devient plus prudente ou plus audacieuse.
+A space typed by mistake inside a word is taken back: “meeti g” becomes “meeting”.	Ein versehentliches Leerzeichen in einem Wort wird zurückgenommen: „meeti g“ wird zu „meeting“.	Un espacio escrito por error dentro de una palabra se deshace: «meeti g» pasa a ser «meeting».	Une espace tapée par erreur dans un mot est retirée : « meeti g » devient « meeting ».
+Words the dictionary writes with a capital get one, like “I”, “Paris” and “Mr”.	Wörter, die das Wörterbuch großschreibt, werden großgeschrieben, wie „I“, „Paris“ und „Mr“.	Las palabras que el diccionario escribe con mayúscula la llevan, como «I», «Paris» y «Mr».	Les mots que le dictionnaire écrit avec une majuscule en prennent une, comme « I », « Paris » et « Mr ».
+Curly quotes and apostrophes (“ ” ’) instead of straight ones.	Typografische Anführungszeichen und Apostrophe („ “ ’) statt gerader.	Comillas y apóstrofos tipográficos (« » ’) en lugar de rectos.	Guillemets et apostrophes typographiques (« » ’) au lieu des droits.
+Two quick spaces type a full stop and a space.	Zwei schnelle Leerzeichen ergeben einen Punkt und ein Leerzeichen.	Dos espacios rápidos escriben un punto y un espacio.	Deux espaces rapides tapent un point et une espace.
+# templates: {n} stands for each number (UiText.tr)
+Built in, {n} themes	Integriert, {n} Designs	Integrados, {n} temas	Intégrés, {n} thèmes
+Built in, {n} theme	Integriert, {n} Design	Integrados, {n} tema	Intégrés, {n} thème
+Shared with you, {n} themes	Mit Ihnen geteilt, {n} Designs	Compartido con usted, {n} temas	Partagé avec vous, {n} thèmes
+Shared with you, {n} theme	Mit Ihnen geteilt, {n} Design	Compartido con usted, {n} tema	Partagé avec vous, {n} thème
+Your pack, {n} themes	Ihr Paket, {n} Designs	Su paquete, {n} temas	Votre pack, {n} thèmes
+Your pack, {n} theme	Ihr Paket, {n} Design	Su paquete, {n} tema	Votre pack, {n} thème
+You used it {n} times	{n}-mal verwendet	La ha usado {n} veces	Utilisé {n} fois
+You used it {n} time	{n}-mal verwendet	La ha usado {n} vez	Utilisé {n} fois
+Undone {n} times	{n}-mal rückgängig gemacht	Deshecha {n} veces	Annulée {n} fois
+Undone once	Einmal rückgängig gemacht	Deshecha una vez	Annulée une fois
+Step {n} of {n}	Schritt {n} von {n}	Paso {n} de {n}	Étape {n} sur {n}
+Colour {n} of {n}	Farbe {n} von {n}	Color {n} de {n}	Couleur {n} sur {n}
+Colour {n}	Farbe {n}	Color {n}	Couleur {n}
+Gradient {n}	Verlauf {n}	Degradado {n}	Dégradé {n}
+Photo {n}	Foto {n}	Foto {n}	Photo {n}
+Downloading… {n} %	Wird heruntergeladen … {n} %	Descargando… {n} %	Téléchargement… {n} %
