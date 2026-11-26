@@ -1,0 +1,3 @@
+- German, Spanish and French: every settings text is now translated by hand (machine translation had a door key for a keyboard key in places), page titles are translated, and long translations no longer get cut off
+- Texts with numbers are translated too ("Step 2 of 5", "Your pack, 3 themes")
+- Your words: adding a word while another language is shown adds it to that language
