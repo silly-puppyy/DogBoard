@@ -484,15 +484,16 @@ private fun computeTouchKeyboard(
                             val symbol = place?.takeIf { options.symbolLongPress }
                                 ?.let { (r, j) -> io.github.sillypuppyy.dogboard.design.KbSpec.positionalHint(r, j) }
                                 ?.let { sym -> symbolKeyIds(model)[sym] }
-                            // a second language's letters the layout lacks (ExtraLetters), after the key's own
+                            // a second language's letters (ExtraLetters) come first, the key's own after: English QWERTY typed
+                            // with German held à á â before ä (user, 2026-11-26); the ones the layout lacks become keys
                             val letter = (key.output as? K3String)?.toText()?.takeIf { it.length == 1 && it[0].isLetter() }
-                            val extra = letter?.let { l -> options.extraLetters[l.lowercase()] }.orEmpty()
+                            val theirs = letter?.let { l -> options.extraLetters[l.lowercase()] }.orEmpty()
                                 .map { e -> if (letter!![0].isUpperCase()) e.uppercase() else e }
-                                .filter { e -> ids.none { id -> (model.keys.byKeyId[id]?.output as? K3String)?.toText()?.let { o -> sameLetter(o, e) } == true } }
-                                .map { e -> extraKey(e) }
-                            listOfNotNull(digit ?: symbol) + ids + extra.map { it.id } to (digit ?: symbol)
+                            fun own(e: String) = ids.firstOrNull { id -> (model.keys.byKeyId[id]?.output as? K3String)?.toText()?.let { o -> sameLetter(o, e) } == true }
+                            val firstIds = theirs.map { e -> own(e) ?: extraKey(e).id }
+                            (listOfNotNull(digit ?: symbol) + firstIds + ids.filter { it !in firstIds }) to ((digit ?: symbol) ?: firstIds.firstOrNull())
                         }.takeIf { it.first.isNotEmpty() }?.let { (longPressKeyIds, added) ->
-                            // an added digit or symbol is the default (it is what the hint shows)
+                            // an added digit or symbol is the default (it is what the hint shows), else a second language's letter
                             val defaultKeyId = added ?: key.longPressDefaultKeyId?.takeIf { it in longPressKeyIds } ?: longPressKeyIds.first()
                             val defaultKeyIndex = longPressKeyIds.indexOf(defaultKeyId)
                             buildList {
