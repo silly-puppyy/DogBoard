@@ -187,6 +187,18 @@ def wait_for(text, seconds=15):
     return False
 
 
+def shot_bal(out):
+    """The banner's keyboard: "bal" typed, the bar as the design's (Kb:835): “bal” kept, ball to be made, balance."""
+    open_keyboard()
+    sh("input text 'Throw%sthe%s'")  # mid-sentence, as the design (no capital)
+    time.sleep(1)
+    for c in "bal":
+        tap(*KEYS[c])
+        time.sleep(0.4)
+    time.sleep(2)
+    save(screen(), out, "bal", crop=(0, KEYBOARD_TOP, 1080, 2424))
+
+
 def shot_swipe(out):
     open_keyboard()
     switch_language(["English + Español + Français"])
@@ -240,10 +252,31 @@ def shot_languages(out):
 
 
 def shot_themes(out):
+    """Two themes picked: Gloss (light, Day) and the Night sky photo (dark, Night), the page coloured by the keyboard
+    theme (App colours: Keyboard; purple in dark mode). setup()'s DogBoard theme is put back after."""
+    settings("themes")
+    wait_for("Which theme")
+    tap_text(["Keyboard"])
+    for name in ("Gloss", "Night sky"):
+        # a tile is picked by its keyboard preview, above its name
+        for _ in range(16):
+            hit = [(x, y) for t, x, y in nodes() if t == name and y > 700]
+            if hit:
+                break
+            sh("input swipe 540 1900 540 900 500")
+            time.sleep(1)
+        if hit:
+            tap(hit[0][0] + 190, hit[0][1] - 228)  # the name is left-aligned under its preview
+            time.sleep(2)
+            tap_text(["Keep mine"], tries=2)  # "Use Gloss's sound?"
     settings("themes")
     wait_for("Which theme")
     time.sleep(1)
     save(screen(), out, "themes")
+    sh(f"am force-stop {PKG}")
+    prefs = "jetpref_datastore/florisboard-app-prefs.jetpref"
+    for key, value in (("keyboard__theme_day", '"dogboard"'), ("keyboard__theme_night", '"dogboard"')):
+        sh(f"run-as {PKG} sed -i 's/^s;{key};.*/s;{key};{value}/' {prefs}")
 
 
 def shot_clipboard(out):
@@ -265,7 +298,7 @@ def shot_clipboard(out):
     sh("input keyevent BACK")
 
 
-SHOTS = {"swipe": shot_swipe, "layout": shot_layout, "languages": shot_languages, "themes": shot_themes,
+SHOTS = {"bal": shot_bal, "swipe": shot_swipe, "layout": shot_layout, "languages": shot_languages, "themes": shot_themes,
          "clipboard": shot_clipboard}
 
 

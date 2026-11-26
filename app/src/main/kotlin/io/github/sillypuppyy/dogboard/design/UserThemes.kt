@@ -237,6 +237,7 @@ object UserThemes {
         ThemeChoice.glassMode = v.mode
         prefs.keyboard.glassPhotoLuminance.set(p.optInt("luminance", 300)); prefs.keyboard.glassPhotoPos.set(p.optString("pos", "center"))
         prefs.keyboard.userTheme.set(id)
+        ThemeChoice.glassName = j.optString("name").ifEmpty { null }
         prefs.keyboard.glassEnabled.set(true)
         prefs.keyboard.glassPhotoStamp.set(System.currentTimeMillis())
         return true
@@ -285,6 +286,7 @@ object UserThemes {
         k.userTheme.set(snap.userTheme); k.glassEnabled.set(snap.enabled); k.glassLooks.set(snap.looks)
         k.glassPhotoLuminance.set(snap.lum); k.glassPhotoPos.set(snap.pos)
         snap.mode?.let { ThemeChoice.glassMode = it }
+        ThemeChoice.glassName = runCatching { JSONObject(File(dir(context, snap.userTheme), "theme.json").readText()).optString("name") }.getOrNull()?.ifEmpty { null }
         // a new stamp: the keyboard reloads the slot's photo (the old stamp would keep the preview's in memory)
         k.glassPhotoStamp.set(if (snap.stamp == 0L) 0L else System.currentTimeMillis())
         snap.dir.deleteRecursively()

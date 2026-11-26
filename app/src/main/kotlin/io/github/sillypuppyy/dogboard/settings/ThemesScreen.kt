@@ -50,6 +50,8 @@ fun ThemesScreen() {
         }
         // the Themes page's messages name a gradient by its saved name
         ThemeChoice.userNames = value.flatMap { it.themes }.mapNotNull { t -> t.spec?.let { it to t.name } }.toMap()
+        // and the photo slot by the photo theme in it
+        ThemeChoice.glassName = prefs.keyboard.userTheme.get().let { id -> value.flatMap { it.themes }.firstOrNull { it.id == id && it.kind == "photo" }?.name }
     }
     suspend fun store(c: ThemeChoice.Choice) {
         prefs.keyboard.themeDay.set(c.day)

@@ -26,7 +26,7 @@ understands what you copy. Everything runs on your phone; nothing you type leave
     <td width="25%" align="center"><img src="docs/images/layout.png" alt="Layout settings: the bottom row and symbol pages, with a live keyboard preview"><br><b>Your layout</b><br>Bottom row, symbol pages, number row and key hints, Android or iPhone style, previewed live.</td>
     <td width="25%" align="center"><img src="docs/images/languages.png" alt="Arabic, Russian, Korean, Hindi, Greek and Thai keyboards"><br><b>Your languages</b><br>Layouts for about 300 languages, dictionaries for 27, and up to three typed at once without switching.</td>
     <td width="25%" align="center"><img src="docs/images/clipboard.png" alt="Clipboard with link previews, an expanded short link and removed trackers"><br><b>A smart clipboard</b><br>Link previews, short links expanded, trackers removed, phone numbers and addresses as chips.</td>
-    <td width="25%" align="center"><img src="docs/images/themes.png" alt="Themes page with a day and a night theme"><br><b>Your look and sound</b><br>Themes for day and night, your own photo or gradient, and key sounds to match.</td>
+    <td width="25%" align="center"><img src="docs/images/themes.png" alt="Themes page with Gloss for day and the Night sky photo for night"><br><b>Your look and sound</b><br>Themes for day and night, your own photo or gradient, and key sounds to match.</td>
   </tr>
 </table>
 

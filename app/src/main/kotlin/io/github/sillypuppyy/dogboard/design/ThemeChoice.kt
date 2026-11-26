@@ -32,7 +32,7 @@ object ThemeChoice {
         Theme("mech", "Mechanical", "Sculpted keycaps, with their sound", "pair"),
     ) + KbThemes.PRIDE.map { (id, name, f) -> Theme(id, name, "${f.first.size} colours", "light") }
     private val byId = THEMES.associateBy { it.id }
-    fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").copy(mode = glassMode) else byId[id] ?: GradientSpec.parse(id)?.let { g ->
+    fun theme(id: String): Theme = if (id == "glass") byId.getValue("glass").let { it.copy(name = glassName ?: it.name, mode = glassMode) } else byId[id] ?: GradientSpec.parse(id)?.let { g ->
         Theme(id, userNames[id] ?: "Your gradient", if (g.colors.size == 1) "Solid colour" else "${g.colors.size} colours", if (g.white) "dark" else "light")
     } ?: GradientSpec.parsePair(id)?.let { (b, _) ->
         Theme(id, userNames[id] ?: "Your gradient", if (b.colors.size == 1) "Solid colour" else "${b.colors.size} colours", "pair")
@@ -40,6 +40,12 @@ object ThemeChoice {
 
     /** The Photo theme's mode from its versions (PhotoVersions.mode): bright only is light, dark only dark, both a pair. */
     @Volatile var glassMode: String = "pair"
+
+    /**
+     * The name of the photo theme in the photo slot ("Night sky"; UserThemes.apply), so Day / Night say it: the slot's
+     * own name, "Photo", named every photo theme alike.
+     */
+    @Volatile var glassName: String? = null
 
     /** The user's gradient themes' names by spec id (the Themes page sets it from the saved themes), for its messages. */
     @Volatile var userNames: Map<String, String> = emptyMap()
