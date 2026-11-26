@@ -93,6 +93,8 @@ class FlorisApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         FlorisApplicationReference = WeakReference(this)
+        // DogBoard's screens in the phone's language (assets/i18n)
+        io.github.sillypuppyy.dogboard.design.UiText.load(this)
         // script typing rules (Indic) come from the app's assets
         io.github.sillypuppyy.dogboard.engine.RuleComposer.source = { script ->
             runCatching { assets.open("dogboard/dynamic_rules/$script.json").bufferedReader().use { it.readText() } }.getOrNull()

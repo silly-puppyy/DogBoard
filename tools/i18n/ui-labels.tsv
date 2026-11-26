@@ -1,0 +1,535 @@
+# DogBoard's short UI labels, translated by hand (machine translation mangled them without context, 2026-11-26).
+# English	German	Spanish	French. Names (fonts, licences, sounds, themes, flags) and sample texts stay English.
+Languages	Sprachen	Idiomas	Langues
+Layout	Layout	Diseño	Disposition
+Theme	Design	Tema	Thème
+Autocorrect and typing	Autokorrektur und Tippen	Autocorrección y escritura	Correction automatique et saisie
+Sound and vibration	Ton und Vibration	Sonido y vibración	Son et vibration
+Gestures	Gesten	Gestos	Gestes
+Timing and feel	Timing und Gefühl	Tiempos y tacto	Délais et sensations
+Emoji and GIFs	Emoji und GIFs	Emoji y GIF	Emoji et GIF
+Clipboard	Zwischenablage	Portapapeles	Presse-papiers
+Privacy	Datenschutz	Privacidad	Confidentialité
+Advanced	Erweitert	Avanzado	Avancé
+Voice input	Spracheingabe	Entrada de voz	Saisie vocale
+Delete	Löschen	Eliminar	Supprimer
+Tools	Werkzeuge	Herramientas	Outils
+Emoji	Emoji	Emoji	Emoji
+Settings	Einstellungen	Ajustes	Paramètres
+Hide keyboard	Tastatur ausblenden	Ocultar teclado	Masquer le clavier
+More	Mehr	Más	Plus
+Return	Eingabe	Intro	Entrée
+Shift	Umschalt	Mayús	Maj
+Next language	Nächste Sprache	Siguiente idioma	Langue suivante
+Search	Suchen	Buscar	Rechercher
+Send	Senden	Enviar	Envoyer
+Undo	Rückgängig	Deshacer	Annuler
+Redo	Wiederholen	Rehacer	Rétablir
+Close	Schließen	Cerrar	Fermer
+Text editing	Textbearbeitung	Edición de texto	Modification du texte
+One-handed	Einhändig	Una mano	Une main
+All tools	Alle Werkzeuge	Todas las herramientas	Tous les outils
+Copy	Kopieren	Copiar	Copier
+Cut	Ausschneiden	Cortar	Couper
+Select all	Alles auswählen	Seleccionar todo	Tout sélectionner
+Incognito	Inkognito	Incógnito	Navigation privée
+Home	Pos1	Inicio	Début
+End	Ende	Fin	Fin
+Dev keys	Entwicklertasten	Teclas de desarrollo	Touches de dév.
+Resize	Größe ändern	Cambiar tamaño	Redimensionner
+Floating	Schwebend	Flotante	Flottant
+Clear clipboard	Zwischenablage leeren	Vaciar portapapeles	Vider le presse-papiers
+Paste as file	Als Datei einfügen	Pegar como archivo	Coller comme fichier
+Share as file	Als Datei teilen	Compartir como archivo	Partager comme fichier
+Show the password	Passwort anzeigen	Mostrar la contraseña	Afficher le mot de passe
+Pinned. Tap to unpin	Angeheftet. Tippen zum Lösen	Fijado. Toque para soltar	Épinglé. Touchez pour détacher
+Pin	Anheften	Fijar	Épingler
+Paste	Einfügen	Pegar	Coller
+Edit	Bearbeiten	Editar	Modifier
+Share	Teilen	Compartir	Partager
+Address	Adresse	Dirección	Adresse
+Open in Maps	In Maps öffnen	Abrir en Maps	Ouvrir dans Maps
+Photo	Foto	Foto	Photo
+Open link	Link öffnen	Abrir enlace	Ouvrir le lien
+Colour	Farbe	Color	Couleur
+Video	Video	Vídeo	Vidéo
+Show	Anzeigen	Mostrar	Afficher
+Email address	E-Mail-Adresse	Correo electrónico	Adresse e-mail
+Send email	E-Mail senden	Enviar correo	Envoyer un e-mail
+Phone number	Telefonnummer	Número de teléfono	Numéro de téléphone
+Call	Anrufen	Llamar	Appeler
+One-time code	Einmalcode	Código de un solo uso	Code à usage unique
+Password	Passwort	Contraseña	Mot de passe
+Links	Links	Enlaces	Liens
+Left	Links	Izquierda	Gauche
+Down	Unten	Abajo	Bas
+Right	Rechts	Derecha	Droite
+Select	Auswählen	Seleccionar	Sélectionner
+Recent	Zuletzt	Recientes	Récents
+Smileys	Smileys	Caras	Smileys
+Animals	Tiere	Animales	Animaux
+Food	Essen	Comida	Nourriture
+Activities	Aktivitäten	Actividades	Activités
+Travel	Reisen	Viajes	Voyages
+Objects	Objekte	Objetos	Objets
+Symbols	Symbole	Símbolos	Symboles
+Flags	Flaggen	Banderas	Drapeaux
+Clipboard history is off	Verlauf der Zwischenablage ist aus	El historial del portapapeles está desactivado	L'historique du presse-papiers est désactivé
+All	Alle	Todo	Tout
+Media	Medien	Multimedia	Médias
+Clear	Leeren	Borrar	Effacer
+Search emoji	Emoji suchen	Buscar emoji	Rechercher un emoji
+Listening…	Ich höre zu …	Escuchando…	Écoute…
+Turn on history	Verlauf einschalten	Activar historial	Activer l'historique
+Recently used	Zuletzt verwendet	Usados recientemente	Utilisés récemment
+Smileys and people	Smileys und Personen	Caras y personas	Smileys et personnes
+Rainbow	Regenbogen	Arcoíris	Arc-en-ciel
+Languages and layouts	Sprachen und Layouts	Idiomas y diseños	Langues et dispositions
+No emoji found	Kein Emoji gefunden	No se encontraron emoji	Aucun emoji trouvé
+Line	Linie	Línea	Ligne
+My themes	Meine Designs	Mis temas	Mes thèmes
+Themes	Designs	Temas	Thèmes
+Shared themes	Geteilte Designs	Temas compartidos	Thèmes partagés
+Photos	Fotos	Fotos	Photos
+My photo	Mein Foto	Mi foto	Ma photo
+Try it here	Hier ausprobieren	Pruébelo aquí	Essayez ici
+Add a word	Wort hinzufügen	Añadir una palabra	Ajouter un mot
+Block a word	Wort sperren	Bloquear una palabra	Bloquer un mot
+Add a rule	Regel hinzufügen	Añadir una regla	Ajouter une règle
+Learned	Gelernt	Aprendidas	Apprises
+Added	Hinzugefügt	Añadidas	Ajoutés
+Blocked	Gesperrt	Bloqueadas	Bloqués
+Undone	Rückgängig gemacht	Deshechas	Annulées
+Your words	Ihre Wörter	Sus palabras	Vos mots
+Import or export	Import oder Export	Importar o exportar	Importer ou exporter
+Search your words	Ihre Wörter durchsuchen	Buscar en sus palabras	Rechercher dans vos mots
+Text replacements	Textersetzungen	Sustituciones de texto	Remplacements de texte
+Manage	Verwalten	Gestionar	Gérer
+Export your words	Ihre Wörter exportieren	Exportar sus palabras	Exporter vos mots
+Forget everything DogBoard learned	Alles vergessen, was DogBoard gelernt hat	Olvidar todo lo que aprendió DogBoard	Oublier tout ce que DogBoard a appris
+Diagonal	Diagonal	Diagonal	Diagonale
+Across	Quer	Horizontal	Horizontal
+Rising	Aufsteigend	Ascendente	Montant
+Colour theme	Farbdesign	Tema de color	Thème de couleur
+Gradient theme	Verlaufsdesign	Tema degradado	Thème dégradé
+New colour	Neue Farbe	Nuevo color	Nouvelle couleur
+New gradient	Neuer Verlauf	Nuevo degradado	Nouveau dégradé
+Save	Speichern	Guardar	Enregistrer
+Bright	Hell	Claro	Clair
+Dark	Dunkel	Oscuro	Sombre
+Bright and dark	Hell und dunkel	Claro y oscuro	Clair et sombre
+Editing	Bearbeiten	Edición	Modification
+White	Weiß	Blanco	Blanc
+Easy to read.	Gut lesbar.	Fácil de leer.	Facile à lire.
+Colours	Farben	Colores	Couleurs
+Remove	Entfernen	Quitar	Retirer
+Hue	Farbton	Tono	Teinte
+Saturation	Sättigung	Saturación	Saturation
+Lightness	Helligkeit	Luminosidad	Luminosité
+Look	Aussehen	Aspecto	Apparence
+Direction	Richtung	Dirección	Direction
+Labels	Beschriftungen	Etiquetas	Libellés
+Name	Name	Nombre	Nom
+All settings	Alle Einstellungen	Todos los ajustes	Tous les paramètres
+Autocorrect, suggestions, your words	Autokorrektur, Vorschläge, Ihre Wörter	Autocorrección, sugerencias, sus palabras	Correction automatique, suggestions, vos mots
+Skin tone, recent emoji	Hautton, zuletzt verwendete Emoji	Tono de piel, emoji recientes	Teint, emoji récents
+Incognito, contacts, your data	Inkognito, Kontakte, Ihre Daten	Incógnito, contactos, sus datos	Navigation privée, contacts, vos données
+About	Über	Acerca de	À propos
+Version, licenses, credits	Version, Lizenzen, Danksagungen	Versión, licencias, créditos	Version, licences, remerciements
+Search settings	Einstellungen durchsuchen	Buscar en los ajustes	Rechercher dans les paramètres
+Your languages	Ihre Sprachen	Sus idiomas	Vos langues
+Add a language	Sprache hinzufügen	Añadir un idioma	Ajouter une langue
+Keep separate	Getrennt lassen	Mantener por separado	Garder séparé
+Its layout	Sein Layout	Su diseño	Sa disposition
+Combine with another language	Mit einer anderen Sprache kombinieren	Combinar con otro idioma	Combiner avec une autre langue
+Split up	Aufteilen	Separar	Séparer
+Remove this keyboard	Diese Tastatur entfernen	Quitar este teclado	Retirer ce clavier
+Shared layout	Gemeinsames Layout	Diseño compartido	Disposition partagée
+Combine with…	Kombinieren mit …	Combinar con…	Combiner avec…
+Search languages	Sprachen suchen	Buscar idiomas	Rechercher des langues
+On your phone	Auf Ihrem Smartphone	En su teléfono	Sur votre téléphone
+All languages	Alle Sprachen	Todos los idiomas	Toutes les langues
+Results	Ergebnisse	Resultados	Résultats
+Done	Fertig	Listo	Terminé
+Cancel	Abbrechen	Cancelar	Annuler
+Simple	Einfach	Sencillo	Simple
+Classic	Klassisch	Clásico	Classique
+Reset all	Alles zurücksetzen	Restablecer todo	Tout réinitialiser
+Message	Nachricht	Mensaje	Message
+Email	E-Mail	Correo	E-mail
+Web address	Webadresse	Dirección web	Adresse web
+Letters	Buchstaben	Letras	Lettres
+More symbols	Weitere Symbole	Más símbolos	Plus de symboles
+Each keyboard’s letters	Buchstaben jeder Tastatur	Letras de cada teclado	Lettres de chaque clavier
+Preset	Vorlage	Ajuste predefinido	Préréglage
+Android-style	Android-Stil	Estilo Android	Style Android
+Custom	Eigene	Personalizado	Personnalisé
+Mix and match	Frei kombinieren	Combinar a su gusto	À votre façon
+Number row	Zahlenreihe	Fila de números	Rangée de chiffres
+Off	Aus	Desactivado	Désactivé
+Always	Immer	Siempre	Toujours
+On hold	Beim Halten	Al mantener	En maintenant
+Bottom row	Untere Reihe	Fila inferior	Rangée du bas
+Symbol pages	Symbolseiten	Páginas de símbolos	Pages de symboles
+Return to letters	Zurück zu Buchstaben	Volver a las letras	Retour aux lettres
+Any key	Jede Taste	Cualquier tecla	N'importe quelle touche
+Space	Leertaste	Espacio	Espace
+Never	Nie	Nunca	Jamais
+Round keys	Runde Tasten	Teclas redondas	Touches rondes
+Key hints	Tastenhinweise	Pistas en las teclas	Indications sur les touches
+Accents	Akzente	Acentos	Accents
+Whole page	Ganze Seite	Página completa	Page entière
+Space-bar label	Beschriftung der Leertaste	Texto de la barra espaciadora	Libellé de la barre d'espace
+Auto	Automatisch	Automático	Auto
+Language	Sprache	Idioma	Langue
+Blank	Leer	En blanco	Vide
+Action key	Aktionstaste	Tecla de acción	Touche d'action
+Icon	Symbol	Icono	Icône
+Word	Wort	Palabra	Mot
+Capital letters on keys	Großbuchstaben auf Tasten	Mayúsculas en las teclas	Majuscules sur les touches
+Follows shift	Folgt Umschalt	Sigue a Mayús	Suit Maj
+Always capitals	Immer groß	Siempre mayúsculas	Toujours en majuscules
+Size	Größe	Tamaño	Taille
+Keyboard height	Tastaturhöhe	Altura del teclado	Hauteur du clavier
+Theme packs	Designpakete	Paquetes de temas	Packs de thèmes
+Your packs	Ihre Pakete	Sus paquetes	Vos packs
+Built in	Integriert	Incluidos	Intégrés
+Hidden	Ausgeblendet	Ocultos	Masqués
+Add	Hinzufügen	Añadir	Ajouter
+New pack	Neues Paket	Nuevo paquete	Nouveau pack
+Import a theme pack	Designpaket importieren	Importar un paquete de temas	Importer un pack de thèmes
+Copy to my themes	Zu meinen Designs kopieren	Copiar a mis temas	Copier dans mes thèmes
+Share pack	Paket teilen	Compartir paquete	Partager le pack
+Remove pack	Paket entfernen	Quitar paquete	Retirer le pack
+Rename	Umbenennen	Cambiar nombre	Renommer
+Duplicate	Duplizieren	Duplicar	Dupliquer
+Delete pack	Paket löschen	Eliminar paquete	Supprimer le pack
+Photo theme	Fotodesign	Tema de foto	Thème photo
+Fix it	Beheben	Corregir	Corriger
+Same photo	Gleiches Foto	Misma foto	Même photo
+Its own photo	Eigenes Foto	Su propia foto	Sa propre photo
+Your photo	Ihr Foto	Su foto	Votre photo
+Position	Position	Posición	Position
+Top	Oben	Arriba	Haut
+Centre	Mitte	Centro	Centre
+Bottom	Unten	Abajo	Bas
+Readability	Lesbarkeit	Legibilidad	Lisibilité
+Return key colour	Farbe der Eingabetaste	Color de la tecla Intro	Couleur de la touche Entrée
+Your colour	Ihre Farbe	Su color	Votre couleur
+Picked from the photo	Aus dem Foto	Tomado de la foto	Tirée de la photo
+Brightness	Helligkeit	Brillo	Luminosité
+Darkened	Abgedunkelt	Oscurecida	Assombrie
+As shot	Wie aufgenommen	Original	Telle quelle
+Contrast	Kontrast	Contraste	Contraste
+Black and white	Schwarz-Weiß	Blanco y negro	Noir et blanc
+Keys	Tasten	Teclas	Touches
+Light	Hell	Claro	Clair
+Key background	Tastenhintergrund	Fondo de las teclas	Fond des touches
+Blur	Unschärfe	Desenfoque	Flou
+Frosted keys	Milchglastasten	Teclas esmeriladas	Touches givrées
+Label shadow	Schriftschatten	Sombra del texto	Ombre du libellé
+Day	Tag	Día	Jour
+Night	Nacht	Noche	Nuit
+Which theme	Welches Design	Qué tema	Quel thème
+Follow system	System folgen	Seguir al sistema	Suivre le système
+Always day	Immer Tag	Siempre día	Toujours jour
+Always night	Immer Nacht	Siempre noche	Toujours nuit
+App colours	App-Farben	Colores de la app	Couleurs de l'app
+Keyboard	Tastatur	Teclado	Clavier
+Wallpaper	Hintergrundbild	Fondo de pantalla	Fond d'écran
+None	Keine	Ninguno	Aucun
+Theme options	Designoptionen	Opciones del tema	Options du thème
+Return key	Eingabetaste	Tecla Intro	Touche Entrée
+For actions	Bei Aktionen	Para acciones	Pour les actions
+Always coloured	Immer farbig	Siempre en color	Toujours en couleur
+New spots	Neue Flecken	Manchas nuevas	Nouvelles taches
+Every time it opens	Bei jedem Öffnen	Cada vez que se abre	À chaque ouverture
+Keep these	Diese behalten	Mantener estas	Garder celles-ci
+Opened again: new spots.	Erneut geöffnet: neue Flecken.	Abierto de nuevo: manchas nuevas.	Rouvert : nouvelles taches.
+Open again	Erneut öffnen	Abrir de nuevo	Rouvrir
+Shuffle now	Jetzt mischen	Mezclar ahora	Mélanger maintenant
+Edit photo theme	Fotodesign bearbeiten	Editar tema de foto	Modifier le thème photo
+Yours	Ihre	Tuyos	Les vôtres
+Day and night	Tag und Nacht	Día y noche	Jour et nuit
+New theme	Neues Design	Nuevo tema	Nouveau thème
+Manage packs	Pakete verwalten	Gestionar paquetes	Gérer les packs
+Copy and edit	Kopieren und bearbeiten	Copiar y editar	Copier et modifier
+Use this theme	Dieses Design verwenden	Usar este tema	Utiliser ce thème
+Gradient	Verlauf	Degradado	Dégradé
+Solid colour	Einfarbig	Color sólido	Couleur unie
+Hide	Ausblenden	Ocultar	Masquer
+Move up	Nach oben	Subir	Monter
+Move down	Nach unten	Bajar	Descendre
+Accept	Annehmen	Aceptar	Accepter
+Updates	Updates	Actualizaciones	Mises à jour
+Dictionary	Wörterbuch	Diccionario	Dictionnaire
+Public domain	Gemeinfrei	Dominio público	Domaine public
+Corrections	Korrekturen	Correcciones	Corrections
+Next-word models	Wortvorhersage-Modelle	Modelos de predicción	Modèles de prédiction
+Swipe typing	Wischen zum Schreiben	Escritura deslizando	Saisie gestuelle
+Key sounds	Tastentöne	Sonidos de las teclas	Sons des touches
+Fonts	Schriftarten	Fuentes	Polices
+Word data	Wortdaten	Datos de palabras	Données de mots
+Licences in full	Lizenzen im Volltext	Licencias completas	Licences complètes
+Hide the full text	Volltext ausblenden	Ocultar el texto completo	Masquer le texte complet
+Show the full text	Volltext anzeigen	Mostrar el texto completo	Afficher le texte complet
+Version	Version	Versión	Version
+Version copied	Version kopiert	Versión copiada	Version copiée
+Check for updates now	Jetzt nach Updates suchen	Buscar actualizaciones ahora	Rechercher des mises à jour
+Checking…	Wird geprüft …	Comprobando…	Vérification…
+DogBoard and your languages	DogBoard und Ihre Sprachen	DogBoard y sus idiomas	DogBoard et vos langues
+Couldn’t reach GitHub	GitHub nicht erreichbar	No se pudo conectar con GitHub	Impossible de joindre GitHub
+Update	Aktualisieren	Actualizar	Mettre à jour
+Later	Später	Más tarde	Plus tard
+Check automatically	Automatisch prüfen	Comprobar automáticamente	Vérifier automatiquement
+What’s new	Neuigkeiten	Novedades	Nouveautés
+Source code	Quellcode	Código fuente	Code source
+Privacy policy	Datenschutzerklärung	Política de privacidad	Politique de confidentialité
+Built on FlorisBoard	Basiert auf FlorisBoard	Basado en FlorisBoard	Basé sur FlorisBoard
+Licenses	Lizenzen	Licencias	Licences
+DogBoard’s license	Lizenz von DogBoard	Licencia de DogBoard	Licence de DogBoard
+Open-source libraries	Open-Source-Bibliotheken	Bibliotecas de código abierto	Bibliothèques open source
+Typing	Tippen	Escritura	Saisie
+Key preview	Tastenvorschau	Vista previa de teclas	Aperçu des touches
+Screen	Bildschirm	Pantalla	Écran
+Full-screen typing in landscape	Vollbild-Eingabe im Querformat	Escritura a pantalla completa en horizontal	Saisie plein écran en paysage
+Physical keyboard	Physische Tastatur	Teclado físico	Clavier physique
+Engine	Engine	Motor	Moteur
+Neural model	Neuronales Modell	Modelo neuronal	Modèle neuronal
+App	App	App	Application
+Show the app icon	App-Symbol anzeigen	Mostrar el icono de la app	Afficher l'icône de l'app
+Restore from a backup	Aus Sicherung wiederherstellen	Restaurar una copia	Restaurer une sauvegarde
+Load a saved file	Gespeicherte Datei laden	Cargar un archivo guardado	Charger un fichier enregistré
+Copy a report	Bericht kopieren	Copiar un informe	Copier un rapport
+Reload the keyboard	Tastatur neu laden	Recargar el teclado	Recharger le clavier
+Set up again	Neu einrichten	Configurar de nuevo	Reconfigurer
+Developer	Entwickler	Desarrollador	Développeur
+Testing	Testen	Pruebas	Tests
+Developer options	Entwickleroptionen	Opciones de desarrollador	Options pour les développeurs
+Suggest what you copied	Kopiertes vorschlagen	Sugerir lo copiado	Suggérer ce qui a été copié
+Link and address chips	Link- und Adress-Chips	Chips de enlaces y direcciones	Puces de liens et d'adresses
+Strip trackers from links	Tracker aus Links entfernen	Quitar rastreadores de los enlaces	Retirer les traceurs des liens
+Expand links	Links erweitern	Expandir enlaces	Développer les liens
+Link previews	Linkvorschau	Vista previa de enlaces	Aperçus des liens
+Clipboard history	Verlauf der Zwischenablage	Historial del portapapeles	Historique du presse-papiers
+Clear passwords after	Passwörter löschen nach	Borrar contraseñas tras	Effacer les mots de passe après
+Keeping clips	Clips aufbewahren	Conservar recortes	Conservation des éléments
+Delete clips after	Clips löschen nach	Eliminar recortes tras	Supprimer les éléments après
+History details	Verlaufsdetails	Detalles del historial	Détails de l'historique
+Clips to keep	Clips behalten	Recortes que conservar	Éléments à conserver
+No limit	Unbegrenzt	Sin límite	Illimité
+Close after pasting	Nach dem Einfügen schließen	Cerrar tras pegar	Fermer après le collage
+Skin tone	Hautton	Tono de piel	Teint
+Recent emoji	Zuletzt verwendete Emoji	Emoji recientes	Emoji récents
+Emoji in suggestions	Emoji in Vorschlägen	Emoji en las sugerencias	Emoji dans les suggestions
+How many to keep	Wie viele behalten	Cuántos conservar	Combien en garder
+Delete key	Löschtaste	Tecla de borrar	Touche Supprimer
+Repeat speed	Wiederholgeschwindigkeit	Velocidad de repetición	Vitesse de répétition
+Start repeating after	Wiederholung beginnt nach	Empezar a repetir tras	Répéter après
+Word repeat speed	Wort-Wiederholgeschwindigkeit	Velocidad de repetición por palabras	Vitesse de répétition par mot
+Holding keys	Tasten halten	Mantener teclas	Maintien des touches
+Hold to show accents	Halten für Akzente	Mantener para ver acentos	Maintenir pour les accents
+Double taps	Doppeltippen	Toques dobles	Doubles appuis
+Caps lock double-tap	Doppeltippen für Feststelltaste	Doble toque para bloq. mayús	Double appui pour verr. maj
+Double-space speed	Tempo für Doppel-Leerzeichen	Velocidad del doble espacio	Délai du double espace
+Space-bar cursor	Cursor mit Leertaste	Cursor con la barra espaciadora	Curseur avec la barre d'espace
+Hold space for	Leertaste halten für	Mantener espacio durante	Maintenir l'espace pendant
+Cursor speed	Cursorgeschwindigkeit	Velocidad del cursor	Vitesse du curseur
+Swipe to type	Wischen zum Schreiben	Deslizar para escribir	Glisser pour écrire
+Show the trail	Spur anzeigen	Mostrar el trazo	Afficher le tracé
+Slide to delete words	Wischen zum Löschen von Wörtern	Deslizar para borrar palabras	Glisser pour effacer des mots
+Space bar	Leertaste	Barra espaciadora	Barre d'espace
+Move the cursor	Cursor bewegen	Mover el cursor	Déplacer le curseur
+Change language	Sprache wechseln	Cambiar de idioma	Changer de langue
+Nothing	Nichts	Nada	Rien
+Layout style	Layout-Stil	Estilo del diseño	Style de disposition
+Finish	Fertigstellen	Terminar	Terminer
+Skip for now	Jetzt überspringen	Omitir por ahora	Passer pour l'instant
+Next	Weiter	Siguiente	Suivant
+Turn on DogBoard	DogBoard einschalten	Activar DogBoard	Activer DogBoard
+Pick a layout	Layout wählen	Elija un diseño	Choisir une disposition
+Fine-tune the layout	Layout anpassen	Ajustar el diseño	Ajuster la disposition
+Typing and correction	Tippen und Korrektur	Escritura y corrección	Saisie et correction
+Welcome to DogBoard	Willkommen bei DogBoard	Bienvenido a DogBoard	Bienvenue dans DogBoard
+Quick setup	Schnelle Einrichtung	Configuración rápida	Configuration rapide
+Full setup (recommended)	Vollständige Einrichtung (empfohlen)	Configuración completa (recomendada)	Configuration complète (recommandée)
+Back	Zurück	Atrás	Retour
+Opens Android’s keyboard list	Öffnet die Tastaturliste von Android	Abre la lista de teclados de Android	Ouvre la liste des claviers d'Android
+Open	Öffnen	Abrir	Ouvrir
+Switch to DogBoard	Zu DogBoard wechseln	Cambiar a DogBoard	Passer à DogBoard
+Use DogBoard’s spell checker	Rechtschreibprüfung von DogBoard verwenden	Usar el corrector de DogBoard	Utiliser le correcteur de DogBoard
+Spell checking is off	Rechtschreibprüfung ist aus	La corrección ortográfica está desactivada	La correction orthographique est désactivée
+Long-press	Lange drücken	Mantener pulsado	Appui long
+Space bar label	Beschriftung der Leertaste	Texto de la barra espaciadora	Libellé de la barre d'espace
+Holding the space bar	Leertaste gedrückt halten	Mantener la barra espaciadora	Maintien de la barre d'espace
+Moves the cursor	Bewegt den Cursor	Mueve el cursor	Déplace le curseur
+Follow the system	System folgen	Seguir al sistema	Suivre le système
+Ignore the system	System ignorieren	Ignorar el sistema	Ignorer le système
+Always use	Immer verwenden	Usar siempre	Toujours utiliser
+Vibration	Vibration	Vibración	Vibration
+Phone	Telefon	Teléfono	Téléphone
+Mech keys	Mechanische Tasten	Teclas mecánicas	Touches mécaniques
+Key sound	Tastenton	Sonido de las teclas	Son des touches
+Play on silent	Auch im Lautlos-Modus	Sonar en silencio	Jouer en mode silencieux
+Autocorrect	Autokorrektur	Autocorrección	Correction automatique
+Capitalisation	Großschreibung	Mayúsculas	Majuscules
+Punctuation	Satzzeichen	Puntuación	Ponctuation
+History	Verlauf	Historial	Historique
+Keep clips for	Clips aufbewahren für	Conservar recortes durante	Conserver les éléments pendant
+Until cleared	Bis zum Leeren	Hasta borrarlos	Jusqu'à effacement
+Passwords	Passwörter	Contraseñas	Mots de passe
+Copied passwords	Kopierte Passwörter	Contraseñas copiadas	Mots de passe copiés
+Clear after a minute	Nach einer Minute löschen	Borrar tras un minuto	Effacer après une minute
+Never clear	Nie löschen	No borrar nunca	Ne jamais effacer
+Chips	Chips	Chips	Puces
+Clipboard chips	Chips der Zwischenablage	Chips del portapapeles	Puces du presse-papiers
+Contacts	Kontakte	Contactos	Contacts
+Expand short links	Kurzlinks erweitern	Expandir enlaces cortos	Développer les liens courts
+Incognito typing	Inkognito-Eingabe	Escritura de incógnito	Saisie privée
+Automatic	Automatisch	Automático	Automatique
+Suggestions	Vorschläge	Sugerencias	Suggestions
+Your data	Ihre Daten	Sus datos	Vos données
+Letter layout	Buchstabenlayout	Diseño de letras	Disposition des lettres
+Photo background	Fotohintergrund	Fondo de foto	Arrière-plan photo
+Undo with backspace	Mit Löschtaste rückgängig	Deshacer con retroceso	Annuler avec la touche Retour arrière
+Learn from your undos	Aus Rückgängig-Aktionen lernen	Aprender de lo que deshace	Apprendre de vos annulations
+Block offensive words	Anstößige Wörter sperren	Bloquear palabras ofensivas	Bloquer les mots offensants
+Contact names	Kontaktnamen	Nombres de contactos	Noms des contacts
+Sentence starts	Satzanfänge	Inicio de frase	Début de phrase
+Names and “I”	Namen und „I“	Nombres e “I”	Noms et « I »
+Caps lock	Feststelltaste	Bloqueo de mayúsculas	Verrouillage des majuscules
+Smart quotes	Typografische Anführungszeichen	Comillas tipográficas	Guillemets typographiques
+Smart dashes	Typografische Striche	Guiones tipográficos	Tirets typographiques
+Double-space full stop	Punkt mit Doppel-Leerzeichen	Punto con doble espacio	Point avec double espace
+Sound	Ton	Sonido	Son
+Hold the space bar	Leertaste halten	Mantener la barra espaciadora	Maintenir la barre d'espace
+Before you type	Vor dem Tippen	Antes de escribir	Avant de taper
+Delete key repeat	Wiederholung der Löschtaste	Repetición de la tecla de borrar	Répétition de la touche Supprimer
+Backup and restore	Sichern und wiederherstellen	Copia y restauración	Sauvegarde et restauration
+Sound variation	Klangvariation	Variación del sonido	Variation du son
+Volume	Lautstärke	Volumen	Volume
+Vibration style	Vibrationsstil	Estilo de vibración	Style de vibration
+Vibrate on key presses	Bei Tastendruck vibrieren	Vibrar al pulsar teclas	Vibrer à chaque touche
+Vibrate while delete repeats	Beim wiederholten Löschen vibrieren	Vibrar al borrar de forma continua	Vibrer pendant l'effacement continu
+Vibrate on long press	Bei langem Drücken vibrieren	Vibrar al mantener pulsado	Vibrer lors d'un appui long
+Vibrate while sliding	Beim Wischen vibrieren	Vibrar al deslizar	Vibrer en glissant
+Click on key presses	Klicken bei Tastendruck	Clic al pulsar teclas	Clic à chaque touche
+Click while delete repeats	Klicken beim wiederholten Löschen	Clic al borrar de forma continua	Clic pendant l'effacement continu
+Fix the previous word	Vorheriges Wort korrigieren	Corregir la palabra anterior	Corriger le mot précédent
+Neural look-back (experimental)	Neuronaler Rückblick (experimentell)	Revisión neuronal (experimental)	Relecture neuronale (expérimental)
+Grammar check	Grammatikprüfung	Revisión gramatical	Vérification grammaticale
+Rejoin split words	Getrennte Wörter zusammenfügen	Unir palabras separadas	Recoller les mots coupés
+Correction strength	Korrekturstärke	Intensidad de corrección	Force de la correction
+Notify when strength changes	Bei Änderung der Stärke benachrichtigen	Avisar cuando cambie la intensidad	Notifier quand la force change
+Vibration, quotes, accents…	Vibration, Anführungszeichen, Akzente …	Vibración, comillas, acentos…	Vibration, guillemets, accents…
+A softer, rounder tap.	Ein weicherer, runderer Anschlag.	Un toque más suave y redondo.	Une frappe plus douce et plus ronde.
+Crisp	Knackig	Nítido	Net
+Soft	Weich	Suave	Doux
+When	Wann	Cuándo	Quand
+Every key you tap.	Jede getippte Taste.	Cada tecla que toca.	Chaque touche tapée.
+Setup	Einrichtung	Configuración	Configuration
+Replay the setup	Einrichtung wiederholen	Repetir la configuración	Refaire la configuration
+Key log	Tastenprotokoll	Registro de teclas	Journal des touches
+Copy the log	Protokoll kopieren	Copiar el registro	Copier le journal
+Key log copied	Tastenprotokoll kopiert	Registro de teclas copiado	Journal des touches copié
+Clear the log	Protokoll leeren	Borrar el registro	Effacer le journal
+Empties the list	Leert die Liste	Vacía la lista	Vide la liste
+Nothing logged yet.	Noch nichts protokolliert.	Todavía no hay nada registrado.	Rien d'enregistré pour l'instant.
+Background	Hintergrund	Fondo	Arrière-plan
+Elements	Elemente	Elementos	Éléments
+Details	Details	Detalles	Détails
+Hard edges	Harte Kanten	Bordes nítidos	Bords nets
+Tint keys to match	Tasten passend tönen	Teñir las teclas a juego	Teinter les touches assorties
+Space equally	Gleichmäßig verteilen	Repartir por igual	Espacer également
+Bottom to top	Von unten nach oben	De abajo arriba	De bas en haut
+Left to right	Von links nach rechts	De izquierda a derecha	De gauche à droite
+Top to bottom	Von oben nach unten	De arriba abajo	De haut en bas
+Right to left	Von rechts nach links	De derecha a izquierda	De droite à gauche
+Towards top right	Nach oben rechts	Hacia arriba a la derecha	Vers le haut à droite
+Towards bottom right	Nach unten rechts	Hacia abajo a la derecha	Vers le bas à droite
+Towards bottom left	Nach unten links	Hacia abajo a la izquierda	Vers le bas à gauche
+Towards top left	Nach oben links	Hacia arriba a la izquierda	Vers le haut à gauche
+Letter keys	Buchstabentasten	Teclas de letras	Touches des lettres
+Fill	Füllung	Relleno	Remplissage
+Border	Rand	Borde	Bordure
+Icons and labels	Symbole und Beschriftungen	Iconos y etiquetas	Icônes et libellés
+Label	Beschriftung	Etiqueta	Libellé
+Suggestion bar	Vorschlagsleiste	Barra de sugerencias	Barre de suggestions
+Words	Wörter	Palabras	Mots
+Icons	Symbole	Iconos	Icônes
+Highlight	Hervorhebung	Resaltado	Surlignage
+Highlight text	Hervorgehobener Text	Texto resaltado	Texte surligné
+Pop-ups and hints	Pop-ups und Hinweise	Ventanas emergentes y pistas	Bulles et indications
+Pop-up keys	Pop-up-Tasten	Teclas emergentes	Touches en bulle
+Pop-up letters	Pop-up-Buchstaben	Letras emergentes	Lettres en bulle
+Long-press hints	Hinweise für langes Drücken	Pistas de pulsación larga	Indications d'appui long
+Default	Standard	Predeterminado	Par défaut
+Tinted to match	Passend getönt	Teñido a juego	Teinté assorti
+Under the keys	Unter den Tasten	Bajo las teclas	Sous les touches
+Bottom icons	Untere Symbole	Iconos inferiores	Icônes du bas
+Key style	Tastenstil	Estilo de teclas	Style des touches
+As set	Wie eingestellt	Según el ajuste	Comme défini
+Solid	Massiv	Sólido	Plein
+Frosted	Milchglas	Esmerilado	Givré
+Under	Darunter	Debajo	Dessous
+Shape, for both versions	Form, für beide Versionen	Forma, para ambas versiones	Forme, pour les deux versions
+Shape	Form	Forma	Forme
+Corners	Ecken	Esquinas	Coins
+Label size	Schriftgröße	Tamaño del texto	Taille du libellé
+Border width	Randbreite	Ancho del borde	Épaisseur de la bordure
+Label weight	Schriftstärke	Grosor del texto	Graisse du libellé
+Regular	Normal	Normal	Normal
+Medium	Mittel	Media	Moyen
+Bold	Fett	Negrita	Gras
+Reset all elements	Alle Elemente zurücksetzen	Restablecer todos los elementos	Réinitialiser tous les éléments
+Start over from defaults	Mit Standardwerten neu beginnen	Empezar de nuevo con los valores predeterminados	Repartir des valeurs par défaut
+Phone click	Telefonklick	Clic del teléfono	Clic du téléphone
+Author	Autor	Autor	Auteur
+Description	Beschreibung	Descripción	Description
+Letter keys, fill	Buchstabentasten, Füllung	Teclas de letras, relleno	Touches des lettres, remplissage
+Letter keys, border	Buchstabentasten, Rand	Teclas de letras, borde	Touches des lettres, bordure
+Shift, delete, 123, fill	Umschalt, Löschen, 123, Füllung	Mayús, borrar, 123, relleno	Maj, supprimer, 123, remplissage
+Their icons and labels	Ihre Symbole und Beschriftungen	Sus iconos y etiquetas	Leurs icônes et libellés
+Their border	Ihr Rand	Su borde	Leur bordure
+Return key, fill	Eingabetaste, Füllung	Tecla Intro, relleno	Touche Entrée, remplissage
+Return key, label	Eingabetaste, Beschriftung	Tecla Intro, etiqueta	Touche Entrée, libellé
+Return key, border	Eingabetaste, Rand	Tecla Intro, borde	Touche Entrée, bordure
+Suggestion words	Vorschlagswörter	Palabras sugeridas	Mots suggérés
+Suggestion highlight	Vorschlagshervorhebung	Resaltado de sugerencias	Surlignage des suggestions
+Suggestion bar icons	Symbole der Vorschlagsleiste	Iconos de la barra de sugerencias	Icônes de la barre de suggestions
+Opacity	Deckkraft	Opacidad	Opacité
+Hex	Hex	Hex	Hex
+In this theme	In diesem Design	En este tema	Dans ce thème
+Use its sound	Seinen Ton verwenden	Usar su sonido	Utiliser son son
+Keep mine	Meinen behalten	Mantener el mío	Garder le mien
+Rename pack	Paket umbenennen	Cambiar nombre del paquete	Renommer le pack
+Rename theme	Design umbenennen	Cambiar nombre del tema	Renommer le thème
+Create	Erstellen	Crear	Créer
+Gentle	Sanft	Suave	Douce
+Strong	Stark	Fuerte	Forte
+Standard	Standard	Estándar	Standard
+Capitals	Großbuchstaben	Mayúsculas	Majuscules
+Smart punctuation	Intelligente Satzzeichen	Puntuación inteligente	Ponctuation intelligente
+Grammar	Grammatik	Gramática	Grammaire
+Learning	Lernen	Aprendizaje	Apprentissage
+Looking back	Rückblick	Revisión	Relecture
+After you use them	Nach der Verwendung	Después de usarlos	Après utilisation
+What’s offered	Was angeboten wird	Qué se ofrece	Ce qui est proposé
+Shift key	Umschalttaste	Tecla Mayús	Touche Maj
+Automatic capitals	Automatische Großschreibung	Mayúsculas automáticas	Majuscules automatiques
+As you type	Beim Tippen	Mientras escribe	Pendant la saisie
+Added by you	Von Ihnen hinzugefügt	Añadidas por usted	Ajoutés par vous
+Removed from the bar	Aus der Leiste entfernt	Quitadas de la barra	Retirés de la barre
+DogBoard: your words	DogBoard: Ihre Wörter	DogBoard: sus palabras	DogBoard : vos mots
+Forget everything DogBoard learned?	Alles vergessen, was DogBoard gelernt hat?	¿Olvidar todo lo que aprendió DogBoard?	Oublier tout ce que DogBoard a appris ?
+Forget	Vergessen	Olvidar	Oublier
+Add a text replacement	Textersetzung hinzufügen	Añadir una sustitución de texto	Ajouter un remplacement de texte
+Shortcut	Kürzel	Atajo	Raccourci
+Phrase	Text	Frase	Expression
+Typed	Getippt	Escrito	Saisi
+Never correct it to	Nie korrigieren zu	No corregir nunca a	Ne jamais corriger en
+Block	Sperren	Bloquear	Bloquer
+# prominent sentences, fixed by hand
+Android asks this for every keyboard. Its warning is generic: nothing you type leaves this phone.	Android fragt das bei jeder Tastatur. Die Warnung ist allgemein: Nichts, was Sie tippen, verlässt dieses Telefon.	Android lo pregunta con cada teclado. Su aviso es genérico: nada de lo que escribe sale de este teléfono.	Android le demande pour chaque clavier. Son avertissement est générique : rien de ce que vous tapez ne quitte ce téléphone.
+Underlines words that don’t agree in blue, with the right form to tap: “le maison” becomes “la maison”. French and Spanish.	Unterstreicht Wörter, die grammatisch nicht passen, blau, mit der richtigen Form zum Antippen: „le maison“ wird zu „la maison“. Französisch und Spanisch.	Subraya en azul las palabras que no concuerdan, con la forma correcta para tocar: «le maison» pasa a ser «la maison». Francés y español.	Souligne en bleu les mots mal accordés, avec la bonne forme à toucher : « le maison » devient « la maison ». Français et espagnol.
+Slide across the letters of a word without lifting your finger.	Wischen Sie über die Buchstaben eines Wortes, ohne den Finger abzuheben.	Deslice sobre las letras de una palabra sin levantar el dedo.	Faites glisser le doigt sur les lettres d'un mot sans le lever.

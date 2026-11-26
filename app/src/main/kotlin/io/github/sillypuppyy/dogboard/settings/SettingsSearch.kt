@@ -120,7 +120,9 @@ object SettingsSearch {
         val terms = query.lowercase().split(' ').filter { it.isNotBlank() }
         if (terms.isEmpty()) return emptyList()
         return all.filter { e ->
-            val words = "${e.title} ${e.page} ${e.words}".lowercase().split(' ', '›', '-', '“', '”').filter { it.isNotBlank() }
+            // the shown (translated) title and page too: a German phone searches in German (UiText)
+            val tr = io.github.sillypuppyy.dogboard.design.UiText
+            val words = "${e.title} ${e.page} ${e.words} ${tr.tr(e.title)} ${e.page.split(" › ").joinToString(" ") { tr.tr(it) }}".lowercase().split(' ', '›', '-', '“', '”').filter { it.isNotBlank() }
             terms.all { t -> words.any { it.startsWith(t) } }
         }
     }

@@ -157,6 +157,8 @@ fun DText(
     overflow: TextOverflow = TextOverflow.Visible,
     squash: Boolean = false,
 ) {
+    // DogBoard's screens in the phone's language (UiText: the English text is the key)
+    @Suppress("NAME_SHADOWING") val text = UiText.tr(text)
     if (squash) {
         SquashedText(text, modifier, style, id, kind)
         return
